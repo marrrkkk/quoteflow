@@ -44,7 +44,7 @@ cp .env.example .env.local
 
 ```bash
 npm run db:generate
-npm run db:push
+npm run db:migrate
 ```
 
 4. Start the app:
@@ -62,6 +62,7 @@ npm run lint
 npm run typecheck
 npm run check
 npm run db:generate
+npm run db:migrate
 npm run db:push
 npm run db:studio
 ```
