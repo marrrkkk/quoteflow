@@ -12,7 +12,7 @@ This repository contains **QuoteFlow**, a SaaS web app for small service busines
 ### Product summary
 QuoteFlow helps small businesses collect customer inquiries, manage them in one dashboard, generate quotations, upload business knowledge files, and use AI to draft practical replies.
 
-### Core stack
+### Core stack 
 - Next.js (App Router, TypeScript)
 - Tailwind CSS
 - ShadCN UI
