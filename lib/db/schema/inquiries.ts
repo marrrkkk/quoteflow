@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   pgEnum,
@@ -34,6 +35,9 @@ export const inquiries = pgTable(
     customerName: text("customer_name").notNull(),
     customerEmail: text("customer_email").notNull(),
     customerPhone: text("customer_phone"),
+    serviceCategory: text("service_category").notNull(),
+    requestedDeadline: date("requested_deadline", { mode: "string" }),
+    budgetText: text("budget_text"),
     companyName: text("company_name"),
     details: text("details").notNull(),
     source: text("source"),
@@ -55,6 +59,10 @@ export const inquiries = pgTable(
     index("inquiries_workspace_submitted_at_idx").on(
       table.workspaceId,
       table.submittedAt,
+    ),
+    index("inquiries_workspace_service_category_idx").on(
+      table.workspaceId,
+      table.serviceCategory,
     ),
   ],
 );
