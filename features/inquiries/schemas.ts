@@ -1,10 +1,122 @@
 import { z } from "zod";
 
+export const publicInquiryAttachmentBucket = "inquiry-attachments";
+export const publicInquiryMaxAttachmentSize = 5 * 1024 * 1024;
+export const publicInquiryAllowedMimeTypes = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "text/plain",
+] as const;
+export const publicInquiryAttachmentAccept = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".txt",
+  ...publicInquiryAllowedMimeTypes,
+].join(",");
+export const publicInquiryAttachmentLabel =
+  "PDF, DOC, DOCX, JPG, PNG, WEBP, or TXT up to 5 MB";
+
+function emptyToUndefined(value: unknown) {
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+
+  return value;
+}
+
+function optionalText(maxLength: number) {
+  return z.preprocess(
+    emptyToUndefined,
+    z.string().trim().max(maxLength).optional(),
+  );
+}
+
+function isValidDateInput(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+  );
+}
+
+const publicInquiryAttachmentSchema = z.preprocess(
+  (value) => {
+    if (!(value instanceof File)) {
+      return undefined;
+    }
+
+    if (value.size === 0 || value.name.trim() === "") {
+      return undefined;
+    }
+
+    return value;
+  },
+  z
+    .instanceof(File)
+    .refine(
+      (file) => file.size <= publicInquiryMaxAttachmentSize,
+      "Upload a file that is 5 MB or smaller.",
+    )
+    .refine(
+      (file) =>
+        publicInquiryAllowedMimeTypes.some(
+          (mimeType) => mimeType === file.type,
+        ),
+      "Upload a PDF, common document file, or image.",
+    )
+    .optional(),
+);
+
 export const publicInquirySchema = z.object({
-  customerName: z.string().min(2).max(120).trim(),
-  customerEmail: z.email().trim(),
-  customerPhone: z.string().max(40).trim().optional(),
-  companyName: z.string().max(120).trim().optional(),
-  subject: z.string().max(160).trim().optional(),
-  details: z.string().min(10).max(4000).trim(),
+  customerName: z
+    .string()
+    .trim()
+    .min(2, "Enter your name.")
+    .max(120, "Name must be 120 characters or fewer."),
+  customerEmail: z
+    .string()
+    .trim()
+    .min(1, "Enter your email address.")
+    .email("Enter a valid email address."),
+  customerPhone: optionalText(40),
+  serviceCategory: z
+    .string()
+    .trim()
+    .min(2, "Tell us what service or category you need.")
+    .max(120, "Service or category must be 120 characters or fewer."),
+  deadline: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine(isValidDateInput, "Enter a valid deadline.")
+      .optional(),
+  ),
+  budget: optionalText(120),
+  details: z
+    .string()
+    .trim()
+    .min(10, "Share a few details so the business can quote accurately.")
+    .max(4000, "Details must be 4,000 characters or fewer."),
+  attachment: publicInquiryAttachmentSchema,
 });
+
+export type PublicInquirySubmissionInput = z.infer<typeof publicInquirySchema>;
