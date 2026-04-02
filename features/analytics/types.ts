@@ -1,6 +1,6 @@
 export type AnalyticsSummary = {
   openInquiryCount: number;
   quotedInquiryCount: number;
-  bookedInquiryCount: number;
+  wonInquiryCount: number;
   sentQuoteCount: number;
 };

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  inquiryStatusFilterValues,
+  inquiryStatuses,
+} from "@/features/inquiries/types";
+
 export const publicInquiryAttachmentBucket = "inquiry-attachments";
 export const publicInquiryMaxAttachmentSize = 5 * 1024 * 1024;
 export const publicInquiryAllowedMimeTypes = [
@@ -32,6 +37,14 @@ function emptyToUndefined(value: unknown) {
 
   if (typeof value === "string" && value.trim() === "") {
     return undefined;
+  }
+
+  return value;
+}
+
+function firstString(value: unknown) {
+  if (Array.isArray(value)) {
+    return value[0];
   }
 
   return value;
@@ -120,3 +133,41 @@ export const publicInquirySchema = z.object({
 });
 
 export type PublicInquirySubmissionInput = z.infer<typeof publicInquirySchema>;
+
+export const inquiryIdSchema = z.string().trim().min(1).max(128);
+
+export const inquiryRouteParamsSchema = z.object({
+  id: inquiryIdSchema,
+});
+
+export const inquiryAttachmentRouteParamsSchema = z.object({
+  id: inquiryIdSchema,
+  attachmentId: z.string().trim().min(1).max(128),
+});
+
+export const inquiryListFiltersSchema = z.object({
+  q: z
+    .preprocess(
+      (value) => emptyToUndefined(firstString(value)),
+      z.string().trim().max(120).optional(),
+    )
+    .catch(undefined),
+  status: z
+    .preprocess(
+      (value) => firstString(value) ?? "all",
+      z.enum(inquiryStatusFilterValues),
+    )
+    .catch("all"),
+});
+
+export const inquiryNoteSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "Enter an internal note.")
+    .max(2000, "Notes must be 2,000 characters or fewer."),
+});
+
+export const inquiryStatusChangeSchema = z.object({
+  status: z.enum(inquiryStatuses),
+});

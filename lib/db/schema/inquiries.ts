@@ -16,10 +16,10 @@ import { workspaces } from "@/lib/db/schema/workspaces";
 
 export const inquiryStatusEnum = pgEnum("inquiry_status", [
   "new",
-  "reviewing",
   "quoted",
-  "booked",
-  "closed",
+  "waiting",
+  "won",
+  "lost",
   "archived",
 ]);
 
