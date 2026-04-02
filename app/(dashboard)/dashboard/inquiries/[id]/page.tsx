@@ -2,9 +2,10 @@ import Link from "next/link";
 import { FileText, Mail, Phone, ReceiptText } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { generateInquiryAssistantAction } from "@/features/ai/actions";
+import { InquiryAiPanel } from "@/features/ai/components/inquiry-ai-panel";
 import { addInquiryNoteAction, changeInquiryStatusAction } from "@/features/inquiries/actions";
 import { CopyEmailButton } from "@/features/inquiries/components/copy-email-button";
-import { InquiryAiPlaceholder } from "@/features/inquiries/components/inquiry-ai-placeholder";
 import { InquiryNoteForm } from "@/features/inquiries/components/inquiry-note-form";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
 import { InquiryStatusForm } from "@/features/inquiries/components/inquiry-status-form";
@@ -60,6 +61,7 @@ export default async function InquiryDetailPage({
 
   const noteAction = addInquiryNoteAction.bind(null, inquiry.id);
   const statusAction = changeInquiryStatusAction.bind(null, inquiry.id);
+  const aiAction = generateInquiryAssistantAction.bind(null, inquiry.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -423,7 +425,7 @@ export default async function InquiryDetailPage({
             </CardContent>
           </Card>
 
-          <InquiryAiPlaceholder />
+          <InquiryAiPanel action={aiAction} />
         </div>
       </div>
     </div>
