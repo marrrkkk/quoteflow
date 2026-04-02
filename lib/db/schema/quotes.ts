@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
   index,
   integer,
   pgEnum,
@@ -32,17 +33,18 @@ export const quotes = pgTable(
       onDelete: "set null",
     }),
     status: quoteStatusEnum("status").notNull().default("draft"),
-    quoteNumber: text("quote_number"),
+    quoteNumber: text("quote_number").notNull(),
+    title: text("title").notNull(),
     customerName: text("customer_name").notNull(),
     customerEmail: text("customer_email").notNull(),
     currency: text("currency").notNull().default("USD"),
-    message: text("message"),
+    notes: text("message"),
     subtotalInCents: integer("subtotal_in_cents").notNull().default(0),
-    taxInCents: integer("tax_in_cents").notNull().default(0),
+    discountInCents: integer("tax_in_cents").notNull().default(0),
     totalInCents: integer("total_in_cents").notNull().default(0),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
-    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    validUntil: date("expires_at", { mode: "string" }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -60,8 +62,8 @@ export const quotes = pgTable(
       table.quoteNumber,
     ),
     check(
-      "quotes_totals_nonnegative",
-      sql`${table.subtotalInCents} >= 0 and ${table.taxInCents} >= 0 and ${table.totalInCents} >= 0`,
+      "quotes_totals_valid",
+      sql`${table.subtotalInCents} >= 0 and ${table.discountInCents} >= 0 and ${table.totalInCents} >= 0 and ${table.subtotalInCents} >= ${table.discountInCents} and ${table.totalInCents} = ${table.subtotalInCents} - ${table.discountInCents}`,
     ),
   ],
 );
