@@ -1,0 +1,80 @@
+"use client";
+
+import { useActionState, useEffect, useRef } from "react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
+import type { InquiryNoteActionState } from "@/features/inquiries/types";
+
+type InquiryNoteFormProps = {
+  action: (
+    state: InquiryNoteActionState,
+    formData: FormData,
+  ) => Promise<InquiryNoteActionState>;
+};
+
+const initialState: InquiryNoteActionState = {};
+
+export function InquiryNoteForm({ action }: InquiryNoteFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction, isPending] = useActionState(action, initialState);
+
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset();
+    }
+  }, [state.success]);
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4" ref={formRef}>
+      {state.error ? (
+        <Alert variant="destructive">
+          <AlertTitle>We could not save the note.</AlertTitle>
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {state.success ? (
+        <Alert>
+          <AlertTitle>Note saved</AlertTitle>
+          <AlertDescription>{state.success}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <FieldGroup>
+        <Field data-invalid={Boolean(state.fieldErrors?.body) || undefined}>
+          <FieldLabel htmlFor="inquiry-note">Add an internal note</FieldLabel>
+          <FieldContent>
+            <Textarea
+              id="inquiry-note"
+              name="body"
+              rows={4}
+              placeholder="Capture follow-ups, scope clarifications, or internal context for the next reply."
+              aria-invalid={Boolean(state.fieldErrors?.body) || undefined}
+              disabled={isPending}
+            />
+            <FieldError
+              errors={
+                state.fieldErrors?.body?.[0]
+                  ? [{ message: state.fieldErrors.body[0] }]
+                  : undefined
+              }
+            />
+          </FieldContent>
+        </Field>
+      </FieldGroup>
+
+      <Button disabled={isPending} type="submit">
+        {isPending ? "Saving note..." : "Add note"}
+      </Button>
+    </form>
+  );
+}
