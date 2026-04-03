@@ -181,7 +181,63 @@
   }
 
   .dashboard-table-shell-inner {
-    @apply p-4;
+    @apply p-2 sm:p-3;
+  }
+
+  .data-list-toolbar-summary {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .data-list-toolbar-count {
+    @apply inline-flex w-fit items-center rounded-full border border-border/75 bg-background/88 px-3 py-1 text-sm font-medium text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.38)];
+  }
+
+  .data-list-toolbar-grid {
+    @apply grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_14rem_auto] lg:items-end;
+  }
+
+  .data-list-toolbar-actions {
+    @apply flex flex-col gap-3 sm:flex-row lg:justify-end;
+  }
+
+  .data-list-mobile-grid {
+    @apply grid gap-4 lg:hidden;
+  }
+
+  .data-list-card {
+    @apply gap-0 border-border/75 bg-card/96;
+  }
+
+  .data-list-card-header {
+    @apply gap-3 pb-5;
+  }
+
+  .data-list-card-meta {
+    @apply grid gap-3 sm:grid-cols-3;
+  }
+
+  .data-list-card-footer {
+    @apply flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .data-list-empty-state {
+    @apply section-panel border-dashed bg-card/90 px-6 py-12 sm:px-8;
+  }
+
+  .table-meta-stack {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .table-link {
+    @apply block truncate font-semibold text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline group-hover/row:text-primary;
+  }
+
+  .table-supporting-text {
+    @apply truncate text-sm text-muted-foreground;
+  }
+
+  .table-emphasis {
+    @apply truncate text-sm font-medium text-foreground;
   }
 
   .dashboard-topbar {

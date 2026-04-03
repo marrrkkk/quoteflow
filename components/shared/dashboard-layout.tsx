@@ -188,13 +188,14 @@ type DashboardEmptyStateProps = {
   action?: ReactNode;
   icon?: LucideIcon;
   className?: string;
-  variant?: "page" | "section" | "flat";
+  variant?: "page" | "section" | "flat" | "list";
 };
 
 const emptyStateVariantClassNames = {
   page: "",
   section: "border",
   flat: "rounded-none border-0 bg-transparent px-6 py-10",
+  list: "data-list-empty-state",
 } as const;
 
 export function DashboardEmptyState({

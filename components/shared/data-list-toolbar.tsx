@@ -69,9 +69,9 @@ export function DataListToolbar({
   return (
     <DashboardToolbar>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="data-list-toolbar-summary">
           <p className="text-sm leading-6 text-muted-foreground">{description}</p>
-          <p className="text-sm font-medium text-foreground">{resultLabel}</p>
+          <p className="data-list-toolbar-count">{resultLabel}</p>
         </div>
 
         <form
@@ -81,9 +81,9 @@ export function DataListToolbar({
             onSubmit();
           }}
         >
-          <FieldGroup className="lg:flex-row lg:items-end">
-            <Field className="lg:flex-1">
-              <FieldLabel className="sr-only" htmlFor={searchId}>
+          <FieldGroup className="data-list-toolbar-grid gap-4">
+            <Field className="lg:min-w-0">
+              <FieldLabel className="meta-label px-0.5" htmlFor={searchId}>
                 {searchLabel}
               </FieldLabel>
               <FieldContent>
@@ -97,8 +97,8 @@ export function DataListToolbar({
               </FieldContent>
             </Field>
 
-            <Field className="lg:w-[13rem]">
-              <FieldLabel className="sr-only" htmlFor={filterId}>
+            <Field className="sm:max-w-[14rem] lg:max-w-none">
+              <FieldLabel className="meta-label px-0.5" htmlFor={filterId}>
                 {filterLabel}
               </FieldLabel>
               <FieldContent>
@@ -119,16 +119,17 @@ export function DataListToolbar({
               </FieldContent>
             </Field>
 
-            <DashboardActionsRow className="flex-col sm:flex-row">
-              <Button disabled={isPending} type="submit">
+            <DashboardActionsRow className="data-list-toolbar-actions lg:self-end">
+              <Button className="w-full sm:w-auto" disabled={isPending} type="submit">
                 <Search data-icon="inline-start" />
-                {isPending ? "Applying..." : "Apply"}
+                {isPending ? "Applying..." : "Apply filters"}
               </Button>
               <Button
+                className="w-full sm:w-auto"
                 disabled={isPending || !canClear}
                 onClick={onClear}
                 type="button"
-                variant="outline"
+                variant="ghost"
               >
                 <X data-icon="inline-start" />
                 Clear
