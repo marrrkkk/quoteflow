@@ -22,7 +22,7 @@ QuoteFlow is an owner-first SaaS MVP for small service businesses such as print 
 - Better Auth email/password auth with forgot/reset password
 - Automatic workspace bootstrap on first signup
 - Inquiry inbox with notes, activity, status changes, and attachment support
-- Quotes with line items, totals, preview, and send via Resend
+- Quotes with line items, totals, preview, public customer view, and send via Resend
 - Knowledge dashboard with file uploads and FAQs
 - Internal AI assistant on inquiry detail using workspace context
 - Workspace analytics and settings
@@ -108,11 +108,13 @@ For local Postgres, both can usually point to the same database.
 
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
+- optional `NEXT_PUBLIC_BETTER_AUTH_URL`
 
 Notes:
 
 - `BETTER_AUTH_SECRET` must be at least 32 characters.
 - `BETTER_AUTH_URL` must match the origin you use in the browser, usually `http://localhost:3000`.
+- `NEXT_PUBLIC_BETTER_AUTH_URL` is optional and should point to the auth route, for example `http://localhost:3000/api/auth`.
 - Changing the auth secret invalidates existing sessions.
 
 ### Supabase
@@ -268,6 +270,7 @@ npm run start
 npm run lint
 npm run typecheck
 npm run check
+npm run test:e2e
 npm run db:generate
 npm run db:migrate
 npm run db:push
@@ -283,17 +286,17 @@ npm run db:seed-demo
 
 ## Remaining Gaps After The MVP
 
-- No public customer quote acceptance or rejection flow yet
 - No real team permissions beyond owner-first groundwork
-- No automated quote expiry job or scheduled reminders
+- No automated quote reminder job or scheduled inquiry follow-ups
+- Quote expiry is synchronized lazily on reads and actions, not by a background job
 - No attachment seeding or sample knowledge-file uploads
-- No end-to-end test suite yet for auth, inquiries, quotes, knowledge, and AI flows
-- No production deployment guide yet for Supabase, Resend, and OpenRouter
+- The e2e suite covers the critical paths, but it does not yet cover the full dashboard surface
+- No full deployment runbook yet for Vercel, Supabase, Resend, and OpenRouter
 
 ## Safest Next Improvements
 
-1. Add Playwright end-to-end coverage for signup, public inquiry submission, quote send, and settings updates.
-2. Add a public quote view with customer accept/reject actions and a simple audit trail.
-3. Add better retry and observability around Resend and OpenRouter failures.
-4. Add a minimal deployment guide for Vercel plus Supabase environment wiring.
-5. Add background cleanup or reminders for expired quotes and stalled inquiries.
+1. Expand Playwright coverage for signup, quote send, settings updates, knowledge uploads, and AI actions.
+2. Add better retry and observability around Resend and OpenRouter failures.
+3. Add a minimal deployment guide for Vercel plus Supabase environment wiring.
+4. Add background reminders for expired quotes and stalled inquiries.
+5. Add owner activity/audit reporting around public quote responses and high-value inbox actions.
