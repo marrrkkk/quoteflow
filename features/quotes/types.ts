@@ -19,6 +19,7 @@ export type DashboardQuoteListItem = {
   id: string;
   inquiryId: string | null;
   quoteNumber: string;
+  publicToken: string;
   title: string;
   customerName: string;
   customerEmail: string;
@@ -27,6 +28,7 @@ export type DashboardQuoteListItem = {
   status: QuoteStatus;
   createdAt: Date;
   sentAt: Date | null;
+  customerRespondedAt: Date | null;
 };
 
 export type DashboardQuoteItem = {
@@ -70,6 +72,7 @@ export type DashboardQuoteDetail = {
   workspaceId: string;
   inquiryId: string | null;
   quoteNumber: string;
+  publicToken: string;
   title: string;
   customerName: string;
   customerEmail: string;
@@ -82,11 +85,39 @@ export type DashboardQuoteDetail = {
   status: QuoteStatus;
   sentAt: Date | null;
   acceptedAt: Date | null;
+  publicViewedAt: Date | null;
+  customerRespondedAt: Date | null;
+  customerResponseMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: DashboardQuoteItem[];
   activities: DashboardQuoteActivity[];
   linkedInquiry: QuoteLinkedInquirySummary | null;
+};
+
+export type PublicQuoteView = {
+  id: string;
+  token: string;
+  quoteNumber: string;
+  title: string;
+  workspaceName: string;
+  workspaceShortDescription: string | null;
+  workspaceContactEmail: string | null;
+  customerName: string;
+  customerEmail: string;
+  currency: string;
+  notes: string | null;
+  validUntil: string;
+  status: QuoteStatus;
+  subtotalInCents: number;
+  discountInCents: number;
+  totalInCents: number;
+  sentAt: Date | null;
+  acceptedAt: Date | null;
+  publicViewedAt: Date | null;
+  customerRespondedAt: Date | null;
+  customerResponseMessage: string | null;
+  items: DashboardQuoteItem[];
 };
 
 export type QuoteEditorLineItemValue = {
@@ -132,6 +163,11 @@ export type QuoteStatusActionState = {
 };
 
 export type QuoteSendActionState = {
+  error?: string;
+  success?: string;
+};
+
+export type PublicQuoteResponseActionState = {
   error?: string;
   success?: string;
 };

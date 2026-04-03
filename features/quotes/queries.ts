@@ -9,10 +9,16 @@ import {
   quoteItems,
   quotes,
   user,
+  workspaces,
 } from "@/lib/db/schema";
+import {
+  syncExpiredQuoteForPublicToken,
+  syncExpiredQuotesForWorkspace,
+} from "@/features/quotes/mutations";
 import type {
   DashboardQuoteDetail,
   DashboardQuoteListItem,
+  PublicQuoteView,
   QuoteInquiryPrefill,
   QuoteListFilters,
 } from "@/features/quotes/types";
@@ -26,6 +32,8 @@ export async function getQuoteListForWorkspace({
   workspaceId,
   filters,
 }: GetQuoteListForWorkspaceInput): Promise<DashboardQuoteListItem[]> {
+  await syncExpiredQuotesForWorkspace(workspaceId);
+
   const conditions = [eq(quotes.workspaceId, workspaceId)];
 
   if (filters.status !== "all") {
@@ -50,6 +58,7 @@ export async function getQuoteListForWorkspace({
       id: quotes.id,
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
+      publicToken: quotes.publicToken,
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
@@ -58,6 +67,7 @@ export async function getQuoteListForWorkspace({
       status: quotes.status,
       createdAt: quotes.createdAt,
       sentAt: quotes.sentAt,
+      customerRespondedAt: quotes.customerRespondedAt,
     })
     .from(quotes)
     .where(and(...conditions))
@@ -73,12 +83,15 @@ export async function getQuoteDetailForWorkspace({
   workspaceId,
   quoteId,
 }: GetQuoteDetailForWorkspaceInput): Promise<DashboardQuoteDetail | null> {
+  await syncExpiredQuotesForWorkspace(workspaceId);
+
   const [quote] = await db
     .select({
       id: quotes.id,
       workspaceId: quotes.workspaceId,
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
+      publicToken: quotes.publicToken,
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
@@ -91,6 +104,9 @@ export async function getQuoteDetailForWorkspace({
       status: quotes.status,
       sentAt: quotes.sentAt,
       acceptedAt: quotes.acceptedAt,
+      publicViewedAt: quotes.publicViewedAt,
+      customerRespondedAt: quotes.customerRespondedAt,
+      customerResponseMessage: quotes.customerResponseMessage,
       createdAt: quotes.createdAt,
       updatedAt: quotes.updatedAt,
       linkedInquiryId: inquiries.id,
@@ -150,6 +166,7 @@ export async function getQuoteDetailForWorkspace({
     workspaceId: quote.workspaceId,
     inquiryId: quote.inquiryId,
     quoteNumber: quote.quoteNumber,
+    publicToken: quote.publicToken,
     title: quote.title,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
@@ -162,6 +179,9 @@ export async function getQuoteDetailForWorkspace({
     status: quote.status,
     sentAt: quote.sentAt,
     acceptedAt: quote.acceptedAt,
+    publicViewedAt: quote.publicViewedAt,
+    customerRespondedAt: quote.customerRespondedAt,
+    customerResponseMessage: quote.customerResponseMessage,
     createdAt: quote.createdAt,
     updatedAt: quote.updatedAt,
     items,
@@ -175,6 +195,63 @@ export async function getQuoteDetailForWorkspace({
           status: quote.linkedInquiryStatus!,
         }
       : null,
+  };
+}
+
+export async function getPublicQuoteByToken(
+  token: string,
+): Promise<PublicQuoteView | null> {
+  await syncExpiredQuoteForPublicToken(token);
+
+  const [quote] = await db
+    .select({
+      id: quotes.id,
+      token: quotes.publicToken,
+      quoteNumber: quotes.quoteNumber,
+      title: quotes.title,
+      workspaceName: workspaces.name,
+      workspaceShortDescription: workspaces.shortDescription,
+      workspaceContactEmail: workspaces.contactEmail,
+      customerName: quotes.customerName,
+      customerEmail: quotes.customerEmail,
+      currency: quotes.currency,
+      notes: quotes.notes,
+      validUntil: quotes.validUntil,
+      status: quotes.status,
+      subtotalInCents: quotes.subtotalInCents,
+      discountInCents: quotes.discountInCents,
+      totalInCents: quotes.totalInCents,
+      sentAt: quotes.sentAt,
+      acceptedAt: quotes.acceptedAt,
+      publicViewedAt: quotes.publicViewedAt,
+      customerRespondedAt: quotes.customerRespondedAt,
+      customerResponseMessage: quotes.customerResponseMessage,
+    })
+    .from(quotes)
+    .innerJoin(workspaces, eq(quotes.workspaceId, workspaces.id))
+    .where(eq(quotes.publicToken, token))
+    .limit(1);
+
+  if (!quote || quote.status === "draft") {
+    return null;
+  }
+
+  const items = await db
+    .select({
+      id: quoteItems.id,
+      description: quoteItems.description,
+      quantity: quoteItems.quantity,
+      unitPriceInCents: quoteItems.unitPriceInCents,
+      lineTotalInCents: quoteItems.lineTotalInCents,
+      position: quoteItems.position,
+    })
+    .from(quoteItems)
+    .where(eq(quoteItems.quoteId, quote.id))
+    .orderBy(asc(quoteItems.position), asc(quoteItems.createdAt));
+
+  return {
+    ...quote,
+    items,
   };
 }
 

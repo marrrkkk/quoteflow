@@ -3,29 +3,45 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireOwnerWorkspaceContext, getWorkspaceOwnerEmails } from "@/lib/db/workspace-access";
-import { sendQuoteEmail } from "@/lib/resend/client";
+import {
+  getWorkspaceMessagingSettings,
+  getWorkspaceOwnerEmails,
+  requireOwnerWorkspaceContext,
+} from "@/lib/db/workspace-access";
+import { env } from "@/lib/env";
+import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
+import {
+  sendQuoteEmail,
+  sendQuoteSentOwnerNotificationEmail,
+} from "@/lib/resend/client";
 import {
   changeQuoteStatusForWorkspace,
   createQuoteForWorkspace,
   markQuoteSentForWorkspace,
+  respondToPublicQuoteByToken,
   updateQuoteForWorkspace,
 } from "@/features/quotes/mutations";
 import { getQuoteDetailForWorkspace } from "@/features/quotes/queries";
 import {
+  publicQuoteResponseSchema,
   quoteEditorSchema,
   quoteStatusChangeSchema,
 } from "@/features/quotes/schemas";
 import type {
+  PublicQuoteResponseActionState,
   QuoteEditorActionState,
   QuoteSendActionState,
   QuoteStatusActionState,
 } from "@/features/quotes/types";
-import { getQuoteStatusLabel } from "@/features/quotes/utils";
+import {
+  getPublicQuoteUrl,
+  getQuoteStatusLabel,
+} from "@/features/quotes/utils";
 
 const initialEditorState: QuoteEditorActionState = {};
 const initialStatusState: QuoteStatusActionState = {};
 const initialSendState: QuoteSendActionState = {};
+const initialPublicQuoteResponseState: PublicQuoteResponseActionState = {};
 
 function mapQuoteEditorFieldErrors(fieldErrors: Record<string, string[] | undefined>) {
   return {
@@ -39,13 +55,21 @@ function mapQuoteEditorFieldErrors(fieldErrors: Record<string, string[] | undefi
   };
 }
 
-function revalidateQuotePaths(quoteId: string, inquiryId?: string | null) {
+function revalidateQuotePaths(
+  quoteId: string,
+  inquiryId?: string | null,
+  publicToken?: string | null,
+) {
   revalidatePath("/dashboard/quotes");
   revalidatePath(`/dashboard/quotes/${quoteId}`);
 
   if (inquiryId) {
     revalidatePath("/dashboard/inquiries");
     revalidatePath(`/dashboard/inquiries/${inquiryId}`);
+  }
+
+  if (publicToken) {
+    revalidatePath(getPublicQuoteUrl(publicToken));
   }
 }
 
@@ -245,7 +269,21 @@ export async function sendQuoteAction(
       };
     }
 
+    const workspaceSettings = await getWorkspaceMessagingSettings(
+      workspaceContext.workspace.id,
+    );
+
+    if (!workspaceSettings) {
+      return {
+        error: "This workspace could not be loaded.",
+      };
+    }
+
     const ownerEmails = await getWorkspaceOwnerEmails(workspaceContext.workspace.id);
+    const publicQuoteUrl = new URL(
+      getPublicQuoteUrl(quote.publicToken),
+      env.BETTER_AUTH_URL,
+    ).toString();
 
     await sendQuoteEmail({
       quoteId: quote.id,
@@ -255,14 +293,16 @@ export async function sendQuoteAction(
       customerEmail: quote.customerEmail,
       quoteNumber: quote.quoteNumber,
       title: quote.title,
+      publicQuoteUrl,
       currency: quote.currency,
       validUntil: quote.validUntil,
       subtotalInCents: quote.subtotalInCents,
       discountInCents: quote.discountInCents,
       totalInCents: quote.totalInCents,
       notes: quote.notes,
+      emailSignature: workspaceSettings.defaultEmailSignature,
       items: quote.items,
-      replyToEmail: ownerEmails[0],
+      replyToEmail: workspaceSettings.contactEmail ?? ownerEmails[0],
     });
 
     const result = await markQuoteSentForWorkspace({
@@ -277,13 +317,38 @@ export async function sendQuoteAction(
       };
     }
 
-    revalidateQuotePaths(quoteId, result.inquiryId);
-
     if (!result.changed) {
       return {
         error: "This quote is no longer in draft status.",
       };
     }
+
+    if (workspaceSettings.notifyOnQuoteSent && ownerEmails.length) {
+      try {
+        await sendQuoteSentOwnerNotificationEmail({
+          quoteId: quote.id,
+          updatedAt: quote.updatedAt,
+          recipients: ownerEmails,
+          workspaceName: workspaceContext.workspace.name,
+          customerName: quote.customerName,
+          customerEmail: quote.customerEmail,
+          quoteNumber: quote.quoteNumber,
+          title: quote.title,
+          dashboardUrl: new URL(
+            `/dashboard/quotes/${quote.id}`,
+            env.BETTER_AUTH_URL,
+          ).toString(),
+          publicQuoteUrl,
+        });
+      } catch (error) {
+        console.error(
+          "The quote was sent but the owner notification email failed to send.",
+          error,
+        );
+      }
+    }
+
+    revalidateQuotePaths(quoteId, result.inquiryId, result.publicToken);
 
     return {
       success: `Quote ${result.quoteNumber} sent to ${quote.customerEmail}.`,
@@ -296,6 +361,93 @@ export async function sendQuoteAction(
         error instanceof Error
           ? error.message
           : "We couldn't send that quote right now.",
+    };
+  }
+}
+
+export async function respondToPublicQuoteAction(
+  token: string,
+  prevState: PublicQuoteResponseActionState = initialPublicQuoteResponseState,
+  formData: FormData,
+): Promise<PublicQuoteResponseActionState> {
+  void prevState;
+
+  const validationResult = publicQuoteResponseSchema.safeParse({
+    response: formData.get("response"),
+    message: formData.get("message"),
+  });
+
+  if (!validationResult.success) {
+    return {
+      error: "Check your response and try again.",
+    };
+  }
+
+  const allowed = await assertPublicActionRateLimit({
+    action: "public-quote-respond",
+    scope: token,
+    limit: 6,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!allowed) {
+    return {
+      error: "We couldn't process that response right now. Please try again.",
+    };
+  }
+
+  try {
+    const result = await respondToPublicQuoteByToken({
+      token,
+      response: validationResult.data.response,
+      message: validationResult.data.message,
+    });
+
+    if (!result) {
+      return {
+        error: "This quote is unavailable.",
+      };
+    }
+
+    revalidatePath(getPublicQuoteUrl(token));
+    revalidatePath("/dashboard/quotes");
+    revalidatePath(`/dashboard/quotes/${result.quoteId}`);
+
+    if (!result.updated) {
+      if (result.status === "accepted") {
+        return {
+          success: `Quote ${result.quoteNumber} has already been accepted.`,
+        };
+      }
+
+      if (result.status === "rejected") {
+        return {
+          success: `Quote ${result.quoteNumber} has already been declined.`,
+        };
+      }
+
+      if (result.status === "expired") {
+        return {
+          error: "This quote has expired and can no longer be accepted online.",
+        };
+      }
+
+      return {
+        error: "This quote is not accepting responses right now.",
+      };
+    }
+
+    return {
+      success:
+        result.status === "accepted"
+          ? `Quote ${result.quoteNumber} accepted. Your response has been recorded.`
+          : `Quote ${result.quoteNumber} declined. Your response has been recorded.`,
+    };
+  } catch (error) {
+    console.error("Failed to record public quote response.", error);
+
+    return {
+      error: "We couldn't save that response right now. Please try again.",
     };
   }
 }

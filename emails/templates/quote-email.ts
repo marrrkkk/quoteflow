@@ -10,12 +10,14 @@ type QuoteEmailTemplateInput = {
   customerName: string;
   quoteNumber: string;
   title: string;
+  publicQuoteUrl: string;
   currency: string;
   validUntil: string;
   subtotalInCents: number;
   discountInCents: number;
   totalInCents: number;
   notes?: string | null;
+  emailSignature?: string | null;
   items: QuoteEmailLineItem[];
 };
 
@@ -49,17 +51,22 @@ export function renderQuoteEmail({
   customerName,
   quoteNumber,
   title,
+  publicQuoteUrl,
   currency,
   validUntil,
   subtotalInCents,
   discountInCents,
   totalInCents,
   notes,
+  emailSignature,
   items,
 }: QuoteEmailTemplateInput) {
   const subject = `${quoteNumber} from ${workspaceName}`;
   const escapedNotes = notes
     ? escapeHtml(notes).replace(/\n/g, "<br />")
+    : null;
+  const escapedSignature = emailSignature
+    ? escapeHtml(emailSignature).replace(/\n/g, "<br />")
     : null;
   const itemRowsHtml = items
     .map(
@@ -92,10 +99,14 @@ export function renderQuoteEmail({
       ? `Discount: -${formatMoney(discountInCents, currency)}`
       : null,
     `Total: ${formatMoney(totalInCents, currency)}`,
+    "",
+    `Review your quote here: ${publicQuoteUrl}`,
     notes ? "" : null,
     notes ? "Notes:" : null,
     notes ?? null,
     "",
+    escapedSignature ? emailSignature : null,
+    escapedSignature ? "" : null,
     "Reply to this email if you have any questions.",
   ].filter(Boolean);
 
@@ -129,12 +140,26 @@ export function renderQuoteEmail({
         }
         <p style="margin: 0;"><strong>Total:</strong> ${escapeHtml(formatMoney(totalInCents, currency))}</p>
       </div>
+      <div style="margin-bottom: 20px;">
+        <a href="${escapeHtml(publicQuoteUrl)}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #172033; color: #ffffff; text-decoration: none; font-weight: 600;">
+          Review quote online
+        </a>
+      </div>
       ${
         escapedNotes
           ? `
             <div style="border: 1px solid #d9deeb; border-radius: 18px; background: #ffffff; padding: 18px; margin-bottom: 20px;">
               <p style="margin: 0 0 10px;"><strong>Notes</strong></p>
               <p style="margin: 0;">${escapedNotes}</p>
+            </div>
+          `
+          : ""
+      }
+      ${
+        escapedSignature
+          ? `
+            <div style="margin-bottom: 20px; color: #52607a;">
+              ${escapedSignature}
             </div>
           `
           : ""

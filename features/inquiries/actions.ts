@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOwnerWorkspaceContext } from "@/lib/db/workspace-access";
+import {
+  getWorkspaceMessagingSettings,
+  requireOwnerWorkspaceContext,
+} from "@/lib/db/workspace-access";
 import { env } from "@/lib/env";
+import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import { sendPublicInquiryNotificationEmail } from "@/lib/resend/client";
 import {
   addInquiryNoteForWorkspace,
@@ -71,20 +75,36 @@ export async function submitPublicInquiryAction(
     };
   }
 
+  const allowed = await assertPublicActionRateLimit({
+    action: "public-inquiry-submit",
+    scope: workspace.id,
+    limit: 6,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!allowed) {
+    return {
+      error: "We couldn't submit your inquiry right now. Please try again.",
+    };
+  }
+
   try {
     const createdInquiry = await createPublicInquirySubmission({
       workspace,
       submission: validationResult.data,
     });
 
-    const recipients = await getWorkspaceOwnerNotificationEmails(workspace.id);
+    const [recipients, workspaceSettings] = await Promise.all([
+      getWorkspaceOwnerNotificationEmails(workspace.id),
+      getWorkspaceMessagingSettings(workspace.id),
+    ]);
 
-    if (recipients.length) {
+    if (workspaceSettings?.notifyOnNewInquiry && recipients.length) {
       try {
         await sendPublicInquiryNotificationEmail({
           inquiryId: createdInquiry.inquiryId,
           recipients,
-          workspaceName: workspace.name,
+          workspaceName: workspaceSettings.name,
           dashboardUrl: new URL(
             `/dashboard/inquiries/${createdInquiry.inquiryId}`,
             env.BETTER_AUTH_URL,

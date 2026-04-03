@@ -18,6 +18,17 @@ export type WorkspaceContext = {
   };
 };
 
+export type WorkspaceMessagingSettings = {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  contactEmail: string | null;
+  defaultEmailSignature: string | null;
+  notifyOnNewInquiry: boolean;
+  notifyOnQuoteSent: boolean;
+};
+
 export async function getWorkspaceContextForUser(userId: string) {
   const [context] = await db
     .select({
@@ -120,4 +131,23 @@ export async function getWorkspaceOwnerEmails(workspaceId: string) {
   }
 
   return Array.from(dedupedEmails.values());
+}
+
+export async function getWorkspaceMessagingSettings(workspaceId: string) {
+  const [workspace] = await db
+    .select({
+      id: workspaces.id,
+      name: workspaces.name,
+      slug: workspaces.slug,
+      shortDescription: workspaces.shortDescription,
+      contactEmail: workspaces.contactEmail,
+      defaultEmailSignature: workspaces.defaultEmailSignature,
+      notifyOnNewInquiry: workspaces.notifyOnNewInquiry,
+      notifyOnQuoteSent: workspaces.notifyOnQuoteSent,
+    })
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId))
+    .limit(1);
+
+  return workspace satisfies WorkspaceMessagingSettings | undefined;
 }

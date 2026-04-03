@@ -34,6 +34,7 @@ export const quotes = pgTable(
     }),
     status: quoteStatusEnum("status").notNull().default("draft"),
     quoteNumber: text("quote_number").notNull(),
+    publicToken: text("public_token").notNull(),
     title: text("title").notNull(),
     customerName: text("customer_name").notNull(),
     customerEmail: text("customer_email").notNull(),
@@ -44,6 +45,11 @@ export const quotes = pgTable(
     totalInCents: integer("total_in_cents").notNull().default(0),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    publicViewedAt: timestamp("public_viewed_at", { withTimezone: true }),
+    customerRespondedAt: timestamp("customer_responded_at", {
+      withTimezone: true,
+    }),
+    customerResponseMessage: text("customer_response_message"),
     validUntil: date("expires_at", { mode: "string" }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -57,6 +63,7 @@ export const quotes = pgTable(
     index("quotes_workspace_status_idx").on(table.workspaceId, table.status),
     index("quotes_workspace_created_at_idx").on(table.workspaceId, table.createdAt),
     index("quotes_inquiry_id_idx").on(table.inquiryId),
+    uniqueIndex("quotes_public_token_unique").on(table.publicToken),
     uniqueIndex("quotes_workspace_quote_number_unique").on(
       table.workspaceId,
       table.quoteNumber,

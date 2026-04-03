@@ -128,9 +128,19 @@ const quoteItemsFieldSchema = z.preprocess((value) => {
 }, z.array(quoteFormLineItemSchema).min(1, "Add at least one line item.").max(50, "Quotes can include up to 50 line items."));
 
 export const quoteIdSchema = z.string().trim().min(1).max(128);
+export const quotePublicTokenSchema = z
+  .string()
+  .trim()
+  .min(16)
+  .max(128)
+  .regex(/^[a-zA-Z0-9_-]+$/, "Enter a valid quote token.");
 
 export const quoteRouteParamsSchema = z.object({
   id: quoteIdSchema,
+});
+
+export const quotePublicRouteParamsSchema = z.object({
+  token: quotePublicTokenSchema,
 });
 
 export const quoteListFiltersSchema = z.object({
@@ -207,4 +217,17 @@ export const quoteStatusChangeSchema = z.object({
   status: z.enum(quoteStatuses),
 });
 
+export const publicQuoteResponseSchema = z.object({
+  response: z.enum(["accepted", "rejected"]),
+  message: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .max(1200, "Customer response messages must be 1,200 characters or fewer.")
+      .optional(),
+  ),
+});
+
 export type QuoteEditorInput = z.infer<typeof quoteEditorSchema>;
+export type PublicQuoteResponseInput = z.infer<typeof publicQuoteResponseSchema>;

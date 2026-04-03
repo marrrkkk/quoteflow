@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
-import { auth } from "../lib/auth/server";
+import { auth } from "../lib/auth/config";
 import { bootstrapWorkspaceForUser } from "../lib/auth/workspace-bootstrap";
 import { db, dbConnection } from "../lib/db/client";
 import {
@@ -57,6 +57,14 @@ const demoQuoteIds = [
   "demo_quote_accepted_1003",
   "demo_quote_rejected_1004",
   "demo_quote_expired_1005",
+] as const;
+
+const demoQuotePublicTokens = [
+  "demoquote1001drafttoken",
+  "demoquote1002senttoken",
+  "demoquote1003acceptedtoken",
+  "demoquote1004rejectedtoken",
+  "demoquote1005expiredtoken",
 ] as const;
 
 const demoQuoteItemIds = [
@@ -526,6 +534,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       inquiryId: null,
       status: "draft" as const,
       quoteNumber: "Q-1001",
+      publicToken: demoQuotePublicTokens[0],
       title: "Seasonal sidewalk sign refresh",
       customerName: "Jamie Torres",
       customerEmail: "jamie@cedarandlane.co",
@@ -537,6 +546,9 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       totalInCents: 92000,
       sentAt: null,
       acceptedAt: null,
+      publicViewedAt: null,
+      customerRespondedAt: null,
+      customerResponseMessage: null,
       validUntil: toIsoDate(daysFromNow(14)),
       createdAt: daysAgo(2, 15, 15),
       updatedAt: daysAgo(2, 15, 15),
@@ -547,6 +559,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       inquiryId: demoInquiryIds[2],
       status: "sent" as const,
       quoteNumber: "Q-1002",
+      publicToken: demoQuotePublicTokens[1],
       title: "Foundry Labs booth kit",
       customerName: "Priya Shah",
       customerEmail: "priya@foundrylabs.io",
@@ -558,6 +571,9 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       totalInCents: 276000,
       sentAt: daysAgo(5, 15, 0),
       acceptedAt: null,
+      publicViewedAt: daysAgo(4, 10, 20),
+      customerRespondedAt: null,
+      customerResponseMessage: null,
       validUntil: toIsoDate(daysFromNow(9)),
       createdAt: daysAgo(6, 15, 0),
       updatedAt: daysAgo(5, 15, 0),
@@ -568,6 +584,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       inquiryId: demoInquiryIds[3],
       status: "accepted" as const,
       quoteNumber: "Q-1003",
+      publicToken: demoQuotePublicTokens[2],
       title: "Harbor Roast menu board package",
       customerName: "Maya Chen",
       customerEmail: "maya@harborroast.com",
@@ -579,6 +596,10 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       totalInCents: 105000,
       sentAt: daysAgo(9, 10, 0),
       acceptedAt: daysAgo(8, 16, 35),
+      publicViewedAt: daysAgo(8, 15, 50),
+      customerRespondedAt: daysAgo(8, 16, 35),
+      customerResponseMessage:
+        "Looks good. Please move ahead with production and send the install timing.",
       validUntil: toIsoDate(daysFromNow(5)),
       createdAt: daysAgo(10, 10, 0),
       updatedAt: daysAgo(8, 16, 35),
@@ -589,6 +610,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       inquiryId: demoInquiryIds[4],
       status: "rejected" as const,
       quoteNumber: "Q-1004",
+      publicToken: demoQuotePublicTokens[3],
       title: "RallyFit merch reorder",
       customerName: "Noah Bennett",
       customerEmail: "noah@rallyfit.co",
@@ -600,6 +622,10 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       totalInCents: 150000,
       sentAt: daysAgo(16, 12, 0),
       acceptedAt: null,
+      publicViewedAt: daysAgo(15, 13, 10),
+      customerRespondedAt: daysAgo(15, 14, 45),
+      customerResponseMessage:
+        "Thanks, but we decided to consolidate this reorder with another supplier.",
       validUntil: toIsoDate(daysAgo(2)),
       createdAt: daysAgo(17, 12, 0),
       updatedAt: daysAgo(15, 14, 45),
@@ -610,6 +636,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       inquiryId: null,
       status: "expired" as const,
       quoteNumber: "Q-1005",
+      publicToken: demoQuotePublicTokens[4],
       title: "Summer banner restock",
       customerName: "Leah Morris",
       customerEmail: "leah@madeandmain.com",
@@ -621,6 +648,9 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
       totalInCents: 64000,
       sentAt: daysAgo(22, 11, 0),
       acceptedAt: null,
+      publicViewedAt: daysAgo(21, 9, 40),
+      customerRespondedAt: null,
+      customerResponseMessage: null,
       validUntil: toIsoDate(daysAgo(10)),
       createdAt: daysAgo(23, 11, 0),
       updatedAt: daysAgo(22, 11, 0),

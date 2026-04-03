@@ -28,6 +28,14 @@ export function getQuoteStatusLabel(status: QuoteStatus) {
   return quoteStatusLabels[status];
 }
 
+export function createQuotePublicToken() {
+  return crypto.randomUUID().replace(/-/g, "");
+}
+
+export function getPublicQuoteUrl(token: string) {
+  return `/quote/${token}`;
+}
+
 export function formatQuoteMoney(amountInCents: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -173,4 +181,12 @@ export function getQuoteEditorInitialValuesFromDetail(
         }))
       : [createQuoteEditorLineItem()],
   };
+}
+
+export function getTodayUtcDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function isQuotePastValidityDate(validUntil: string) {
+  return validUntil < getTodayUtcDateString();
 }
