@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ArrowRight, CircleAlert, CircleCheckBig } from "lucide-react";
 
+import {
+  FormActions,
+  FormNote,
+  FormSection,
+} from "@/components/shared/form-layout";
 import { getFieldError } from "@/lib/action-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -16,7 +21,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   publicInquiryAttachmentAccept,
@@ -67,7 +71,7 @@ export function PublicInquiryForm({
           </AlertDescription>
         </Alert>
 
-        <div className="soft-panel p-5">
+        <FormNote className="p-5">
           <div className="flex flex-col gap-3">
             <p className="text-sm leading-7 text-muted-foreground">
               Thanks. The business owner now has your inquiry in QuoteFlow.
@@ -78,7 +82,7 @@ export function PublicInquiryForm({
               </p>
             ) : null}
           </div>
-        </div>
+        </FormNote>
 
         <div className="flex flex-wrap gap-3">
           <Button asChild>
@@ -96,7 +100,7 @@ export function PublicInquiryForm({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form action={formAction} className="form-stack">
       {state.error ? (
         <Alert variant="destructive">
           <CircleAlert />
@@ -105,51 +109,54 @@ export function PublicInquiryForm({
         </Alert>
       ) : null}
 
-      <FieldGroup>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field data-invalid={Boolean(customerNameError) || undefined}>
-            <FieldLabel htmlFor="customerName">Your name</FieldLabel>
-            <FieldContent>
-              <Input
-                id="customerName"
-                name="customerName"
-                autoComplete="name"
-                placeholder="Alicia Cruz"
-                aria-invalid={Boolean(customerNameError) || undefined}
-                disabled={isPending}
-              />
-              <FieldError
-                errors={
-                  customerNameError ? [{ message: customerNameError }] : undefined
-                }
-              />
-            </FieldContent>
-          </Field>
+      <FormSection
+        description={`Share the best way for ${workspace.name} to follow up about the request.`}
+        title="Contact details"
+      >
+        <FieldGroup>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field data-invalid={Boolean(customerNameError) || undefined}>
+              <FieldLabel htmlFor="customerName">Your name</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="customerName"
+                  name="customerName"
+                  autoComplete="name"
+                  placeholder="Alicia Cruz"
+                  aria-invalid={Boolean(customerNameError) || undefined}
+                  disabled={isPending}
+                />
+                <FieldError
+                  errors={
+                    customerNameError ? [{ message: customerNameError }] : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
 
-          <Field data-invalid={Boolean(customerEmailError) || undefined}>
-            <FieldLabel htmlFor="customerEmail">Email address</FieldLabel>
-            <FieldContent>
-              <Input
-                id="customerEmail"
-                name="customerEmail"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                aria-invalid={Boolean(customerEmailError) || undefined}
-                disabled={isPending}
-              />
-              <FieldError
-                errors={
-                  customerEmailError
-                    ? [{ message: customerEmailError }]
-                    : undefined
-                }
-              />
-            </FieldContent>
-          </Field>
-        </div>
+            <Field data-invalid={Boolean(customerEmailError) || undefined}>
+              <FieldLabel htmlFor="customerEmail">Email address</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="customerEmail"
+                  name="customerEmail"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  aria-invalid={Boolean(customerEmailError) || undefined}
+                  disabled={isPending}
+                />
+                <FieldError
+                  errors={
+                    customerEmailError
+                      ? [{ message: customerEmailError }]
+                      : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
+          </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
           <Field data-invalid={Boolean(customerPhoneError) || undefined}>
             <FieldLabel htmlFor="customerPhone">Phone number</FieldLabel>
             <FieldContent>
@@ -171,7 +178,14 @@ export function PublicInquiryForm({
               />
             </FieldContent>
           </Field>
+        </FieldGroup>
+      </FormSection>
 
+      <FormSection
+        description="Describe the work, timing, and any budget context so the owner can review it quickly."
+        title="Project details"
+      >
+        <FieldGroup>
           <Field data-invalid={Boolean(serviceCategoryError) || undefined}>
             <FieldLabel htmlFor="serviceCategory">Service or category</FieldLabel>
             <FieldContent>
@@ -191,92 +205,97 @@ export function PublicInquiryForm({
               />
             </FieldContent>
           </Field>
-        </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field data-invalid={Boolean(deadlineError) || undefined}>
-            <FieldLabel htmlFor="deadline">Deadline</FieldLabel>
-            <FieldContent>
-              <Input
-                id="deadline"
-                name="deadline"
-                type="date"
-                aria-invalid={Boolean(deadlineError) || undefined}
-                disabled={isPending}
-              />
-              <FieldDescription>Optional.</FieldDescription>
-              <FieldError
-                errors={deadlineError ? [{ message: deadlineError }] : undefined}
-              />
-            </FieldContent>
-          </Field>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field data-invalid={Boolean(deadlineError) || undefined}>
+              <FieldLabel htmlFor="deadline">Deadline</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="deadline"
+                  name="deadline"
+                  type="date"
+                  aria-invalid={Boolean(deadlineError) || undefined}
+                  disabled={isPending}
+                />
+                <FieldDescription>Optional.</FieldDescription>
+                <FieldError
+                  errors={deadlineError ? [{ message: deadlineError }] : undefined}
+                />
+              </FieldContent>
+            </Field>
 
-          <Field data-invalid={Boolean(budgetError) || undefined}>
-            <FieldLabel htmlFor="budget">Budget</FieldLabel>
+            <Field data-invalid={Boolean(budgetError) || undefined}>
+              <FieldLabel htmlFor="budget">Budget</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="budget"
+                  name="budget"
+                  placeholder="Optional"
+                  aria-invalid={Boolean(budgetError) || undefined}
+                  disabled={isPending}
+                />
+                <FieldDescription>Optional.</FieldDescription>
+                <FieldError
+                  errors={budgetError ? [{ message: budgetError }] : undefined}
+                />
+              </FieldContent>
+            </Field>
+          </div>
+
+          <Field data-invalid={Boolean(detailsError) || undefined}>
+            <FieldLabel htmlFor="details">Message and details</FieldLabel>
             <FieldContent>
-              <Input
-                id="budget"
-                name="budget"
-                placeholder="Optional"
-                aria-invalid={Boolean(budgetError) || undefined}
+              <Textarea
+                id="details"
+                name="details"
+                rows={7}
+                placeholder="Share the scope, size, quantity, timing, location, or anything else that matters."
+                aria-invalid={Boolean(detailsError) || undefined}
                 disabled={isPending}
               />
               <FieldDescription>
-                Optional.
+                The more detail you share, the easier it is to quote well.
               </FieldDescription>
               <FieldError
-                errors={budgetError ? [{ message: budgetError }] : undefined}
+                errors={detailsError ? [{ message: detailsError }] : undefined}
               />
             </FieldContent>
           </Field>
-        </div>
+        </FieldGroup>
+      </FormSection>
 
-        <Field data-invalid={Boolean(detailsError) || undefined}>
-          <FieldLabel htmlFor="details">Message and details</FieldLabel>
-          <FieldContent>
-            <Textarea
-              id="details"
-              name="details"
-              rows={7}
-              placeholder="Share the scope, size, quantity, timing, location, or anything else that matters."
-              aria-invalid={Boolean(detailsError) || undefined}
-              disabled={isPending}
-            />
-            <FieldDescription>
-              The more detail you share, the easier it is to quote well.
-            </FieldDescription>
-            <FieldError
-              errors={detailsError ? [{ message: detailsError }] : undefined}
-            />
-          </FieldContent>
-        </Field>
-
-        <Field data-invalid={Boolean(attachmentError) || undefined}>
-          <FieldLabel htmlFor="attachment">Attachment</FieldLabel>
-          <FieldContent>
-            <Input
-              id="attachment"
-              name="attachment"
-              type="file"
-              accept={publicInquiryAttachmentAccept}
-              aria-invalid={Boolean(attachmentError) || undefined}
-              disabled={isPending}
-              onChange={(event) =>
-                setSelectedFileName(event.currentTarget.files?.[0]?.name ?? null)
-              }
-            />
-            <FieldDescription>
-              Optional. Upload {publicInquiryAttachmentLabel}.
-              {selectedFileName ? ` Selected: ${selectedFileName}.` : ""}
-            </FieldDescription>
-            <FieldError
-              errors={
-                attachmentError ? [{ message: attachmentError }] : undefined
-              }
-            />
-          </FieldContent>
-        </Field>
-      </FieldGroup>
+      <FormSection
+        description={`Optional. Upload ${publicInquiryAttachmentLabel} if it helps explain the request.`}
+        title="Reference file"
+      >
+        <FieldGroup>
+          <Field data-invalid={Boolean(attachmentError) || undefined}>
+            <FieldLabel htmlFor="attachment">Attachment</FieldLabel>
+            <FieldContent>
+              <Input
+                id="attachment"
+                name="attachment"
+                type="file"
+                accept={publicInquiryAttachmentAccept}
+                aria-invalid={Boolean(attachmentError) || undefined}
+                disabled={isPending}
+                onChange={(event) =>
+                  setSelectedFileName(event.currentTarget.files?.[0]?.name ?? null)
+                }
+              />
+              <FieldDescription>
+                Optional. Upload {publicInquiryAttachmentLabel}.
+                {selectedFileName ? ` Selected: ${selectedFileName}.` : ""}
+              </FieldDescription>
+              <FieldError
+                errors={
+                  attachmentError ? [{ message: attachmentError }] : undefined
+                }
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+      </FormSection>
 
       <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden">
         <label htmlFor="website">Leave this field empty</label>
@@ -289,15 +308,15 @@ export function PublicInquiryForm({
         />
       </div>
 
-      <Separator />
-
-      <div className="toolbar-panel flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button className="w-full sm:w-auto" disabled={isPending} type="submit" size="lg">
-          {isPending ? "Sending your inquiry..." : "Send inquiry"}
-        </Button>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Sent directly to {workspace.name}.
-        </p>
+      <div className="toolbar-panel">
+        <FormActions align="between" className="pt-0">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Sent directly to {workspace.name}.
+          </p>
+          <Button className="w-full sm:w-auto" disabled={isPending} type="submit" size="lg">
+            {isPending ? "Sending your inquiry..." : "Send inquiry"}
+          </Button>
+        </FormActions>
       </div>
     </form>
   );

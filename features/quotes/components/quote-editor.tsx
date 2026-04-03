@@ -7,6 +7,10 @@ import {
   DashboardSection,
   DashboardToolbar,
 } from "@/components/shared/dashboard-layout";
+import {
+  FormActions,
+  FormNote,
+} from "@/components/shared/form-layout";
 import { InfoTile } from "@/components/shared/info-tile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -129,12 +133,12 @@ export function QuoteEditor({
 
         <DashboardSection
           action={
-            <div className="soft-panel px-4 py-3 text-sm">
+            <FormNote className="min-w-[11rem] px-4 py-3 text-sm">
               <p className="font-medium text-foreground">
                 {quoteNumber ?? "Assigned after save"}
               </p>
               <p className="mt-1 text-muted-foreground">{currency}</p>
-            </div>
+            </FormNote>
           }
           contentClassName="flex flex-col gap-5"
           description="Customer, validity date, and notes."
@@ -470,9 +474,14 @@ export function QuoteEditor({
                 strong
               />
             </div>
-            <Button disabled={isPending} size="lg" type="submit">
-              {isPending ? submitPendingLabel : submitLabel}
-            </Button>
+            <FormActions align="between" className="pt-2">
+              <p className="text-sm leading-6 text-muted-foreground">
+                The preview updates live as you edit line items and notes.
+              </p>
+              <Button disabled={isPending} size="lg" type="submit">
+                {isPending ? submitPendingLabel : submitLabel}
+              </Button>
+            </FormActions>
           </div>
         </DashboardToolbar>
       </div>
