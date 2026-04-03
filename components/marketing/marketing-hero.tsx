@@ -36,15 +36,15 @@ const navItems = [
 const heroHighlights = [
   {
     label: "Public intake",
-    value: "Share one clean request form",
+    value: "Clean request page",
   },
   {
     label: "Quote tracking",
-    value: "Keep draft, sent, and accepted quotes in one place",
+    value: "Draft to accepted",
   },
   {
     label: "AI assist",
-    value: "Draft faster with workspace context",
+    value: "Reply drafts",
   },
 ] as const;
 
@@ -167,7 +167,7 @@ export function MarketingHero() {
           </Button>
         </>
       }
-      headerClassName="sticky top-4 z-40 bg-background/88 backdrop-blur-xl supports-backdrop-filter:bg-background/80"
+      headerClassName="sticky top-0 z-40 rounded-none border-x-0 border-t-0 bg-background/92 px-0 py-4 shadow-none backdrop-blur-xl supports-backdrop-filter:bg-background/88 md:px-0"
       headerNav={
         <nav className="public-page-header-nav">
           {navItems.map((item) => (
@@ -178,49 +178,49 @@ export function MarketingHero() {
         </nav>
       }
     >
-      <PublicHeroSurface className="lg:py-12">
-        <div className="pointer-events-none absolute inset-0 surface-grid opacity-[0.32]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(0,128,96,0.12),transparent_72%)]" />
+      <PublicHeroSurface className="overflow-visible rounded-none border-0 bg-transparent px-0 py-8 shadow-none lg:py-12">
+        <div className="flex flex-col gap-10">
+          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 pt-2 text-center sm:pt-4">
+            <Badge className="w-fit" variant="outline">
+              QuoteFlow for small service businesses
+            </Badge>
 
-        <div className="relative grid gap-10 xl:grid-cols-[minmax(0,1fr)_34rem] xl:items-stretch">
-          <div className="flex flex-col justify-between gap-8">
-            <div className="flex flex-col gap-6">
-              <Badge className="w-fit" variant="outline">
-                QuoteFlow for small service businesses
-              </Badge>
-
-              <div className="flex flex-col gap-4">
-                <h1 className="max-w-4xl font-heading text-5xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-6xl">
-                  From first inquiry to approved quote.
-                </h1>
-                <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                  Public intake, quote drafting, and customer follow-up in one
-                  calm workspace.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg">
-                  <Link href="/signup">
-                    Start free
-                    <ArrowRight data-icon="inline-end" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href="#workflow">See workflow</Link>
-                </Button>
-              </div>
+            <div className="flex flex-col items-center gap-4">
+              <h1 className="max-w-4xl font-heading text-5xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-6xl xl:text-[4.35rem]">
+                Turn customer inquiries into clear, sent quotes.
+              </h1>
+              <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
+                Collect requests, draft pricing, and follow up from one calm
+                workspace built for service businesses.
+              </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="flex flex-col items-center gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/signup">
+                  Start free
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="#dashboard">See the dashboard</Link>
+              </Button>
+            </div>
+
+            <p className="text-sm leading-6 text-muted-foreground">
+              Start with one owner workspace, a public inquiry page, and a quote
+              workflow that stays easy to run.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
               {heroHighlights.map((item) => (
-                <HeroHighlight key={item.label} label={item.label} value={item.value} />
+                <HeroSignalPill key={item.label} label={item.label} value={item.value} />
               ))}
             </div>
           </div>
 
-          <div className="hero-panel p-4 sm:p-5">
-            <div className="section-panel h-full rounded-[1.1rem]">
+          <div className="mx-auto w-full max-w-6xl rounded-xl border border-border/70 bg-background/72 p-4 sm:p-5">
+            <div className="overflow-hidden rounded-lg border border-border/65 bg-background/90">
               <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-foreground">
@@ -243,8 +243,8 @@ export function MarketingHero() {
                   <HeroPreviewMetric label="Accepted" value="7" />
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
-                  <div className="soft-panel overflow-hidden">
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_17rem]">
+                  <div className="overflow-hidden rounded-lg border border-border/65 bg-background/88">
                     <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
                       <p className="text-sm font-semibold text-foreground">Inbox</p>
                       <span className="text-xs text-muted-foreground">Recent</span>
@@ -266,7 +266,7 @@ export function MarketingHero() {
                   </div>
 
                   <div className="flex flex-col gap-4">
-                    <div className="soft-panel px-4 py-4">
+                    <div className="rounded-lg border border-border/65 bg-background/88 px-4 py-4">
                       <p className="meta-label">Open quotes</p>
                       <div className="mt-3 flex flex-col gap-3">
                         {heroQuoteItems.map((item) => (
@@ -287,31 +287,21 @@ export function MarketingHero() {
                       </div>
                     </div>
 
-                    <div className="soft-panel px-4 py-4">
-                      <p className="meta-label">Public page</p>
-                      <p className="mt-2 text-sm font-medium text-foreground">
-                        Share one request form with your customers.
-                      </p>
-                      <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                        Scope, files, and contact details stay attached to the workspace.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="soft-panel border-dashed bg-muted/20 px-4 py-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                      <MessageSquareText className="size-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">
-                        AI draft ready
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        Thanks for the photos. We can quote two vinyl options and
-                        confirm turnaround once measurements are finalized.
-                      </p>
+                    <div className="rounded-lg border border-dashed border-border/65 bg-background/80 px-4 py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                          <MessageSquareText className="size-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">
+                            AI draft ready
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            Thanks for the photos. We can quote two vinyl options and
+                            confirm turnaround once measurements are finalized.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -614,7 +604,7 @@ export function MarketingHero() {
   );
 }
 
-function HeroHighlight({
+function HeroSignalPill({
   label,
   value,
 }: {
@@ -622,9 +612,9 @@ function HeroHighlight({
   value: string;
 }) {
   return (
-    <div className="soft-panel px-4 py-4">
-      <p className="meta-label">{label}</p>
-      <p className="mt-2 text-sm font-medium leading-6 text-foreground">{value}</p>
+    <div className="inline-flex items-center gap-2 rounded-full border border-border/75 bg-background/88 px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
     </div>
   );
 }

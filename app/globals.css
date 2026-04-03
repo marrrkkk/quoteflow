@@ -329,7 +329,7 @@
   }
 
   .marketing-step {
-    @apply soft-panel flex items-start gap-4 px-4 py-4;
+    @apply flex items-start gap-4 rounded-lg border border-border/75 bg-background/92 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.58),inset_0_-1px_0_rgba(23,43,36,0.03),0_1px_1px_rgba(15,23,42,0.03)];
   }
 
   .auth-page {
