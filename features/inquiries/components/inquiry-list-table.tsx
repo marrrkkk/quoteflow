@@ -24,8 +24,8 @@ type InquiryListTableProps = {
 export function InquiryListTable({ inquiries }: InquiryListTableProps) {
   return (
     <DashboardTableContainer>
-      <Table>
-        <TableCaption>Newest inquiries appear first.</TableCaption>
+      <Table className="min-w-[46rem]">
+        <TableCaption className="sr-only">Newest inquiries appear first.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Customer</TableHead>
@@ -38,26 +38,30 @@ export function InquiryListTable({ inquiries }: InquiryListTableProps) {
         <TableBody>
           {inquiries.map((inquiry) => (
             <TableRow key={inquiry.id}>
-              <TableCell className="max-w-[18rem]">
-                <div className="flex flex-col gap-1">
+              <TableCell className="max-w-[20rem]">
+                <div className="table-meta-stack max-w-full">
                   <Link
-                    className="font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline"
+                    className="table-link"
                     href={`/dashboard/inquiries/${inquiry.id}`}
                     prefetch={false}
                   >
                     {inquiry.customerName}
                   </Link>
-                  <span className="truncate text-sm text-muted-foreground">
+                  <span className="table-supporting-text">
                     {inquiry.customerEmail}
                   </span>
                 </div>
               </TableCell>
-              <TableCell className="max-w-[16rem] truncate">
-                {inquiry.serviceCategory}
+              <TableCell className="max-w-[16rem]">
+                <p className="table-emphasis">{inquiry.serviceCategory}</p>
               </TableCell>
-              <TableCell>{formatInquiryBudget(inquiry.budgetText)}</TableCell>
-              <TableCell>{formatInquiryDate(inquiry.submittedAt)}</TableCell>
-              <TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatInquiryBudget(inquiry.budgetText)}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatInquiryDate(inquiry.submittedAt)}
+              </TableCell>
+              <TableCell className="w-[8.75rem]">
                 <InquiryStatusBadge status={inquiry.status} />
               </TableCell>
             </TableRow>

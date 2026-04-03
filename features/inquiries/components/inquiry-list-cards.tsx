@@ -23,30 +23,38 @@ type InquiryListCardsProps = {
 
 export function InquiryListCards({ inquiries }: InquiryListCardsProps) {
   return (
-    <div className="grid gap-4 lg:hidden">
+    <div className="data-list-mobile-grid">
       {inquiries.map((inquiry) => (
-        <Card key={inquiry.id}>
-          <CardHeader className="gap-3">
+        <Card key={inquiry.id} className="data-list-card">
+          <CardHeader className="data-list-card-header">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex flex-col gap-1">
-                <CardTitle className="truncate text-lg">
-                  {inquiry.customerName}
+                <CardTitle className="text-lg leading-tight">
+                  <Link
+                    className="block truncate underline-offset-4 transition-colors hover:text-primary hover:underline"
+                    href={`/dashboard/inquiries/${inquiry.id}`}
+                    prefetch={false}
+                  >
+                    {inquiry.customerName}
+                  </Link>
                 </CardTitle>
-                <CardDescription className="truncate">
+                <CardDescription className="truncate text-sm">
                   {inquiry.customerEmail}
                 </CardDescription>
               </div>
               <InquiryStatusBadge status={inquiry.status} />
             </div>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
-            <div className="info-tile px-3 py-3 shadow-none">
+          <CardContent className="data-list-card-meta pt-0">
+            <div className="info-tile h-full px-3.5 py-3 shadow-none">
               <span className="meta-label">
                 Category
               </span>
-              <p className="mt-2 text-sm text-foreground">{inquiry.serviceCategory}</p>
+              <p className="mt-2 line-clamp-2 text-sm text-foreground">
+                {inquiry.serviceCategory}
+              </p>
             </div>
-            <div className="info-tile px-3 py-3 shadow-none">
+            <div className="info-tile h-full px-3.5 py-3 shadow-none">
               <span className="meta-label">
                 Budget
               </span>
@@ -54,7 +62,7 @@ export function InquiryListCards({ inquiries }: InquiryListCardsProps) {
                 {formatInquiryBudget(inquiry.budgetText)}
               </p>
             </div>
-            <div className="info-tile px-3 py-3 shadow-none">
+            <div className="info-tile h-full px-3.5 py-3 shadow-none">
               <span className="meta-label">
                 Created
               </span>
@@ -63,8 +71,8 @@ export function InquiryListCards({ inquiries }: InquiryListCardsProps) {
               </p>
             </div>
           </CardContent>
-          <CardFooter className="justify-end">
-            <Button asChild variant="outline">
+          <CardFooter className="data-list-card-footer justify-end">
+            <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
               <Link href={`/dashboard/inquiries/${inquiry.id}`} prefetch={false}>
                 Open inquiry
                 <ArrowRight data-icon="inline-end" />

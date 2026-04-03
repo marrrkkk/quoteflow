@@ -92,6 +92,7 @@ export default async function InquiriesPage({
               ? "No inquiries match these filters."
               : "Your inquiry inbox is still empty."
           }
+          variant="list"
         />
       )}
     </DashboardPage>

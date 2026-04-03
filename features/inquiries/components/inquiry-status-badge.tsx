@@ -14,7 +14,7 @@ export function InquiryStatusBadge({ status }: InquiryStatusBadgeProps) {
   const Icon = inquiryStatusIcons[status];
 
   return (
-    <Badge variant={inquiryStatusVariants[status]}>
+    <Badge className="shrink-0 rounded-full" variant={inquiryStatusVariants[status]}>
       <Icon data-icon="inline-start" />
       {getInquiryStatusLabel(status)}
     </Badge>
