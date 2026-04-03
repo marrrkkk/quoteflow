@@ -39,7 +39,7 @@ export function PageHeader({
       </div>
 
       {actions ? (
-        <div className="flex flex-wrap items-center gap-3 lg:max-w-xl lg:justify-end">
+        <div className="dashboard-actions lg:max-w-xl lg:justify-end">
           {actions}
         </div>
       ) : null}

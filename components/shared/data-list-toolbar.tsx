@@ -3,6 +3,10 @@
 import { Search, X } from "lucide-react";
 import type { ReactNode } from "react";
 
+import {
+  DashboardActionsRow,
+  DashboardToolbar,
+} from "@/components/shared/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -63,7 +67,7 @@ export function DataListToolbar({
   canClear,
 }: DataListToolbarProps) {
   return (
-    <div className="toolbar-panel">
+    <DashboardToolbar>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm leading-6 text-muted-foreground">{description}</p>
@@ -115,7 +119,7 @@ export function DataListToolbar({
               </FieldContent>
             </Field>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <DashboardActionsRow className="flex-col sm:flex-row">
               <Button disabled={isPending} type="submit">
                 <Search data-icon="inline-start" />
                 {isPending ? "Applying..." : "Apply"}
@@ -129,10 +133,10 @@ export function DataListToolbar({
                 <X data-icon="inline-start" />
                 Clear
               </Button>
-            </div>
+            </DashboardActionsRow>
           </FieldGroup>
         </form>
       </div>
-    </div>
+    </DashboardToolbar>
   );
 }

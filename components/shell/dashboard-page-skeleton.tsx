@@ -1,8 +1,12 @@
+import {
+  DashboardDetailLayout,
+  DashboardPage,
+} from "@/components/shared/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardPageSkeleton() {
   return (
-    <div className="dashboard-page gap-8">
+    <DashboardPage className="gap-8">
       <div className="flex flex-col gap-3">
         <Skeleton className="h-4 w-24 rounded-md" />
         <Skeleton className="h-10 w-full max-w-sm rounded-xl" />
@@ -17,7 +21,7 @@ export function DashboardPageSkeleton() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <DashboardDetailLayout>
         <div className="section-panel p-5">
           <div className="flex flex-col gap-4">
             <Skeleton className="h-6 w-44 rounded-md" />
@@ -36,7 +40,7 @@ export function DashboardPageSkeleton() {
             <Skeleton className="h-48 w-full rounded-2xl" />
           </div>
         </div>
-      </div>
-    </div>
+      </DashboardDetailLayout>
+    </DashboardPage>
   );
 }

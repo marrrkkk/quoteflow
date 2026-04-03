@@ -156,6 +156,34 @@
     @apply flex flex-col gap-6 xl:gap-7;
   }
 
+  .dashboard-actions {
+    @apply flex flex-wrap items-center gap-3;
+  }
+
+  .dashboard-stats {
+    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .dashboard-detail-layout {
+    @apply grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_0.8fr];
+  }
+
+  .dashboard-side-stack {
+    @apply flex flex-col gap-6;
+  }
+
+  .dashboard-section-body {
+    @apply flex flex-col gap-4;
+  }
+
+  .dashboard-table-shell {
+    @apply section-panel hidden overflow-hidden lg:block;
+  }
+
+  .dashboard-table-shell-inner {
+    @apply p-4;
+  }
+
   .dashboard-topbar {
     @apply sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/80;
   }

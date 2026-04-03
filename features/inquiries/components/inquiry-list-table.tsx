@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DashboardTableContainer } from "@/components/shared/dashboard-layout";
 import {
   Table,
   TableBody,
@@ -22,7 +23,7 @@ type InquiryListTableProps = {
 
 export function InquiryListTable({ inquiries }: InquiryListTableProps) {
   return (
-    <div className="section-panel hidden p-4 lg:block">
+    <DashboardTableContainer>
       <Table>
         <TableCaption>Newest inquiries appear first.</TableCaption>
         <TableHeader>
@@ -63,6 +64,6 @@ export function InquiryListTable({ inquiries }: InquiryListTableProps) {
           ))}
         </TableBody>
       </Table>
-    </div>
+    </DashboardTableContainer>
   );
 }

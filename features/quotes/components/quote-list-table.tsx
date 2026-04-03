@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DashboardTableContainer } from "@/components/shared/dashboard-layout";
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ type QuoteListTableProps = {
 
 export function QuoteListTable({ quotes, currency }: QuoteListTableProps) {
   return (
-    <div className="section-panel hidden p-4 lg:block">
+    <DashboardTableContainer>
       <Table>
         <TableCaption>Newest quotes appear first.</TableCaption>
         <TableHeader>
@@ -89,6 +90,6 @@ export function QuoteListTable({ quotes, currency }: QuoteListTableProps) {
           ))}
         </TableBody>
       </Table>
-    </div>
+    </DashboardTableContainer>
   );
 }
