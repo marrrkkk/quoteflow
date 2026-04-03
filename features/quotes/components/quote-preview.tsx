@@ -57,7 +57,7 @@ export function QuotePreview({
               </h2>
               <p className="text-sm text-muted-foreground">{workspaceName}</p>
             </div>
-            <div className="soft-panel px-4 py-3 text-sm shadow-none">
+            <div className="soft-panel w-full px-4 py-3 text-sm shadow-none sm:w-auto sm:max-w-xs">
               <p className="font-medium text-foreground">{quoteNumber}</p>
               <p className="mt-1 text-muted-foreground">
                 Valid until {formatQuoteDate(validUntil)}
@@ -85,56 +85,96 @@ export function QuotePreview({
         </div>
 
         <div className="overflow-hidden rounded-[1.2rem] border border-border/75 bg-background/92">
-          <table className="w-full border-collapse text-sm">
-            <thead className="bg-muted/35 text-left">
-              <tr>
-                <th className="px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Item
-                </th>
-                <th className="px-4 py-3 text-center text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Qty
-                </th>
-                <th className="px-4 py-3 text-right text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Unit price
-                </th>
-                <th className="px-4 py-3 text-right text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Line total
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length ? (
-                items.map((item) => (
-                  <tr className="border-t border-border/80" key={item.id}>
-                    <td className="px-4 py-3 align-top text-foreground">
-                      {item.description || "Untitled item"}
-                    </td>
-                    <td className="px-4 py-3 text-center text-muted-foreground">
-                      {item.quantity}
-                    </td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">
-                      {formatQuoteMoney(item.unitPriceInCents, currency)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-foreground">
-                      {formatQuoteMoney(item.lineTotalInCents, currency)}
+          <div className="flex flex-col gap-3 p-4 lg:hidden">
+            {items.length ? (
+              items.map((item) => (
+                <div className="soft-panel px-4 py-4 shadow-none" key={item.id}>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <p className="text-sm font-medium text-foreground">
+                        {item.description || "Untitled item"}
+                      </p>
+                      <span className="dashboard-meta-pill self-start">
+                        Qty {item.quantity}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="info-tile px-3.5 py-3 shadow-none">
+                        <p className="meta-label">Unit price</p>
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          {formatQuoteMoney(item.unitPriceInCents, currency)}
+                        </p>
+                      </div>
+                      <div className="info-tile px-3.5 py-3 shadow-none">
+                        <p className="meta-label">Line total</p>
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          {formatQuoteMoney(item.lineTotalInCents, currency)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                Add line items to preview the quote breakdown.
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-muted/35 text-left">
+                <tr>
+                  <th className="px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Item
+                  </th>
+                  <th className="px-4 py-3 text-center text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Qty
+                  </th>
+                  <th className="px-4 py-3 text-right text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Unit price
+                  </th>
+                  <th className="px-4 py-3 text-right text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Line total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.length ? (
+                  items.map((item) => (
+                    <tr className="border-t border-border/80" key={item.id}>
+                      <td className="px-4 py-3 align-top text-foreground">
+                        {item.description || "Untitled item"}
+                      </td>
+                      <td className="px-4 py-3 text-center text-muted-foreground">
+                        {item.quantity}
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">
+                        {formatQuoteMoney(item.unitPriceInCents, currency)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-foreground">
+                        {formatQuoteMoney(item.lineTotalInCents, currency)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      className="px-4 py-6 text-center text-muted-foreground"
+                      colSpan={4}
+                    >
+                      Add line items to preview the quote breakdown.
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    className="px-4 py-6 text-center text-muted-foreground"
-                    colSpan={4}
-                  >
-                    Add line items to preview the quote breakdown.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="soft-panel ml-auto flex w-full max-w-sm flex-col gap-3 px-4 py-4 shadow-none">
+        <div className="soft-panel flex w-full flex-col gap-3 px-4 py-4 shadow-none lg:ml-auto lg:max-w-sm">
           <SummaryRow
             label="Subtotal"
             value={formatQuoteMoney(subtotalInCents, currency)}

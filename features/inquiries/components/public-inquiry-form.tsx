@@ -84,7 +84,7 @@ export function PublicInquiryForm({
           </div>
         </FormNote>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 [&>*]:w-full sm:flex-row sm:flex-wrap sm:[&>*]:w-auto">
           <Button asChild>
             <Link href={`/inquire/${workspace.slug}`}>
               Submit another inquiry

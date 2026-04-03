@@ -45,10 +45,12 @@ export function OverviewHeroCard({
           </CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-6 pt-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <CardContent className="grid gap-6 pt-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-3">
           <p className="meta-label">Primary actions</p>
-          <div className="flex flex-wrap gap-3">{actions}</div>
+          <div className="flex flex-col gap-3 [&>*]:w-full sm:flex-row sm:flex-wrap sm:[&>*]:w-auto">
+            {actions}
+          </div>
         </div>
 
         <div className="soft-panel grid gap-3 p-4 shadow-none">

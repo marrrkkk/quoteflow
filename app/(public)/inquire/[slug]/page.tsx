@@ -68,7 +68,7 @@ export default async function PublicInquiryPage({
     >
       <PublicHeroSurface className="lg:py-12">
         <div className="grid gap-10 xl:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.8fr)] xl:items-start">
-          <div className="flex flex-col gap-6">
+          <div className="flex min-w-0 flex-col gap-6">
             <div className="flex flex-col gap-4">
               <span className="eyebrow">Public inquiry page</span>
               <div className="flex flex-col gap-4">

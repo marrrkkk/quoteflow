@@ -25,17 +25,17 @@ type QuoteListTableProps = {
 export function QuoteListTable({ quotes, currency }: QuoteListTableProps) {
   return (
     <DashboardTableContainer>
-      <Table className="min-w-[72rem]">
+      <Table className="min-w-[56rem] 2xl:min-w-[64rem]">
         <TableCaption className="sr-only">Newest quotes appear first.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Quote</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>Linked inquiry</TableHead>
+            <TableHead className="hidden 2xl:table-cell">Linked inquiry</TableHead>
             <TableHead>Valid until</TableHead>
             <TableHead>Total</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
+            <TableHead className="hidden 2xl:table-cell">Created</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -53,6 +53,10 @@ export function QuoteListTable({ quotes, currency }: QuoteListTableProps) {
                   <span className="table-supporting-text">
                     {quote.title}
                   </span>
+                  <span className="table-supporting-text 2xl:hidden">
+                    {quote.inquiryId ? "Linked inquiry" : "Manual quote"} |{" "}
+                    {formatQuoteDate(quote.createdAt)}
+                  </span>
                 </div>
               </TableCell>
               <TableCell className="max-w-[16rem]">
@@ -65,7 +69,7 @@ export function QuoteListTable({ quotes, currency }: QuoteListTableProps) {
                   </span>
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden 2xl:table-cell">
                 {quote.inquiryId ? (
                   <Link
                     className="text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline group-hover/row:text-primary"
@@ -87,7 +91,7 @@ export function QuoteListTable({ quotes, currency }: QuoteListTableProps) {
               <TableCell className="w-[9rem]">
                 <QuoteStatusBadge status={quote.status} />
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className="hidden text-sm text-muted-foreground 2xl:table-cell">
                 {formatQuoteDate(quote.createdAt)}
               </TableCell>
             </TableRow>

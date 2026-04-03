@@ -62,7 +62,7 @@ export default async function PublicQuotePage({
     >
       <PublicHeroSurface className="lg:py-12">
         <div className="grid gap-10 xl:grid-cols-[minmax(0,0.84fr)_minmax(24rem,1.16fr)] xl:items-start">
-          <div className="flex flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-5">
             <div className="flex flex-col gap-4">
               <span className="eyebrow">Customer quote</span>
               <div className="flex flex-wrap items-center gap-3">
@@ -174,7 +174,7 @@ export default async function PublicQuotePage({
               </CardHeader>
               {quote.workspaceContactEmail ? (
                 <CardContent className="pt-0">
-                  <Button asChild variant="outline">
+                  <Button asChild className="w-full sm:w-auto" variant="outline">
                     <a href={`mailto:${quote.workspaceContactEmail}`}>
                       <Mail data-icon="inline-start" />
                       Contact {quote.workspaceName}

@@ -369,7 +369,7 @@ export default async function QuoteDetailPage({
                 </div>
               ) : null}
 
-              <div className="dashboard-actions">
+              <div className="dashboard-actions [&>*]:w-full sm:[&>*]:w-auto">
                 <CopyQuoteLinkButton url={customerQuoteUrl} />
                 <Button asChild variant="outline">
                   <Link href={customerQuotePath} prefetch={false} target="_blank">
