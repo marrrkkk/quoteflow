@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { useTransition } from "react";
@@ -69,6 +70,7 @@ type DashboardShellProps = {
       id: string;
       name: string;
       slug: string;
+      logoStoragePath: string | null;
       defaultCurrency: string;
       publicInquiryEnabled: boolean;
     };
@@ -90,7 +92,6 @@ export function DashboardShell({
   const pathname = usePathname();
   const activeItem = getActiveDashboardNavigationItem(pathname);
   const workspace = workspaceContext.workspace;
-  const membershipLabel = workspaceContext.role === "owner" ? "Owner" : "Member";
 
   return (
     <SidebarProvider
@@ -104,7 +105,7 @@ export function DashboardShell({
     >
       <Sidebar collapsible="icon">
         <SidebarHeader className="gap-0 px-0 py-0">
-          <div className="flex h-16 items-center px-3">
+          <div className="flex h-[4.5rem] items-center px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
             <BrandMark
               collapseLabel
               className="min-w-0 px-2 py-1.5"
@@ -112,47 +113,55 @@ export function DashboardShell({
             />
           </div>
           <SidebarSeparator />
-          <div className="px-4 py-4 group-data-[collapsible=icon]:hidden">
-            <div className="flex items-start gap-3">
-              <Avatar
-                className="rounded-xl border-sidebar-border bg-background"
-                size="lg"
-              >
-                <AvatarFallback className="rounded-xl bg-muted text-sidebar-foreground">
-                  {getInitials(workspace.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="meta-label text-sidebar-foreground/60">
-                  {membershipLabel}
-                </p>
-                <p className="mt-2 truncate text-sm font-semibold text-sidebar-foreground">
-                  {workspace.name}
-                </p>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  /{workspace.slug}
-                </p>
+          <div className="px-3 py-3 group-data-[collapsible=icon]:hidden">
+            <div className="rounded-[1.1rem] border border-sidebar-border/90 bg-background/92 p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.42)]">
+              <div className="flex items-start gap-3.5">
+                <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] border border-sidebar-border bg-muted/55">
+                  {workspace.logoStoragePath ? (
+                    <Image
+                      alt={`${workspace.name} logo`}
+                      className="h-auto max-h-10 w-auto object-contain"
+                      height={48}
+                      src="/api/workspace/logo"
+                      unoptimized
+                      width={48}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold tracking-[0.16em] text-sidebar-foreground">
+                      {getInitials(workspace.name)}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="meta-label text-sidebar-foreground/60">Workspace</p>
+                  <p className="mt-2 truncate text-sm font-semibold text-sidebar-foreground">
+                    {workspace.name}
+                  </p>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">
+                    /{workspace.slug}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge
-                className="border-sidebar-border bg-background text-sidebar-foreground"
-                variant="outline"
-              >
-                {workspace.defaultCurrency}
-              </Badge>
-              <Badge
-                className="bg-sidebar-accent text-sidebar-accent-foreground"
-                variant="secondary"
-              >
-                {workspace.publicInquiryEnabled ? "Public form live" : "Public form off"}
-              </Badge>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge
+                  className="border-sidebar-border bg-background text-sidebar-foreground"
+                  variant="outline"
+                >
+                  {workspace.defaultCurrency}
+                </Badge>
+                <Badge
+                  className="bg-sidebar-accent text-sidebar-accent-foreground"
+                  variant="secondary"
+                >
+                  {workspace.publicInquiryEnabled ? "Public form live" : "Public form off"}
+                </Badge>
+              </div>
             </div>
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-3 pb-2">
-          <SidebarGroup className="pt-3">
+        <SidebarContent className="gap-4 px-1 pb-3 group-data-[collapsible=icon]:px-0">
+          <SidebarGroup className="px-3 pt-3 group-data-[collapsible=icon]:px-2">
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarMenu>
               {primaryNavigation.map((item) => (
@@ -165,7 +174,7 @@ export function DashboardShell({
             </SidebarMenu>
           </SidebarGroup>
 
-          <SidebarGroup className="pt-0">
+          <SidebarGroup className="px-3 pt-0 group-data-[collapsible=icon]:px-2">
             <SidebarGroupLabel>Configuration</SidebarGroupLabel>
             <SidebarMenu>
               {secondaryNavigation.map((item) => (
@@ -181,7 +190,7 @@ export function DashboardShell({
 
         <SidebarSeparator />
 
-        <SidebarFooter className="p-2 pt-1">
+        <SidebarFooter className="p-3 pt-2 group-data-[collapsible=icon]:px-2">
           <DashboardUserMenu user={user} workspaceSlug={workspace.slug} />
         </SidebarFooter>
 
@@ -249,7 +258,7 @@ function DashboardNavigationItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        className="data-[active=true]:bg-sidebar-primary/10 data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-none"
+        className="min-h-11 rounded-lg border border-transparent px-3.5 py-2.5 data-[active=true]:border-sidebar-primary/12 data-[active=true]:bg-sidebar-primary/12 data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
         isActive={isActive}
         tooltip={item.label}
       >
@@ -263,7 +272,7 @@ function DashboardNavigationItem({
           prefetch={false}
         >
           <Icon className={cn("text-muted-foreground", isActive && "text-primary")} />
-          <span>{item.label}</span>
+          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>

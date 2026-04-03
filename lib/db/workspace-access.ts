@@ -13,6 +13,7 @@ export type WorkspaceContext = {
     id: string;
     name: string;
     slug: string;
+    logoStoragePath: string | null;
     defaultCurrency: string;
     publicInquiryEnabled: boolean;
   };
@@ -48,6 +49,7 @@ export async function getWorkspaceContextForUser(userId: string) {
       workspaceId: workspaces.id,
       workspaceName: workspaces.name,
       workspaceSlug: workspaces.slug,
+      workspaceLogoStoragePath: workspaces.logoStoragePath,
       defaultCurrency: workspaces.defaultCurrency,
       publicInquiryEnabled: workspaces.publicInquiryEnabled,
     })
@@ -71,6 +73,7 @@ export async function getWorkspaceContextForUser(userId: string) {
       id: context.workspaceId,
       name: context.workspaceName,
       slug: context.workspaceSlug,
+      logoStoragePath: context.workspaceLogoStoragePath,
       defaultCurrency: context.defaultCurrency,
       publicInquiryEnabled: context.publicInquiryEnabled,
     },
