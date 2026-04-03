@@ -2,6 +2,13 @@ import Link from "next/link";
 import { FileText, Mail, Phone, ReceiptText } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import {
+  DashboardDetailLayout,
+  DashboardEmptyState,
+  DashboardPage,
+  DashboardSection,
+  DashboardSidebarStack,
+} from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
 import { PageHeader } from "@/components/shared/page-header";
 import { generateInquiryAssistantAction } from "@/features/ai/actions";
@@ -23,21 +30,6 @@ import {
   formatInquiryDateTime,
 } from "@/features/inquiries/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { requireCurrentWorkspaceContext } from "@/lib/db/workspace-access";
 
@@ -69,7 +61,7 @@ export default async function InquiryDetailPage({
   const aiAction = generateInquiryAssistantAction.bind(null, inquiry.id);
 
   return (
-    <div className="dashboard-page">
+    <DashboardPage>
       <PageHeader
         eyebrow="Inquiry detail"
         title={inquiry.customerName}
@@ -95,14 +87,13 @@ export default async function InquiryDetailPage({
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Inquiry details</CardTitle>
-              <CardDescription>Submitted through the public form.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6">
+      <DashboardDetailLayout className="xl:grid-cols-[1.45fr_0.95fr]">
+        <div className="dashboard-side-stack">
+          <DashboardSection
+            contentClassName="flex flex-col gap-6"
+            description="Submitted through the public form."
+            title="Inquiry details"
+          >
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <InfoTile label="Category" value={inquiry.serviceCategory} />
                 <InfoTile
@@ -131,15 +122,12 @@ export default async function InquiryDetailPage({
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+          </DashboardSection>
 
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Attachments</CardTitle>
-              <CardDescription>Files included with the inquiry.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <DashboardSection
+            description="Files included with the inquiry."
+            title="Attachments"
+          >
               {inquiry.attachments.length ? (
                 <div className="flex flex-col gap-3">
                   {inquiry.attachments.map((attachment) => (
@@ -166,25 +154,20 @@ export default async function InquiryDetailPage({
                   ))}
                 </div>
               ) : (
-                <Empty className="border">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <FileText />
-                    </EmptyMedia>
-                    <EmptyTitle>No attachments</EmptyTitle>
-                    <EmptyDescription>This inquiry has no uploaded files.</EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
+                <DashboardEmptyState
+                  description="This inquiry has no uploaded files."
+                  icon={FileText}
+                  title="No attachments"
+                  variant="section"
+                />
               )}
-            </CardContent>
-          </Card>
+          </DashboardSection>
 
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Internal notes</CardTitle>
-              <CardDescription>Private workspace notes.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
+          <DashboardSection
+            contentClassName="flex flex-col gap-5"
+            description="Private workspace notes."
+            title="Internal notes"
+          >
               <InquiryNoteForm action={noteAction} />
               <Separator />
               {inquiry.notes.length ? (
@@ -210,22 +193,18 @@ export default async function InquiryDetailPage({
                   ))}
                 </div>
               ) : (
-                <Empty className="border">
-                  <EmptyHeader>
-                    <EmptyTitle>No internal notes yet</EmptyTitle>
-                    <EmptyDescription>Add a note for follow-up context.</EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
+                <DashboardEmptyState
+                  description="Add a note for follow-up context."
+                  title="No internal notes yet"
+                  variant="section"
+                />
               )}
-            </CardContent>
-          </Card>
+          </DashboardSection>
 
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Activity log</CardTitle>
-              <CardDescription>Submission and owner actions.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <DashboardSection
+            description="Submission and owner actions."
+            title="Activity log"
+          >
               {inquiry.activities.length ? (
                 <div className="flex flex-col gap-3">
                   {inquiry.activities.map((activity) => (
@@ -246,24 +225,29 @@ export default async function InquiryDetailPage({
                   ))}
                 </div>
               ) : (
-                <Empty className="border">
-                  <EmptyHeader>
-                    <EmptyTitle>No activity yet</EmptyTitle>
-                    <EmptyDescription>Actions will appear here as work progresses.</EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
+                <DashboardEmptyState
+                  description="Actions will appear here as work progresses."
+                  title="No activity yet"
+                  variant="section"
+                />
               )}
-            </CardContent>
-          </Card>
+          </DashboardSection>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Customer contact</CardTitle>
-              <CardDescription>Email or call from here.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+        <DashboardSidebarStack>
+          <DashboardSection
+            contentClassName="flex flex-col gap-4"
+            description="Email or call from here."
+            footer={
+              <>
+                <Button asChild variant="outline">
+                  <a href={`mailto:${inquiry.customerEmail}`}>Email customer</a>
+                </Button>
+                <CopyEmailButton email={inquiry.customerEmail} />
+              </>
+            }
+            title="Customer contact"
+          >
               <InfoTile
                 icon={Mail}
                 label="Email"
@@ -293,21 +277,32 @@ export default async function InquiryDetailPage({
                   )
                 }
               />
-            </CardContent>
-            <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-end">
-              <Button asChild variant="outline">
-                <a href={`mailto:${inquiry.customerEmail}`}>Email customer</a>
-              </Button>
-              <CopyEmailButton email={inquiry.customerEmail} />
-            </CardFooter>
-          </Card>
+          </DashboardSection>
 
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Related quote</CardTitle>
-              <CardDescription>Open the linked quote or create one.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+          <DashboardSection
+            contentClassName="flex flex-col gap-4"
+            description="Open the linked quote or create one."
+            footer={
+              <>
+                {inquiry.relatedQuote ? (
+                  <Button asChild variant="outline">
+                    <Link
+                      href={`/dashboard/quotes/${inquiry.relatedQuote.id}`}
+                      prefetch={false}
+                    >
+                      View quote
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button asChild>
+                  <Link href={`/dashboard/quotes/new?inquiryId=${inquiry.id}`} prefetch={false}>
+                    Generate quote
+                  </Link>
+                </Button>
+              </>
+            }
+            title="Related quote"
+          >
               {inquiry.relatedQuote ? (
                 <div className="soft-panel p-4">
                   <div className="flex flex-col gap-3">
@@ -340,53 +335,29 @@ export default async function InquiryDetailPage({
                   </div>
                 </div>
               ) : (
-                <Empty className="border">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <ReceiptText />
-                    </EmptyMedia>
-                    <EmptyTitle>No related quote yet</EmptyTitle>
-                    <EmptyDescription>Create a quote from this inquiry.</EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
+                <DashboardEmptyState
+                  description="Create a quote from this inquiry."
+                  icon={ReceiptText}
+                  title="No related quote yet"
+                  variant="section"
+                />
               )}
-            </CardContent>
-            <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-end">
-              {inquiry.relatedQuote ? (
-                <Button asChild variant="outline">
-                  <Link
-                    href={`/dashboard/quotes/${inquiry.relatedQuote.id}`}
-                    prefetch={false}
-                  >
-                    View quote
-                  </Link>
-                </Button>
-              ) : null}
-              <Button asChild>
-                <Link href={`/dashboard/quotes/new?inquiryId=${inquiry.id}`} prefetch={false}>
-                  Generate quote
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
+          </DashboardSection>
 
-          <Card>
-            <CardHeader className="gap-2">
-              <CardTitle>Status</CardTitle>
-              <CardDescription>Move the inquiry forward.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <DashboardSection
+            description="Move the inquiry forward."
+            title="Status"
+          >
               <InquiryStatusForm
                 key={inquiry.status}
                 action={statusAction}
                 currentStatus={inquiry.status}
               />
-            </CardContent>
-          </Card>
+          </DashboardSection>
 
           <InquiryAiPanel action={aiAction} />
-        </div>
-      </div>
-    </div>
+        </DashboardSidebarStack>
+      </DashboardDetailLayout>
+    </DashboardPage>
   );
 }
