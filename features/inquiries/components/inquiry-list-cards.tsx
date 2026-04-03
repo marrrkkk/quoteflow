@@ -71,7 +71,10 @@ export function InquiryListCards({ inquiries }: InquiryListCardsProps) {
               </p>
             </div>
           </CardContent>
-          <CardFooter className="data-list-card-footer justify-end">
+          <CardFooter className="data-list-card-footer">
+            <span className="text-sm text-muted-foreground">
+              Customer inquiry ready for triage and follow-up.
+            </span>
             <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
               <Link href={`/dashboard/inquiries/${inquiry.id}`} prefetch={false}>
                 Open inquiry

@@ -25,7 +25,7 @@ export function OverviewListCard({
   children,
 }: OverviewListCardProps) {
   return (
-    <Card className="gap-0 overflow-hidden border-border/75 bg-card/96">
+    <Card className="gap-0 overflow-hidden border-border/75 bg-card/97">
       <CardHeader className="gap-4 border-b border-border/70">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -33,7 +33,7 @@ export function OverviewListCard({
             <CardDescription className="mt-2">{description}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{count}</Badge>
+            <Badge variant="secondary">{count}</Badge>
             {action}
           </div>
         </div>

@@ -24,8 +24,8 @@ type OverviewActionsCardProps = {
 
 export function OverviewActionsCard({ items }: OverviewActionsCardProps) {
   return (
-    <Card className="gap-0 overflow-hidden border-border/75 bg-card/96">
-      <CardHeader className="gap-2">
+    <Card className="gap-0 overflow-hidden border-border/75 bg-card/97">
+      <CardHeader className="gap-2.5">
         <CardTitle>Workspace shortcuts</CardTitle>
         <CardDescription>Fast access to the pages you use most.</CardDescription>
       </CardHeader>
@@ -36,14 +36,14 @@ export function OverviewActionsCard({ items }: OverviewActionsCardProps) {
 
             return (
               <Link
-                className="group flex items-start gap-3 px-6 py-4 transition-colors hover:bg-muted/35"
+                className="group flex items-start gap-3 px-6 py-4 transition-colors hover:bg-accent/28"
                 href={item.href}
                 key={item.label}
                 prefetch={false}
                 rel={item.external ? "noreferrer" : undefined}
                 target={item.external ? "_blank" : undefined}
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
                   <Icon className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">

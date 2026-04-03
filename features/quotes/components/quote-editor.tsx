@@ -343,17 +343,22 @@ export function QuoteEditor({
 
               return (
                 <div
-                  className="soft-panel p-4"
+                  className="soft-panel p-5"
                   key={item.id}
                 >
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-foreground">
-                        Item {index + 1}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm font-medium text-foreground">
+                          Item {index + 1}
+                        </p>
+                        <span className="dashboard-meta-pill min-h-0 px-2.5 py-1 text-[0.7rem]">
+                          Live total
+                        </span>
+                      </div>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="icon-sm"
                         onClick={() => removeItem(item.id)}
                         disabled={isPending || items.length === 1}
@@ -463,7 +468,7 @@ export function QuoteEditor({
           footerClassName="w-full sm:justify-between"
           title="Commercial summary"
         >
-          <div className="flex flex-col gap-4">
+          <div className="soft-panel flex flex-col gap-4 px-4 py-4 shadow-none">
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm font-medium text-foreground">Totals</span>
               <span className="dashboard-meta-pill">

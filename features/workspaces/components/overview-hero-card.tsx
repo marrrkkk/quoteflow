@@ -26,8 +26,8 @@ export function OverviewHeroCard({
   actions,
 }: OverviewHeroCardProps) {
   return (
-    <Card className="gap-0 overflow-hidden border-border/75 bg-card/96">
-      <CardHeader className="gap-4 border-b border-border/70 bg-background/70">
+    <Card className="gap-0 overflow-hidden border-border/75 bg-card/97">
+      <CardHeader className="gap-4 border-b border-border/70 bg-background/62">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Overview</Badge>
           <Badge variant={publicInquiryEnabled ? "secondary" : "outline"}>
@@ -48,12 +48,12 @@ export function OverviewHeroCard({
       <CardContent className="grid gap-6 pt-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-3">
           <p className="meta-label">Primary actions</p>
-          <div className="flex flex-col gap-3 [&>*]:w-full sm:flex-row sm:flex-wrap sm:[&>*]:w-auto">
+          <div className="dashboard-actions [&>*]:w-full sm:[&>*]:w-auto">
             {actions}
           </div>
         </div>
 
-        <div className="soft-panel grid gap-3 p-4 shadow-none">
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
           <HeroSummaryItem
             icon={Inbox}
             label="New inquiries"
@@ -90,13 +90,13 @@ function HeroSummaryItem({
   description: string;
 }) {
   return (
-    <div className="info-tile px-4 py-3 shadow-none">
+    <div className="info-tile h-full px-4 py-3.5 shadow-none">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
         <Icon className="size-4" />
       </div>
       <div className="min-w-0">
         <p className="meta-label">{label}</p>
-        <p className="mt-2 text-lg font-semibold tracking-tight text-foreground">
+        <p className="mt-2 text-xl font-semibold tracking-tight text-foreground">
           {value}
         </p>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">

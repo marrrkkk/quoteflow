@@ -41,7 +41,7 @@ export function KnowledgeFaqCard({
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <Card className="gap-0">
+    <Card className="gap-0 border-border/75 bg-card/97">
       <CardHeader className="gap-3 pb-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex flex-col gap-1">
@@ -53,6 +53,7 @@ export function KnowledgeFaqCard({
 
           <Button
             type="button"
+            size="sm"
             variant="outline"
             onClick={() => setIsEditing((current) => !current)}
           >

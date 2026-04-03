@@ -57,8 +57,8 @@ export function QuotePreview({
               </h2>
               <p className="text-sm text-muted-foreground">{workspaceName}</p>
             </div>
-            <div className="soft-panel w-full px-4 py-3 text-sm shadow-none sm:w-auto sm:max-w-xs">
-              <p className="font-medium text-foreground">{quoteNumber}</p>
+            <div className="soft-panel w-full px-4 py-3 text-sm shadow-none sm:w-auto sm:min-w-52">
+              <p className="text-sm font-semibold text-foreground">{quoteNumber}</p>
               <p className="mt-1 text-muted-foreground">
                 Valid until {formatQuoteDate(validUntil)}
               </p>
@@ -84,7 +84,7 @@ export function QuotePreview({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[1.2rem] border border-border/75 bg-background/92">
+        <div className="overflow-hidden rounded-[1.2rem] border border-border/75 bg-background/94">
           <div className="flex flex-col gap-3 p-4 lg:hidden">
             {items.length ? (
               items.map((item) => (
@@ -125,7 +125,7 @@ export function QuotePreview({
 
           <div className="hidden lg:block">
             <table className="w-full border-collapse text-sm">
-              <thead className="bg-muted/35 text-left">
+              <thead className="bg-muted/22 text-left">
                 <tr>
                   <th className="px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     Item
@@ -144,7 +144,7 @@ export function QuotePreview({
               <tbody>
                 {items.length ? (
                   items.map((item) => (
-                    <tr className="border-t border-border/80" key={item.id}>
+                    <tr className="border-t border-border/75" key={item.id}>
                       <td className="px-4 py-3 align-top text-foreground">
                         {item.description || "Untitled item"}
                       </td>
@@ -175,6 +175,7 @@ export function QuotePreview({
         </div>
 
         <div className="soft-panel flex w-full flex-col gap-3 px-4 py-4 shadow-none lg:ml-auto lg:max-w-sm">
+          <p className="meta-label">Commercial summary</p>
           <SummaryRow
             label="Subtotal"
             value={formatQuoteMoney(subtotalInCents, currency)}
@@ -219,7 +220,7 @@ function SummaryRow({
       <span className="text-sm text-muted-foreground">{label}</span>
       <span
         className={cn(
-          "text-sm text-foreground",
+          "text-sm font-medium text-foreground",
           strong && "text-base font-semibold",
         )}
       >

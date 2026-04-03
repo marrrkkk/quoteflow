@@ -144,8 +144,8 @@ export function WorkspaceSettingsForm({
       <input name="aiTonePreference" type="hidden" value={aiTonePreference} />
       <input name="defaultCurrency" type="hidden" value={defaultCurrency} />
 
-      <Card className="gap-0">
-        <CardHeader className="gap-2 pb-5">
+      <Card className="gap-0 border-border/75 bg-card/97">
+        <CardHeader className="gap-3 pb-5">
           <CardTitle>Business profile</CardTitle>
           <CardDescription>Name, link, contact, and branding.</CardDescription>
         </CardHeader>
@@ -342,8 +342,8 @@ export function WorkspaceSettingsForm({
         </CardContent>
       </Card>
 
-      <Card className="gap-0">
-        <CardHeader className="gap-2 pb-5">
+      <Card className="gap-0 border-border/75 bg-card/97">
+        <CardHeader className="gap-3 pb-5">
           <CardTitle>Inquiry page and messaging defaults</CardTitle>
           <CardDescription>Public form and writing defaults.</CardDescription>
         </CardHeader>
@@ -510,8 +510,8 @@ export function WorkspaceSettingsForm({
         </CardContent>
       </Card>
 
-      <Card className="gap-0">
-        <CardHeader className="gap-2 pb-5">
+      <Card className="gap-0 border-border/75 bg-card/97">
+        <CardHeader className="gap-3 pb-5">
           <CardTitle>Notification preferences</CardTitle>
           <CardDescription>Lightweight email preferences.</CardDescription>
         </CardHeader>
@@ -544,7 +544,7 @@ export function WorkspaceSettingsForm({
 
       <div className="toolbar-panel">
         <FormActions align="between" className="pt-0">
-          <p className="text-sm leading-6 text-muted-foreground">
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
             Changes apply immediately across the workspace and public pages.
           </p>
           <Button disabled={isPending} size="lg" type="submit">
@@ -572,7 +572,14 @@ function ToggleCard({
   onCheckedChange: (nextValue: boolean) => void;
 }) {
   return (
-    <label className="soft-panel flex items-start gap-3 px-4 py-4 transition-colors hover:bg-accent/30">
+    <label
+      className={[
+        "soft-panel flex items-start gap-3 px-4 py-4 transition-colors hover:bg-accent/30",
+        checked ? "border-primary/20 bg-accent/52" : null,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <Switch
         checked={checked}
         className="mt-1"

@@ -90,7 +90,7 @@ export default async function KnowledgePage() {
                   {knowledgeData.files.map((file) => (
                     <div
                       key={file.id}
-                      className="soft-panel p-4"
+                      className="soft-panel p-5"
                     >
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -104,17 +104,17 @@ export default async function KnowledgePage() {
                           </div>
 
                           <div className="flex flex-col items-start gap-2 sm:items-end">
-                            <span className="rounded-md border border-border/80 bg-secondary px-3 py-1 text-xs text-muted-foreground">
+                            <span className="dashboard-meta-pill min-h-0 px-3 py-1">
                               {formatKnowledgeFileSize(file.fileSize)}
                             </span>
-                            <span className="rounded-md border border-border/80 bg-secondary px-3 py-1 text-xs text-muted-foreground">
+                            <span className="dashboard-meta-pill min-h-0 px-3 py-1">
                               {formatKnowledgeDate(file.createdAt)}
                             </span>
                           </div>
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-                          <div className="soft-panel bg-muted/20 p-4 shadow-none">
+                          <div className="info-tile bg-muted/20 p-4 shadow-none">
                             <p className="meta-label">Text preview</p>
                             <p className="mt-3 text-sm leading-7 text-foreground">
                               {getKnowledgeTextPreview(file.extractedText) ??
@@ -122,7 +122,7 @@ export default async function KnowledgePage() {
                             </p>
                           </div>
 
-                          <div className="soft-panel flex flex-col gap-3 bg-muted/20 p-4 shadow-none">
+                          <div className="info-tile flex flex-col gap-3 bg-muted/20 p-4 shadow-none">
                             <div className="flex flex-col gap-1">
                               <p className="meta-label">Content type</p>
                               <p className="text-sm text-foreground">

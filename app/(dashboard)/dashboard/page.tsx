@@ -64,12 +64,12 @@ export default async function DashboardOverviewPage() {
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="secondary">
               <Link href="/dashboard/quotes/new" prefetch={false}>
                 Create quote
               </Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="ghost">
               <Link href={publicInquiryUrl} prefetch={false} target="_blank">
                 Open public form
               </Link>
@@ -237,7 +237,7 @@ function OverviewInquiryRow({
 }) {
   return (
     <Link
-      className="group px-6 py-4 transition-colors hover:bg-muted/35"
+      className="group px-6 py-4 transition-colors hover:bg-accent/30"
       href={`/dashboard/inquiries/${inquiry.id}`}
       prefetch={false}
     >
@@ -249,7 +249,7 @@ function OverviewInquiryRow({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span className="rounded-md border border-border/70 bg-background px-2.5 py-1">
+          <span className="dashboard-meta-pill min-h-0 px-2.5 py-1 text-[0.7rem]">
             {inquiry.serviceCategory}
           </span>
           <span>Submitted {formatQuoteDate(inquiry.submittedAt)}</span>
@@ -270,7 +270,7 @@ function OverviewQuoteRow({
 }) {
   return (
     <Link
-      className="group px-6 py-4 transition-colors hover:bg-muted/35"
+      className="group px-6 py-4 transition-colors hover:bg-accent/30"
       href={`/dashboard/quotes/${quote.id}`}
       prefetch={false}
     >

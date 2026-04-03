@@ -29,15 +29,15 @@ export function OverviewHealthCard({
   const maxInquiries = Math.max(...recentTrend.map((point) => point.inquiries), 1);
 
   return (
-    <Card className="border-border/75 bg-card/96">
-      <CardHeader className="gap-2">
+    <Card className="border-border/75 bg-card/97">
+      <CardHeader className="gap-2.5">
         <CardTitle>Pipeline health</CardTitle>
         <CardDescription>
           Compact signal on coverage, conversion, and weekly momentum.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        <div className="grid gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <HealthMetric
             label="Inquiry coverage"
             value={formatAnalyticsPercent(inquiryCoverageRate)}
@@ -111,13 +111,13 @@ function HealthMetric({
   helper: string;
 }) {
   return (
-    <div className="info-tile px-4 py-3 shadow-none">
-      <div className="flex items-center justify-between gap-4">
+    <div className="info-tile h-full px-4 py-3.5 shadow-none">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="meta-label">{label}</p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{helper}</p>
         </div>
-        <p className="text-lg font-semibold tracking-tight text-foreground">
+        <p className="pt-0.5 text-lg font-semibold tracking-tight text-foreground">
           {value}
         </p>
       </div>

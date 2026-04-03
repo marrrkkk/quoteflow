@@ -14,7 +14,7 @@ export function AnalyticsMetricCard({
   icon: LucideIcon;
 }) {
   return (
-    <Card className="h-full" size="sm">
+    <Card className="h-full border-border/75 bg-card/97" size="sm">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -26,7 +26,7 @@ export function AnalyticsMetricCard({
               {description}
             </p>
           </div>
-          <div className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <div className="flex size-10 items-center justify-center rounded-xl border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
             <Icon className="size-4" />
           </div>
         </div>

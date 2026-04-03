@@ -79,7 +79,9 @@ export function QuoteListCards({ quotes, currency }: QuoteListCardsProps) {
           </CardContent>
           <CardFooter className="data-list-card-footer">
             <span className="text-sm text-muted-foreground">
-              {quote.inquiryId ? "Linked to an inquiry" : "Created manually"}
+              {quote.inquiryId
+                ? "Linked to the original inquiry"
+                : "Created manually from the workspace"}
             </span>
             <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
               <Link href={`/dashboard/quotes/${quote.id}`} prefetch={false}>
