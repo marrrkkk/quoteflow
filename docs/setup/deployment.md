@@ -1,8 +1,8 @@
-# QuoteFlow Deployment Setup
+# Relay Deployment Setup
 
 ## Summary
 
-QuoteFlow deploys cleanly as a Next.js app with a Postgres database, Supabase storage credentials, Better Auth secrets, Resend for transactional email, and OpenRouter for AI drafting.
+Relay deploys cleanly as a Next.js app with a Postgres database, Supabase storage credentials, Better Auth secrets, Resend for transactional email, and OpenRouter for AI drafting.
 
 ## Environment Variables
 

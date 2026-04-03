@@ -1,8 +1,8 @@
-# QuoteFlow
+# Relay
 
 Turn messy customer inquiries into organized quotes and bookings.
 
-QuoteFlow is an owner-first SaaS app for small service businesses such as print shops, repair shops, tutors, event suppliers, and small agencies. This repository already contains a working MVP foundation with authentication, a public inquiry page, dashboard flows, quotes, knowledge, AI drafting, analytics, and settings.
+Relay is an owner-first SaaS app for small service businesses such as print shops, repair shops, tutors, event suppliers, and small agencies. This repository already contains a working MVP foundation with authentication, a public inquiry page, dashboard flows, quotes, knowledge, AI drafting, analytics, and settings.
 
 ## Current Status
 
@@ -44,7 +44,7 @@ Copy-Item .env.example .env
 npm run db:migrate
 ```
 
-Drizzle migrations are the source of truth for this repo. They include the QuoteFlow schema, Better Auth tables, timestamp triggers, RLS helpers, and storage bucket setup SQL.
+Drizzle migrations are the source of truth for this repo. They include the Relay schema, Better Auth tables, timestamp triggers, RLS helpers, and storage bucket setup SQL.
 
 ### 4. Seed demo data
 
@@ -54,7 +54,7 @@ npm run db:seed-demo
 
 Default demo credentials:
 
-- Email: `demo@quoteflow.local`
+- Email: `demo@relay.local`
 - Password: `ChangeMe123456!`
 
 ### 5. Start the app

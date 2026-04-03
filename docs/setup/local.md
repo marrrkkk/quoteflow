@@ -1,4 +1,4 @@
-# QuoteFlow Local Setup
+# Relay Local Setup
 
 ## Prerequisites
 
@@ -80,7 +80,7 @@ npm run db:seed-demo
 Default demo values:
 
 - Owner name: `Morgan Lee`
-- Owner email: `demo@quoteflow.local`
+- Owner email: `demo@relay.local`
 - Owner password: `ChangeMe123456!`
 - Workspace name: `BrightSide Print Studio`
 - Workspace slug: `brightside-print-studio`

@@ -1,8 +1,8 @@
-# QuoteFlow MVP Architecture
+# Relay MVP Architecture
 
 ## Summary
 
-QuoteFlow should continue using the existing feature-oriented structure in this repository. The repo is already beyond scaffold stage, so the goal is to harden and extend the current architecture rather than replace it with a new one.
+Relay should continue using the existing feature-oriented structure in this repository. The repo is already beyond scaffold stage, so the goal is to harden and extend the current architecture rather than replace it with a new one.
 
 ## Target Folder Structure
 
