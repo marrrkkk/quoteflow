@@ -22,7 +22,7 @@ export function OverviewKpiCard({
   icon: Icon,
 }: OverviewKpiCardProps) {
   return (
-    <Card className="border-border/80 bg-card">
+    <Card className="h-full border-border/75 bg-card/96" size="sm">
       <CardHeader className="flex flex-row items-start justify-between gap-4 pb-0">
         <div className="min-w-0">
           <p className="meta-label">{title}</p>

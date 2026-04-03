@@ -25,7 +25,7 @@ export function OverviewListCard({
   children,
 }: OverviewListCardProps) {
   return (
-    <Card className="overflow-hidden border-border/80 bg-card">
+    <Card className="gap-0 overflow-hidden border-border/75 bg-card/96">
       <CardHeader className="gap-4 border-b border-border/70">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -38,7 +38,7 @@ export function OverviewListCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-0 pb-0">{children}</CardContent>
+      <CardContent className="px-0 pb-0 pt-0">{children}</CardContent>
     </Card>
   );
 }

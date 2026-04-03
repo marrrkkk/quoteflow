@@ -21,7 +21,7 @@ export function AnalyticsQuoteSummary({
   data: WorkspaceAnalyticsData["quoteSummary"];
 }) {
   return (
-    <Card className="bg-background/70">
+    <Card className="gap-0 bg-background/72">
       <CardHeader className="gap-2">
         <CardTitle>Quote conversion summary</CardTitle>
         <CardDescription>Draft to accepted.</CardDescription>
@@ -50,7 +50,7 @@ export function AnalyticsQuoteSummary({
           />
         </div>
 
-        <div className="rounded-[1.55rem] border bg-background/80 p-4">
+        <div className="soft-panel p-4 shadow-none">
           <div className="grid gap-3 sm:grid-cols-3">
             <MiniMetric label="Accepted" value={data.acceptedQuotes} />
             <MiniMetric label="Rejected" value={data.rejectedQuotes} />
@@ -72,9 +72,9 @@ function SummaryTile({
   value: string;
 }) {
   return (
-    <div className="rounded-[1.45rem] border bg-background/80 p-4">
+    <div className="info-tile p-4 shadow-none">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 items-center justify-center rounded-full border bg-secondary">
+        <div className="flex size-10 items-center justify-center rounded-full border border-border/75 bg-secondary">
           <Icon className="size-4" />
         </div>
         <div className="flex flex-col gap-1">
@@ -90,7 +90,7 @@ function SummaryTile({
 
 function MiniMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border bg-muted/15 px-3 py-3">
+    <div className="soft-panel bg-muted/15 px-3 py-3 shadow-none">
       <p className="meta-label">{label}</p>
       <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
     </div>

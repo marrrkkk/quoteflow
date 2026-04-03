@@ -14,7 +14,7 @@ export function AnalyticsMetricCard({
   icon: LucideIcon;
 }) {
   return (
-    <Card>
+    <Card className="h-full" size="sm">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

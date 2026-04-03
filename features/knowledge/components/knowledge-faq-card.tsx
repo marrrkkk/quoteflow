@@ -41,8 +41,8 @@ export function KnowledgeFaqCard({
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <Card>
-      <CardHeader className="gap-3">
+    <Card className="gap-0">
+      <CardHeader className="gap-3 pb-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex flex-col gap-1">
             <CardTitle className="text-xl">{faq.question}</CardTitle>
@@ -62,8 +62,8 @@ export function KnowledgeFaqCard({
         </div>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-5">
-        <div className="rounded-xl border border-border/80 bg-background p-4">
+      <CardContent className="flex flex-col gap-5 pt-0">
+        <div className="soft-panel p-4 shadow-none">
           <p className="whitespace-pre-wrap text-sm leading-7 text-foreground">
             {faq.answer}
           </p>

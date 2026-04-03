@@ -133,12 +133,12 @@ export function WorkspaceSettingsForm({
       <input name="aiTonePreference" type="hidden" value={aiTonePreference} />
       <input name="defaultCurrency" type="hidden" value={defaultCurrency} />
 
-      <Card>
-        <CardHeader className="gap-2">
+      <Card className="gap-0">
+        <CardHeader className="gap-2 pb-5">
           <CardTitle>Business profile</CardTitle>
           <CardDescription>Name, link, contact, and branding.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-6">
+        <CardContent className="flex flex-col gap-6 pt-0">
           <FieldGroup>
             <Field data-invalid={Boolean(state.fieldErrors?.name) || undefined}>
               <FieldLabel htmlFor="settings-name">Business name</FieldLabel>
@@ -314,12 +314,12 @@ export function WorkspaceSettingsForm({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="gap-2">
+      <Card className="gap-0">
+        <CardHeader className="gap-2 pb-5">
           <CardTitle>Inquiry page and messaging defaults</CardTitle>
           <CardDescription>Public form and writing defaults.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-6">
+        <CardContent className="flex flex-col gap-6 pt-0">
           <ToggleCard
             checked={publicInquiryEnabled}
             description="Allow customers to submit requests from the public page."
@@ -470,12 +470,12 @@ export function WorkspaceSettingsForm({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="gap-2">
+      <Card className="gap-0">
+        <CardHeader className="gap-2 pb-5">
           <CardTitle>Notification preferences</CardTitle>
           <CardDescription>Lightweight email preferences.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-2">
+        <CardContent className="grid gap-4 pt-0 lg:grid-cols-2">
           <ToggleCard
             checked={notifyOnNewInquiry}
             description="Email the owner when a new inquiry arrives."

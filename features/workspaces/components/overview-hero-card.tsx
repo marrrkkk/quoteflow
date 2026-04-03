@@ -26,7 +26,7 @@ export function OverviewHeroCard({
   actions,
 }: OverviewHeroCardProps) {
   return (
-    <Card className="overflow-hidden border-border/80 bg-card">
+    <Card className="gap-0 overflow-hidden border-border/75 bg-card/96">
       <CardHeader className="gap-4 border-b border-border/70 bg-background/70">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Overview</Badge>
@@ -51,7 +51,7 @@ export function OverviewHeroCard({
           <div className="flex flex-wrap gap-3">{actions}</div>
         </div>
 
-        <div className="grid gap-3 rounded-2xl border border-border/80 bg-background/75 p-4">
+        <div className="soft-panel grid gap-3 p-4 shadow-none">
           <HeroSummaryItem
             icon={Inbox}
             label="New inquiries"
@@ -88,7 +88,7 @@ function HeroSummaryItem({
   description: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border/70 bg-card px-4 py-3">
+    <div className="info-tile px-4 py-3 shadow-none">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
         <Icon className="size-4" />
       </div>

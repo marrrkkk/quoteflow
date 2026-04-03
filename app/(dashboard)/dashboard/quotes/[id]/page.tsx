@@ -313,7 +313,6 @@ export default async function QuoteDetailPage({
             </DashboardSection>
           ) : (
             <DashboardSection
-              className="bg-background/70"
               contentClassName="flex flex-col gap-3"
               description="Read-only after send."
               title="Delivery state"

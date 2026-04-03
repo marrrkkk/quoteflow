@@ -29,7 +29,7 @@ export function OverviewHealthCard({
   const maxInquiries = Math.max(...recentTrend.map((point) => point.inquiries), 1);
 
   return (
-    <Card className="border-border/80 bg-card">
+    <Card className="border-border/75 bg-card/96">
       <CardHeader className="gap-2">
         <CardTitle>Pipeline health</CardTitle>
         <CardDescription>
@@ -60,7 +60,7 @@ export function OverviewHealthCard({
           />
         </div>
 
-        <div className="rounded-2xl border border-border/80 bg-background/75 p-4">
+        <div className="soft-panel p-4 shadow-none">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="meta-label">Six-week inquiry trend</p>
@@ -111,7 +111,7 @@ function HealthMetric({
   helper: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-background/70 px-4 py-3">
+    <div className="info-tile px-4 py-3 shadow-none">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="meta-label">{label}</p>

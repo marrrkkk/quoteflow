@@ -135,8 +135,8 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
   const activeIntent = state.result?.intent;
 
   return (
-    <Card className="overflow-visible">
-      <CardHeader className="gap-4">
+    <Card className="gap-0 overflow-visible">
+      <CardHeader className="gap-4 border-b border-border/70 pb-6">
         <div className="flex items-start gap-4">
           <div className="flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
             <Sparkles />
@@ -156,7 +156,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
             "Knowledge snippets",
           ].map((label) => (
             <span
-              className="rounded-full border bg-background/80 px-3 py-1"
+              className="soft-panel rounded-full px-3 py-1 shadow-none"
               key={label}
             >
               {label}
@@ -165,7 +165,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-6 pt-6">
         {state.error ? (
           <Alert variant="destructive">
             <AlertTitle>We could not generate the AI output.</AlertTitle>
@@ -268,7 +268,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
             </Field>
           </FieldGroup>
 
-          <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border/80 bg-background px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="soft-panel flex flex-col gap-3 border-dashed px-4 py-4 shadow-none sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-6 text-muted-foreground">
               Need something more specific? Run a custom request.
             </p>
@@ -285,8 +285,8 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
         </form>
 
         {state.result ? (
-          <div className="rounded-2xl border border-border/80 bg-background shadow-sm">
-            <div className="flex flex-col gap-4 px-5 py-5">
+          <div className="section-panel p-5 shadow-none">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex flex-col gap-1">
                   <p className="meta-label">Latest output</p>
@@ -299,7 +299,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
                 </span>
               </div>
 
-              <div className="rounded-xl border border-border/80 bg-background px-4 py-4">
+              <div className="soft-panel px-4 py-4 shadow-none">
                 <p className="whitespace-pre-wrap text-sm leading-7 text-foreground">
                   {state.result.output}
                 </p>
@@ -350,7 +350,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
           </Empty>
         )}
 
-        <div className="rounded-2xl border border-dashed border-border/80 bg-background px-5 py-5">
+        <div className="soft-panel border-dashed px-5 py-5 shadow-none">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <p className="meta-label">Reply staging</p>

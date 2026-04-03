@@ -41,7 +41,7 @@ export function QuoteSendForm({
         </Alert>
       ) : null}
 
-      <div className="rounded-3xl border bg-background/80 p-4">
+      <div className="soft-panel p-4 shadow-none">
         <p className="text-sm font-medium text-foreground">Send to customer</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Quote delivery uses Resend and sends directly to {customerEmail}. Save

@@ -24,12 +24,12 @@ type OverviewActionsCardProps = {
 
 export function OverviewActionsCard({ items }: OverviewActionsCardProps) {
   return (
-    <Card className="overflow-hidden border-border/80 bg-card">
+    <Card className="gap-0 overflow-hidden border-border/75 bg-card/96">
       <CardHeader className="gap-2">
         <CardTitle>Workspace shortcuts</CardTitle>
         <CardDescription>Fast access to the pages you use most.</CardDescription>
       </CardHeader>
-      <CardContent className="px-0 pb-0">
+      <CardContent className="px-0 pb-0 pt-0">
         <div className="flex flex-col divide-y divide-border/70">
           {items.map((item) => {
             const Icon = item.icon;
