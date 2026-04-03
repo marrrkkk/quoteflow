@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { isAcceptedFileType } from "@/lib/files";
 import {
   inquiryStatusFilterValues,
   inquiryStatuses,
@@ -7,6 +8,16 @@ import {
 
 export const publicInquiryAttachmentBucket = "inquiry-attachments";
 export const publicInquiryMaxAttachmentSize = 5 * 1024 * 1024;
+export const publicInquiryAllowedExtensions = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".txt",
+] as const;
 export const publicInquiryAllowedMimeTypes = [
   "application/pdf",
   "application/msword",
@@ -16,15 +27,19 @@ export const publicInquiryAllowedMimeTypes = [
   "image/webp",
   "text/plain",
 ] as const;
+export const publicInquiryExtensionToMimeType: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".doc": "application/msword",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".txt": "text/plain",
+};
 export const publicInquiryAttachmentAccept = [
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".webp",
-  ".txt",
+  ...publicInquiryAllowedExtensions,
   ...publicInquiryAllowedMimeTypes,
 ].join(",");
 export const publicInquiryAttachmentLabel =
@@ -90,9 +105,10 @@ const publicInquiryAttachmentSchema = z.preprocess(
     )
     .refine(
       (file) =>
-        publicInquiryAllowedMimeTypes.some(
-          (mimeType) => mimeType === file.type,
-        ),
+        isAcceptedFileType(file, {
+          allowedExtensions: publicInquiryAllowedExtensions,
+          allowedMimeTypes: publicInquiryAllowedMimeTypes,
+        }),
       "Upload a PDF, common document file, or image.",
     )
     .optional(),

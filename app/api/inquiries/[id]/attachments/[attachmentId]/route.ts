@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { getSession } from "@/lib/auth/session";
+import { buildContentDisposition } from "@/lib/files";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
+import { getCurrentWorkspaceRequestContext } from "@/lib/db/workspace-access";
 import {
   getInquiryAttachmentForWorkspace,
 } from "@/features/inquiries/queries";
@@ -19,15 +19,9 @@ type InquiryAttachmentRouteContext = {
 };
 
 export async function GET(_request: Request, context: InquiryAttachmentRouteContext) {
-  const session = await getSession();
+  const requestContext = await getCurrentWorkspaceRequestContext();
 
-  if (!session) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
-  }
-
-  const workspaceContext = await getWorkspaceContextForUser(session.user.id);
-
-  if (!workspaceContext) {
+  if (!requestContext) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
@@ -40,7 +34,7 @@ export async function GET(_request: Request, context: InquiryAttachmentRouteCont
   }
 
   const attachment = await getInquiryAttachmentForWorkspace({
-    workspaceId: workspaceContext.workspace.id,
+    workspaceId: requestContext.workspaceContext.workspace.id,
     inquiryId: parsedParams.data.id,
     attachmentId: parsedParams.data.attachmentId,
   });
@@ -52,18 +46,25 @@ export async function GET(_request: Request, context: InquiryAttachmentRouteCont
   const supabaseAdminClient = createSupabaseAdminClient();
   const { data, error } = await supabaseAdminClient.storage
     .from(publicInquiryAttachmentBucket)
-    .createSignedUrl(attachment.storagePath, 60, {
-      download: attachment.fileName,
+    .download(attachment.storagePath);
+
+  if (error || !data) {
+    console.error("Failed to download inquiry attachment from storage.", error);
+
+    return NextResponse.json({ error: "Attachment download is unavailable right now." }, {
+      status: 500,
+      headers: {
+        "cache-control": "no-store",
+      },
     });
-
-  if (error || !data?.signedUrl) {
-    console.error("Failed to create a signed inquiry attachment URL.", error);
-
-    return NextResponse.json(
-      { error: "Attachment download is unavailable right now." },
-      { status: 500 },
-    );
   }
 
-  return NextResponse.redirect(data.signedUrl);
+  return new Response(data, {
+    headers: {
+      "cache-control": "private, no-store",
+      "content-disposition": buildContentDisposition(attachment.fileName),
+      "content-type": attachment.contentType || "application/octet-stream",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }

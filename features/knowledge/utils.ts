@@ -1,3 +1,8 @@
+import {
+  getFileExtension,
+  resolveSafeContentType,
+  sanitizeStorageFileName,
+} from "@/lib/files";
 import { knowledgeContextMaxCharacters } from "@/features/knowledge/schemas";
 import type {
   KnowledgeContextFaq,
@@ -42,31 +47,18 @@ export function formatKnowledgeFileSize(fileSize: number) {
 }
 
 export function getKnowledgeFileExtension(fileName: string) {
-  const fileNameLower = fileName.toLowerCase();
-  const lastDotIndex = fileNameLower.lastIndexOf(".");
-
-  if (lastDotIndex === -1) {
-    return "";
-  }
-
-  return fileNameLower.slice(lastDotIndex);
+  return getFileExtension(fileName);
 }
 
 export function inferKnowledgeFileContentType(file: File) {
-  const extension = getKnowledgeFileExtension(file.name);
-
-  return extensionToMimeType[extension] ?? file.type ?? "text/plain";
+  return resolveSafeContentType(file, {
+    extensionToMimeType,
+    fallback: "text/plain",
+  });
 }
 
 export function sanitizeKnowledgeFileName(fileName: string) {
-  const normalized = fileName
-    .normalize("NFKD")
-    .replace(/[^\w.\-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-
-  return normalized.slice(0, 120) || "knowledge-file";
+  return sanitizeStorageFileName(fileName, "knowledge-file");
 }
 
 export function deriveKnowledgeTitle(fileName: string) {

@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
-import { requireUser } from "@/lib/auth/session";
+import { getSession, requireUser, type AuthUser } from "@/lib/auth/session";
 import { db } from "@/lib/db/client";
 import { user, workspaceMembers, workspaces } from "@/lib/db/schema";
 
@@ -28,6 +28,17 @@ export type WorkspaceMessagingSettings = {
   notifyOnNewInquiry: boolean;
   notifyOnQuoteSent: boolean;
 };
+
+export type OwnerWorkspaceActionContext =
+  | {
+      ok: true;
+      user: AuthUser;
+      workspaceContext: WorkspaceContext;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 export async function getWorkspaceContextForUser(userId: string) {
   const [context] = await db
@@ -94,6 +105,50 @@ export async function requireOwnerWorkspaceContext() {
   }
 
   return {
+    user,
+    workspaceContext,
+  };
+}
+
+export async function getCurrentWorkspaceRequestContext() {
+  const session = await getSession();
+
+  if (!session) {
+    return null;
+  }
+
+  const workspaceContext = await getWorkspaceContextForUser(session.user.id);
+
+  if (!workspaceContext) {
+    return null;
+  }
+
+  return {
+    user: session.user,
+    workspaceContext,
+  };
+}
+
+export async function getOwnerWorkspaceActionContext(): Promise<OwnerWorkspaceActionContext> {
+  const user = await requireUser();
+  const workspaceContext = await getWorkspaceContextForUser(user.id);
+
+  if (!workspaceContext) {
+    return {
+      ok: false,
+      error: "Your workspace is not ready yet. Refresh the dashboard and try again.",
+    };
+  }
+
+  if (workspaceContext.role !== "owner") {
+    return {
+      ok: false,
+      error: "Only the workspace owner can do that.",
+    };
+  }
+
+  return {
+    ok: true,
     user,
     workspaceContext,
   };

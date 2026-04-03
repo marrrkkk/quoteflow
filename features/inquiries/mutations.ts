@@ -2,6 +2,10 @@ import "server-only";
 
 import { db } from "@/lib/db/client";
 import {
+  resolveSafeContentType,
+  sanitizeStorageFileName,
+} from "@/lib/files";
+import {
   activityLogs,
   inquiries,
   inquiryAttachments,
@@ -10,6 +14,7 @@ import {
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   publicInquiryAttachmentBucket,
+  publicInquiryExtensionToMimeType,
   type PublicInquirySubmissionInput,
 } from "@/features/inquiries/schemas";
 import type { InquiryStatus } from "@/features/inquiries/types";
@@ -39,17 +44,6 @@ function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-function sanitizeFileName(fileName: string) {
-  const normalized = fileName
-    .normalize("NFKD")
-    .replace(/[^\w.\-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-
-  return normalized.slice(0, 120) || "attachment";
-}
-
 export async function createPublicInquirySubmission({
   workspace,
   submission,
@@ -64,14 +58,19 @@ export async function createPublicInquirySubmission({
   let preparedAttachment: PreparedAttachment | null = null;
 
   if (attachment && storageClient) {
-    const storagePath = `${workspace.id}/${inquiryId}/${sanitizeFileName(
+    const safeContentType = resolveSafeContentType(attachment, {
+      extensionToMimeType: publicInquiryExtensionToMimeType,
+      fallback: "application/octet-stream",
+    });
+    const storagePath = `${workspace.id}/${inquiryId}/${sanitizeStorageFileName(
       attachment.name,
+      "attachment",
     )}`;
 
     const { error } = await storageClient.storage
       .from(publicInquiryAttachmentBucket)
       .upload(storagePath, attachment, {
-        contentType: attachment.type,
+        contentType: safeContentType,
         upsert: false,
       });
 
@@ -83,7 +82,7 @@ export async function createPublicInquirySubmission({
     preparedAttachment = {
       id: createId("iat"),
       fileName: attachment.name,
-      contentType: attachment.type,
+      contentType: safeContentType,
       fileSize: attachment.size,
       storagePath,
     };

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Bot, Globe2, Mail, ShieldCheck } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { updateWorkspaceSettingsAction } from "@/features/settings/actions";
@@ -18,10 +18,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requireOwnerWorkspaceContext } from "@/lib/db/workspace-access";
+import { requireCurrentWorkspaceContext } from "@/lib/db/workspace-access";
 
 export default async function SettingsPage() {
-  const { user, workspaceContext } = await requireOwnerWorkspaceContext();
+  const { user, workspaceContext } = await requireCurrentWorkspaceContext();
+
+  if (workspaceContext.role !== "owner") {
+    redirect("/dashboard");
+  }
+
   const settings = await getWorkspaceSettingsForWorkspace(
     workspaceContext.workspace.id,
   );
@@ -52,7 +57,7 @@ export default async function SettingsPage() {
         />
 
         <div className="flex flex-col gap-6">
-          <Card className="bg-background/70">
+          <Card>
             <CardHeader className="gap-2">
               <CardTitle>Workspace snapshot</CardTitle>
               <CardDescription>Current live details.</CardDescription>
@@ -95,7 +100,7 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-background/70">
+          <Card>
             <CardHeader className="gap-2">
               <CardTitle>What these settings affect</CardTitle>
               <CardDescription>Where the current values show up.</CardDescription>
@@ -130,9 +135,9 @@ function SnapshotItem({
   value: string;
 }) {
   return (
-    <div className="rounded-[1.35rem] border bg-background/80 p-4">
+    <div className="rounded-xl border border-border/80 bg-background p-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 items-center justify-center rounded-full border bg-secondary">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Icon className="size-4" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">

@@ -3,9 +3,11 @@ import "server-only";
 import { and, eq, ne } from "drizzle-orm";
 
 import type { WorkspaceSettingsInput } from "@/features/settings/schemas";
+import { resolveSafeContentType } from "@/lib/files";
 import {
   sanitizeWorkspaceLogoFileName,
   workspaceLogoBucket,
+  workspaceLogoExtensionToMimeType,
 } from "@/features/settings/utils";
 import { db } from "@/lib/db/client";
 import { activityLogs, workspaces } from "@/lib/db/schema";
@@ -65,6 +67,12 @@ export async function updateWorkspaceSettings({
   const logoFile = values.logo;
   const storageClient = logoFile ? createSupabaseAdminClient() : null;
   const previousLogoStoragePath = currentWorkspace.logoStoragePath;
+  const nextLogoContentType = logoFile
+    ? resolveSafeContentType(logoFile, {
+        extensionToMimeType: workspaceLogoExtensionToMimeType,
+        fallback: "application/octet-stream",
+      })
+    : null;
   const nextLogoStoragePath =
     logoFile && storageClient
       ? `${workspaceId}/logo/${createId("asset")}-${sanitizeWorkspaceLogoFileName(
@@ -76,7 +84,7 @@ export async function updateWorkspaceSettings({
     const { error } = await storageClient.storage
       .from(workspaceLogoBucket)
       .upload(nextLogoStoragePath, logoFile, {
-        contentType: logoFile.type,
+        contentType: nextLogoContentType ?? "application/octet-stream",
         upsert: false,
       });
 
@@ -98,8 +106,8 @@ export async function updateWorkspaceSettings({
             ? nextLogoStoragePath
             : nextLogoStoragePath ?? previousLogoStoragePath ?? null,
           logoContentType: values.removeLogo
-            ? logoFile?.type ?? null
-            : logoFile?.type ?? currentWorkspace.logoContentType ?? null,
+            ? nextLogoContentType
+            : nextLogoContentType ?? currentWorkspace.logoContentType ?? null,
           publicInquiryEnabled: values.publicInquiryEnabled,
           inquiryHeadline: values.inquiryHeadline ?? null,
           defaultEmailSignature: values.defaultEmailSignature ?? null,

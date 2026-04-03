@@ -1,7 +1,10 @@
 import { z } from "zod";
 
+import { isAcceptedFileType } from "@/lib/files";
 import { workspaceAiTonePreferences } from "@/features/settings/types";
 import {
+  workspaceCurrencyOptions,
+  workspaceLogoAllowedExtensions,
   normalizeWorkspaceSlug,
   workspaceLogoAllowedMimeTypes,
   workspaceLogoMaxSize,
@@ -53,7 +56,10 @@ const workspaceLogoSchema = z.preprocess(
     )
     .refine(
       (file) =>
-        workspaceLogoAllowedMimeTypes.some((mimeType) => mimeType === file.type),
+        isAcceptedFileType(file, {
+          allowedExtensions: workspaceLogoAllowedExtensions,
+          allowedMimeTypes: workspaceLogoAllowedMimeTypes,
+        }),
       "Upload a JPG, PNG, or WEBP logo.",
     )
     .optional(),
@@ -80,7 +86,7 @@ export const workspaceSettingsSchema = z.object({
   aiTonePreference: z.enum(workspaceAiTonePreferences),
   notifyOnNewInquiry: formBoolean(),
   notifyOnQuoteSent: formBoolean(),
-  defaultCurrency: z.string().length(3).default("USD"),
+  defaultCurrency: z.enum(workspaceCurrencyOptions).default("USD"),
   logo: workspaceLogoSchema,
   removeLogo: formBoolean().default(false),
 });
