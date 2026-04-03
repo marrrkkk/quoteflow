@@ -3,5 +3,6 @@ export * from "./auth";
 export * from "./inquiries";
 export * from "./knowledge";
 export * from "./public-actions";
+export * from "./quote-library";
 export * from "./quotes";
 export * from "./workspaces";

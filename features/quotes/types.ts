@@ -9,6 +9,8 @@ export const quoteStatuses = [
 export type QuoteStatus = (typeof quoteStatuses)[number];
 export const quoteStatusFilterValues = ["all", ...quoteStatuses] as const;
 export type QuoteStatusFilterValue = (typeof quoteStatusFilterValues)[number];
+export const quoteLibraryEntryKinds = ["block", "package"] as const;
+export type QuoteLibraryEntryKind = (typeof quoteLibraryEntryKinds)[number];
 
 export type QuoteListFilters = {
   q?: string;
@@ -38,6 +40,32 @@ export type DashboardQuoteItem = {
   unitPriceInCents: number;
   lineTotalInCents: number;
   position: number;
+};
+
+export type DashboardQuoteLibraryItem = {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPriceInCents: number;
+  position: number;
+};
+
+export type DashboardQuoteLibraryEntry = {
+  id: string;
+  kind: QuoteLibraryEntryKind;
+  name: string;
+  description: string | null;
+  itemCount: number;
+  totalInCents: number;
+  createdAt: Date;
+  updatedAt: Date;
+  items: DashboardQuoteLibraryItem[];
+};
+
+export type DashboardQuoteLibrarySummary = {
+  entryCount: number;
+  blockCount: number;
+  packageCount: number;
 };
 
 export type DashboardQuoteActivity = {
@@ -154,6 +182,30 @@ export type QuoteEditorActionState = {
   error?: string;
   success?: string;
   fieldErrors?: QuoteEditorFieldErrors;
+};
+
+export type QuoteLibraryEditorValues = {
+  kind: QuoteLibraryEntryKind;
+  name: string;
+  description: string;
+  items: QuoteEditorLineItemValue[];
+};
+
+export type QuoteLibraryFieldName = "kind" | "name" | "description" | "items";
+
+export type QuoteLibraryFieldErrors = Partial<
+  Record<QuoteLibraryFieldName, string[] | undefined>
+>;
+
+export type QuoteLibraryActionState = {
+  error?: string;
+  success?: string;
+  fieldErrors?: QuoteLibraryFieldErrors;
+};
+
+export type QuoteLibraryDeleteActionState = {
+  error?: string;
+  success?: boolean;
 };
 
 export type QuoteStatusActionState = {

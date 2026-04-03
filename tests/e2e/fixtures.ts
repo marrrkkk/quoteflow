@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 export const demoOwnerEmail =
   process.env.DEMO_OWNER_EMAIL ?? "demo@relay.local";
 export const demoOwnerPassword =

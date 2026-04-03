@@ -21,8 +21,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { QuoteLibrarySheet } from "@/features/quotes/components/quote-library-sheet";
 import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import type {
+  DashboardQuoteLibraryEntry,
   QuoteEditorActionState,
   QuoteEditorLineItemValue,
   QuoteEditorValues,
@@ -31,7 +33,9 @@ import type {
 import {
   calculateQuoteEditorTotals,
   createQuoteEditorLineItem,
+  createQuoteEditorLineItemFromLibraryItem,
   formatQuoteMoney,
+  isQuoteEditorLineItemBlank,
   parseCurrencyInputToCents,
 } from "@/features/quotes/utils";
 
@@ -44,6 +48,7 @@ type QuoteEditorProps = {
   currency: string;
   initialValues: QuoteEditorValues;
   linkedInquiry: QuoteLinkedInquirySummary | null;
+  pricingLibrary: DashboardQuoteLibraryEntry[];
   quoteNumber?: string;
   submitLabel: string;
   submitPendingLabel: string;
@@ -57,6 +62,7 @@ export function QuoteEditor({
   currency,
   initialValues,
   linkedInquiry,
+  pricingLibrary,
   quoteNumber,
   submitLabel,
   submitPendingLabel,
@@ -70,6 +76,7 @@ export function QuoteEditor({
   const [items, setItems] = useState<QuoteEditorLineItemValue[]>(
     initialValues.items,
   );
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(action, initialState);
   const previewItems = items.map((item) => {
     const quantity = Number.parseInt(item.quantity.trim(), 10);
@@ -104,6 +111,23 @@ export function QuoteEditor({
         ? currentItems
         : currentItems.filter((item) => item.id !== itemId),
     );
+  }
+
+  function insertPricingEntry(entry: DashboardQuoteLibraryEntry) {
+    const copiedItems = entry.items.map((item) =>
+      createQuoteEditorLineItemFromLibraryItem(item),
+    );
+
+    setItems((currentItems) => {
+      const shouldReplacePlaceholder =
+        currentItems.length === 1 &&
+        isQuoteEditorLineItemBlank(currentItems[0]);
+
+      return shouldReplacePlaceholder
+        ? copiedItems
+        : [...currentItems, ...copiedItems];
+    });
+    setIsLibraryOpen(false);
   }
 
   return (
@@ -308,20 +332,30 @@ export function QuoteEditor({
 
         <DashboardSection
           action={
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                setItems((currentItems) => [
-                  ...currentItems,
-                  createQuoteEditorLineItem(),
-                ])
-              }
-              disabled={isPending}
-            >
-              <Plus data-icon="inline-start" />
-              Add item
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsLibraryOpen(true)}
+                disabled={isPending}
+              >
+                Insert saved
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setItems((currentItems) => [
+                    ...currentItems,
+                    createQuoteEditorLineItem(),
+                  ])
+                }
+                disabled={isPending}
+              >
+                <Plus data-icon="inline-start" />
+                Add item
+              </Button>
+            </>
           }
           contentClassName="flex flex-col gap-5"
           description="Description, quantity, and unit price."
@@ -494,6 +528,15 @@ export function QuoteEditor({
           </div>
         </DashboardSection>
       </DashboardSidebarStack>
+
+      <QuoteLibrarySheet
+        currency={currency}
+        entries={pricingLibrary}
+        items={items}
+        onInsert={insertPricingEntry}
+        open={isLibraryOpen}
+        onOpenChange={setIsLibraryOpen}
+      />
 
       <QuotePreview
         workspaceName={workspaceName}

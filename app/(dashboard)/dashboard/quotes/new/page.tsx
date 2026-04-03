@@ -4,6 +4,7 @@ import { DashboardPage } from "@/components/shared/dashboard-layout";
 import { PageHeader } from "@/components/shared/page-header";
 import { createQuoteAction } from "@/features/quotes/actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
+import { getQuoteLibraryForWorkspace } from "@/features/quotes/quote-library-queries";
 import { getInquiryQuotePrefillForWorkspace } from "@/features/quotes/queries";
 import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
 import {
@@ -29,12 +30,15 @@ export default async function NewQuotePage({
     id: rawInquiryId,
   });
   const inquiryId = parsedInquiryId.success ? parsedInquiryId.data.id : undefined;
-  const inquiryPrefill = inquiryId
-    ? await getInquiryQuotePrefillForWorkspace({
-        workspaceId: workspaceContext.workspace.id,
-        inquiryId,
-      })
-    : null;
+  const [inquiryPrefill, pricingLibrary] = await Promise.all([
+    inquiryId
+      ? getInquiryQuotePrefillForWorkspace({
+          workspaceId: workspaceContext.workspace.id,
+          inquiryId,
+        })
+      : Promise.resolve(null),
+    getQuoteLibraryForWorkspace(workspaceContext.workspace.id),
+  ]);
 
   if (rawInquiryId && inquiryId && !inquiryPrefill) {
     notFound();
@@ -84,6 +88,7 @@ export default async function NewQuotePage({
         currency={workspaceContext.workspace.defaultCurrency}
         initialValues={initialValues}
         linkedInquiry={linkedInquiry}
+        pricingLibrary={pricingLibrary}
         submitLabel="Create draft quote"
         submitPendingLabel="Creating draft..."
       />

@@ -1,9 +1,11 @@
 import { CircleCheck, CircleX, Clock3, FileText, Send } from "lucide-react";
 
 import type {
+  DashboardQuoteLibraryItem,
   DashboardQuoteDetail,
   QuoteEditorLineItemValue,
   QuoteInquiryPrefill,
+  QuoteLibraryEntryKind,
   QuoteStatus,
 } from "@/features/quotes/types";
 
@@ -35,8 +37,17 @@ export const quoteStatusIcons = {
   expired: Clock3,
 } as const;
 
+export const quoteLibraryEntryKindLabels: Record<QuoteLibraryEntryKind, string> = {
+  block: "Pricing block",
+  package: "Service package",
+};
+
 export function getQuoteStatusLabel(status: QuoteStatus) {
   return quoteStatusLabels[status];
+}
+
+export function getQuoteLibraryEntryKindLabel(kind: QuoteLibraryEntryKind) {
+  return quoteLibraryEntryKindLabels[kind];
 }
 
 export function createQuotePublicToken() {
@@ -91,13 +102,44 @@ export function centsToMoneyInput(amountInCents: number) {
   return (amountInCents / 100).toFixed(2);
 }
 
-export function createQuoteEditorLineItem(): QuoteEditorLineItemValue {
+export function createQuoteEditorLineItemValue(
+  value?: Partial<{
+    id: string;
+    description: string;
+    quantity: string;
+    unitPrice: string;
+  }>,
+): QuoteEditorLineItemValue {
   return {
-    id: `draft_item_${crypto.randomUUID().replace(/-/g, "")}`,
-    description: "",
-    quantity: "1",
-    unitPrice: "",
+    id: value?.id ?? `draft_item_${crypto.randomUUID().replace(/-/g, "")}`,
+    description: value?.description ?? "",
+    quantity: value?.quantity ?? "1",
+    unitPrice: value?.unitPrice ?? "",
   };
+}
+
+export function createQuoteEditorLineItem(): QuoteEditorLineItemValue {
+  return createQuoteEditorLineItemValue();
+}
+
+export function createQuoteEditorLineItemFromLibraryItem(
+  item: Pick<DashboardQuoteLibraryItem, "description" | "quantity" | "unitPriceInCents">,
+) {
+  return createQuoteEditorLineItemValue({
+    description: item.description,
+    quantity: String(item.quantity),
+    unitPrice: centsToMoneyInput(item.unitPriceInCents),
+  });
+}
+
+export function isQuoteEditorLineItemBlank(item: QuoteEditorLineItemValue) {
+  const quantity = item.quantity.trim();
+
+  return (
+    item.description.trim() === "" &&
+    item.unitPrice.trim() === "" &&
+    (quantity === "" || quantity === "1")
+  );
 }
 
 export function parseCurrencyInputToCents(value: string) {

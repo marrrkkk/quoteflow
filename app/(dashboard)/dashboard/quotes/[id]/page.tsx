@@ -26,6 +26,7 @@ import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import { QuoteSendForm } from "@/features/quotes/components/quote-send-form";
 import { QuoteStatusBadge } from "@/features/quotes/components/quote-status-badge";
 import { QuoteStatusForm } from "@/features/quotes/components/quote-status-form";
+import { getQuoteLibraryForWorkspace } from "@/features/quotes/quote-library-queries";
 import { getQuoteDetailForWorkspace } from "@/features/quotes/queries";
 import { quoteRouteParamsSchema } from "@/features/quotes/schemas";
 import {
@@ -52,10 +53,13 @@ export default async function QuoteDetailPage({
   }
 
   const { workspaceContext } = await requireCurrentWorkspaceContext();
-  const quote = await getQuoteDetailForWorkspace({
-    workspaceId: workspaceContext.workspace.id,
-    quoteId: parsedParams.data.id,
-  });
+  const [quote, pricingLibrary] = await Promise.all([
+    getQuoteDetailForWorkspace({
+      workspaceId: workspaceContext.workspace.id,
+      quoteId: parsedParams.data.id,
+    }),
+    getQuoteLibraryForWorkspace(workspaceContext.workspace.id),
+  ]);
 
   if (!quote) {
     notFound();
@@ -199,6 +203,7 @@ export default async function QuoteDetailPage({
             currency={quote.currency}
             initialValues={getQuoteEditorInitialValuesFromDetail(quote)}
             linkedInquiry={linkedInquiry}
+            pricingLibrary={pricingLibrary}
             quoteNumber={quote.quoteNumber}
             submitLabel="Save draft quote"
             submitPendingLabel="Saving draft..."
