@@ -44,7 +44,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -76,13 +75,6 @@ type DashboardShellProps = {
     };
   };
 };
-
-const primaryNavigation = dashboardNavigation.filter(
-  (item) => item.href !== "/dashboard/settings",
-);
-const secondaryNavigation = dashboardNavigation.filter(
-  (item) => item.href === "/dashboard/settings",
-);
 
 export function DashboardShell({
   children,
@@ -162,22 +154,8 @@ export function DashboardShell({
 
         <SidebarContent className="gap-4 px-1 pb-3 group-data-[collapsible=icon]:px-0">
           <SidebarGroup className="px-3 pt-3 group-data-[collapsible=icon]:px-2">
-            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarMenu>
-              {primaryNavigation.map((item) => (
-                <DashboardNavigationItem
-                  isActive={isDashboardNavigationItemActive(pathname, item.href)}
-                  item={item}
-                  key={item.href}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-
-          <SidebarGroup className="px-3 pt-0 group-data-[collapsible=icon]:px-2">
-            <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-            <SidebarMenu>
-              {secondaryNavigation.map((item) => (
+              {dashboardNavigation.map((item) => (
                 <DashboardNavigationItem
                   isActive={isDashboardNavigationItemActive(pathname, item.href)}
                   item={item}
@@ -359,7 +337,7 @@ function DashboardUserMenu({
                   prefetch={false}
                 >
                   <Settings2 data-icon="inline-start" />
-                  Settings
+                  Workspace
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

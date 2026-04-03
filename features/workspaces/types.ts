@@ -5,7 +5,7 @@ export const workspaceMemberRoles = ["owner", "member"] as const;
 
 export type WorkspaceMemberRole = (typeof workspaceMemberRoles)[number];
 
-export type WorkspaceOverviewRecentInquiry = {
+export type WorkspaceOverviewInquiryActionItem = {
   id: string;
   customerName: string;
   customerEmail: string;
@@ -14,19 +14,36 @@ export type WorkspaceOverviewRecentInquiry = {
   submittedAt: Date;
 };
 
-export type WorkspaceOverviewQuoteAttentionItem = {
+export type WorkspaceOverviewQuoteActionItem = {
   id: string;
+  inquiryId: string | null;
   quoteNumber: string;
   title: string;
   customerName: string;
+  customerEmail: string;
+  currency: string;
+  totalInCents: number;
   status: QuoteStatus;
   validUntil: string;
+  sentAt: Date | null;
+  acceptedAt: Date | null;
   customerRespondedAt: Date | null;
   updatedAt: Date;
 };
 
+export type WorkspaceOverviewCounts = {
+  overdueReplies: number;
+  expiringSoonQuotes: number;
+  inquiriesWithoutQuotes: number;
+  awaitingResponseQuotes: number;
+  recentAcceptedQuotes: number;
+};
+
 export type WorkspaceOverviewData = {
-  recentInquiries: WorkspaceOverviewRecentInquiry[];
-  quoteAttention: WorkspaceOverviewQuoteAttentionItem[];
-  quoteAttentionCount: number;
+  overdueReplies: WorkspaceOverviewInquiryActionItem[];
+  expiringSoonQuotes: WorkspaceOverviewQuoteActionItem[];
+  inquiriesWithoutQuotes: WorkspaceOverviewInquiryActionItem[];
+  awaitingResponseQuotes: WorkspaceOverviewQuoteActionItem[];
+  recentAcceptedQuotes: WorkspaceOverviewQuoteActionItem[];
+  counts: WorkspaceOverviewCounts;
 };

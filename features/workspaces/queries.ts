@@ -1,18 +1,55 @@
 import "server-only";
 
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+} from "drizzle-orm";
 
 import type { WorkspaceOverviewData } from "@/features/workspaces/types";
+import { syncExpiredQuotesForWorkspace } from "@/features/quotes/mutations";
 import { db } from "@/lib/db/client";
 import { inquiries, quotes } from "@/lib/db/schema";
-import { syncExpiredQuotesForWorkspace } from "@/features/quotes/mutations";
+
+const overdueReplyStatuses = ["new", "waiting"] as const;
+const actionableInquiryStatuses = ["new", "waiting", "quoted"] as const;
+
+function getFutureUtcDateString(daysAhead: number) {
+  return new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}
 
 export async function getWorkspaceOverviewData(
   workspaceId: string,
 ): Promise<WorkspaceOverviewData> {
   await syncExpiredQuotesForWorkspace(workspaceId);
 
-  const [recentInquiries, quoteAttention, quoteAttentionCountRows] = await Promise.all([
+  const overdueCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  const recentAcceptedCutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const today = new Date().toISOString().slice(0, 10);
+  const expiringSoonCutoff = getFutureUtcDateString(7);
+
+  const [
+    overdueReplies,
+    overdueReplyCountRows,
+    expiringSoonQuotes,
+    expiringSoonQuoteCountRows,
+    inquiriesWithoutQuotes,
+    inquiryWithoutQuoteCountRows,
+    awaitingResponseQuotes,
+    awaitingResponseQuoteCountRows,
+    recentAcceptedQuotes,
+    recentAcceptedQuoteCountRows,
+  ] = await Promise.all([
     db
       .select({
         id: inquiries.id,
@@ -23,17 +60,57 @@ export async function getWorkspaceOverviewData(
         submittedAt: inquiries.submittedAt,
       })
       .from(inquiries)
-      .where(eq(inquiries.workspaceId, workspaceId))
-      .orderBy(desc(inquiries.submittedAt), desc(inquiries.createdAt))
+      .leftJoin(
+        quotes,
+        and(
+          eq(quotes.inquiryId, inquiries.id),
+          eq(quotes.workspaceId, workspaceId),
+        ),
+      )
+      .where(
+        and(
+          eq(inquiries.workspaceId, workspaceId),
+          inArray(inquiries.status, overdueReplyStatuses),
+          lt(inquiries.submittedAt, overdueCutoff),
+          isNull(quotes.id),
+        ),
+      )
+      .orderBy(asc(inquiries.submittedAt), asc(inquiries.createdAt))
       .limit(4),
     db
       .select({
+        count: count(),
+      })
+      .from(inquiries)
+      .leftJoin(
+        quotes,
+        and(
+          eq(quotes.inquiryId, inquiries.id),
+          eq(quotes.workspaceId, workspaceId),
+        ),
+      )
+      .where(
+        and(
+          eq(inquiries.workspaceId, workspaceId),
+          inArray(inquiries.status, overdueReplyStatuses),
+          lt(inquiries.submittedAt, overdueCutoff),
+          isNull(quotes.id),
+        ),
+      ),
+    db
+      .select({
         id: quotes.id,
+        inquiryId: quotes.inquiryId,
         quoteNumber: quotes.quoteNumber,
         title: quotes.title,
         customerName: quotes.customerName,
+        customerEmail: quotes.customerEmail,
+        currency: quotes.currency,
+        totalInCents: quotes.totalInCents,
         status: quotes.status,
         validUntil: quotes.validUntil,
+        sentAt: quotes.sentAt,
+        acceptedAt: quotes.acceptedAt,
         customerRespondedAt: quotes.customerRespondedAt,
         updatedAt: quotes.updatedAt,
       })
@@ -41,10 +118,13 @@ export async function getWorkspaceOverviewData(
       .where(
         and(
           eq(quotes.workspaceId, workspaceId),
-          inArray(quotes.status, ["draft", "sent", "expired"]),
+          eq(quotes.status, "sent"),
+          isNull(quotes.customerRespondedAt),
+          gte(quotes.validUntil, today),
+          lte(quotes.validUntil, expiringSoonCutoff),
         ),
       )
-      .orderBy(desc(quotes.updatedAt), desc(quotes.createdAt))
+      .orderBy(asc(quotes.validUntil), desc(quotes.sentAt), desc(quotes.createdAt))
       .limit(4),
     db
       .select({
@@ -54,14 +134,151 @@ export async function getWorkspaceOverviewData(
       .where(
         and(
           eq(quotes.workspaceId, workspaceId),
-          inArray(quotes.status, ["draft", "sent", "expired"]),
+          eq(quotes.status, "sent"),
+          isNull(quotes.customerRespondedAt),
+          gte(quotes.validUntil, today),
+          lte(quotes.validUntil, expiringSoonCutoff),
+        ),
+      ),
+    db
+      .select({
+        id: inquiries.id,
+        customerName: inquiries.customerName,
+        customerEmail: inquiries.customerEmail,
+        serviceCategory: inquiries.serviceCategory,
+        status: inquiries.status,
+        submittedAt: inquiries.submittedAt,
+      })
+      .from(inquiries)
+      .leftJoin(
+        quotes,
+        and(
+          eq(quotes.inquiryId, inquiries.id),
+          eq(quotes.workspaceId, workspaceId),
+        ),
+      )
+      .where(
+        and(
+          eq(inquiries.workspaceId, workspaceId),
+          inArray(inquiries.status, actionableInquiryStatuses),
+          isNull(quotes.id),
+        ),
+      )
+      .orderBy(desc(inquiries.submittedAt), desc(inquiries.createdAt))
+      .limit(4),
+    db
+      .select({
+        count: count(),
+      })
+      .from(inquiries)
+      .leftJoin(
+        quotes,
+        and(
+          eq(quotes.inquiryId, inquiries.id),
+          eq(quotes.workspaceId, workspaceId),
+        ),
+      )
+      .where(
+        and(
+          eq(inquiries.workspaceId, workspaceId),
+          inArray(inquiries.status, actionableInquiryStatuses),
+          isNull(quotes.id),
+        ),
+      ),
+    db
+      .select({
+        id: quotes.id,
+        inquiryId: quotes.inquiryId,
+        quoteNumber: quotes.quoteNumber,
+        title: quotes.title,
+        customerName: quotes.customerName,
+        customerEmail: quotes.customerEmail,
+        currency: quotes.currency,
+        totalInCents: quotes.totalInCents,
+        status: quotes.status,
+        validUntil: quotes.validUntil,
+        sentAt: quotes.sentAt,
+        acceptedAt: quotes.acceptedAt,
+        customerRespondedAt: quotes.customerRespondedAt,
+        updatedAt: quotes.updatedAt,
+      })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.status, "sent"),
+          isNull(quotes.customerRespondedAt),
+        ),
+      )
+      .orderBy(asc(quotes.validUntil), desc(quotes.sentAt), desc(quotes.createdAt))
+      .limit(4),
+    db
+      .select({
+        count: count(),
+      })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.status, "sent"),
+          isNull(quotes.customerRespondedAt),
+        ),
+      ),
+    db
+      .select({
+        id: quotes.id,
+        inquiryId: quotes.inquiryId,
+        quoteNumber: quotes.quoteNumber,
+        title: quotes.title,
+        customerName: quotes.customerName,
+        customerEmail: quotes.customerEmail,
+        currency: quotes.currency,
+        totalInCents: quotes.totalInCents,
+        status: quotes.status,
+        validUntil: quotes.validUntil,
+        sentAt: quotes.sentAt,
+        acceptedAt: quotes.acceptedAt,
+        customerRespondedAt: quotes.customerRespondedAt,
+        updatedAt: quotes.updatedAt,
+      })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.status, "accepted"),
+          isNotNull(quotes.acceptedAt),
+          gte(quotes.acceptedAt, recentAcceptedCutoff),
+        ),
+      )
+      .orderBy(desc(quotes.acceptedAt), desc(quotes.createdAt))
+      .limit(4),
+    db
+      .select({
+        count: count(),
+      })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.status, "accepted"),
+          isNotNull(quotes.acceptedAt),
+          gte(quotes.acceptedAt, recentAcceptedCutoff),
         ),
       ),
   ]);
 
   return {
-    recentInquiries,
-    quoteAttention,
-    quoteAttentionCount: Number(quoteAttentionCountRows[0]?.count ?? 0),
+    overdueReplies,
+    expiringSoonQuotes,
+    inquiriesWithoutQuotes,
+    awaitingResponseQuotes,
+    recentAcceptedQuotes,
+    counts: {
+      overdueReplies: Number(overdueReplyCountRows[0]?.count ?? 0),
+      expiringSoonQuotes: Number(expiringSoonQuoteCountRows[0]?.count ?? 0),
+      inquiriesWithoutQuotes: Number(inquiryWithoutQuoteCountRows[0]?.count ?? 0),
+      awaitingResponseQuotes: Number(awaitingResponseQuoteCountRows[0]?.count ?? 0),
+      recentAcceptedQuotes: Number(recentAcceptedQuoteCountRows[0]?.count ?? 0),
+    },
   };
 }

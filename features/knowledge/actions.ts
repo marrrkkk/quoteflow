@@ -32,7 +32,8 @@ const initialKnowledgeFileDeleteState: KnowledgeFileDeleteActionState = {};
 const initialKnowledgeFaqState: KnowledgeFaqActionState = {};
 const initialKnowledgeFaqDeleteState: KnowledgeFaqDeleteActionState = {};
 
-function revalidateKnowledgePage() {
+function revalidateKnowledgePages() {
+  revalidatePath("/dashboard/settings");
   revalidatePath("/dashboard/knowledge");
 }
 
@@ -67,7 +68,7 @@ export async function uploadKnowledgeFileAction(
       knowledgeFile: validationResult.data,
     });
 
-    revalidateKnowledgePage();
+    revalidateKnowledgePages();
 
     return {
       success: "Knowledge file uploaded.",
@@ -123,7 +124,7 @@ export async function deleteKnowledgeFileAction(
       };
     }
 
-    revalidateKnowledgePage();
+    revalidateKnowledgePages();
 
     return {};
   } catch (error) {
@@ -166,7 +167,7 @@ export async function createKnowledgeFaqAction(
       faq: validationResult.data,
     });
 
-    revalidateKnowledgePage();
+    revalidateKnowledgePages();
 
     return {
       success: "FAQ added.",
@@ -227,7 +228,7 @@ export async function updateKnowledgeFaqAction(
       };
     }
 
-    revalidateKnowledgePage();
+    revalidateKnowledgePages();
 
     return {
       success: "FAQ updated.",
@@ -280,7 +281,7 @@ export async function deleteKnowledgeFaqAction(
       };
     }
 
-    revalidateKnowledgePage();
+    revalidateKnowledgePages();
 
     return {};
   } catch (error) {

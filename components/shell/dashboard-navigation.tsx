@@ -1,7 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BookCopy,
-  ChartColumn,
   FileText,
   Inbox,
   LayoutDashboard,
@@ -19,12 +17,12 @@ export const dashboardNavigation: DashboardNavigationItem[] = [
   {
     href: "/dashboard",
     label: "Overview",
-    description: "Workspace summary and the next owner actions.",
+    description: "Action queues, momentum, and the next owner actions.",
     icon: LayoutDashboard,
   },
   {
     href: "/dashboard/inquiries",
-    label: "Inquiries",
+    label: "Requests",
     description: "Capture, review, and move customer requests forward.",
     icon: Inbox,
   },
@@ -35,40 +33,50 @@ export const dashboardNavigation: DashboardNavigationItem[] = [
     icon: FileText,
   },
   {
-    href: "/dashboard/knowledge",
-    label: "Knowledge",
-    description: "Store business files and FAQs for faster responses.",
-    icon: BookCopy,
-  },
-  {
-    href: "/dashboard/analytics",
-    label: "Analytics",
-    description: "Watch inquiry flow and quote conversion at a glance.",
-    icon: ChartColumn,
-  },
-  {
     href: "/dashboard/settings",
-    label: "Settings",
-    description: "Manage workspace identity and public intake defaults.",
+    label: "Workspace",
+    description: "Manage identity, intake defaults, and reusable knowledge.",
     icon: Settings2,
   },
 ];
+
+function resolveDashboardActivePathname(pathname: string) {
+  if (
+    pathname === "/dashboard/analytics" ||
+    pathname.startsWith("/dashboard/analytics/")
+  ) {
+    return "/dashboard";
+  }
+
+  if (
+    pathname === "/dashboard/knowledge" ||
+    pathname.startsWith("/dashboard/knowledge/")
+  ) {
+    return "/dashboard/settings";
+  }
+
+  return pathname;
+}
 
 export function isDashboardNavigationItemActive(
   pathname: string,
   href: string,
 ) {
+  const activePathname = resolveDashboardActivePathname(pathname);
+
   if (href === "/dashboard") {
-    return pathname === href;
+    return activePathname === href;
   }
 
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return activePathname === href || activePathname.startsWith(`${href}/`);
 }
 
 export function getActiveDashboardNavigationItem(pathname: string) {
+  const activePathname = resolveDashboardActivePathname(pathname);
+
   return (
     dashboardNavigation.find((item) =>
-      isDashboardNavigationItemActive(pathname, item.href),
+      isDashboardNavigationItemActive(activePathname, item.href),
     ) ?? dashboardNavigation[0]
   );
 }

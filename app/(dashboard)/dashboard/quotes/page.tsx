@@ -37,7 +37,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
     <DashboardPage>
       <PageHeader
         eyebrow="Quotes"
-        title="Quote workspace"
+        title="Quotes"
         description="Draft, send, and track quotes."
         actions={
           <Button asChild>

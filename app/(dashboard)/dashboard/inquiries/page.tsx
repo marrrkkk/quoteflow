@@ -39,9 +39,9 @@ export default async function InquiriesPage({
   return (
     <DashboardPage>
       <PageHeader
-        eyebrow="Inquiry inbox"
+        eyebrow="Requests"
         title="Customer requests"
-        description="Search, filter, and open each inquiry."
+        description="Search, filter, and open each request."
         actions={
           <Button asChild variant="outline">
             <Link href={`/inquire/${workspaceContext.workspace.slug}`} prefetch={false}>
@@ -84,13 +84,13 @@ export default async function InquiriesPage({
           description={
             hasFilters
               ? "Try a different search or status."
-              : "New submissions will appear here."
+              : "New customer requests will appear here."
           }
           icon={Inbox}
           title={
             hasFilters
-              ? "No inquiries match these filters."
-              : "Your inquiry inbox is still empty."
+              ? "No requests match these filters."
+              : "Your request inbox is still empty."
           }
           variant="list"
         />
