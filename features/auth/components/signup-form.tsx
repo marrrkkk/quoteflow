@@ -8,6 +8,7 @@ import { getAuthErrorMessage, getFieldError, getValidationState } from "@/featur
 import { signupSchema } from "@/features/auth/schemas";
 import type { AuthFormState } from "@/features/auth/types";
 import { AuthFormFeedback } from "@/features/auth/components/auth-form-feedback";
+import { FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -63,7 +64,7 @@ export function SignupForm() {
   const passwordError = getFieldError(state.fieldErrors, "password");
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+    <form className="form-stack" onSubmit={handleSubmit}>
       <AuthFormFeedback error={state.error} success={state.success} />
 
       <FieldGroup>
@@ -118,9 +119,11 @@ export function SignupForm() {
         </Field>
       </FieldGroup>
 
-      <Button className="w-full" disabled={isPending} type="submit" size="lg">
-        {isPending ? "Creating your account..." : "Create account"}
-      </Button>
+      <FormActions className="items-stretch sm:items-stretch">
+        <Button className="w-full" disabled={isPending} type="submit" size="lg">
+          {isPending ? "Creating your account..." : "Create account"}
+        </Button>
+      </FormActions>
 
       <Separator />
 

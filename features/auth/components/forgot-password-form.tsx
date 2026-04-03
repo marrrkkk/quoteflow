@@ -8,6 +8,7 @@ import { getAuthErrorMessage, getFieldError, getValidationState } from "@/featur
 import { forgotPasswordSchema } from "@/features/auth/schemas";
 import type { AuthFormState } from "@/features/auth/types";
 import { AuthFormFeedback } from "@/features/auth/components/auth-form-feedback";
+import { FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -66,7 +67,7 @@ export function ForgotPasswordForm() {
   const emailError = getFieldError(state.fieldErrors, "email");
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+    <form className="form-stack" onSubmit={handleSubmit}>
       <AuthFormFeedback error={state.error} success={state.success} />
 
       <FieldGroup>
@@ -87,9 +88,11 @@ export function ForgotPasswordForm() {
         </Field>
       </FieldGroup>
 
-      <Button className="w-full" disabled={isPending} type="submit" size="lg">
-        {isPending ? "Sending reset link..." : "Send reset link"}
-      </Button>
+      <FormActions className="items-stretch sm:items-stretch">
+        <Button className="w-full" disabled={isPending} type="submit" size="lg">
+          {isPending ? "Sending reset link..." : "Send reset link"}
+        </Button>
+      </FormActions>
 
       <Separator />
 

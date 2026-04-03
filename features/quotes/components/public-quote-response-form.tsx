@@ -3,6 +3,10 @@
 import { useActionState } from "react";
 import { CheckCircle2, CircleSlash } from "lucide-react";
 
+import {
+  FormNote,
+  FormSection,
+} from "@/components/shared/form-layout";
 import { getFieldError } from "@/lib/action-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -32,7 +36,7 @@ export function PublicQuoteResponseForm({
   const messageError = getFieldError(state.fieldErrors, "message");
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="form-stack">
       {state.error ? (
         <Alert variant="destructive">
           <AlertTitle>We could not record your response.</AlertTitle>
@@ -47,7 +51,7 @@ export function PublicQuoteResponseForm({
         </Alert>
       ) : null}
 
-      <div className="soft-panel p-4">
+      <FormNote>
         <p className="text-sm font-medium text-foreground">
           Respond to this quote
         </p>
@@ -55,28 +59,33 @@ export function PublicQuoteResponseForm({
           Accept the quote if everything looks right, or decline it and leave a
           short note so the business owner knows what to adjust.
         </p>
-      </div>
+      </FormNote>
 
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="public-quote-message">
-            Message for the business
-          </FieldLabel>
-          <FieldContent>
-            <Textarea
-              id="public-quote-message"
-              name="message"
-              rows={4}
-              placeholder="Optional note about your decision or any next steps."
-              aria-invalid={Boolean(messageError) || undefined}
-              disabled={isPending}
-            />
-            <FieldError
-              errors={messageError ? [{ message: messageError }] : undefined}
-            />
-          </FieldContent>
-        </Field>
-      </FieldGroup>
+      <FormSection
+        description="Optional, but helpful if you want anything clarified or adjusted."
+        title="Message"
+      >
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="public-quote-message">
+              Message for the business
+            </FieldLabel>
+            <FieldContent>
+              <Textarea
+                id="public-quote-message"
+                name="message"
+                rows={4}
+                placeholder="Optional note about your decision or any next steps."
+                aria-invalid={Boolean(messageError) || undefined}
+                disabled={isPending}
+              />
+              <FieldError
+                errors={messageError ? [{ message: messageError }] : undefined}
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+      </FormSection>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Button

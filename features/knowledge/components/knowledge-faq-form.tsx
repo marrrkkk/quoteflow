@@ -2,6 +2,10 @@
 
 import { useActionState, useEffect, useRef } from "react";
 
+import {
+  FormActions,
+  FormSection,
+} from "@/components/shared/form-layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,7 +60,7 @@ export function KnowledgeFaqForm({
   }, [initialValues, onSuccess, state.success]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4" ref={formRef}>
+    <form action={formAction} className="form-stack" ref={formRef}>
       {state.error ? (
         <Alert variant="destructive">
           <AlertTitle>We could not save the FAQ.</AlertTitle>
@@ -71,54 +75,61 @@ export function KnowledgeFaqForm({
         </Alert>
       ) : null}
 
-      <FieldGroup>
-        <Field data-invalid={Boolean(state.fieldErrors?.question) || undefined}>
-          <FieldLabel htmlFor={`${idPrefix}-question`}>Question</FieldLabel>
-          <FieldContent>
-            <Input
-              id={`${idPrefix}-question`}
-              name="question"
-              defaultValue={initialValues?.question}
-              placeholder="What turnaround time should we quote?"
-              aria-invalid={Boolean(state.fieldErrors?.question) || undefined}
-              disabled={isPending}
-            />
-            <FieldError
-              errors={
-                state.fieldErrors?.question?.[0]
-                  ? [{ message: state.fieldErrors.question[0] }]
-                  : undefined
-              }
-            />
-          </FieldContent>
-        </Field>
+      <FormSection
+        description="Keep the answer concise and reusable so it stays helpful in future drafts."
+        title={initialValues ? "FAQ content" : "New FAQ"}
+      >
+        <FieldGroup>
+          <Field data-invalid={Boolean(state.fieldErrors?.question) || undefined}>
+            <FieldLabel htmlFor={`${idPrefix}-question`}>Question</FieldLabel>
+            <FieldContent>
+              <Input
+                id={`${idPrefix}-question`}
+                name="question"
+                defaultValue={initialValues?.question}
+                placeholder="What turnaround time should we quote?"
+                aria-invalid={Boolean(state.fieldErrors?.question) || undefined}
+                disabled={isPending}
+              />
+              <FieldError
+                errors={
+                  state.fieldErrors?.question?.[0]
+                    ? [{ message: state.fieldErrors.question[0] }]
+                    : undefined
+                }
+              />
+            </FieldContent>
+          </Field>
 
-        <Field data-invalid={Boolean(state.fieldErrors?.answer) || undefined}>
-          <FieldLabel htmlFor={`${idPrefix}-answer`}>Answer</FieldLabel>
-          <FieldContent>
-            <Textarea
-              id={`${idPrefix}-answer`}
-              name="answer"
-              rows={5}
-              defaultValue={initialValues?.answer}
-              placeholder="Share the internal answer the AI assistant should lean on when drafting replies."
-              aria-invalid={Boolean(state.fieldErrors?.answer) || undefined}
-              disabled={isPending}
-            />
-            <FieldError
-              errors={
-                state.fieldErrors?.answer?.[0]
-                  ? [{ message: state.fieldErrors.answer[0] }]
-                  : undefined
-              }
-            />
-          </FieldContent>
-        </Field>
-      </FieldGroup>
+          <Field data-invalid={Boolean(state.fieldErrors?.answer) || undefined}>
+            <FieldLabel htmlFor={`${idPrefix}-answer`}>Answer</FieldLabel>
+            <FieldContent>
+              <Textarea
+                id={`${idPrefix}-answer`}
+                name="answer"
+                rows={5}
+                defaultValue={initialValues?.answer}
+                placeholder="Share the internal answer the AI assistant should lean on when drafting replies."
+                aria-invalid={Boolean(state.fieldErrors?.answer) || undefined}
+                disabled={isPending}
+              />
+              <FieldError
+                errors={
+                  state.fieldErrors?.answer?.[0]
+                    ? [{ message: state.fieldErrors.answer[0] }]
+                    : undefined
+                }
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+      </FormSection>
 
-      <Button disabled={isPending} type="submit">
-        {isPending ? submitPendingLabel : submitLabel}
-      </Button>
+      <FormActions>
+        <Button disabled={isPending} type="submit">
+          {isPending ? submitPendingLabel : submitLabel}
+        </Button>
+      </FormActions>
     </form>
   );
 }

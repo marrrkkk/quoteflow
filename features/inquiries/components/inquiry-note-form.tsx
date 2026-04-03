@@ -2,6 +2,10 @@
 
 import { useActionState, useEffect, useRef } from "react";
 
+import {
+  FormActions,
+  FormSection,
+} from "@/components/shared/form-layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +38,7 @@ export function InquiryNoteForm({ action }: InquiryNoteFormProps) {
   }, [state.success]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4" ref={formRef}>
+    <form action={formAction} className="form-stack" ref={formRef}>
       {state.error ? (
         <Alert variant="destructive">
           <AlertTitle>We could not save the note.</AlertTitle>
@@ -49,32 +53,39 @@ export function InquiryNoteForm({ action }: InquiryNoteFormProps) {
         </Alert>
       ) : null}
 
-      <FieldGroup>
-        <Field data-invalid={Boolean(state.fieldErrors?.body) || undefined}>
-          <FieldLabel htmlFor="inquiry-note">Add an internal note</FieldLabel>
-          <FieldContent>
-            <Textarea
-              id="inquiry-note"
-              name="body"
-              rows={4}
-              placeholder="Capture follow-ups, scope clarifications, or internal context for the next reply."
-              aria-invalid={Boolean(state.fieldErrors?.body) || undefined}
-              disabled={isPending}
-            />
-            <FieldError
-              errors={
-                state.fieldErrors?.body?.[0]
-                  ? [{ message: state.fieldErrors.body[0] }]
-                  : undefined
-              }
-            />
-          </FieldContent>
-        </Field>
-      </FieldGroup>
+      <FormSection
+        description="Visible only inside the workspace."
+        title="Internal note"
+      >
+        <FieldGroup>
+          <Field data-invalid={Boolean(state.fieldErrors?.body) || undefined}>
+            <FieldLabel htmlFor="inquiry-note">Add an internal note</FieldLabel>
+            <FieldContent>
+              <Textarea
+                id="inquiry-note"
+                name="body"
+                rows={4}
+                placeholder="Capture follow-ups, scope clarifications, or internal context for the next reply."
+                aria-invalid={Boolean(state.fieldErrors?.body) || undefined}
+                disabled={isPending}
+              />
+              <FieldError
+                errors={
+                  state.fieldErrors?.body?.[0]
+                    ? [{ message: state.fieldErrors.body[0] }]
+                    : undefined
+                }
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+      </FormSection>
 
-      <Button disabled={isPending} type="submit">
-        {isPending ? "Saving note..." : "Add note"}
-      </Button>
+      <FormActions>
+        <Button disabled={isPending} type="submit">
+          {isPending ? "Saving note..." : "Add note"}
+        </Button>
+      </FormActions>
     </form>
   );
 }

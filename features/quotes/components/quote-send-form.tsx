@@ -3,6 +3,10 @@
 import { useActionState } from "react";
 import { SendHorizontal } from "lucide-react";
 
+import {
+  FormActions,
+  FormNote,
+} from "@/components/shared/form-layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { QuoteSendActionState } from "@/features/quotes/types";
@@ -26,7 +30,7 @@ export function QuoteSendForm({
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="form-stack">
       {state.error ? (
         <Alert variant="destructive">
           <AlertTitle>We could not send the quote.</AlertTitle>
@@ -41,18 +45,20 @@ export function QuoteSendForm({
         </Alert>
       ) : null}
 
-      <div className="soft-panel p-4 shadow-none">
+      <FormNote>
         <p className="text-sm font-medium text-foreground">Send to customer</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Quote delivery uses Resend and sends directly to {customerEmail}. Save
           the draft first if you changed any line items or totals.
         </p>
-      </div>
+      </FormNote>
 
-      <Button disabled={disabled || isPending} type="submit">
-        <SendHorizontal data-icon="inline-start" />
-        {isPending ? "Sending quote..." : "Send quote email"}
-      </Button>
+      <FormActions>
+        <Button disabled={disabled || isPending} type="submit">
+          <SendHorizontal data-icon="inline-start" />
+          {isPending ? "Sending quote..." : "Send quote email"}
+        </Button>
+      </FormActions>
     </form>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 
+import { FormActions } from "@/components/shared/form-layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +44,7 @@ export function QuoteStatusForm({
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="form-stack">
       {state.error ? (
         <Alert variant="destructive">
           <AlertTitle>We could not update the quote.</AlertTitle>
@@ -100,12 +101,14 @@ export function QuoteStatusForm({
         </Field>
       </FieldGroup>
 
-      <Button
-        disabled={isPending || selectedStatus === currentStatus}
-        type="submit"
-      >
-        {isPending ? "Updating status..." : "Save status"}
-      </Button>
+      <FormActions>
+        <Button
+          disabled={isPending || selectedStatus === currentStatus}
+          type="submit"
+        >
+          {isPending ? "Updating status..." : "Save status"}
+        </Button>
+      </FormActions>
     </form>
   );
 }

@@ -9,6 +9,7 @@ import { getAuthErrorMessage, getFieldError, getValidationState } from "@/featur
 import { loginSchema } from "@/features/auth/schemas";
 import type { AuthFormState } from "@/features/auth/types";
 import { AuthFormFeedback } from "@/features/auth/components/auth-form-feedback";
+import { FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -68,7 +69,7 @@ export function LoginForm() {
   const passwordError = getFieldError(state.fieldErrors, "password");
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+    <form className="form-stack" onSubmit={handleSubmit}>
       <AuthFormFeedback error={state.error} success={state.success ?? resetMessage} />
 
       <FieldGroup>
@@ -89,7 +90,15 @@ export function LoginForm() {
         </Field>
 
         <Field data-invalid={Boolean(passwordError) || undefined}>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <Link
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              href="/forgot-password"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <FieldContent>
             <Input
               id="password"
@@ -107,17 +116,11 @@ export function LoginForm() {
         </Field>
       </FieldGroup>
 
-      <div className="flex flex-col gap-3">
+      <FormActions className="items-stretch sm:items-stretch">
         <Button className="w-full" disabled={isPending} type="submit" size="lg">
           {isPending ? "Signing in..." : "Sign in"}
         </Button>
-        <Link
-          className="self-end text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          href="/forgot-password"
-        >
-          Forgot your password?
-        </Link>
-      </div>
+      </FormActions>
 
       <Separator />
 
