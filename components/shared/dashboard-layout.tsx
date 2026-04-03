@@ -90,11 +90,11 @@ export function DashboardDetailHeader({
         <div className="flex flex-col gap-3">
           {eyebrow ? <span className="meta-label">{eyebrow}</span> : null}
           <div className="flex flex-col gap-3">
-            <h1 className="font-heading text-3xl font-semibold leading-tight tracking-tight text-balance sm:text-[2.15rem]">
+            <h1 className="font-heading text-[2rem] font-semibold leading-tight tracking-tight text-balance sm:text-[2.3rem]">
               {title}
             </h1>
             {description ? (
-              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[0.95rem]">
+              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[0.96rem]">
                 {description}
               </p>
             ) : null}
@@ -175,7 +175,7 @@ export function DashboardSection({
   const hasHeader = Boolean(title || description || action);
 
   return (
-    <Card className={cn("gap-0 border-border/75 bg-card/96", className)}>
+    <Card className={cn("gap-0 border-border/75 bg-card/97", className)}>
       {hasHeader ? (
         <CardHeader className={cn("gap-3 pb-5", headerClassName)}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -281,7 +281,7 @@ export function DashboardDetailFeedItem({
         <div className="dashboard-detail-feed-heading">
           <div className="min-w-0 flex-1">
             {title ? (
-              <div className={cn("text-sm font-medium text-foreground", titleClassName)}>
+              <div className={cn("text-sm font-semibold text-foreground", titleClassName)}>
                 {title}
               </div>
             ) : null}
