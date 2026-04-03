@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { InquiryStatus } from "@/features/inquiries/types";
 import {
   getInquiryStatusLabel,
@@ -8,13 +9,20 @@ import {
 
 type InquiryStatusBadgeProps = {
   status: InquiryStatus;
+  className?: string;
 };
 
-export function InquiryStatusBadge({ status }: InquiryStatusBadgeProps) {
+export function InquiryStatusBadge({
+  status,
+  className,
+}: InquiryStatusBadgeProps) {
   const Icon = inquiryStatusIcons[status];
 
   return (
-    <Badge className="shrink-0 rounded-full" variant={inquiryStatusVariants[status]}>
+    <Badge
+      className={cn("shrink-0 rounded-full", className)}
+      variant={inquiryStatusVariants[status]}
+    >
       <Icon data-icon="inline-start" />
       {getInquiryStatusLabel(status)}
     </Badge>

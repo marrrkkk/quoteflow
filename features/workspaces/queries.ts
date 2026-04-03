@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import type { WorkspaceOverviewData } from "@/features/workspaces/types";
 import { db } from "@/lib/db/client";
@@ -12,7 +12,7 @@ export async function getWorkspaceOverviewData(
 ): Promise<WorkspaceOverviewData> {
   await syncExpiredQuotesForWorkspace(workspaceId);
 
-  const [recentInquiries, quoteAttention] = await Promise.all([
+  const [recentInquiries, quoteAttention, quoteAttentionCountRows] = await Promise.all([
     db
       .select({
         id: inquiries.id,
@@ -25,7 +25,7 @@ export async function getWorkspaceOverviewData(
       .from(inquiries)
       .where(eq(inquiries.workspaceId, workspaceId))
       .orderBy(desc(inquiries.submittedAt), desc(inquiries.createdAt))
-      .limit(5),
+      .limit(4),
     db
       .select({
         id: quotes.id,
@@ -45,11 +45,23 @@ export async function getWorkspaceOverviewData(
         ),
       )
       .orderBy(desc(quotes.updatedAt), desc(quotes.createdAt))
-      .limit(5),
+      .limit(4),
+    db
+      .select({
+        count: count(),
+      })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.workspaceId, workspaceId),
+          inArray(quotes.status, ["draft", "sent", "expired"]),
+        ),
+      ),
   ]);
 
   return {
     recentInquiries,
     quoteAttention,
+    quoteAttentionCount: Number(quoteAttentionCountRows[0]?.count ?? 0),
   };
 }

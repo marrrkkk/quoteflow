@@ -28,4 +28,5 @@ export type WorkspaceOverviewQuoteAttentionItem = {
 export type WorkspaceOverviewData = {
   recentInquiries: WorkspaceOverviewRecentInquiry[];
   quoteAttention: WorkspaceOverviewQuoteAttentionItem[];
+  quoteAttentionCount: number;
 };

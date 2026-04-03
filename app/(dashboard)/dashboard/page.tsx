@@ -5,18 +5,16 @@ import {
   FileText,
   Globe2,
   Inbox,
-  LayoutDashboard,
   Settings2,
-  Sparkles,
 } from "lucide-react";
 
 import {
-  DashboardDetailLayout,
+  DashboardActionsRow,
   DashboardEmptyState,
   DashboardPage,
-  DashboardSidebarStack,
-  DashboardStatsGrid,
 } from "@/components/shared/dashboard-layout";
+import { HelpTooltip } from "@/components/shared/help-tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getWorkspaceAnalyticsData } from "@/features/analytics/queries";
 import { formatAnalyticsPercent } from "@/features/analytics/utils";
@@ -25,12 +23,8 @@ import { QuoteStatusBadge } from "@/features/quotes/components/quote-status-badg
 import { formatQuoteDate } from "@/features/quotes/utils";
 import { getWorkspacePublicInquiryUrl } from "@/features/settings/utils";
 import { getWorkspaceOverviewData } from "@/features/workspaces/queries";
-import { OverviewActionsCard } from "@/features/workspaces/components/overview-actions-card";
-import { OverviewHealthCard } from "@/features/workspaces/components/overview-health-card";
-import { OverviewHeroCard } from "@/features/workspaces/components/overview-hero-card";
-import { OverviewKpiCard } from "@/features/workspaces/components/overview-kpi-card";
-import { OverviewListCard } from "@/features/workspaces/components/overview-list-card";
 import { requireCurrentWorkspaceContext } from "@/lib/db/workspace-access";
+import { cn } from "@/lib/utils";
 
 export default async function DashboardOverviewPage() {
   const { workspaceContext } = await requireCurrentWorkspaceContext();
@@ -44,189 +38,297 @@ export default async function DashboardOverviewPage() {
     : 0;
   const newInquiryCount =
     analytics.inquiryStatusCounts.find((row) => row.status === "new")?.count ?? 0;
-  const quoteAttentionCount = overview.quoteAttention.length;
+  const quoteAttentionCount = overview.quoteAttentionCount;
+  const focusCount = newInquiryCount + quoteAttentionCount;
   const publicInquiryUrl = getWorkspacePublicInquiryUrl(
     workspaceContext.workspace.slug,
   );
 
   return (
-    <DashboardPage className="gap-8">
-      <OverviewHeroCard
-        workspaceName={workspaceContext.workspace.name}
-        publicInquiryEnabled={workspaceContext.workspace.publicInquiryEnabled}
-        newInquiryCount={newInquiryCount}
-        quoteAttentionCount={quoteAttentionCount}
-        actions={
-          <>
-            <Button asChild>
-              <Link href="/dashboard/inquiries" prefetch={false}>
-                Open inquiries
-                <ArrowRight data-icon="inline-end" />
-              </Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href="/dashboard/quotes/new" prefetch={false}>
-                Create quote
-              </Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href={publicInquiryUrl} prefetch={false} target="_blank">
-                Open public form
-              </Link>
-            </Button>
-          </>
-        }
-      />
+    <DashboardPage className="gap-5 xl:gap-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-stretch">
+        <section className="section-panel h-full overflow-hidden">
+          <div className="flex h-full flex-col gap-4 px-5 py-5 sm:px-6 sm:py-6">
+            <div className="xl:flex xl:flex-1 xl:items-start xl:pt-3">
+              <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={focusCount ? "outline" : "secondary"}>
+                      {focusCount ? `${focusCount} items need attention` : "Workspace is caught up"}
+                    </Badge>
+                    <Badge
+                      variant={workspaceContext.workspace.publicInquiryEnabled ? "secondary" : "outline"}
+                    >
+                      {workspaceContext.workspace.publicInquiryEnabled ? "Public form live" : "Public form paused"}
+                    </Badge>
+                  </div>
+                  <h1 className="mt-3 font-heading text-[1.95rem] font-semibold leading-tight tracking-tight text-balance sm:text-[2.35rem]">
+                    {workspaceContext.workspace.name}
+                  </h1>
+                </div>
 
-      <DashboardStatsGrid>
-        <OverviewKpiCard
-          description={`${analytics.totalInquiries} total inquiries in the workspace.`}
-          icon={Inbox}
-          title="Inquiries this week"
-          value={`${analytics.inquiriesThisWeek}`}
-        />
-        <OverviewKpiCard
-          description={`${analytics.quoteSummary.totalQuotes} quotes created overall.`}
-          icon={BarChart3}
-          title="Sent quotes"
-          value={`${analytics.quoteSummary.sentQuotes}`}
-        />
-        <OverviewKpiCard
-          description={`${analytics.wonCount} won and ${analytics.lostCount} lost so far.`}
-          icon={FileText}
-          title="Win rate"
-          value={formatAnalyticsPercent(winRate)}
-        />
-        <OverviewKpiCard
-          description={`${analytics.quoteSummary.linkedInquiryCount} inquiries already have linked quotes.`}
-          icon={Sparkles}
-          title="Inquiry coverage"
-          value={formatAnalyticsPercent(analytics.quoteSummary.inquiryCoverageRate)}
-        />
-      </DashboardStatsGrid>
-
-      <DashboardDetailLayout className="xl:grid-cols-[minmax(0,1.35fr)_22rem] 2xl:grid-cols-[minmax(0,1.45fr)_24rem]">
-        <DashboardSidebarStack>
-          <OverviewListCard
-            action={
-              <Button asChild size="sm" variant="ghost">
-                <Link href="/dashboard/inquiries" prefetch={false}>
-                  View all
-                  <ArrowRight data-icon="inline-end" />
-                </Link>
-              </Button>
-            }
-            count={overview.recentInquiries.length}
-            description="Newest submissions that likely need triage or a reply."
-            title="Recent inquiries"
-          >
-            {overview.recentInquiries.length ? (
-              <div className="flex flex-col divide-y divide-border/70">
-                {overview.recentInquiries.map((inquiry) => (
-                  <OverviewInquiryRow
-                    inquiry={inquiry}
-                    key={inquiry.id}
-                  />
-                ))}
-              </div>
-            ) : (
-              <DashboardEmptyState
-                action={
-                  <Button asChild variant="outline">
-                    <Link href={publicInquiryUrl} prefetch={false} target="_blank">
-                      Open public form
+                <DashboardActionsRow className="w-full [&>*]:w-full sm:[&>*]:w-auto lg:w-auto lg:justify-end">
+                  <Button asChild>
+                    <Link href="/dashboard/inquiries" prefetch={false}>
+                      Open inquiries
+                      <ArrowRight data-icon="inline-end" />
                     </Link>
                   </Button>
-                }
-                className="px-6 py-10"
-                description="Share the public inquiry page to start collecting customer requests into the dashboard."
-                icon={Inbox}
-                title="No inquiries yet"
-                variant="flat"
-              />
-            )}
-          </OverviewListCard>
-
-          <OverviewListCard
-            action={
-              <Button asChild size="sm" variant="ghost">
-                <Link href="/dashboard/quotes" prefetch={false}>
-                  View all
-                  <ArrowRight data-icon="inline-end" />
-                </Link>
-              </Button>
-            }
-            count={overview.quoteAttention.length}
-            description="Quotes still waiting to be sent, accepted, or followed up."
-            title="Quotes needing attention"
-          >
-            {overview.quoteAttention.length ? (
-              <div className="flex flex-col divide-y divide-border/70">
-                {overview.quoteAttention.map((quote) => (
-                  <OverviewQuoteRow
-                    key={quote.id}
-                    quote={quote}
-                  />
-                ))}
-              </div>
-            ) : (
-              <DashboardEmptyState
-                action={
-                  <Button asChild>
+                  <Button asChild variant="secondary">
                     <Link href="/dashboard/quotes/new" prefetch={false}>
                       Create quote
                     </Link>
                   </Button>
-                }
-                className="px-6 py-10"
-                description="Draft or send a quote when an inquiry is ready to move into pricing."
-                icon={FileText}
-                title="No open quote work"
-                variant="flat"
+                  <Button asChild variant="ghost">
+                    <Link href={publicInquiryUrl} prefetch={false} target="_blank">
+                      Open public form
+                    </Link>
+                  </Button>
+                </DashboardActionsRow>
+              </div>
+            </div>
+
+            <div className="mt-auto grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-3">
+              <OverviewSummaryMetric
+                accent={newInquiryCount > 0}
+                label="Need reply"
+                value={`${newInquiryCount}`}
               />
-            )}
-          </OverviewListCard>
-        </DashboardSidebarStack>
+              <OverviewSummaryMetric
+                accent={quoteAttentionCount > 0}
+                label="Quote follow-up"
+                value={`${quoteAttentionCount}`}
+              />
+              <OverviewSummaryMetric
+                label="Win rate"
+                value={formatAnalyticsPercent(winRate)}
+              />
+            </div>
+          </div>
+        </section>
 
-        <DashboardSidebarStack>
-          <OverviewActionsCard
-            items={[
-              {
-                description: workspaceContext.workspace.publicInquiryEnabled
-                  ? "Open the customer-facing intake page and confirm the public flow."
-                  : "Preview the public intake route even while the form is turned off.",
-                external: true,
-                href: publicInquiryUrl,
-                icon: Globe2,
-                label: "Public inquiry page",
-              },
-              {
-                description:
-                  "Update workspace identity, messaging defaults, and intake settings.",
-                href: "/dashboard/settings",
-                icon: Settings2,
-                label: "Workspace settings",
-              },
-              {
-                description:
-                  "Open the wider performance view when you need trends and breakdowns.",
-                href: "/dashboard/analytics",
-                icon: LayoutDashboard,
-                label: "Analytics dashboard",
-              },
-            ]}
-          />
+        <aside className="section-panel overflow-hidden">
+          <div className="flex flex-col gap-4 px-5 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-col divide-y divide-border/70">
+              <OverviewSidebarMetric
+                label="This week"
+                tooltip="New inquiries this week"
+                value={`${analytics.inquiriesThisWeek}`}
+              />
+              <OverviewSidebarMetric
+                label="Coverage"
+                tooltip="Inquiries turned into quotes"
+                value={formatAnalyticsPercent(analytics.quoteSummary.inquiryCoverageRate)}
+              />
+              <OverviewSidebarMetric
+                label="Intake"
+                tooltip="Public form status"
+                value={
+                  workspaceContext.workspace.publicInquiryEnabled ? "Live" : "Paused"
+                }
+              />
+            </div>
 
-          <OverviewHealthCard
-            acceptanceRate={analytics.quoteSummary.acceptanceRate}
-            inquiryCoverageRate={analytics.quoteSummary.inquiryCoverageRate}
-            newInquiryCount={newInquiryCount}
-            quoteAttentionCount={quoteAttentionCount}
-            recentTrend={analytics.recentTrend}
-          />
-        </DashboardSidebarStack>
-      </DashboardDetailLayout>
+            <div className="border-t border-border/70 pt-4">
+              <div className="flex flex-col">
+                <OverviewQuickLink
+                  href="/dashboard/settings"
+                  icon={Settings2}
+                  label="Workspace settings"
+                />
+                <OverviewQuickLink
+                  href="/dashboard/analytics"
+                  icon={BarChart3}
+                  label="Analytics"
+                />
+                <OverviewQuickLink
+                  external
+                  href={publicInquiryUrl}
+                  icon={Globe2}
+                  label="Public inquiry page"
+                />
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <OverviewQueueCard
+          action={
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/dashboard/inquiries" prefetch={false}>
+                All inquiries
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+          }
+          title="Recent inquiries"
+        >
+          {overview.recentInquiries.length ? (
+            <div className="flex flex-col divide-y divide-border/70">
+              {overview.recentInquiries.map((inquiry) => (
+                <OverviewInquiryRow
+                  inquiry={inquiry}
+                  key={inquiry.id}
+                />
+              ))}
+            </div>
+          ) : (
+            <DashboardEmptyState
+              action={
+                <Button asChild variant="outline">
+                  <Link href={publicInquiryUrl} prefetch={false} target="_blank">
+                    Open public form
+                  </Link>
+                </Button>
+              }
+              className="px-5 py-12 sm:px-6"
+              description="Share the form to start collecting requests."
+              icon={Inbox}
+              title="No inquiries yet"
+              variant="flat"
+            />
+          )}
+        </OverviewQueueCard>
+
+        <OverviewQueueCard
+          action={
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/dashboard/quotes" prefetch={false}>
+                All quotes
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+          }
+          title="Open quotes"
+        >
+          {overview.quoteAttention.length ? (
+            <div className="flex flex-col divide-y divide-border/70">
+              {overview.quoteAttention.map((quote) => (
+                <OverviewQuoteRow
+                  key={quote.id}
+                  quote={quote}
+                />
+              ))}
+            </div>
+          ) : (
+            <DashboardEmptyState
+              action={
+                <Button asChild>
+                  <Link href="/dashboard/quotes/new" prefetch={false}>
+                    Create quote
+                  </Link>
+                </Button>
+              }
+              className="px-5 py-12 sm:px-6"
+              description="Create a quote when pricing is ready."
+              icon={FileText}
+              title="No quote follow-up"
+              variant="flat"
+            />
+          )}
+        </OverviewQueueCard>
+      </div>
     </DashboardPage>
+  );
+}
+
+function OverviewSummaryMetric({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="meta-label">{label}</p>
+      <p
+        className={cn(
+          "mt-2 text-[1.9rem] font-semibold tracking-tight text-foreground",
+          accent && "text-primary",
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function OverviewSidebarMetric({
+  label,
+  value,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  tooltip?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+      <div className="flex items-center gap-1.5">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        {tooltip ? (
+          <HelpTooltip content={tooltip} label={label} />
+        ) : null}
+      </div>
+      <p className="text-sm font-semibold tracking-tight text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function OverviewQuickLink({
+  href,
+  label,
+  icon: Icon,
+  external = false,
+}: {
+  href: string;
+  label: string;
+  icon: typeof Globe2;
+  external?: boolean;
+}) {
+  return (
+    <Link
+      className="group flex items-center gap-3 rounded-lg px-0 py-2.5 text-sm font-medium text-foreground transition-colors hover:text-primary"
+      href={href}
+      prefetch={false}
+      rel={external ? "noreferrer" : undefined}
+      target={external ? "_blank" : undefined}
+    >
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/85 text-accent-foreground">
+        <Icon className="size-4" />
+      </div>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  );
+}
+
+function OverviewQueueCard({
+  title,
+  action,
+  children,
+  className,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("section-panel overflow-hidden", className)}>
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-4 sm:px-6">
+        <h2 className="text-base font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -237,27 +339,39 @@ function OverviewInquiryRow({
 }) {
   return (
     <Link
-      className="group px-6 py-4 transition-colors hover:bg-accent/30"
+      className="group block px-5 py-4 transition-colors hover:bg-accent/22 sm:px-6"
       href={`/dashboard/inquiries/${inquiry.id}`}
       prefetch={false}
     >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-center">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{inquiry.customerName}</p>
-          <p className="mt-1 truncate text-sm text-muted-foreground">
-            {inquiry.customerEmail}
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">
+                {inquiry.customerName}
+              </p>
+              <p className="mt-1 truncate text-sm text-muted-foreground">
+                {inquiry.customerEmail}
+              </p>
+            </div>
+            <InquiryStatusBadge
+              className={getPastelInquiryBadgeClassName(inquiry.status)}
+              status={inquiry.status}
+            />
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span className="dashboard-meta-pill min-h-0 px-2.5 py-1 text-[0.7rem]">
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-2">
+          <Badge
+            className="h-6 border-transparent bg-muted/70 px-2.5 text-[0.68rem] font-medium text-muted-foreground"
+            variant="secondary"
+          >
             {inquiry.serviceCategory}
-          </span>
-          <span>Submitted {formatQuoteDate(inquiry.submittedAt)}</span>
+          </Badge>
+          <span className="truncate">Submitted {formatQuoteDate(inquiry.submittedAt)}</span>
         </div>
-        <div className="flex items-center gap-2 lg:justify-end">
-          <InquiryStatusBadge status={inquiry.status} />
-          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-        </div>
+        <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
   );
@@ -268,31 +382,81 @@ function OverviewQuoteRow({
 }: {
   quote: Awaited<ReturnType<typeof getWorkspaceOverviewData>>["quoteAttention"][number];
 }) {
+  const secondaryMeta = quote.customerRespondedAt
+    ? `Responded ${formatQuoteDate(quote.customerRespondedAt)}`
+    : quote.status === "sent"
+      ? `Valid until ${formatQuoteDate(quote.validUntil)}`
+      : `Updated ${formatQuoteDate(quote.updatedAt)}`;
+
   return (
     <Link
-      className="group px-6 py-4 transition-colors hover:bg-accent/30"
+      className="group block px-5 py-4 transition-colors hover:bg-accent/22 sm:px-6"
       href={`/dashboard/quotes/${quote.id}`}
       prefetch={false}
     >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] lg:items-center">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{quote.quoteNumber}</p>
-          <p className="mt-1 truncate text-sm text-muted-foreground">{quote.title}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {quote.title}
+                </p>
+                <span className="shrink-0 text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  {quote.quoteNumber}
+                </span>
+              </div>
+              <p className="mt-1 truncate text-sm text-muted-foreground">
+                {quote.customerName}
+              </p>
+            </div>
+            <QuoteStatusBadge
+              className={getPastelQuoteBadgeClassName(quote.status)}
+              status={quote.status}
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{quote.customerName}</span>
-          <span>Valid until {formatQuoteDate(quote.validUntil)}</span>
-          <span>
-            {quote.customerRespondedAt
-              ? `Customer responded ${formatQuoteDate(quote.customerRespondedAt)}`
-              : `Updated ${formatQuoteDate(quote.updatedAt)}`}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 lg:justify-end">
-          <QuoteStatusBadge status={quote.status} />
-          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span className="truncate">{secondaryMeta}</span>
+        <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
   );
+}
+
+function getPastelInquiryBadgeClassName(
+  status: Awaited<ReturnType<typeof getWorkspaceOverviewData>>["recentInquiries"][number]["status"],
+) {
+  switch (status) {
+    case "new":
+      return "border-sky-200/80 bg-sky-50 text-sky-700 dark:border-sky-500/25 dark:bg-sky-500/12 dark:text-sky-200";
+    case "quoted":
+      return "border-violet-200/80 bg-violet-50 text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/12 dark:text-violet-200";
+    case "waiting":
+      return "border-amber-200/80 bg-amber-50 text-amber-700 dark:border-amber-500/25 dark:bg-amber-500/12 dark:text-amber-200";
+    case "won":
+      return "border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-200";
+    case "lost":
+      return "border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/12 dark:text-rose-200";
+    case "archived":
+      return "border-slate-200/80 bg-slate-100 text-slate-700 dark:border-slate-500/25 dark:bg-slate-500/12 dark:text-slate-200";
+  }
+}
+
+function getPastelQuoteBadgeClassName(
+  status: Awaited<ReturnType<typeof getWorkspaceOverviewData>>["quoteAttention"][number]["status"],
+) {
+  switch (status) {
+    case "draft":
+      return "border-sky-200/80 bg-sky-50 text-sky-700 dark:border-sky-500/25 dark:bg-sky-500/12 dark:text-sky-200";
+    case "sent":
+      return "border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-200";
+    case "accepted":
+      return "border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-200";
+    case "rejected":
+      return "border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/12 dark:text-rose-200";
+    case "expired":
+      return "border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/12 dark:text-rose-200";
+  }
 }
