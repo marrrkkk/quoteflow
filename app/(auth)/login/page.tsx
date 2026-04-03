@@ -8,8 +8,8 @@ export default async function LoginPage() {
   return (
     <AuthShell
       badge="Login"
-      title="Owner access starts here."
-      description="Sign in with your QuoteFlow owner account to manage inquiries, quotes, knowledge, and workspace settings."
+      title="Sign in"
+      description="Open your workspace."
     >
       <LoginForm />
     </AuthShell>

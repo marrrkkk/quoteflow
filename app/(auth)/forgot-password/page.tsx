@@ -8,8 +8,8 @@ export default async function ForgotPasswordPage() {
   return (
     <AuthShell
       badge="Recovery"
-      title="Request a password reset."
-      description="Enter the email on your owner account and QuoteFlow will send a reset link when email delivery is configured."
+      title="Reset password"
+      description="Enter your email and we will send a reset link."
     >
       <ForgotPasswordForm />
     </AuthShell>

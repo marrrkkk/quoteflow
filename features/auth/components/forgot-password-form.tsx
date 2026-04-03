@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -83,9 +82,6 @@ export function ForgotPasswordForm() {
               aria-invalid={Boolean(emailError) || undefined}
               disabled={isPending}
             />
-            <FieldDescription>
-              The reset email routes through Better Auth and returns to QuoteFlow.
-            </FieldDescription>
             <FieldError errors={emailError ? [{ message: emailError }] : undefined} />
           </FieldContent>
         </Field>

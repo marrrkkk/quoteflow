@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
 import { getAuthErrorMessage, getFieldError, getValidationState } from "@/features/auth/utils";
@@ -22,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export function SignupForm() {
-  const router = useRouter();
   const [state, setState] = useState<AuthFormState>({});
   const [isPending, startTransition] = useTransition();
 
@@ -56,8 +54,7 @@ export function SignupForm() {
         return;
       }
 
-      router.replace("/dashboard");
-      router.refresh();
+      window.location.assign("/dashboard");
     });
   }
 
@@ -81,9 +78,6 @@ export function SignupForm() {
               aria-invalid={Boolean(nameError) || undefined}
               disabled={isPending}
             />
-            <FieldDescription>
-              This becomes the default owner profile name.
-            </FieldDescription>
             <FieldError errors={nameError ? [{ message: nameError }] : undefined} />
           </FieldContent>
         </Field>
@@ -116,9 +110,7 @@ export function SignupForm() {
               aria-invalid={Boolean(passwordError) || undefined}
               disabled={isPending}
             />
-            <FieldDescription>
-              Use at least 8 characters. Your workspace is created on first signup.
-            </FieldDescription>
+            <FieldDescription>Use at least 8 characters.</FieldDescription>
             <FieldError
               errors={passwordError ? [{ message: passwordError }] : undefined}
             />

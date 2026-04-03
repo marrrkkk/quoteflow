@@ -42,13 +42,13 @@ export function QuoteListCards({ quotes, currency }: QuoteListCardsProps) {
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="meta-label">
                 Customer
               </span>
               <p className="text-sm text-foreground">{quote.customerName}</p>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="meta-label">
                 Valid until
               </span>
               <p className="text-sm text-foreground">
@@ -56,7 +56,7 @@ export function QuoteListCards({ quotes, currency }: QuoteListCardsProps) {
               </p>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="meta-label">
                 Total
               </span>
               <p className="text-sm text-foreground">

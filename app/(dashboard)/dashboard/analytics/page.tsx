@@ -5,6 +5,7 @@ import {
   Workflow,
 } from "lucide-react";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { AnalyticsMetricCard } from "@/features/analytics/components/analytics-metric-card";
 import { AnalyticsQuoteSummary } from "@/features/analytics/components/analytics-quote-summary";
 import { AnalyticsStatusBreakdown } from "@/features/analytics/components/analytics-status-breakdown";
@@ -23,39 +24,33 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-3xl flex flex-col gap-2">
-        <span className="eyebrow">Analytics</span>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Track inquiry flow, quote performance, and recent momentum.
-        </h1>
-        <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-          QuoteFlow keeps analytics intentionally light for the MVP: fast
-          workspace-scoped summaries, outcome counts, and trend signals you can
-          act on without digging through raw tables.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Analytics"
+        title="Simple performance view"
+        description="Track inquiry volume, quote movement, and recent trend."
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <AnalyticsMetricCard
-          description="All inquiries stored in the current workspace."
+          description="All inquiries"
           icon={BarChart3}
           title="Total inquiries"
           value={`${analytics.totalInquiries}`}
         />
         <AnalyticsMetricCard
-          description="Incoming inquiry volume over the last 7 days."
+          description="Last 7 days"
           icon={CalendarRange}
           title="Inquiries this week"
           value={`${analytics.inquiriesThisWeek}`}
         />
         <AnalyticsMetricCard
-          description={`${analytics.wonCount} won and ${analytics.lostCount} lost in closed outcomes.`}
+          description={`${analytics.wonCount} won / ${analytics.lostCount} lost`}
           icon={Trophy}
           title="Won vs lost"
           value={formatAnalyticsPercent(winRate)}
         />
         <AnalyticsMetricCard
-          description={`${analytics.quoteSummary.acceptedQuotes} accepted from ${analytics.quoteSummary.sentQuotes} sent quotes.`}
+          description={`${analytics.quoteSummary.acceptedQuotes} accepted`}
           icon={Workflow}
           title="Quote acceptance"
           value={formatAnalyticsPercent(analytics.quoteSummary.acceptanceRate)}

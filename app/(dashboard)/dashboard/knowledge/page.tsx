@@ -1,5 +1,6 @@
 import { BookCopy, FileStack, Sparkles, TextQuote } from "lucide-react";
 
+import { PageHeader } from "@/components/shared/page-header";
 import {
   createKnowledgeFaqAction,
   deleteKnowledgeFaqAction,
@@ -46,31 +47,25 @@ export default async function KnowledgePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-3xl flex flex-col gap-2">
-        <span className="eyebrow">Knowledge</span>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Keep the business context your AI replies should actually use.
-        </h1>
-        <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-          Upload text-based internal files, maintain FAQs, and keep workspace
-          knowledge ready for later AI-assisted drafting without overbuilding the
-          retrieval layer.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Knowledge"
+        title="Business context"
+        description="Store files and short FAQs for reuse."
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          description="Stored files"
+          description="Files"
           icon={FileStack}
           title={`${knowledgeData.files.length}`}
         />
         <StatCard
-          description="Manual FAQs"
+          description="FAQs"
           icon={TextQuote}
           title={`${knowledgeData.faqs.length}`}
         />
         <StatCard
-          description="AI-ready sources"
+          description="Ready sources"
           icon={Sparkles}
           title={`${contextSourceCount}`}
         />
@@ -78,26 +73,20 @@ export default async function KnowledgePage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="flex flex-col gap-6">
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Upload a knowledge file</CardTitle>
-              <CardDescription>
-                Keep internal reference documents close to the dashboard and
-                ready for later text-based AI context.
-              </CardDescription>
+              <CardDescription>Add a text-based reference file.</CardDescription>
             </CardHeader>
             <CardContent>
               <KnowledgeFileUploadForm action={uploadKnowledgeFileAction} />
             </CardContent>
           </Card>
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Uploaded files</CardTitle>
-              <CardDescription>
-                Newest files appear first. Extracted text is stored for accepted
-                text-based files so later AI drafts can reference it.
-              </CardDescription>
+              <CardDescription>Newest files first.</CardDescription>
             </CardHeader>
             <CardContent>
               {knowledgeData.files.length ? (
@@ -130,9 +119,7 @@ export default async function KnowledgePage() {
 
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
                           <div className="rounded-3xl border bg-muted/20 p-4">
-                            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                              Extracted text preview
-                            </p>
+                            <p className="meta-label">Text preview</p>
                             <p className="mt-3 text-sm leading-7 text-foreground">
                               {getKnowledgeTextPreview(file.extractedText) ??
                                 "No extracted text was stored for this file."}
@@ -141,9 +128,7 @@ export default async function KnowledgePage() {
 
                           <div className="flex flex-col gap-3 rounded-3xl border bg-muted/20 p-4">
                             <div className="flex flex-col gap-1">
-                              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                                Content type
-                              </p>
+                              <p className="meta-label">Content type</p>
                               <p className="text-sm text-foreground">
                                 {file.contentType}
                               </p>
@@ -179,13 +164,10 @@ export default async function KnowledgePage() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Add an FAQ</CardTitle>
-              <CardDescription>
-                Capture the answers your workspace uses repeatedly so internal
-                drafting can stay practical and consistent.
-              </CardDescription>
+              <CardDescription>Save a short reusable answer.</CardDescription>
             </CardHeader>
             <CardContent>
               <KnowledgeFaqForm
@@ -197,13 +179,10 @@ export default async function KnowledgePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Workspace FAQs</CardTitle>
-              <CardDescription>
-                Keep short, reusable internal answers in one place. Existing FAQs
-                can be edited or removed inline.
-              </CardDescription>
+              <CardDescription>Edit or remove existing answers.</CardDescription>
             </CardHeader>
             <CardContent>
               {knowledgeData.faqs.length ? (
@@ -250,10 +229,10 @@ function StatCard({
   icon: typeof BookCopy;
 }) {
   return (
-    <Card className="bg-background/75">
+    <Card className="bg-background/70">
       <CardContent className="flex items-center gap-4 p-5">
-        <div className="flex size-12 items-center justify-center rounded-2xl border bg-muted/25">
-          <Icon />
+        <div className="flex size-11 items-center justify-center rounded-full border bg-secondary">
+          <Icon className="size-4" />
         </div>
         <div className="flex flex-col gap-1">
           <p className="text-2xl font-semibold tracking-tight text-foreground">

@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Manrope } from "next/font/google";
+import { IBM_Plex_Mono, Manrope, Newsreader } from "next/font/google";
 
 import "./globals.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -31,9 +37,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${newsreader.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-screen bg-background text-foreground selection:bg-primary/15 selection:text-foreground">
+      <body className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
         {children}
       </body>
     </html>

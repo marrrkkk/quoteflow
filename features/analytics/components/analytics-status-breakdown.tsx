@@ -18,17 +18,15 @@ export function AnalyticsStatusBreakdown({
   const maxCount = Math.max(...rows.map((row) => row.count), 1);
 
   return (
-    <Card className="bg-background/75">
+    <Card className="bg-background/70">
       <CardHeader className="gap-2">
         <CardTitle>Status breakdown</CardTitle>
-        <CardDescription>
-          Current inquiry volume by workflow state across the workspace.
-        </CardDescription>
+        <CardDescription>Current inquiry volume by status.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {rows.map((row) => (
           <div
-            className="rounded-3xl border bg-background/80 p-4"
+            className="rounded-[1.35rem] border bg-background/80 p-4"
             key={row.status}
           >
             <div className="flex flex-col gap-3">
@@ -57,7 +55,7 @@ export function AnalyticsStatusBreakdown({
           <div className="rounded-3xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <BarChart3 />
-              <span>Status counts will fill in once inquiries start arriving.</span>
+              <span>Status counts will appear once inquiries arrive.</span>
             </div>
           </div>
         ) : null}

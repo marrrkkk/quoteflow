@@ -101,7 +101,7 @@ export function QuoteEditor({
   }
 
   return (
-    <form action={formAction} className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <form action={formAction} className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
       <input name="items" type="hidden" value={JSON.stringify(items)} />
 
       <div className="flex flex-col gap-6">
@@ -119,17 +119,18 @@ export function QuoteEditor({
           </Alert>
         ) : null}
 
-        <div className="rounded-[1.7rem] border bg-background/75 p-5 shadow-sm">
+        <div className="rounded-[1.7rem] border bg-background/70 p-5 shadow-sm">
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex flex-col gap-1">
-                <span className="eyebrow">Quote builder</span>
+                <p className="font-heading text-2xl font-medium tracking-tight text-foreground">
+                  Quote details
+                </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Build a clean customer-ready quote with calculated totals and a
-                  live preview.
+                  Customer, validity date, and notes.
                 </p>
               </div>
-              <div className="rounded-3xl border bg-muted/35 px-4 py-3 text-sm">
+              <div className="rounded-[1.25rem] border bg-background/80 px-4 py-3 text-sm">
                 <p className="font-medium text-foreground">
                   {quoteNumber ?? "Assigned after save"}
                 </p>
@@ -138,15 +139,13 @@ export function QuoteEditor({
             </div>
 
             {linkedInquiry ? (
-              <div className="rounded-3xl border bg-background/80 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                  Linked inquiry
-                </p>
+              <div className="rounded-[1.35rem] border bg-background/80 p-4">
+                <p className="meta-label">Linked inquiry</p>
                 <p className="mt-2 font-medium text-foreground">
                   {linkedInquiry.serviceCategory}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {linkedInquiry.customerName} · {linkedInquiry.customerEmail}
+                  {linkedInquiry.customerName} | {linkedInquiry.customerEmail}
                 </p>
               </div>
             ) : null}
@@ -259,9 +258,7 @@ export function QuoteEditor({
                 <Field
                   data-invalid={Boolean(state.fieldErrors?.discount) || undefined}
                 >
-                  <FieldLabel htmlFor="quote-discount">
-                    Discount
-                  </FieldLabel>
+                  <FieldLabel htmlFor="quote-discount">Discount</FieldLabel>
                   <FieldContent>
                     <Input
                       id="quote-discount"
@@ -311,14 +308,15 @@ export function QuoteEditor({
           </div>
         </div>
 
-        <div className="rounded-[1.7rem] border bg-background/75 p-5 shadow-sm">
+        <div className="rounded-[1.7rem] border bg-background/70 p-5 shadow-sm">
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <span className="eyebrow">Line items</span>
+                <p className="font-heading text-2xl font-medium tracking-tight text-foreground">
+                  Line items
+                </p>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Keep the MVP simple with item descriptions, quantity, and unit
-                  price.
+                  Description, quantity, and unit price.
                 </p>
               </div>
               <Button
@@ -353,7 +351,7 @@ export function QuoteEditor({
 
                 return (
                   <div
-                    className="rounded-3xl border bg-background/80 p-4"
+                    className="rounded-[1.35rem] border bg-background/80 p-4"
                     key={item.id}
                   >
                     <div className="flex flex-col gap-4">
@@ -439,10 +437,8 @@ export function QuoteEditor({
                             </FieldContent>
                           </Field>
 
-                          <div className="rounded-3xl border bg-muted/20 px-4 py-3">
-                            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                              Line total
-                            </p>
+                          <div className="rounded-[1.25rem] border bg-muted/20 px-4 py-3">
+                            <p className="meta-label">Line total</p>
                             <p className="mt-2 text-sm font-medium text-foreground">
                               {formatQuoteMoney(
                                 safeQuantity * unitPriceInCents,
@@ -460,14 +456,12 @@ export function QuoteEditor({
           </div>
         </div>
 
-        <div className="rounded-[1.7rem] border bg-background/75 p-5 shadow-sm">
+        <div className="rounded-[1.7rem] border bg-background/70 p-5 shadow-sm">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-foreground">
-                Draft totals
-              </span>
-              <span className="rounded-full border bg-muted/35 px-3 py-1 text-xs text-muted-foreground">
-                Calculated automatically
+              <span className="text-sm font-medium text-foreground">Totals</span>
+              <span className="rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
+                Auto-calculated
               </span>
             </div>
             <div className="flex flex-col gap-3">

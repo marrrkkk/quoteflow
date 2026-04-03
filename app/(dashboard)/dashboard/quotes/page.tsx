@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ReceiptText } from "lucide-react";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -38,25 +39,19 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-        <div className="max-w-3xl flex flex-col gap-2">
-          <span className="eyebrow">Quotes</span>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            Build, send, and track customer-ready quotes from one workspace.
-          </h1>
-          <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-            Keep draft editing, sent-state tracking, and inquiry handoffs inside
-            the authenticated dashboard shell.
-          </p>
-        </div>
-
-        <Button asChild>
-          <Link href="/dashboard/quotes/new" prefetch={false}>
-            Create quote
-            <ArrowRight data-icon="inline-end" />
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Quotes"
+        title="Quote workspace"
+        description="Draft, send, and track quotes."
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/quotes/new" prefetch={false}>
+              Create quote
+              <ArrowRight data-icon="inline-end" />
+            </Link>
+          </Button>
+        }
+      />
 
       <QuoteListFilters filters={filters} resultCount={quoteList.length} />
 
@@ -85,8 +80,8 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
               </EmptyTitle>
               <EmptyDescription>
                 {hasFilters
-                  ? "Try a different status or clear the search term to widen the quote list."
-                  : "Create a draft manually or start from an inquiry to keep customer context attached."}
+                  ? "Try a different search or status."
+                  : "Create a quote from scratch or start from an inquiry."}
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>

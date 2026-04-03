@@ -18,18 +18,16 @@ export function AnalyticsTrendOverview({
   const maxInquiries = Math.max(...points.map((point) => point.inquiries), 1);
 
   return (
-    <Card className="bg-background/75">
+    <Card className="bg-background/70">
       <CardHeader className="gap-2">
         <CardTitle>Recent trend overview</CardTitle>
-        <CardDescription>
-          A simple six-week view of incoming inquiries and accepted quotes.
-        </CardDescription>
+        <CardDescription>Last six weeks.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {points.map((point) => (
             <div
-              className="rounded-[1.6rem] border bg-background/80 p-4"
+              className="rounded-[1.45rem] border bg-background/80 p-4"
               key={point.weekStart}
             >
               <div className="flex items-center justify-between gap-3">
@@ -37,11 +35,9 @@ export function AnalyticsTrendOverview({
                   <p className="text-sm font-medium text-foreground">
                     {point.label}
                   </p>
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                    Weekly snapshot
-                  </p>
+                  <p className="meta-label">Week</p>
                 </div>
-                <div className="flex size-9 items-center justify-center rounded-2xl border bg-muted/25">
+                <div className="flex size-9 items-center justify-center rounded-full border bg-secondary">
                   <TrendingUp className="size-4" />
                 </div>
               </div>
@@ -59,9 +55,7 @@ export function AnalyticsTrendOverview({
                   <p className="text-2xl font-semibold tracking-tight text-foreground">
                     {point.inquiries}
                   </p>
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                    Inquiries
-                  </p>
+                  <p className="meta-label">Inquiries</p>
                 </div>
               </div>
 
@@ -81,9 +75,7 @@ export function AnalyticsTrendOverview({
 function TrendMeta({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border bg-muted/20 px-3 py-2">
-      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </p>
+      <p className="meta-label">{label}</p>
       <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
     </div>
   );

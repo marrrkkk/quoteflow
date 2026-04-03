@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Bot, Globe2, Mail, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { updateWorkspaceSettingsAction } from "@/features/settings/actions";
 import { WorkspaceSettingsForm } from "@/features/settings/components/workspace-settings-form";
 import { getWorkspaceSettingsForWorkspace } from "@/features/settings/queries";
@@ -36,17 +37,11 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-3xl flex flex-col gap-2">
-        <span className="eyebrow">Settings</span>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Keep workspace identity, defaults, and owner preferences tidy.
-        </h1>
-        <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-          This stays intentionally straightforward: update the business profile,
-          control the public inquiry surface, and store the defaults your team
-          and AI tools should lean on later.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Settings"
+        title="Workspace settings"
+        description="Update identity, intake defaults, and preferences."
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
         <WorkspaceSettingsForm
@@ -57,12 +52,10 @@ export default async function SettingsPage() {
         />
 
         <div className="flex flex-col gap-6">
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Workspace snapshot</CardTitle>
-              <CardDescription>
-                Quick reference for the live public link and current defaults.
-              </CardDescription>
+              <CardDescription>Current live details.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <SnapshotItem
@@ -102,26 +95,20 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>What these settings affect</CardTitle>
-              <CardDescription>
-                The current MVP uses these values in a few practical places
-                already and keeps the rest ready for later workflows.
-              </CardDescription>
+              <CardDescription>Where the current values show up.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 text-sm leading-7 text-muted-foreground">
               <div className="rounded-3xl border bg-background/80 px-4 py-3">
-                Public slug and inquiry settings control how customers reach the
-                intake page.
+                Public slug and intake settings shape the customer form.
               </div>
               <div className="rounded-3xl border bg-background/80 px-4 py-3">
-                AI tone, default signature, and quote notes become part of the
-                internal business context.
+                AI tone, signature, and quote notes feed internal drafting.
               </div>
               <div className="rounded-3xl border bg-background/80 px-4 py-3">
-                Notification preferences stay lightweight for now, but they keep
-                the owner-first email workflow ready for future expansion.
+                Notification preferences stay lightweight for the MVP.
               </div>
             </CardContent>
           </Card>
@@ -143,15 +130,13 @@ function SnapshotItem({
   value: string;
 }) {
   return (
-    <div className="rounded-[1.45rem] border bg-background/80 p-4">
+    <div className="rounded-[1.35rem] border bg-background/80 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl border bg-muted/20">
+        <div className="flex size-10 items-center justify-center rounded-full border bg-secondary">
           <Icon className="size-4" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-            {label}
-          </p>
+          <p className="meta-label">{label}</p>
           <p className="break-all text-sm font-medium text-foreground">{value}</p>
           {children}
         </div>

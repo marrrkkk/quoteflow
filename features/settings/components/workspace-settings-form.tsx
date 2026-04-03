@@ -130,13 +130,10 @@ export function WorkspaceSettingsForm({
       <input name="aiTonePreference" type="hidden" value={aiTonePreference} />
       <input name="defaultCurrency" type="hidden" value={defaultCurrency} />
 
-      <Card className="bg-background/75">
+      <Card className="bg-background/70">
         <CardHeader className="gap-2">
           <CardTitle>Business profile</CardTitle>
-          <CardDescription>
-            Keep the core identity, contact details, and internal defaults for
-            this workspace in one place.
-          </CardDescription>
+          <CardDescription>Name, link, contact, and branding.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <FieldGroup>
@@ -172,7 +169,7 @@ export function WorkspaceSettingsForm({
                     placeholder="northline-print"
                   />
                   <FieldDescription>
-                    Public inquiry URL:{" "}
+                    Public URL:{" "}
                     <Link
                       className="underline underline-offset-4"
                       href={getWorkspacePublicInquiryUrl(settings.slug)}
@@ -231,7 +228,7 @@ export function WorkspaceSettingsForm({
                   disabled={isPending}
                   id="settings-short-description"
                   name="shortDescription"
-                  placeholder="A concise summary of what the business does and what makes it easy to work with."
+                  placeholder="A short description of the business."
                   rows={4}
                 />
                 <FieldError
@@ -252,7 +249,7 @@ export function WorkspaceSettingsForm({
               <FieldLabel htmlFor="settings-logo">Logo</FieldLabel>
               <FieldContent>
                 <FieldDescription>
-                  Optional JPG, PNG, or WEBP logo up to 2 MB.
+                  Optional JPG, PNG, or WEBP up to 2 MB.
                 </FieldDescription>
                 <Input
                   accept={workspaceLogoAccept}
@@ -282,8 +279,7 @@ export function WorkspaceSettingsForm({
                         Remove current logo
                       </span>
                       <span className="text-muted-foreground">
-                        Leave this unchecked if you only want to replace the
-                        existing logo with a new upload.
+                        Leave unchecked if you only want to replace it.
                       </span>
                     </span>
                   </label>
@@ -292,9 +288,7 @@ export function WorkspaceSettingsForm({
             </Field>
 
             <div className="rounded-[1.45rem] border bg-background/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                Current logo
-              </p>
+              <p className="meta-label">Current logo</p>
               <div className="mt-4 flex min-h-32 items-center justify-center rounded-[1.25rem] border bg-muted/20 p-4">
                 {hasStoredLogo && logoPreviewUrl ? (
                   <Image
@@ -317,18 +311,15 @@ export function WorkspaceSettingsForm({
         </CardContent>
       </Card>
 
-      <Card className="bg-background/75">
+      <Card className="bg-background/70">
         <CardHeader className="gap-2">
           <CardTitle>Inquiry page and messaging defaults</CardTitle>
-          <CardDescription>
-            Control what owners see internally and how your workspace stays
-            ready for reply drafting and quoting.
-          </CardDescription>
+          <CardDescription>Public form and writing defaults.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <ToggleCard
             checked={publicInquiryEnabled}
-            description="Allow customers to submit new requests through your public inquiry page."
+            description="Allow customers to submit requests from the public page."
             disabled={isPending}
             icon={Globe}
             label="Enable public inquiry page"
@@ -347,7 +338,7 @@ export function WorkspaceSettingsForm({
                 disabled={isPending}
                 id="settings-inquiry-headline"
                 name="inquiryHeadline"
-                placeholder="Tell us about the job and we will turn it into a clear quote."
+                placeholder="Tell us about the job and we will review it."
                 rows={3}
               />
               <FieldError
@@ -383,9 +374,6 @@ export function WorkspaceSettingsForm({
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <FieldDescription>
-                  The inquiry assistant uses this as a workspace-level tone cue.
-                </FieldDescription>
               </FieldContent>
             </Field>
 
@@ -432,10 +420,6 @@ export function WorkspaceSettingsForm({
                 placeholder="Thanks, Northline Print Studio"
                 rows={4}
               />
-              <FieldDescription>
-                Stored as part of workspace context for internal AI-assisted
-                drafting.
-              </FieldDescription>
               <FieldError
                 errors={
                   state.fieldErrors?.defaultEmailSignature?.[0]
@@ -458,7 +442,7 @@ export function WorkspaceSettingsForm({
                 disabled={isPending}
                 id="settings-default-quote-notes"
                 name="defaultQuoteNotes"
-                placeholder="Share any standard scope assumptions, lead times, or delivery notes you want the workspace to reuse later."
+                placeholder="Standard scope assumptions, lead times, or delivery notes."
                 rows={5}
               />
               <FieldError
@@ -473,17 +457,15 @@ export function WorkspaceSettingsForm({
         </CardContent>
       </Card>
 
-      <Card className="bg-background/75">
+      <Card className="bg-background/70">
         <CardHeader className="gap-2">
           <CardTitle>Notification preferences</CardTitle>
-          <CardDescription>
-            Lightweight email preference scaffolding for the owner-first MVP.
-          </CardDescription>
+          <CardDescription>Lightweight email preferences.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-2">
           <ToggleCard
             checked={notifyOnNewInquiry}
-            description="Keep owner email alerts enabled when new public inquiries arrive."
+            description="Email the owner when a new inquiry arrives."
             disabled={isPending}
             icon={Mail}
             label="Email on new inquiry"
@@ -491,7 +473,7 @@ export function WorkspaceSettingsForm({
           />
           <ToggleCard
             checked={notifyOnQuoteSent}
-            description="Reserve a workspace preference for quote delivery notifications and follow-up automations."
+            description="Track quote delivery notifications."
             disabled={isPending}
             icon={Shield}
             label="Track quote send notifications"
@@ -534,7 +516,7 @@ function ToggleCard({
         type="checkbox"
       />
       <div className="flex min-w-0 flex-1 gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl border bg-muted/20">
+        <div className="flex size-10 items-center justify-center rounded-full border bg-secondary">
           <Icon className="size-4" />
         </div>
         <div className="flex flex-col gap-1">

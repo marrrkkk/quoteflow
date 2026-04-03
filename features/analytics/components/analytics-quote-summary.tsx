@@ -21,12 +21,10 @@ export function AnalyticsQuoteSummary({
   data: WorkspaceAnalyticsData["quoteSummary"];
 }) {
   return (
-    <Card className="bg-background/75">
+    <Card className="bg-background/70">
       <CardHeader className="gap-2">
         <CardTitle>Quote conversion summary</CardTitle>
-        <CardDescription>
-          Basic signal on how quotes are progressing from draft to accepted.
-        </CardDescription>
+        <CardDescription>Draft to accepted.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -76,13 +74,11 @@ function SummaryTile({
   return (
     <div className="rounded-[1.45rem] border bg-background/80 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl border bg-muted/20">
+        <div className="flex size-10 items-center justify-center rounded-full border bg-secondary">
           <Icon className="size-4" />
         </div>
         <div className="flex flex-col gap-1">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-            {label}
-          </p>
+          <p className="meta-label">{label}</p>
           <p className="text-xl font-semibold tracking-tight text-foreground">
             {value}
           </p>
@@ -95,9 +91,7 @@ function SummaryTile({
 function MiniMetric({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border bg-muted/15 px-3 py-3">
-      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </p>
+      <p className="meta-label">{label}</p>
       <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
     </div>
   );

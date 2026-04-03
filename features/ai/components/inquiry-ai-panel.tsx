@@ -135,18 +135,16 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
   const activeIntent = state.result?.intent;
 
   return (
-    <Card className="overflow-visible border-primary/10 bg-[linear-gradient(180deg,rgba(250,250,249,0.98),rgba(245,245,244,0.94))]">
+    <Card className="overflow-visible bg-background/70">
       <CardHeader className="gap-4">
         <div className="flex items-start gap-4">
-          <div className="flex size-11 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary shadow-sm">
+          <div className="flex size-11 items-center justify-center rounded-full border bg-secondary text-primary">
             <Sparkles />
           </div>
           <div className="flex flex-col gap-2">
             <CardTitle>AI reply assistant</CardTitle>
             <CardDescription className="max-w-xl leading-6">
-              Generate internal drafts and guidance using inquiry details,
-              notes, FAQs, and uploaded knowledge. Pricing or policy gaps stay
-              explicit instead of being invented.
+              Generate drafts and guidance from inquiry context, notes, FAQs, and knowledge files.
             </CardDescription>
           </div>
         </div>
@@ -184,7 +182,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
               return (
                 <Button
                   className={cn(
-                    "h-auto min-h-24 items-start justify-start rounded-[1.4rem] px-4 py-3 text-left",
+                    "h-auto min-h-22 items-start justify-start rounded-[1.3rem] px-4 py-3 text-left",
                     !isActive &&
                       "bg-background/82 hover:border-primary/20 hover:bg-background",
                   )}
@@ -224,10 +222,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
                 Custom instruction
               </FieldLabel>
               <FieldContent>
-                <FieldDescription>
-                  Optional for the preset buttons. Required if you run a custom
-                  request.
-                </FieldDescription>
+                <FieldDescription>Optional for presets. Required for custom.</FieldDescription>
                 <Textarea
                   defaultValue=""
                   disabled={isPending}
@@ -253,10 +248,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
                 Draft or working text
               </FieldLabel>
               <FieldContent>
-                <FieldDescription>
-                  Paste a rough draft here for Rewrite draft, or add text the
-                  assistant should refine.
-                </FieldDescription>
+                <FieldDescription>Paste text to rewrite or refine.</FieldDescription>
                 <Textarea
                   defaultValue=""
                   disabled={isPending}
@@ -278,8 +270,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
 
           <div className="flex flex-col gap-3 rounded-[1.45rem] border border-dashed bg-background/75 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-6 text-muted-foreground">
-              Need something more specific than the preset tools? Run a custom
-              request against the current inquiry context.
+              Need something more specific? Run a custom request.
             </p>
             <Button
               disabled={isPending}
@@ -298,9 +289,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
             <div className="flex flex-col gap-4 px-5 py-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                    Latest output
-                  </p>
+                  <p className="meta-label">Latest output</p>
                   <h3 className="font-heading text-lg font-semibold text-foreground">
                     {state.result.title}
                   </h3>
@@ -310,7 +299,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
                 </span>
               </div>
 
-              <div className="rounded-[1.35rem] border bg-stone-50/85 px-4 py-4">
+              <div className="rounded-[1.35rem] border bg-background/90 px-4 py-4">
                 <p className="whitespace-pre-wrap text-sm leading-7 text-foreground">
                   {state.result.output}
                 </p>
@@ -355,8 +344,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
               </EmptyMedia>
               <EmptyTitle>No AI output yet</EmptyTitle>
               <EmptyDescription>
-                Run one of the preset actions or a custom request to generate a
-                concise internal draft for this inquiry.
+                Run a preset or custom request to generate a draft.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -365,15 +353,12 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
         <div className="rounded-[1.55rem] border border-dashed bg-background/72 px-5 py-5">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                Reply staging
-              </p>
+              <p className="meta-label">Reply staging</p>
               <h3 className="font-heading text-lg font-semibold text-foreground">
-                Reply draft workspace
+                Reply draft
               </h3>
               <p className="text-sm leading-6 text-muted-foreground">
-                Insert reply-style AI outputs here before you copy, trim, or
-                send them from your normal email workflow.
+                Insert AI output here before you copy or trim it.
               </p>
             </div>
 

@@ -1,12 +1,15 @@
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { ExternalLink, Mail } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import {
   changeQuoteStatusAction,
   sendQuoteAction,
   updateQuoteAction,
 } from "@/features/quotes/actions";
+import { CopyQuoteLinkButton } from "@/features/quotes/components/copy-quote-link-button";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import { QuoteSendForm } from "@/features/quotes/components/quote-send-form";
@@ -18,9 +21,9 @@ import {
   formatQuoteDate,
   formatQuoteDateTime,
   formatQuoteMoney,
+  getPublicQuoteUrl,
   getQuoteEditorInitialValuesFromDetail,
 } from "@/features/quotes/utils";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -35,6 +38,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { env } from "@/lib/env";
 import { requireCurrentWorkspaceContext } from "@/lib/db/workspace-access";
 
 type QuoteDetailPageProps = {
@@ -63,6 +67,8 @@ export default async function QuoteDetailPage({
   const updateAction = updateQuoteAction.bind(null, quote.id);
   const statusAction = changeQuoteStatusAction.bind(null, quote.id);
   const sendAction = sendQuoteAction.bind(null, quote.id);
+  const customerQuotePath = getPublicQuoteUrl(quote.publicToken);
+  const customerQuoteUrl = new URL(customerQuotePath, env.BETTER_AUTH_URL).toString();
   const linkedInquiry = quote.linkedInquiry
     ? {
         id: quote.linkedInquiry.id,
@@ -75,38 +81,30 @@ export default async function QuoteDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="max-w-3xl flex flex-col gap-3">
-          <span className="eyebrow">Quote detail</span>
-          <div className="flex flex-col gap-2">
-            <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              {quote.quoteNumber}
-            </h1>
-            <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-              {quote.title} for {quote.customerName}, created on{" "}
-              {formatQuoteDate(quote.createdAt)}.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        eyebrow="Quote detail"
+        title={quote.quoteNumber}
+        description={`${quote.title} for ${quote.customerName}.`}
+        actions={
+          <>
             <QuoteStatusBadge status={quote.status} />
-            <span className="rounded-full border bg-muted/35 px-3 py-1 text-xs text-muted-foreground">
+            <span className="rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
               Valid until {formatQuoteDate(quote.validUntil)}
             </span>
             {quote.inquiryId ? (
-              <span className="rounded-full border bg-muted/35 px-3 py-1 text-xs text-muted-foreground">
+              <span className="rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground">
                 Linked inquiry
               </span>
             ) : null}
-          </div>
-        </div>
-
-        <Button asChild variant="outline">
-          <a href={`mailto:${quote.customerEmail}`}>
-            <Mail data-icon="inline-start" />
-            Email customer
-          </a>
-        </Button>
-      </div>
+            <Button asChild variant="outline">
+              <a href={`mailto:${quote.customerEmail}`}>
+                <Mail data-icon="inline-start" />
+                Email customer
+              </a>
+            </Button>
+          </>
+        }
+      />
 
       {quote.status === "draft" ? (
         <QuoteEditor
@@ -136,12 +134,10 @@ export default async function QuoteDetailPage({
             totalInCents={quote.totalInCents}
           />
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Quote details</CardTitle>
-              <CardDescription>
-                This quote is read-only until it is moved back to draft.
-              </CardDescription>
+              <CardDescription>Read-only until moved back to draft.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <DetailStat label="Customer" value={quote.customerName} />
@@ -173,12 +169,10 @@ export default async function QuoteDetailPage({
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="flex flex-col gap-6">
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Activity log</CardTitle>
-              <CardDescription>
-                Quote lifecycle events and owner actions appear here.
-              </CardDescription>
+              <CardDescription>Quote events and owner actions.</CardDescription>
             </CardHeader>
             <CardContent>
               {quote.activities.length ? (
@@ -186,14 +180,14 @@ export default async function QuoteDetailPage({
                   {quote.activities.map((activity) => (
                     <div
                       key={activity.id}
-                      className="rounded-3xl border bg-background/80 p-4"
+                      className="rounded-[1.35rem] border bg-background/80 p-4"
                     >
                       <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium text-foreground">
                           {activity.summary}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {activity.actorName ?? "QuoteFlow"} ·{" "}
+                          {activity.actorName ?? "QuoteFlow"} |{" "}
                           {formatQuoteDateTime(activity.createdAt)}
                         </p>
                       </div>
@@ -204,26 +198,21 @@ export default async function QuoteDetailPage({
                 <Empty className="border">
                   <EmptyHeader>
                     <EmptyTitle>No quote activity yet</EmptyTitle>
-                    <EmptyDescription>
-                      Draft saves, sends, and status changes will appear here.
-                    </EmptyDescription>
+                    <EmptyDescription>Quote events will appear here.</EmptyDescription>
                   </EmptyHeader>
                 </Empty>
               )}
             </CardContent>
           </Card>
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Linked inquiry</CardTitle>
-              <CardDescription>
-                Preserve the inquiry relationship when the quote started from the
-                inbox.
-              </CardDescription>
+              <CardDescription>Original inquiry context.</CardDescription>
             </CardHeader>
             <CardContent>
               {quote.linkedInquiry ? (
-                <div className="rounded-3xl border bg-background/80 p-4">
+                <div className="rounded-[1.35rem] border bg-background/80 p-4">
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full border bg-muted/35 px-3 py-1 text-xs text-muted-foreground">
@@ -257,10 +246,7 @@ export default async function QuoteDetailPage({
                 <Empty className="border">
                   <EmptyHeader>
                     <EmptyTitle>No linked inquiry</EmptyTitle>
-                    <EmptyDescription>
-                      This quote was created manually instead of starting from the
-                      inquiry inbox.
-                    </EmptyDescription>
+                    <EmptyDescription>This quote was created manually.</EmptyDescription>
                   </EmptyHeader>
                 </Empty>
               )}
@@ -281,13 +267,63 @@ export default async function QuoteDetailPage({
         </div>
 
         <div className="flex flex-col gap-6">
+          {quote.status !== "draft" ? (
+            <Card className="bg-background/70">
+              <CardHeader className="gap-2">
+                <CardTitle>Customer view</CardTitle>
+                <CardDescription>Share and track the public quote.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="rounded-[1.35rem] border bg-background/80 p-4">
+                  <p className="meta-label">Public quote URL</p>
+                  <p className="mt-2 break-all text-sm text-muted-foreground">
+                    {customerQuoteUrl}
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <DetailStat
+                    label="Last viewed"
+                    value={
+                      quote.publicViewedAt
+                        ? formatQuoteDateTime(quote.publicViewedAt)
+                        : "Not viewed yet"
+                    }
+                  />
+                  <DetailStat
+                    label="Customer response"
+                    value={
+                      quote.customerRespondedAt
+                        ? formatQuoteDateTime(quote.customerRespondedAt)
+                        : "No response yet"
+                    }
+                  />
+                </div>
+                {quote.customerResponseMessage ? (
+                  <div className="rounded-[1.35rem] border bg-background/80 p-4">
+                    <p className="meta-label">Customer message</p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
+                      {quote.customerResponseMessage}
+                    </p>
+                  </div>
+                ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <CopyQuoteLinkButton url={customerQuoteUrl} />
+                  <Button asChild variant="outline">
+                    <Link href={customerQuotePath} prefetch={false} target="_blank">
+                      Open customer view
+                      <ExternalLink data-icon="inline-end" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+
           {quote.status === "draft" ? (
-            <Card className="bg-background/75">
+            <Card className="bg-background/70">
               <CardHeader className="gap-2">
                 <CardTitle>Send quote</CardTitle>
-                <CardDescription>
-                  Email the finished draft to the customer and mark it as sent.
-                </CardDescription>
+                <CardDescription>Email the finished draft.</CardDescription>
               </CardHeader>
               <CardContent>
                 <QuoteSendForm
@@ -297,27 +333,22 @@ export default async function QuoteDetailPage({
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-background/75">
+            <Card className="bg-background/70">
               <CardHeader className="gap-2">
                 <CardTitle>Delivery state</CardTitle>
-                <CardDescription>
-                  Sent quotes stay read-only until they are intentionally moved
-                  back to draft.
-                </CardDescription>
+                <CardDescription>Read-only after send.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <div className="rounded-3xl border bg-background/80 p-4">
-                  <p className="text-sm font-medium text-foreground">
-                    Current status
-                  </p>
+                <div className="rounded-[1.35rem] border bg-background/80 p-4">
+                  <p className="text-sm font-medium text-foreground">Current status</p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {quote.status === "sent"
-                      ? "This quote has already been delivered to the customer."
-                      : `This quote is currently ${quote.status}.`}
+                      ? "This quote has already been delivered."
+                      : `This quote is ${quote.status}.`}
                   </p>
                 </div>
                 {quote.sentAt ? (
-                  <div className="rounded-3xl border bg-background/80 p-4 text-sm text-muted-foreground">
+                  <div className="rounded-[1.35rem] border bg-background/80 p-4 text-sm text-muted-foreground">
                     Sent on {formatQuoteDateTime(quote.sentAt)}.
                   </div>
                 ) : null}
@@ -325,13 +356,10 @@ export default async function QuoteDetailPage({
             </Card>
           )}
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Status</CardTitle>
-              <CardDescription>
-                Move the quote through the MVP lifecycle without leaving the
-                detail view.
-              </CardDescription>
+              <CardDescription>Move the quote through its lifecycle.</CardDescription>
             </CardHeader>
             <CardContent>
               <QuoteStatusForm
@@ -342,12 +370,10 @@ export default async function QuoteDetailPage({
             </CardContent>
           </Card>
 
-          <Card className="bg-background/75">
+          <Card className="bg-background/70">
             <CardHeader className="gap-2">
               <CardTitle>Quote summary</CardTitle>
-              <CardDescription>
-                Keep the commercial details visible while editing or reviewing.
-              </CardDescription>
+              <CardDescription>Key commercial details.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <DetailStat label="Quote number" value={quote.quoteNumber} />
@@ -370,11 +396,9 @@ export default async function QuoteDetailPage({
 
 function DetailStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl border bg-background/80 p-4">
+    <div className="rounded-[1.25rem] border bg-background/80 p-4">
       <div className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-          {label}
-        </p>
+        <p className="meta-label">{label}</p>
         <p className="text-sm font-medium text-foreground">{value}</p>
       </div>
     </div>

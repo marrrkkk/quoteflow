@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Inbox } from "lucide-react";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -41,25 +42,19 @@ export default async function InquiriesPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-        <div className="max-w-3xl flex flex-col gap-2">
-          <span className="eyebrow">Inquiry inbox</span>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            Track customer requests from first message to quote.
-          </h1>
-          <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-            Search by customer, filter by workflow status, and open the full
-            inquiry record without leaving the authenticated shell.
-          </p>
-        </div>
-
-        <Button asChild variant="outline">
-          <Link href={`/inquire/${workspaceContext.workspace.slug}`} prefetch={false}>
-            Open public inquiry page
-            <ArrowRight data-icon="inline-end" />
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Inquiry inbox"
+        title="Customer requests"
+        description="Search, filter, and open each inquiry."
+        actions={
+          <Button asChild variant="outline">
+            <Link href={`/inquire/${workspaceContext.workspace.slug}`} prefetch={false}>
+              Open public page
+              <ArrowRight data-icon="inline-end" />
+            </Link>
+          </Button>
+        }
+      />
 
       <InquiryListToolbar
         key={`${filters.status}:${filters.q ?? ""}`}
@@ -86,8 +81,8 @@ export default async function InquiriesPage({
               </EmptyTitle>
               <EmptyDescription>
                 {hasFilters
-                  ? "Try a different status or clear the search term to widen the inbox."
-                  : "New public submissions will start appearing here once customers use your inquiry page."}
+                  ? "Try a different search or status."
+                  : "New submissions will appear here."}
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>

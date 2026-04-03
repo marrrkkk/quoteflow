@@ -8,8 +8,8 @@ export default async function SignupPage() {
   return (
     <AuthShell
       badge="Signup"
-      title="Create your first QuoteFlow workspace."
-      description="Create an owner account and QuoteFlow will provision your profile, workspace, and owner membership automatically."
+      title="Create account"
+      description="We will set up your first workspace automatically."
     >
       <SignupForm />
     </AuthShell>

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { createQuoteAction } from "@/features/quotes/actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { getInquiryQuotePrefillForWorkspace } from "@/features/quotes/queries";
@@ -62,19 +63,19 @@ export default async function NewQuotePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-3xl flex flex-col gap-2">
-        <span className="eyebrow">New quote</span>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          {linkedInquiry
-            ? "Turn this inquiry into a polished draft quote."
-            : "Create a clean quote draft for the customer."}
-        </h1>
-        <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-          {linkedInquiry
-            ? "Customer context from the linked inquiry is prefilled so you can focus on line items, validity, and delivery."
-            : "Start from scratch, add line items, and keep the draft ready to send once the scope is right."}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="New quote"
+        title={
+          linkedInquiry
+            ? "Turn this inquiry into a quote"
+            : "Create a new quote"
+        }
+        description={
+          linkedInquiry
+            ? "Customer details are prefilled from the linked inquiry."
+            : "Add the customer, line items, and validity date."
+        }
+      />
 
       <QuoteEditor
         action={action}

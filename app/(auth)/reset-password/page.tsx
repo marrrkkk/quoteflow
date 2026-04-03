@@ -8,8 +8,8 @@ export default async function ResetPasswordPage() {
   return (
     <AuthShell
       badge="Reset"
-      title="Complete a password reset."
-      description="Choose a new password for your QuoteFlow owner account. Reset links stay scoped to your email address and workspace."
+      title="Choose a new password"
+      description="This reset link is tied to your account."
     >
       <ResetPasswordForm />
     </AuthShell>

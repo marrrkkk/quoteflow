@@ -74,11 +74,10 @@ export function PublicInquiryForm({
           </AlertDescription>
         </Alert>
 
-        <div className="rounded-[1.6rem] border bg-background/80 p-5">
+        <div className="rounded-[1.45rem] border bg-background/80 p-5">
           <div className="flex flex-col gap-3">
             <p className="text-sm leading-7 text-muted-foreground">
-              Thanks for sharing the details. The business owner now has your
-              inquiry in their QuoteFlow inbox.
+              Thanks. The business owner now has your inquiry in QuoteFlow.
             </p>
             {state.inquiryId ? (
               <p className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-muted-foreground">
@@ -157,7 +156,7 @@ export function PublicInquiryForm({
           </Field>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
           <Field data-invalid={Boolean(customerPhoneError) || undefined}>
             <FieldLabel htmlFor="customerPhone">Phone number</FieldLabel>
             <FieldContent>
@@ -169,9 +168,7 @@ export function PublicInquiryForm({
                 aria-invalid={Boolean(customerPhoneError) || undefined}
                 disabled={isPending}
               />
-              <FieldDescription>
-                Optional, but useful if a quick clarification is needed.
-              </FieldDescription>
+              <FieldDescription>Optional.</FieldDescription>
               <FieldError
                 errors={
                   customerPhoneError
@@ -214,9 +211,7 @@ export function PublicInquiryForm({
                 aria-invalid={Boolean(deadlineError) || undefined}
                 disabled={isPending}
               />
-              <FieldDescription>
-                Optional. Share a target date if timing matters.
-              </FieldDescription>
+              <FieldDescription>Optional.</FieldDescription>
               <FieldError
                 errors={deadlineError ? [{ message: deadlineError }] : undefined}
               />
@@ -234,8 +229,7 @@ export function PublicInquiryForm({
                 disabled={isPending}
               />
               <FieldDescription>
-                Free-text is fine, for example &quot;under $1,500&quot; or
-                &quot;flexible&quot;.
+                Optional.
               </FieldDescription>
               <FieldError
                 errors={budgetError ? [{ message: budgetError }] : undefined}
@@ -251,13 +245,12 @@ export function PublicInquiryForm({
               id="details"
               name="details"
               rows={7}
-              placeholder="Share the scope, sizes, quantities, timing, location, or anything the business should know before quoting."
+              placeholder="Share the scope, size, quantity, timing, location, or anything else that matters."
               aria-invalid={Boolean(detailsError) || undefined}
               disabled={isPending}
             />
             <FieldDescription>
-              The more detail you share, the easier it is to prepare an accurate
-              quote or next step.
+              The more detail you share, the easier it is to quote well.
             </FieldDescription>
             <FieldError
               errors={detailsError ? [{ message: detailsError }] : undefined}
@@ -310,8 +303,7 @@ export function PublicInquiryForm({
           {isPending ? "Sending your inquiry..." : "Send inquiry"}
         </Button>
         <p className="text-sm leading-6 text-muted-foreground">
-          This form goes directly to {workspace.name}. QuoteFlow only stores the
-          information needed for the business owner to review and respond.
+          Sent directly to {workspace.name}.
         </p>
       </div>
     </form>

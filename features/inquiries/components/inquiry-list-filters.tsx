@@ -71,16 +71,12 @@ export function InquiryListFilters({
   }
 
   return (
-    <div className="rounded-[1.7rem] border bg-background/75 p-4 shadow-sm">
+    <div className="rounded-[1.6rem] border bg-background/75 p-4 shadow-sm">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="eyebrow">Inbox filters</span>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Search by customer, email, category, or subject. Results always
-              stay newest first.
-            </p>
-          </div>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Search by customer, email, or category.
+          </p>
           <p className="text-sm font-medium text-foreground">
             {resultCount} {resultCount === 1 ? "inquiry" : "inquiries"}
           </p>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
 import { getAuthErrorMessage, getFieldError, getValidationState } from "@/features/auth/utils";
@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export function ResetPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [state, setState] = useState<AuthFormState>({});
@@ -61,8 +60,7 @@ export function ResetPasswordForm() {
         return;
       }
 
-      router.replace("/login?reset=success");
-      router.refresh();
+      window.location.assign("/login?reset=success");
     });
   }
 
@@ -97,9 +95,7 @@ export function ResetPasswordForm() {
               aria-invalid={Boolean(passwordError) || undefined}
               disabled={isPending}
             />
-            <FieldDescription>
-              Use at least 8 characters and avoid reusing an old password.
-            </FieldDescription>
+            <FieldDescription>Use at least 8 characters.</FieldDescription>
             <FieldError
               errors={passwordError ? [{ message: passwordError }] : undefined}
             />

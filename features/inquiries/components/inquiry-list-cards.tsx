@@ -41,13 +41,13 @@ export function InquiryListCards({ inquiries }: InquiryListCardsProps) {
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="meta-label">
                 Category
               </span>
               <p className="text-sm text-foreground">{inquiry.serviceCategory}</p>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="meta-label">
                 Budget
               </span>
               <p className="text-sm text-foreground">
@@ -55,7 +55,7 @@ export function InquiryListCards({ inquiries }: InquiryListCardsProps) {
               </p>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="meta-label">
                 Created
               </span>
               <p className="text-sm text-foreground">
