@@ -23,11 +23,15 @@ type InquiryNoteFormProps = {
     state: InquiryNoteActionState,
     formData: FormData,
   ) => Promise<InquiryNoteActionState>;
+  embedded?: boolean;
 };
 
 const initialState: InquiryNoteActionState = {};
 
-export function InquiryNoteForm({ action }: InquiryNoteFormProps) {
+export function InquiryNoteForm({
+  action,
+  embedded = false,
+}: InquiryNoteFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(action, initialState);
 
@@ -53,10 +57,7 @@ export function InquiryNoteForm({ action }: InquiryNoteFormProps) {
         </Alert>
       ) : null}
 
-      <FormSection
-        description="Visible only inside the workspace."
-        title="Internal note"
-      >
+      {embedded ? (
         <FieldGroup>
           <Field data-invalid={Boolean(state.fieldErrors?.body) || undefined}>
             <FieldLabel htmlFor="inquiry-note">Add an internal note</FieldLabel>
@@ -79,7 +80,35 @@ export function InquiryNoteForm({ action }: InquiryNoteFormProps) {
             </FieldContent>
           </Field>
         </FieldGroup>
-      </FormSection>
+      ) : (
+        <FormSection
+          description="Visible only inside the workspace."
+          title="Internal note"
+        >
+          <FieldGroup>
+            <Field data-invalid={Boolean(state.fieldErrors?.body) || undefined}>
+              <FieldLabel htmlFor="inquiry-note">Add an internal note</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  id="inquiry-note"
+                  name="body"
+                  rows={4}
+                  placeholder="Capture follow-ups, scope clarifications, or internal context for the next reply."
+                  aria-invalid={Boolean(state.fieldErrors?.body) || undefined}
+                  disabled={isPending}
+                />
+                <FieldError
+                  errors={
+                    state.fieldErrors?.body?.[0]
+                      ? [{ message: state.fieldErrors.body[0] }]
+                      : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        </FormSection>
+      )}
 
       <FormActions>
         <Button disabled={isPending} type="submit">
