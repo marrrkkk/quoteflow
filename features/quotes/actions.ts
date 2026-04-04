@@ -117,6 +117,8 @@ export async function createQuoteAction(
     );
   }
 
+  let quotePath: string | null = null;
+
   try {
     const createdQuote = await createQuoteForWorkspace({
       workspaceId: workspaceContext.workspace.id,
@@ -138,8 +140,9 @@ export async function createQuoteAction(
       inquiryId,
     );
 
-    redirect(
-      getWorkspaceQuotePath(workspaceContext.workspace.slug, createdQuote.id),
+    quotePath = getWorkspaceQuotePath(
+      workspaceContext.workspace.slug,
+      createdQuote.id,
     );
   } catch (error) {
     console.error("Failed to create quote.", error);
@@ -148,6 +151,14 @@ export async function createQuoteAction(
       error: "We couldn't create that quote right now.",
     };
   }
+
+  if (quotePath) {
+    redirect(quotePath);
+  }
+
+  return {
+    error: "We couldn't create that quote right now.",
+  };
 }
 
 export async function updateQuoteAction(

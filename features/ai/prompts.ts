@@ -2,6 +2,7 @@ import type {
   AiAssistantIntent,
   InquiryAssistantContext,
 } from "@/features/ai/types";
+import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import type { AiAssistantRequestInput } from "@/features/ai/schemas";
 import { formatInquiryDateTime } from "@/features/inquiries/utils";
 
@@ -64,6 +65,10 @@ function formatNotesContext(notes: InquiryAssistantContext["notes"]) {
 }
 
 function buildContextBlock(context: InquiryAssistantContext) {
+  const additionalFields = getAdditionalInquirySubmittedFields(
+    context.inquiry.submittedFieldSnapshot,
+  );
+
   return [
     "Workspace settings",
     `- Business name: ${context.workspace.name}`,
@@ -80,9 +85,13 @@ function buildContextBlock(context: InquiryAssistantContext) {
     "",
     "Inquiry details",
     `- Inquiry ID: ${context.inquiry.id}`,
+    `- Inquiry form: ${context.inquiry.inquiryFormName}`,
+    `- Inquiry form slug: ${context.inquiry.inquiryFormSlug}`,
+    `- Inquiry form business type: ${context.inquiry.inquiryFormBusinessType}`,
     `- Customer name: ${context.inquiry.customerName}`,
     `- Customer email: ${context.inquiry.customerEmail}`,
     `- Customer phone: ${context.inquiry.customerPhone ?? "Not provided"}`,
+    `- Company name: ${context.inquiry.companyName ?? "Not provided"}`,
     `- Service category: ${context.inquiry.serviceCategory}`,
     `- Subject: ${context.inquiry.subject ?? "Not provided"}`,
     `- Requested deadline: ${context.inquiry.requestedDeadline ?? "Not provided"}`,
@@ -93,6 +102,13 @@ function buildContextBlock(context: InquiryAssistantContext) {
     "",
     "Customer message",
     truncateText(context.inquiry.details, 3000),
+    "",
+    "Additional submitted fields",
+    additionalFields.length
+      ? additionalFields
+          .map((field) => `- ${field.label}: ${field.displayValue}`)
+          .join("\n")
+      : "- None.",
     "",
     "Internal notes",
     formatNotesContext(context.notes),

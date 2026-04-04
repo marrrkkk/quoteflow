@@ -179,10 +179,18 @@ export function calculateQuoteEditorTotals(
   };
 }
 
-export function getDefaultQuoteValidityDate() {
+function normalizeQuoteValidityDays(validityDays?: number) {
+  if (!Number.isFinite(validityDays)) {
+    return 14;
+  }
+
+  return Math.min(365, Math.max(1, Math.trunc(validityDays as number)));
+}
+
+export function getDefaultQuoteValidityDate(validityDays = 14) {
   const date = new Date();
 
-  date.setDate(date.getDate() + 14);
+  date.setDate(date.getDate() + normalizeQuoteValidityDays(validityDays));
 
   return date.toISOString().slice(0, 10);
 }
@@ -193,7 +201,13 @@ export function buildQuoteTitleFromInquiry(inquiry: QuoteInquiryPrefill) {
 
 export function getQuoteEditorInitialValuesFromInquiry(
   inquiry: QuoteInquiryPrefill,
+  options?: {
+    defaultQuoteNotes?: string | null;
+    defaultQuoteValidityDays?: number;
+  },
 ) {
+  const defaultQuoteNotes = options?.defaultQuoteNotes?.trim();
+
   return {
     title: buildQuoteTitleFromInquiry(inquiry),
     customerName: inquiry.customerName,
@@ -206,10 +220,12 @@ export function getQuoteEditorInitialValuesFromInquiry(
       inquiry.budgetText ? `Budget note: ${inquiry.budgetText}` : null,
       "",
       inquiry.details,
+      defaultQuoteNotes ? "" : null,
+      defaultQuoteNotes || null,
     ]
       .filter(Boolean)
       .join("\n"),
-    validUntil: getDefaultQuoteValidityDate(),
+    validUntil: getDefaultQuoteValidityDate(options?.defaultQuoteValidityDays),
     discount: "",
     items: [createQuoteEditorLineItem()],
   };

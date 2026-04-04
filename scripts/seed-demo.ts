@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
+import { createInquiryFormPreset } from "../features/inquiries/inquiry-forms";
 import { auth } from "../lib/auth/config";
 import { bootstrapWorkspaceForUser } from "../lib/auth/workspace-bootstrap";
 import { db, dbConnection } from "../lib/db/client";
@@ -14,6 +15,7 @@ import {
   quoteItems,
   quotes,
   user,
+  workspaceInquiryForms,
   workspaceMembers,
   workspaces,
 } from "../lib/db/schema";
@@ -29,6 +31,7 @@ type DemoWorkspace = {
   id: string;
   name: string;
   slug: string;
+  defaultInquiryFormId: string;
 };
 
 const demoConfig = {
@@ -273,12 +276,17 @@ async function ensureDemoWorkspace(demoUser: DemoUser): Promise<DemoWorkspace> {
     demoConfig.workspaceSlug,
     membership.workspaceId,
   );
+  const inquiryPreset = createInquiryFormPreset({
+    businessType: "print_signage",
+    workspaceName: demoConfig.workspaceName,
+  });
 
   await db
     .update(workspaces)
     .set({
       name: demoConfig.workspaceName,
       slug,
+      businessType: "print_signage",
       shortDescription:
         "Neighborhood print production for storefront graphics, menus, flyers, and event materials.",
       contactEmail: demoUser.email,
@@ -301,10 +309,41 @@ async function ensureDemoWorkspace(demoUser: DemoUser): Promise<DemoWorkspace> {
     })
     .where(eq(workspaces.id, membership.workspaceId));
 
+  const [defaultForm] = await db
+    .select({
+      id: workspaceInquiryForms.id,
+    })
+    .from(workspaceInquiryForms)
+    .where(
+      and(
+        eq(workspaceInquiryForms.workspaceId, membership.workspaceId),
+        eq(workspaceInquiryForms.isDefault, true),
+      ),
+    )
+    .limit(1);
+
+  if (!defaultForm) {
+    throw new Error("The demo workspace does not have a default inquiry form.");
+  }
+
+  await db
+    .update(workspaceInquiryForms)
+    .set({
+      name: inquiryPreset.name,
+      slug: inquiryPreset.slug,
+      businessType: inquiryPreset.businessType,
+      publicInquiryEnabled: true,
+      inquiryFormConfig: inquiryPreset.inquiryFormConfig,
+      inquiryPageConfig: inquiryPreset.inquiryPageConfig,
+      updatedAt: now,
+    })
+    .where(eq(workspaceInquiryForms.id, defaultForm.id));
+
   return {
     id: membership.workspaceId,
     name: demoConfig.workspaceName,
     slug,
+    defaultInquiryFormId: defaultForm.id,
   };
 }
 
@@ -320,6 +359,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     {
       id: demoInquiryIds[0],
       workspaceId: workspace.id,
+      workspaceInquiryFormId: workspace.defaultInquiryFormId,
       status: "new" as const,
       subject: "New storefront window vinyl",
       customerName: "Olivia Park",
@@ -341,6 +381,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     {
       id: demoInquiryIds[1],
       workspaceId: workspace.id,
+      workspaceInquiryFormId: workspace.defaultInquiryFormId,
       status: "waiting" as const,
       subject: "Restaurant flyer drop",
       customerName: "Daniel Kim",
@@ -362,6 +403,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     {
       id: demoInquiryIds[2],
       workspaceId: workspace.id,
+      workspaceInquiryFormId: workspace.defaultInquiryFormId,
       status: "quoted" as const,
       subject: "Trade show booth kit",
       customerName: "Priya Shah",
@@ -383,6 +425,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     {
       id: demoInquiryIds[3],
       workspaceId: workspace.id,
+      workspaceInquiryFormId: workspace.defaultInquiryFormId,
       status: "won" as const,
       subject: "Cafe menu board refresh",
       customerName: "Maya Chen",
@@ -404,6 +447,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     {
       id: demoInquiryIds[4],
       workspaceId: workspace.id,
+      workspaceInquiryFormId: workspace.defaultInquiryFormId,
       status: "lost" as const,
       subject: "Team merch reorder",
       customerName: "Noah Bennett",
@@ -425,6 +469,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     {
       id: demoInquiryIds[5],
       workspaceId: workspace.id,
+      workspaceInquiryFormId: workspace.defaultInquiryFormId,
       status: "archived" as const,
       subject: "Old menu reprint request",
       customerName: "Hector Ruiz",

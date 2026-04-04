@@ -14,7 +14,6 @@ import {
   ImageIcon,
   type LucideIcon,
   Mail,
-  Shield,
 } from "lucide-react";
 
 import {
@@ -27,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -68,23 +66,30 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   WorkspaceAiTonePreference,
+  WorkspaceDeleteActionState,
   WorkspaceSettingsActionState,
   WorkspaceSettingsView,
 } from "@/features/settings/types";
 import {
   formatWorkspaceAiToneLabel,
   getWorkspacePublicInquiryUrl,
-  workspaceCurrencyOptions,
   workspaceLogoAccept,
   workspaceLogoAllowedMimeTypes,
   workspaceLogoMaxSize,
+  workspaceSlugMaxLength,
+  workspaceSlugPattern,
 } from "@/features/settings/utils";
+import { WorkspaceDeleteZone } from "@/features/settings/components/workspace-delete-zone";
 
 type WorkspaceSettingsFormProps = {
   action: (
     state: WorkspaceSettingsActionState,
     formData: FormData,
   ) => Promise<WorkspaceSettingsActionState>;
+  deleteAction: (
+    state: WorkspaceDeleteActionState,
+    formData: FormData,
+  ) => Promise<WorkspaceDeleteActionState>;
   fallbackContactEmail: string;
   logoPreviewUrl: string | null;
   settings: WorkspaceSettingsView;
@@ -117,6 +122,7 @@ type LoadedLogoAsset = {
 
 export function WorkspaceSettingsForm({
   action,
+  deleteAction,
   fallbackContactEmail,
   logoPreviewUrl,
   settings,
@@ -125,354 +131,275 @@ export function WorkspaceSettingsForm({
   const [notifyOnNewInquiry, setNotifyOnNewInquiry] = useState(
     settings.notifyOnNewInquiry,
   );
-  const [notifyOnQuoteSent, setNotifyOnQuoteSent] = useState(
-    settings.notifyOnQuoteSent,
-  );
   const [removeLogo, setRemoveLogo] = useState(false);
   const [aiTonePreference, setAiTonePreference] = useState<WorkspaceAiTonePreference>(
     settings.aiTonePreference,
   );
-  const [defaultCurrency, setDefaultCurrency] = useState(settings.defaultCurrency);
   const aiToneError = getFieldError(state.fieldErrors, "aiTonePreference");
-  const defaultCurrencyError = getFieldError(state.fieldErrors, "defaultCurrency");
 
   return (
-    <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save the settings.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
+    <>
+      <form action={formAction} className="form-stack">
+        {state.error ? (
+          <Alert variant="destructive">
+            <AlertTitle>We could not save the settings.</AlertTitle>
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      {state.success ? (
-        <Alert>
-          <CheckCircle2 data-icon="inline-start" />
-          <AlertTitle>Settings saved</AlertTitle>
-          <AlertDescription>{state.success}</AlertDescription>
-        </Alert>
-      ) : null}
+        {state.success ? (
+          <Alert>
+            <CheckCircle2 data-icon="inline-start" />
+            <AlertTitle>Settings saved</AlertTitle>
+            <AlertDescription>{state.success}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      <input
-        name="notifyOnNewInquiry"
-        type="hidden"
-        value={String(notifyOnNewInquiry)}
-      />
-      <input
-        name="notifyOnQuoteSent"
-        type="hidden"
-        value={String(notifyOnQuoteSent)}
-      />
-      <input name="removeLogo" type="hidden" value={String(removeLogo)} />
-      <input name="aiTonePreference" type="hidden" value={aiTonePreference} />
-      <input name="defaultCurrency" type="hidden" value={defaultCurrency} />
+        <input
+          name="notifyOnNewInquiry"
+          type="hidden"
+          value={String(notifyOnNewInquiry)}
+        />
+        <input name="removeLogo" type="hidden" value={String(removeLogo)} />
+        <input name="aiTonePreference" type="hidden" value={aiTonePreference} />
 
-      <Card className="gap-0 border-border/75 bg-card/97">
-        <CardHeader className="gap-3 pb-5">
-          <CardTitle>Business profile</CardTitle>
-          <CardDescription>Name, link, contact, and branding.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6 pt-0">
-          <FormSection
-            description="Name, public link, contact details, and the short description shown on customer-facing pages."
-            title="Business identity"
-          >
-            <FieldGroup>
-              <Field data-invalid={Boolean(state.fieldErrors?.name) || undefined}>
-                <FieldLabel htmlFor="settings-name">Business name</FieldLabel>
-                <FieldContent>
-                  <Input
-                    defaultValue={settings.name}
-                    disabled={isPending}
-                    id="settings-name"
-                    name="name"
-                    placeholder="Northline Print Studio"
-                  />
-                  <FieldError
-                    errors={
-                      state.fieldErrors?.name?.[0]
-                        ? [{ message: state.fieldErrors.name[0] }]
-                        : undefined
-                    }
-                  />
-                </FieldContent>
-              </Field>
-
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <Field data-invalid={Boolean(state.fieldErrors?.slug) || undefined}>
-                  <FieldLabel htmlFor="settings-slug">Public slug</FieldLabel>
+        <Card className="gap-0 border-border/75 bg-card/97">
+          <CardHeader className="gap-3 pb-5">
+            <CardTitle>Business profile</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6 pt-0">
+            <FormSection title="Business identity">
+              <FieldGroup>
+                <Field data-invalid={Boolean(state.fieldErrors?.name) || undefined}>
+                  <FieldLabel htmlFor="settings-name">Business name</FieldLabel>
                   <FieldContent>
                     <Input
-                      defaultValue={settings.slug}
+                      defaultValue={settings.name}
                       disabled={isPending}
-                      id="settings-slug"
-                      name="slug"
-                      placeholder="northline-print"
+                      id="settings-name"
+                      maxLength={120}
+                      minLength={2}
+                      name="name"
+                      placeholder="Northline Print Studio"
+                      required
                     />
-                    <FieldDescription>
-                      Public URL:{" "}
-                      <Link
-                        className="underline underline-offset-4"
-                        href={getWorkspacePublicInquiryUrl(settings.slug)}
-                        prefetch={false}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {getWorkspacePublicInquiryUrl(settings.slug)}
-                      </Link>
-                    </FieldDescription>
                     <FieldError
                       errors={
-                        state.fieldErrors?.slug?.[0]
-                          ? [{ message: state.fieldErrors.slug[0] }]
+                        state.fieldErrors?.name?.[0]
+                          ? [{ message: state.fieldErrors.name[0] }]
                           : undefined
                       }
                     />
                   </FieldContent>
                 </Field>
 
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  <Field data-invalid={Boolean(state.fieldErrors?.slug) || undefined}>
+                    <FieldLabel htmlFor="settings-slug">Public slug</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        defaultValue={settings.slug}
+                        disabled={isPending}
+                        id="settings-slug"
+                        maxLength={workspaceSlugMaxLength}
+                        minLength={2}
+                        name="slug"
+                        pattern={workspaceSlugPattern}
+                        placeholder="northline-print"
+                        required
+                        spellCheck={false}
+                      />
+                      <FieldDescription>
+                        Public URL:{" "}
+                        <Link
+                          className="underline underline-offset-4"
+                          href={getWorkspacePublicInquiryUrl(settings.slug)}
+                          prefetch={false}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {getWorkspacePublicInquiryUrl(settings.slug)}
+                        </Link>
+                      </FieldDescription>
+                      <FieldError
+                        errors={
+                          state.fieldErrors?.slug?.[0]
+                            ? [{ message: state.fieldErrors.slug[0] }]
+                            : undefined
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+
+                  <Field
+                    data-invalid={Boolean(state.fieldErrors?.contactEmail) || undefined}
+                  >
+                    <FieldLabel htmlFor="settings-contact-email">
+                      Contact email
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        defaultValue={settings.contactEmail ?? fallbackContactEmail}
+                        disabled={isPending}
+                        id="settings-contact-email"
+                        maxLength={320}
+                        name="contactEmail"
+                        placeholder="hello@example.com"
+                        type="email"
+                      />
+                      <FieldError
+                        errors={
+                          state.fieldErrors?.contactEmail?.[0]
+                            ? [{ message: state.fieldErrors.contactEmail[0] }]
+                            : undefined
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+                </div>
+
                 <Field
-                  data-invalid={Boolean(state.fieldErrors?.contactEmail) || undefined}
+                  data-invalid={Boolean(state.fieldErrors?.shortDescription) || undefined}
                 >
-                  <FieldLabel htmlFor="settings-contact-email">
-                    Contact email
+                  <FieldLabel htmlFor="settings-short-description">
+                    Short description
                   </FieldLabel>
                   <FieldContent>
-                    <Input
-                      defaultValue={settings.contactEmail ?? fallbackContactEmail}
+                    <Textarea
+                      defaultValue={settings.shortDescription ?? ""}
                       disabled={isPending}
-                      id="settings-contact-email"
-                      name="contactEmail"
-                      placeholder="hello@example.com"
-                      type="email"
+                      id="settings-short-description"
+                      maxLength={280}
+                      name="shortDescription"
+                      placeholder="A short description of the business."
+                      rows={4}
                     />
                     <FieldError
                       errors={
-                        state.fieldErrors?.contactEmail?.[0]
-                          ? [{ message: state.fieldErrors.contactEmail[0] }]
+                        state.fieldErrors?.shortDescription?.[0]
+                          ? [{ message: state.fieldErrors.shortDescription[0] }]
                           : undefined
                       }
+                    />
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
+            </FormSection>
+
+            <Separator />
+
+            <FormSection title="Brand asset">
+              <WorkspaceLogoField
+                disabled={isPending}
+                fieldError={state.fieldErrors?.logo?.[0]}
+                initialPreviewUrl={logoPreviewUrl}
+                removeLogo={removeLogo}
+                settingsName={settings.name}
+                showRemoveToggle={Boolean(settings.logoStoragePath)}
+                onRemoveLogoChange={setRemoveLogo}
+              />
+            </FormSection>
+          </CardContent>
+        </Card>
+
+        <Card className="gap-0 border-border/75 bg-card/97">
+          <CardHeader className="gap-3 pb-5">
+            <CardTitle>Writing defaults</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6 pt-0">
+            <FormSection title="Writing defaults">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <Field data-invalid={Boolean(aiToneError) || undefined}>
+                  <FieldLabel htmlFor="settings-ai-tone">AI tone preference</FieldLabel>
+                  <FieldContent>
+                    <Select
+                      onValueChange={(value) =>
+                        setAiTonePreference(value as WorkspaceAiTonePreference)
+                      }
+                      value={aiTonePreference}
+                    >
+                      <SelectTrigger className="w-full" id="settings-ai-tone">
+                        <SelectValue placeholder="Choose a tone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {aiToneOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {formatWorkspaceAiToneLabel(option)}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FieldError
+                      errors={aiToneError ? [{ message: aiToneError }] : undefined}
                     />
                   </FieldContent>
                 </Field>
               </div>
 
               <Field
-                data-invalid={Boolean(state.fieldErrors?.shortDescription) || undefined}
+                data-invalid={
+                  Boolean(state.fieldErrors?.defaultEmailSignature) || undefined
+                }
               >
-                <FieldLabel htmlFor="settings-short-description">
-                  Short description
+                <FieldLabel htmlFor="settings-email-signature">
+                  Default email signature
                 </FieldLabel>
                 <FieldContent>
                   <Textarea
-                    defaultValue={settings.shortDescription ?? ""}
+                    defaultValue={settings.defaultEmailSignature ?? ""}
                     disabled={isPending}
-                    id="settings-short-description"
-                    name="shortDescription"
-                    placeholder="A short description of the business."
+                    id="settings-email-signature"
+                    maxLength={1200}
+                    name="defaultEmailSignature"
+                    placeholder="Thanks, Northline Print Studio"
                     rows={4}
                   />
                   <FieldError
                     errors={
-                      state.fieldErrors?.shortDescription?.[0]
-                        ? [{ message: state.fieldErrors.shortDescription[0] }]
+                      state.fieldErrors?.defaultEmailSignature?.[0]
+                        ? [{ message: state.fieldErrors.defaultEmailSignature[0] }]
                         : undefined
                     }
                   />
                 </FieldContent>
               </Field>
-            </FieldGroup>
-          </FormSection>
+            </FormSection>
+          </CardContent>
+        </Card>
 
-          <Separator />
-
-          <FormSection
-            description="Upload or replace the logo shown on customer-facing pages."
-            title="Brand asset"
-          >
-            <WorkspaceLogoField
-              disabled={isPending}
-              fieldError={state.fieldErrors?.logo?.[0]}
-              initialPreviewUrl={logoPreviewUrl}
-              removeLogo={removeLogo}
-              settingsName={settings.name}
-              showRemoveToggle={Boolean(settings.logoStoragePath)}
-              onRemoveLogoChange={setRemoveLogo}
-            />
-          </FormSection>
-        </CardContent>
-      </Card>
-
-      <Card className="gap-0 border-border/75 bg-card/97">
-        <CardHeader className="gap-3 pb-5">
-          <CardTitle>Writing and pricing defaults</CardTitle>
-          <CardDescription>Defaults for the owner workflow and AI assistant.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6 pt-0">
-          <FormSection
-            description="Set defaults the owner workflow and AI assistant can reuse throughout the workspace."
-            title="Writing and pricing defaults"
-          >
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <Field data-invalid={Boolean(aiToneError) || undefined}>
-                <FieldLabel htmlFor="settings-ai-tone">AI tone preference</FieldLabel>
-                <FieldContent>
-                  <Select
-                    onValueChange={(value) =>
-                      setAiTonePreference(value as WorkspaceAiTonePreference)
-                    }
-                    value={aiTonePreference}
-                  >
-                    <SelectTrigger className="w-full" id="settings-ai-tone">
-                      <SelectValue placeholder="Choose a tone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {aiToneOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {formatWorkspaceAiToneLabel(option)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldError
-                    errors={aiToneError ? [{ message: aiToneError }] : undefined}
-                  />
-                </FieldContent>
-              </Field>
-
-              <Field data-invalid={Boolean(defaultCurrencyError) || undefined}>
-                <FieldLabel htmlFor="settings-default-currency">
-                  Default currency
-                </FieldLabel>
-                <FieldContent>
-                  <Select
-                    onValueChange={setDefaultCurrency}
-                    value={defaultCurrency}
-                  >
-                    <SelectTrigger className="w-full" id="settings-default-currency">
-                      <SelectValue placeholder="Choose a currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {workspaceCurrencyOptions.map((currency) => (
-                          <SelectItem key={currency} value={currency}>
-                            {currency}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldError
-                    errors={
-                      defaultCurrencyError
-                        ? [{ message: defaultCurrencyError }]
-                        : undefined
-                    }
-                  />
-                </FieldContent>
-              </Field>
-            </div>
-
-            <Field
-              data-invalid={
-                Boolean(state.fieldErrors?.defaultEmailSignature) || undefined
-              }
-            >
-              <FieldLabel htmlFor="settings-email-signature">
-                Default email signature
-              </FieldLabel>
-              <FieldContent>
-                <Textarea
-                  defaultValue={settings.defaultEmailSignature ?? ""}
+        <Card className="gap-0 border-border/75 bg-card/97">
+          <CardHeader className="gap-3 pb-5">
+            <CardTitle>Notification preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <FormSection title="Owner notifications">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <ToggleCard
+                  checked={notifyOnNewInquiry}
+                  description="Email the owner when a new inquiry arrives."
                   disabled={isPending}
-                  id="settings-email-signature"
-                  name="defaultEmailSignature"
-                  placeholder="Thanks, Northline Print Studio"
-                  rows={4}
+                  icon={Mail}
+                  label="Email on new inquiry"
+                  onCheckedChange={setNotifyOnNewInquiry}
                 />
-                <FieldError
-                  errors={
-                    state.fieldErrors?.defaultEmailSignature?.[0]
-                      ? [{ message: state.fieldErrors.defaultEmailSignature[0] }]
-                      : undefined
-                  }
-                />
-              </FieldContent>
-            </Field>
+              </div>
+            </FormSection>
+          </CardContent>
+        </Card>
 
-            <Field
-              data-invalid={Boolean(state.fieldErrors?.defaultQuoteNotes) || undefined}
-            >
-              <FieldLabel htmlFor="settings-default-quote-notes">
-                Default quote notes
-              </FieldLabel>
-              <FieldContent>
-                <Textarea
-                  defaultValue={settings.defaultQuoteNotes ?? ""}
-                  disabled={isPending}
-                  id="settings-default-quote-notes"
-                  name="defaultQuoteNotes"
-                  placeholder="Standard scope assumptions, lead times, or delivery notes."
-                  rows={5}
-                />
-                <FieldError
-                  errors={
-                    state.fieldErrors?.defaultQuoteNotes?.[0]
-                      ? [{ message: state.fieldErrors.defaultQuoteNotes[0] }]
-                      : undefined
-                  }
-                />
-              </FieldContent>
-            </Field>
-          </FormSection>
-        </CardContent>
-      </Card>
+        <div className="toolbar-panel">
+          <FormActions align="between" className="pt-0">
+            <Button disabled={isPending} size="lg" type="submit">
+              {isPending ? "Saving settings..." : "Save settings"}
+            </Button>
+          </FormActions>
+        </div>
+      </form>
 
-      <Card className="gap-0 border-border/75 bg-card/97">
-        <CardHeader className="gap-3 pb-5">
-          <CardTitle>Notification preferences</CardTitle>
-          <CardDescription>Lightweight email preferences.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <FormSection
-            description="Choose which lightweight emails the owner should receive."
-            title="Owner notifications"
-          >
-            <div className="grid gap-4 lg:grid-cols-2">
-              <ToggleCard
-                checked={notifyOnNewInquiry}
-                description="Email the owner when a new inquiry arrives."
-                disabled={isPending}
-                icon={Mail}
-                label="Email on new inquiry"
-                onCheckedChange={setNotifyOnNewInquiry}
-              />
-              <ToggleCard
-                checked={notifyOnQuoteSent}
-                description="Track quote delivery notifications."
-                disabled={isPending}
-                icon={Shield}
-                label="Track quote send notifications"
-                onCheckedChange={setNotifyOnQuoteSent}
-              />
-            </div>
-          </FormSection>
-        </CardContent>
-      </Card>
-
-      <div className="toolbar-panel">
-        <FormActions align="between" className="pt-0">
-          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Changes apply immediately across the workspace. Inquiry-page layout and public form publishing now live in the Inquiry page section.
-          </p>
-          <Button disabled={isPending} size="lg" type="submit">
-            {isPending ? "Saving settings..." : "Save settings"}
-          </Button>
-        </FormActions>
-      </div>
-    </form>
+      <WorkspaceDeleteZone action={deleteAction} workspaceName={settings.name} />
+    </>
   );
 }
 

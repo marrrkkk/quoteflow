@@ -34,6 +34,7 @@ export function InquiryListTable({
         <TableHeader>
           <TableRow>
             <TableHead>Customer</TableHead>
+            <TableHead>Form</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Budget</TableHead>
             <TableHead>Created</TableHead>
@@ -56,6 +57,9 @@ export function InquiryListTable({
                     {inquiry.customerEmail}
                   </span>
                 </div>
+              </TableCell>
+              <TableCell className="max-w-[16rem]">
+                <p className="table-emphasis">{inquiry.inquiryFormName}</p>
               </TableCell>
               <TableCell className="max-w-[16rem]">
                 <p className="table-emphasis">{inquiry.serviceCategory}</p>

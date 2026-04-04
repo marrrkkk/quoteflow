@@ -162,14 +162,13 @@ export function QuoteEditor({
             </>
           }
           contentClassName="flex flex-col gap-5"
-          description="Customer, validity date, and notes."
           title="Quote details"
         >
           {linkedInquiry ? (
             <InfoTile
               label="Linked inquiry"
               value={linkedInquiry.serviceCategory}
-              description={`${linkedInquiry.customerName} | ${linkedInquiry.customerEmail}`}
+              description={linkedInquiry.customerEmail}
             />
           ) : null}
 
@@ -179,10 +178,13 @@ export function QuoteEditor({
               <FieldContent>
                 <Input
                   id="quote-title"
+                  maxLength={160}
+                  minLength={2}
                   name="title"
                   value={title}
                   onChange={(event) => setTitle(event.currentTarget.value)}
                   placeholder="Website design proposal, banner printing quote"
+                  required
                   disabled={isPending}
                 />
                 <FieldError
@@ -205,12 +207,15 @@ export function QuoteEditor({
                 <FieldContent>
                   <Input
                     id="quote-customer-name"
+                    maxLength={120}
+                    minLength={2}
                     name="customerName"
                     value={customerName}
                     onChange={(event) =>
                       setCustomerName(event.currentTarget.value)
                     }
                     placeholder="Jordan Rivera"
+                    required
                     disabled={isPending}
                   />
                   <FieldError
@@ -232,6 +237,7 @@ export function QuoteEditor({
                 <FieldContent>
                   <Input
                     id="quote-customer-email"
+                    maxLength={320}
                     name="customerEmail"
                     type="email"
                     value={customerEmail}
@@ -239,6 +245,7 @@ export function QuoteEditor({
                       setCustomerEmail(event.currentTarget.value)
                     }
                     placeholder="jordan@example.com"
+                    required
                     disabled={isPending}
                   />
                   <FieldError
@@ -263,6 +270,7 @@ export function QuoteEditor({
                   <Input
                     id="quote-valid-until"
                     name="validUntil"
+                    required
                     type="date"
                     value={validUntil}
                     onChange={(event) => setValidUntil(event.currentTarget.value)}
@@ -287,6 +295,7 @@ export function QuoteEditor({
                     id="quote-discount"
                     name="discount"
                     inputMode="decimal"
+                    max="1000000"
                     placeholder="0.00"
                     type="number"
                     min="0"
@@ -311,6 +320,7 @@ export function QuoteEditor({
               <FieldContent>
                 <Textarea
                   id="quote-notes"
+                  maxLength={4000}
                   name="notes"
                   rows={5}
                   value={notes}
@@ -358,7 +368,6 @@ export function QuoteEditor({
             </>
           }
           contentClassName="flex flex-col gap-5"
-          description="Description, quantity, and unit price."
           title="Line items"
         >
           {state.fieldErrors?.items?.[0] ? (
@@ -410,6 +419,7 @@ export function QuoteEditor({
                         <FieldContent>
                           <Input
                             id={`quote-item-description-${item.id}`}
+                            maxLength={400}
                             value={item.description}
                             onChange={(event) =>
                               updateItem(item.id, {
@@ -417,6 +427,7 @@ export function QuoteEditor({
                               })
                             }
                             placeholder="Logo concept package"
+                            required
                             disabled={isPending}
                           />
                         </FieldContent>
@@ -431,8 +442,10 @@ export function QuoteEditor({
                             <Input
                               id={`quote-item-quantity-${item.id}`}
                               inputMode="numeric"
+                              max="999999999"
                               type="number"
                               min="1"
+                              required
                               step="1"
                               value={item.quantity}
                               onChange={(event) =>
@@ -454,7 +467,9 @@ export function QuoteEditor({
                               id={`quote-item-price-${item.id}`}
                               inputMode="decimal"
                               type="number"
+                              max="1000000"
                               min="0"
+                              required
                               step="0.01"
                               value={item.unitPrice}
                               onChange={(event) =>
@@ -488,12 +503,8 @@ export function QuoteEditor({
 
         <DashboardSection
           contentClassName="flex flex-col gap-4"
-          description="Auto-calculated while you edit line items and discount."
           footer={
             <>
-              <p className="text-sm leading-6 text-muted-foreground sm:mr-auto">
-                The preview updates live as you edit line items and notes.
-              </p>
               <Button disabled={isPending} size="lg" type="submit">
                 {isPending ? submitPendingLabel : submitLabel}
               </Button>

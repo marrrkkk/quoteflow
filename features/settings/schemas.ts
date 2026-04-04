@@ -1,7 +1,14 @@
 import { z } from "zod";
 
+import { workspaceBusinessTypes } from "@/features/inquiries/business-types";
+import { inquiryFormConfigSchema } from "@/features/inquiries/form-config";
 import { inquiryPageCardSchema, inquiryPageTemplates } from "@/features/inquiries/page-config";
 import { isAcceptedFileType } from "@/lib/files";
+import {
+  normalizePublicSlugInput,
+  publicSlugMaxLength,
+  publicSlugRegex,
+} from "@/lib/slugs";
 import { workspaceAiTonePreferences } from "@/features/settings/types";
 import {
   workspaceCurrencyOptions,
@@ -27,6 +34,13 @@ function optionalText(maxLength: number) {
   return z.preprocess(
     emptyToUndefined,
     z.string().trim().max(maxLength).optional(),
+  );
+}
+
+function optionalEmail(maxLength = 320) {
+  return z.preprocess(
+    emptyToUndefined,
+    z.string().trim().max(maxLength).email().optional(),
   );
 }
 
@@ -86,33 +100,69 @@ const workspaceLogoSchema = z.preprocess(
     .optional(),
 );
 
-export const workspaceSettingsSchema = z.object({
+export const workspaceGeneralSettingsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z
     .string()
     .trim()
     .min(2)
-    .max(64)
+    .max(publicSlugMaxLength)
     .transform(normalizeWorkspaceSlug)
     .refine(
-      (value) => /^[a-z0-9-]+$/.test(value),
+      (value) => publicSlugRegex.test(value),
       "Use lowercase letters, numbers, and hyphens only.",
-    ),
+  ),
   shortDescription: optionalText(280),
-  contactEmail: z.preprocess(emptyToUndefined, z.email().optional()),
+  contactEmail: optionalEmail(),
   defaultEmailSignature: optionalText(1200),
-  defaultQuoteNotes: optionalText(1600),
   aiTonePreference: z.enum(workspaceAiTonePreferences),
   notifyOnNewInquiry: formBoolean(),
-  notifyOnQuoteSent: formBoolean(),
-  defaultCurrency: z.enum(workspaceCurrencyOptions).default("USD"),
   logo: workspaceLogoSchema,
   removeLogo: formBoolean().default(false),
 });
 
-export type WorkspaceSettingsInput = z.infer<typeof workspaceSettingsSchema>;
+export type WorkspaceGeneralSettingsInput = z.infer<
+  typeof workspaceGeneralSettingsSchema
+>;
+
+export const workspaceQuoteSettingsSchema = z.object({
+  defaultQuoteNotes: optionalText(1600),
+  defaultQuoteValidityDays: z.preprocess(
+    (value) => {
+      if (typeof value === "number") {
+        return value;
+      }
+
+      if (typeof value !== "string") {
+        return value;
+      }
+
+      const normalized = value.trim();
+
+      if (!normalized) {
+        return Number.NaN;
+      }
+
+      return Number(normalized);
+    },
+    z.number().int().min(1).max(365),
+  ),
+  notifyOnQuoteSent: formBoolean(),
+  defaultCurrency: z.enum(workspaceCurrencyOptions).default("USD"),
+});
+
+export type WorkspaceQuoteSettingsInput = z.infer<
+  typeof workspaceQuoteSettingsSchema
+>;
+
+export const workspaceDeleteSchema = z.object({
+  confirmation: z.string().trim().min(1).max(120),
+});
+
+export type WorkspaceDeleteInput = z.infer<typeof workspaceDeleteSchema>;
 
 export const workspaceInquiryPageSettingsSchema = z.object({
+  formId: z.string().trim().min(1).max(128),
   publicInquiryEnabled: formBoolean(),
   template: z.enum(inquiryPageTemplates),
   eyebrow: optionalText(48),
@@ -126,4 +176,51 @@ export const workspaceInquiryPageSettingsSchema = z.object({
 
 export type WorkspaceInquiryPageSettingsInput = z.infer<
   typeof workspaceInquiryPageSettingsSchema
+>;
+
+export const workspaceInquiryFormSettingsSchema = z.object({
+  formId: z.string().trim().min(1).max(128),
+  name: z.string().trim().min(2).max(80),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(publicSlugMaxLength)
+    .transform(normalizePublicSlugInput)
+    .refine(
+      (value) => publicSlugRegex.test(value),
+      "Use lowercase letters, numbers, and hyphens only.",
+    ),
+  businessType: z.enum(workspaceBusinessTypes),
+  inquiryFormConfig: jsonField(inquiryFormConfigSchema, Symbol.for("invalid-json-field")),
+});
+
+export type WorkspaceInquiryFormSettingsInput = z.infer<
+  typeof workspaceInquiryFormSettingsSchema
+>;
+
+export const workspaceInquiryFormPresetSchema = z.object({
+  formId: z.string().trim().min(1).max(128),
+  businessType: z.enum(workspaceBusinessTypes),
+});
+
+export type WorkspaceInquiryFormPresetInput = z.infer<
+  typeof workspaceInquiryFormPresetSchema
+>;
+
+export const workspaceInquiryFormCreateSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  businessType: z.enum(workspaceBusinessTypes),
+});
+
+export type WorkspaceInquiryFormCreateInput = z.infer<
+  typeof workspaceInquiryFormCreateSchema
+>;
+
+export const workspaceInquiryFormTargetSchema = z.object({
+  targetFormId: z.string().trim().min(1).max(128),
+});
+
+export type WorkspaceInquiryFormTargetInput = z.infer<
+  typeof workspaceInquiryFormTargetSchema
 >;

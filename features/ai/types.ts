@@ -1,6 +1,8 @@
 import type { InquiryPageTemplate } from "@/features/inquiries/page-config";
+import type { InquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
 import type { WorkspaceKnowledgeContext } from "@/features/knowledge/types";
 import type { InquiryStatus } from "@/features/inquiries/types";
+import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
 
 export const aiAssistantIntents = [
   "draft-first-reply",
@@ -31,9 +33,14 @@ export type InquiryAssistantContext = {
   };
   inquiry: {
     id: string;
+    workspaceInquiryFormId: string;
+    inquiryFormName: string;
+    inquiryFormSlug: string;
+    inquiryFormBusinessType: WorkspaceBusinessType;
     customerName: string;
     customerEmail: string;
     customerPhone: string | null;
+    companyName: string | null;
     serviceCategory: string;
     requestedDeadline: string | null;
     budgetText: string | null;
@@ -43,6 +50,7 @@ export type InquiryAssistantContext = {
     status: InquiryStatus;
     submittedAt: Date;
     createdAt: Date;
+    submittedFieldSnapshot: InquirySubmittedFieldSnapshot | null;
   };
   notes: Array<{
     id: string;

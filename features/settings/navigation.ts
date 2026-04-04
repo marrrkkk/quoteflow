@@ -2,8 +2,9 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookCopy,
   FileText,
-  Globe,
+  FormInput,
   Settings2,
+  Tags,
 } from "lucide-react";
 
 import { getWorkspaceSettingsPath } from "@/features/workspaces/routes";
@@ -22,25 +23,31 @@ export function getWorkspaceSectionNavigation(
     {
       href: getWorkspaceSettingsPath(slug, "general"),
       label: "General",
-      description: "Identity, writing defaults, and notification preferences.",
+      description: "Brand, contact, notifications",
       icon: Settings2,
     },
     {
-      href: getWorkspaceSettingsPath(slug, "inquiry-page"),
-      label: "Inquiry page",
-      description: "Customize the public inquiry page layout, copy, branding, and cards.",
-      icon: Globe,
+      href: getWorkspaceSettingsPath(slug, "inquiry"),
+      label: "Inquiry",
+      description: "Forms, URLs, page editor",
+      icon: FormInput,
     },
     {
-      href: getWorkspaceSettingsPath(slug, "pricing-library"),
-      label: "Pricing library",
-      description: "Reusable pricing blocks and service packages for quotes.",
+      href: getWorkspaceSettingsPath(slug, "quote"),
+      label: "Quote",
+      description: "Defaults, template, validity",
       icon: FileText,
+    },
+    {
+      href: getWorkspaceSettingsPath(slug, "pricing"),
+      label: "Pricing",
+      description: "Saved blocks and packages",
+      icon: Tags,
     },
     {
       href: getWorkspaceSettingsPath(slug, "knowledge"),
       label: "Knowledge",
-      description: "Files and FAQs the workspace can reuse in drafts.",
+      description: "Files and FAQs",
       icon: BookCopy,
     },
   ];

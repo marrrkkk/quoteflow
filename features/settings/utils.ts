@@ -1,8 +1,17 @@
 import type { WorkspaceAiTonePreference } from "@/features/settings/types";
 import { sanitizeStorageFileName } from "@/lib/files";
+import {
+  normalizePublicSlugInput,
+  publicSlugMaxLength,
+  publicSlugPattern,
+  publicSlugRegex,
+} from "@/lib/slugs";
 
 export const workspaceLogoBucket = "workspace-assets";
 export const workspaceLogoMaxSize = 2 * 1024 * 1024;
+export const workspaceSlugMaxLength = publicSlugMaxLength;
+export const workspaceSlugPattern = publicSlugPattern;
+export const workspaceSlugRegex = publicSlugRegex;
 export const workspaceCurrencyOptions = [
   "USD",
   "CAD",
@@ -33,7 +42,7 @@ export const workspaceLogoAccept = [
 ].join(",");
 
 export function normalizeWorkspaceSlug(value: string) {
-  return value.trim().toLowerCase();
+  return normalizePublicSlugInput(value);
 }
 
 export function sanitizeWorkspaceLogoFileName(fileName: string) {
@@ -53,6 +62,6 @@ export function formatWorkspaceAiToneLabel(value: WorkspaceAiTonePreference) {
   }
 }
 
-export function getWorkspacePublicInquiryUrl(slug: string) {
-  return `/inquire/${slug}`;
+export function getWorkspacePublicInquiryUrl(slug: string, formSlug?: string) {
+  return formSlug ? `/inquire/${slug}/${formSlug}` : `/inquire/${slug}`;
 }

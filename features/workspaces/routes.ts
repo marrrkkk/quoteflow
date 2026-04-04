@@ -3,8 +3,9 @@ export const activeWorkspaceSlugCookieName = "relay-active-workspace";
 
 export type WorkspaceSettingsSection =
   | "general"
-  | "inquiry-page"
-  | "pricing-library"
+  | "inquiry"
+  | "quote"
+  | "pricing"
   | "knowledge";
 
 export function getWorkspacePath(slug: string) {
@@ -54,13 +55,36 @@ export function getWorkspaceQuotePath(slug: string, quoteId: string) {
 
 export function getWorkspaceSettingsPath(
   slug: string,
-  section: WorkspaceSettingsSection = "general",
+  section?: WorkspaceSettingsSection,
 ) {
-  return `${getWorkspaceDashboardPath(slug)}/settings/${section}`;
+  const basePath = `${getWorkspaceDashboardPath(slug)}/settings`;
+
+  return section ? `${basePath}/${section}` : basePath;
 }
 
-export function getWorkspaceInquiryPagePreviewPath(slug: string) {
-  return `${getWorkspaceSettingsPath(slug, "inquiry-page")}/preview`;
+export function getWorkspaceInquiryFormsPath(slug: string) {
+  return getWorkspaceSettingsPath(slug, "inquiry");
+}
+
+export function getWorkspaceInquiryFormEditorPath(
+  slug: string,
+  formSlug: string,
+) {
+  return `${getWorkspaceInquiryFormsPath(slug)}/${formSlug}`;
+}
+
+export function getWorkspaceInquiryPageEditorPath(
+  slug: string,
+  formSlug: string,
+) {
+  return getWorkspaceInquiryFormEditorPath(slug, formSlug);
+}
+
+export function getWorkspaceInquiryFormPreviewPath(
+  slug: string,
+  formSlug: string,
+) {
+  return `${getWorkspacePath(slug)}/preview/inquiry/${formSlug}`;
 }
 
 export function getWorkspaceKnowledgeCompatibilityPath(slug: string) {
@@ -68,7 +92,7 @@ export function getWorkspaceKnowledgeCompatibilityPath(slug: string) {
 }
 
 export function getWorkspaceDashboardSlugFromPathname(pathname: string) {
-  const match = /^\/workspace\/([^/]+)\/dashboard(?:\/|$)/.exec(pathname);
+  const match = /^\/workspace\/([^/]+)(?:\/|$)/.exec(pathname);
 
   return match ? decodeURIComponent(match[1]) : null;
 }

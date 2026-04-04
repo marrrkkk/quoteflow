@@ -34,5 +34,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/workspace/:slug/dashboard/:path*"],
+  matcher: ["/workspace/:slug/dashboard/:path*", "/workspace/:slug/preview/:path*"],
 };

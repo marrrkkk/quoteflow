@@ -39,9 +39,9 @@ export default async function WorkspaceKnowledgePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Workspace"
+        eyebrow="Settings"
         title="Knowledge"
-        description="Upload reusable files and maintain short FAQs the workspace can reuse in reply and quote drafting."
+        description="Upload files and FAQs used in replies and AI context."
         actions={
           <>
             <DashboardMetaPill>{knowledgeData.files.length} files</DashboardMetaPill>
@@ -53,17 +53,11 @@ export default async function WorkspaceKnowledgePage() {
 
       <DashboardDetailLayout className="xl:grid-cols-[1.1fr_0.9fr]">
         <div className="dashboard-side-stack">
-          <DashboardSection
-            description="Add a text-based reference file."
-            title="Upload a knowledge file"
-          >
+          <DashboardSection title="Upload a knowledge file">
             <KnowledgeFileUploadForm action={uploadKnowledgeFileAction} />
           </DashboardSection>
 
-          <DashboardSection
-            description="Newest files first."
-            title="Uploaded files"
-          >
+          <DashboardSection title="Uploaded files">
             {knowledgeData.files.length ? (
               <div className="flex flex-col gap-4">
                 {knowledgeData.files.map((file) => (
@@ -127,7 +121,7 @@ export default async function WorkspaceKnowledgePage() {
                     <a href="#knowledge-file-upload">Upload a file</a>
                   </Button>
                 }
-                description="Upload a reference file to start building reusable workspace context."
+                description="No files yet."
                 icon={BookCopy}
                 title="No knowledge files yet"
                 variant="section"
@@ -137,10 +131,7 @@ export default async function WorkspaceKnowledgePage() {
         </div>
 
         <div className="dashboard-side-stack">
-          <DashboardSection
-            description="Save a short reusable answer."
-            title="Add an FAQ"
-          >
+          <DashboardSection title="Add an FAQ">
             <KnowledgeFaqForm
               action={createKnowledgeFaqAction}
               submitLabel="Add FAQ"
@@ -149,10 +140,7 @@ export default async function WorkspaceKnowledgePage() {
             />
           </DashboardSection>
 
-          <DashboardSection
-            description="Edit or remove existing answers."
-            title="Workspace FAQs"
-          >
+          <DashboardSection title="Workspace FAQs">
             {knowledgeData.faqs.length ? (
               <div className="flex flex-col gap-4">
                 {knowledgeData.faqs.map((faq) => (
@@ -171,7 +159,7 @@ export default async function WorkspaceKnowledgePage() {
                     <a href="#knowledge-faq-create-question">Add an FAQ</a>
                   </Button>
                 }
-                description="Add a short internal answer for pricing rules, policies, or workflow defaults."
+                description="No FAQs yet."
                 icon={TextQuote}
                 title="No FAQs yet"
                 variant="section"

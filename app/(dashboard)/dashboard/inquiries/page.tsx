@@ -11,7 +11,11 @@ import { InquiryListCards } from "@/features/inquiries/components/inquiry-list-c
 import { InquiryListFilters as InquiryListToolbar } from "@/features/inquiries/components/inquiry-list-filters";
 import { InquiryListTable } from "@/features/inquiries/components/inquiry-list-table";
 import { inquiryListFiltersSchema } from "@/features/inquiries/schemas";
-import { getInquiryListForWorkspace } from "@/features/inquiries/queries";
+import {
+  getInquiryListForWorkspace,
+  getWorkspaceInquiryFormOptionsForWorkspace,
+} from "@/features/inquiries/queries";
+import { getWorkspacePublicInquiryUrl } from "@/features/settings/utils";
 import { getWorkspaceInquiriesPath } from "@/features/workspaces/routes";
 import { requireCurrentWorkspaceContext } from "@/lib/db/workspace-access";
 
@@ -29,24 +33,30 @@ export default async function InquiriesPage({
     : {
         q: undefined,
         status: "all" as const,
+        form: "all",
       };
 
-  const inquiryList = await getInquiryListForWorkspace({
-    workspaceId: workspaceContext.workspace.id,
-    filters,
-  });
+  const [inquiryList, inquiryFormOptions] = await Promise.all([
+    getInquiryListForWorkspace({
+      workspaceId: workspaceContext.workspace.id,
+      filters,
+    }),
+    getWorkspaceInquiryFormOptionsForWorkspace(workspaceContext.workspace.id),
+  ]);
   const workspaceSlug = workspaceContext.workspace.slug;
-  const hasFilters = Boolean(filters.q || filters.status !== "all");
+  const hasFilters = Boolean(
+    filters.q || filters.status !== "all" || filters.form !== "all",
+  );
+  const publicInquiryUrl = getWorkspacePublicInquiryUrl(workspaceSlug);
 
   return (
     <DashboardPage>
       <PageHeader
         eyebrow="Requests"
         title="Customer requests"
-        description="Search, filter, and open each request."
         actions={
           <Button asChild variant="outline">
-            <Link href={`/inquire/${workspaceContext.workspace.slug}`} prefetch={false}>
+            <Link href={publicInquiryUrl} prefetch={false}>
               Open public page
               <ArrowRight data-icon="inline-end" />
             </Link>
@@ -55,8 +65,18 @@ export default async function InquiriesPage({
       />
 
       <InquiryListToolbar
-        key={`${filters.status}:${filters.q ?? ""}`}
+        key={`${filters.status}:${filters.form}:${filters.q ?? ""}`}
         filters={filters}
+        formOptions={[
+          {
+            value: "all",
+            label: "All forms",
+          },
+          ...inquiryFormOptions.map((form) => ({
+            value: form.slug,
+            label: form.isDefault ? `${form.name} (Default)` : form.name,
+          })),
+        ]}
         resultCount={inquiryList.length}
       />
 
@@ -75,7 +95,7 @@ export default async function InquiriesPage({
             ) : (
               <Button asChild>
                 <Link
-                  href={`/inquire/${workspaceContext.workspace.slug}`}
+                  href={publicInquiryUrl}
                   prefetch={false}
                 >
                   Preview public inquiry page
@@ -85,8 +105,8 @@ export default async function InquiriesPage({
           }
           description={
             hasFilters
-              ? "Try a different search or status."
-              : "New customer requests will appear here."
+              ? "Try another search or status."
+              : "Requests show up here."
           }
           icon={Inbox}
           title={

@@ -12,6 +12,10 @@ import { getInquiryStatusLabel } from "@/features/inquiries/utils";
 
 type InquiryListFiltersProps = {
   filters: InquiryListFilters;
+  formOptions: Array<{
+    label: string;
+    value: string;
+  }>;
   resultCount: number;
 };
 
@@ -27,6 +31,7 @@ const statusOptions: InquiryStatusFilterValue[] = [
 
 export function InquiryListFilters({
   filters,
+  formOptions,
   resultCount,
 }: InquiryListFiltersProps) {
   const pathname = usePathname();
@@ -34,8 +39,13 @@ export function InquiryListFilters({
   const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState(filters.q ?? "");
   const [status, setStatus] = useState<InquiryStatusFilterValue>(filters.status);
+  const [form, setForm] = useState(filters.form);
 
-  function navigate(nextQuery: string, nextStatus: InquiryStatusFilterValue) {
+  function navigate(
+    nextQuery: string,
+    nextStatus: InquiryStatusFilterValue,
+    nextForm: string,
+  ) {
     const params = new URLSearchParams();
     const trimmedQuery = nextQuery.trim();
 
@@ -45,6 +55,10 @@ export function InquiryListFilters({
 
     if (nextStatus !== "all") {
       params.set("status", nextStatus);
+    }
+
+    if (nextForm !== "all") {
+      params.set("form", nextForm);
     }
 
     const href = params.size ? `${pathname}?${params.toString()}` : pathname;
@@ -72,14 +86,20 @@ export function InquiryListFilters({
         label:
           option === "all" ? "All statuses" : getInquiryStatusLabel(option),
       }))}
+      secondaryFilterId="inquiry-form-filter"
+      secondaryFilterLabel="Form"
+      secondaryFilterValue={form}
+      onSecondaryFilterChange={setForm}
+      secondaryFilterOptions={formOptions}
       isPending={isPending}
-      onSubmit={() => navigate(query, status)}
+      onSubmit={() => navigate(query, status, form)}
       onClear={() => {
         setQuery("");
         setStatus("all");
-        navigate("", "all");
+        setForm("all");
+        navigate("", "all", "all");
       }}
-      canClear={Boolean(query.trim() || status !== "all")}
+      canClear={Boolean(query.trim() || status !== "all" || form !== "all")}
     />
   );
 }

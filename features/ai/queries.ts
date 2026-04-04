@@ -2,6 +2,7 @@ import "server-only";
 
 import { and, desc, eq } from "drizzle-orm";
 
+import { getNormalizedInquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
 import { getNormalizedInquiryPageConfig } from "@/features/inquiries/page-config";
 import { buildWorkspaceKnowledgeContext } from "@/features/knowledge/queries";
 import type { InquiryAssistantContext } from "@/features/ai/types";
@@ -10,6 +11,7 @@ import {
   inquiries,
   inquiryNotes,
   user,
+  workspaceInquiryForms,
   workspaces,
 } from "@/lib/db/schema";
 
@@ -28,15 +30,13 @@ export async function getInquiryAssistantContextForWorkspace({
         id: workspaces.id,
         name: workspaces.name,
         slug: workspaces.slug,
+        businessType: workspaces.businessType,
         shortDescription: workspaces.shortDescription,
         contactEmail: workspaces.contactEmail,
         defaultCurrency: workspaces.defaultCurrency,
         defaultEmailSignature: workspaces.defaultEmailSignature,
         defaultQuoteNotes: workspaces.defaultQuoteNotes,
         aiTonePreference: workspaces.aiTonePreference,
-        inquiryHeadline: workspaces.inquiryHeadline,
-        inquiryPageConfig: workspaces.inquiryPageConfig,
-        publicInquiryEnabled: workspaces.publicInquiryEnabled,
       })
       .from(workspaces)
       .where(eq(workspaces.id, workspaceId))
@@ -44,9 +44,16 @@ export async function getInquiryAssistantContextForWorkspace({
     db
       .select({
         id: inquiries.id,
+        workspaceInquiryFormId: inquiries.workspaceInquiryFormId,
+        inquiryFormName: workspaceInquiryForms.name,
+        inquiryFormSlug: workspaceInquiryForms.slug,
+        inquiryFormBusinessType: workspaceInquiryForms.businessType,
+        publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
+        inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
         customerName: inquiries.customerName,
         customerEmail: inquiries.customerEmail,
         customerPhone: inquiries.customerPhone,
+        companyName: inquiries.companyName,
         serviceCategory: inquiries.serviceCategory,
         requestedDeadline: inquiries.requestedDeadline,
         budgetText: inquiries.budgetText,
@@ -56,8 +63,13 @@ export async function getInquiryAssistantContextForWorkspace({
         status: inquiries.status,
         submittedAt: inquiries.submittedAt,
         createdAt: inquiries.createdAt,
+        submittedFieldSnapshot: inquiries.submittedFieldSnapshot,
       })
       .from(inquiries)
+      .innerJoin(
+        workspaceInquiryForms,
+        eq(inquiries.workspaceInquiryFormId, workspaceInquiryForms.id),
+      )
       .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
       .limit(1),
     db
@@ -88,11 +100,11 @@ export async function getInquiryAssistantContextForWorkspace({
   }
 
   const inquiryPageConfig = getNormalizedInquiryPageConfig(
-    workspace.inquiryPageConfig,
+    inquiry.inquiryPageConfig,
     {
       workspaceName: workspace.name,
       workspaceShortDescription: workspace.shortDescription,
-      legacyInquiryHeadline: workspace.inquiryHeadline,
+      businessType: inquiry.inquiryFormBusinessType,
     },
   );
 
@@ -109,9 +121,14 @@ export async function getInquiryAssistantContextForWorkspace({
       aiTonePreference: workspace.aiTonePreference,
       inquiryPageHeadline: inquiryPageConfig.headline,
       inquiryPageTemplate: inquiryPageConfig.template,
-      publicInquiryEnabled: workspace.publicInquiryEnabled,
+      publicInquiryEnabled: inquiry.publicInquiryEnabled,
     },
-    inquiry,
+    inquiry: {
+      ...inquiry,
+      submittedFieldSnapshot: getNormalizedInquirySubmittedFieldSnapshot(
+        inquiry.submittedFieldSnapshot,
+      ),
+    },
     notes,
     knowledge,
   };

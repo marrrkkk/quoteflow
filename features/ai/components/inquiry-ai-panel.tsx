@@ -227,6 +227,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
                   defaultValue=""
                   disabled={isPending}
                   id="inquiry-ai-custom-prompt"
+                  maxLength={1200}
                   name="customPrompt"
                   placeholder="Example: keep this tighter, focus on turnaround expectations, or make the tone more direct."
                   rows={4}
@@ -253,6 +254,7 @@ export function InquiryAiPanel({ action }: InquiryAiPanelProps) {
                   defaultValue=""
                   disabled={isPending}
                   id="inquiry-ai-source-draft"
+                  maxLength={6000}
                   name="sourceDraft"
                   placeholder="Paste your draft reply here when you want the assistant to rewrite it professionally."
                   rows={6}

@@ -35,7 +35,7 @@ function mapQuoteLibraryFieldErrors(
 
 function revalidateQuoteLibraryPages(workspaceSlug: string) {
   revalidatePath(getWorkspaceSettingsPath(workspaceSlug));
-  revalidatePath(getWorkspaceSettingsPath(workspaceSlug, "pricing-library"));
+  revalidatePath(getWorkspaceSettingsPath(workspaceSlug, "pricing"));
 }
 
 export async function createQuoteLibraryEntryAction(

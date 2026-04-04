@@ -52,5 +52,6 @@ export type CreateWorkspaceActionState = {
   error?: string;
   fieldErrors?: {
     name?: string[] | undefined;
+    businessType?: string[] | undefined;
   };
 };

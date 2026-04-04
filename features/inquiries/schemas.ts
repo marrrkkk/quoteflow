@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+import {
+  getInquiryFormFieldInputName,
+  getInquirySubmittedFieldValueDisplay,
+  inquiryContactFieldKeys,
+  type InquiryFormConfig,
+  type InquiryFormCustomFieldDefinition,
+  type InquiryFormFieldDefinition,
+  type InquirySubmittedFieldSnapshot,
+  type InquirySubmittedFieldSnapshotField,
+} from "@/features/inquiries/form-config";
 import { isAcceptedFileType } from "@/lib/files";
 import {
   inquiryStatusFilterValues,
@@ -114,41 +124,442 @@ const publicInquiryAttachmentSchema = z.preprocess(
     .optional(),
 );
 
-export const publicInquirySchema = z.object({
-  customerName: z
+export type PublicInquirySubmissionInput = {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  companyName?: string;
+  serviceCategory: string;
+  requestedDeadline?: string;
+  budgetText?: string;
+  details: string;
+  attachment?: File;
+  submittedFieldSnapshot: InquirySubmittedFieldSnapshot;
+};
+
+function getTextFieldMessage(label: string) {
+  return `Enter ${label.toLowerCase()}.`;
+}
+
+function getChoiceFieldMessage(label: string) {
+  return `Choose ${label.toLowerCase()}.`;
+}
+
+function getRawFormValue(formData: FormData, name: string) {
+  const value = formData.get(name);
+
+  if (value instanceof File) {
+    return value;
+  }
+
+  return typeof value === "string" ? value : undefined;
+}
+
+function getRawFormValues(formData: FormData, name: string) {
+  return formData
+    .getAll(name)
+    .filter((value): value is string => typeof value === "string");
+}
+
+function createRequiredTextSchema({
+  label,
+  minLength = 1,
+  maxLength,
+}: {
+  label: string;
+  minLength?: number;
+  maxLength: number;
+}) {
+  return z
     .string()
     .trim()
-    .min(2, "Enter your name.")
-    .max(120, "Name must be 120 characters or fewer."),
-  customerEmail: z
+    .min(minLength, getTextFieldMessage(label))
+    .max(maxLength, `${label} must be ${maxLength} characters or fewer.`);
+}
+
+function createOptionalTextSchema(maxLength: number) {
+  return optionalText(maxLength);
+}
+
+function createDateSchema(label: string, required: boolean) {
+  const schema = z
     .string()
     .trim()
-    .min(1, "Enter your email address.")
-    .email("Enter a valid email address."),
-  customerPhone: optionalText(40),
-  serviceCategory: z
+    .refine(isValidDateInput, `Enter a valid ${label.toLowerCase()}.`);
+
+  if (required) {
+    return z.preprocess(
+      emptyToUndefined,
+      schema.min(1, getTextFieldMessage(label)),
+    );
+  }
+
+  return z.preprocess(emptyToUndefined, schema.optional());
+}
+
+function createNumberSchema(label: string, required: boolean) {
+  const schema = z
     .string()
     .trim()
-    .min(2, "Tell us what service or category you need.")
-    .max(120, "Service or category must be 120 characters or fewer."),
-  deadline: z.preprocess(
-    emptyToUndefined,
-    z
+    .refine(
+      (value) => /^-?\d+(?:\.\d+)?$/.test(value),
+      "Enter a valid number.",
+    )
+    .max(80, `${label} must be 80 characters or fewer.`);
+
+  if (required) {
+    return z.preprocess(
+      emptyToUndefined,
+      schema.min(1, getTextFieldMessage(label)),
+    );
+  }
+
+  return z.preprocess(emptyToUndefined, schema.optional());
+}
+
+function createSelectSchema(
+  label: string,
+  values: string[],
+  required: boolean,
+) {
+  const optionSchema = z.enum(values as [string, ...string[]], {
+    error: () => getChoiceFieldMessage(label),
+  });
+
+  if (required) {
+    return z.preprocess(emptyToUndefined, optionSchema);
+  }
+
+  return z.preprocess(emptyToUndefined, optionSchema.optional());
+}
+
+function createMultiSelectSchema(
+  label: string,
+  values: string[],
+  required: boolean,
+) {
+  const optionSchema = z.enum(values as [string, ...string[]], {
+    error: () => getChoiceFieldMessage(label),
+  });
+  const arraySchema = z
+    .array(optionSchema)
+    .max(12, `Choose no more than 12 ${label.toLowerCase()} options.`);
+
+  if (required) {
+    return z.preprocess(
+      (value) => {
+        if (!Array.isArray(value)) {
+          return [];
+        }
+
+        return value.filter(
+          (entry): entry is string =>
+            typeof entry === "string" && entry.trim().length > 0,
+        );
+      },
+      arraySchema.min(1, `Select at least one ${label.toLowerCase()} option.`),
+    );
+  }
+
+  return z.preprocess(
+    (value) => {
+      if (!Array.isArray(value)) {
+        return undefined;
+      }
+
+      const cleanedValue = value.filter(
+        (entry): entry is string =>
+          typeof entry === "string" && entry.trim().length > 0,
+      );
+
+      return cleanedValue.length ? cleanedValue : undefined;
+    },
+    arraySchema.optional(),
+  );
+}
+
+function createBooleanSchema(label: string, required: boolean) {
+  const booleanValueSchema = z.preprocess((value) => {
+    if (value === "true") {
+      return true;
+    }
+
+    if (value === "false") {
+      return false;
+    }
+
+    return emptyToUndefined(value);
+  }, z.boolean({
+    error: () => getChoiceFieldMessage(label),
+  }));
+
+  if (required) {
+    return booleanValueSchema;
+  }
+
+  return booleanValueSchema.optional();
+}
+
+function createCustomFieldSchema(field: InquiryFormCustomFieldDefinition) {
+  switch (field.fieldType) {
+    case "short_text":
+      return field.required
+        ? createRequiredTextSchema({ label: field.label, maxLength: 160 })
+        : createOptionalTextSchema(160);
+    case "long_text":
+      return field.required
+        ? createRequiredTextSchema({
+            label: field.label,
+            minLength: 1,
+            maxLength: 4000,
+          })
+        : createOptionalTextSchema(4000);
+    case "number":
+      return createNumberSchema(field.label, field.required);
+    case "date":
+      return createDateSchema(field.label, field.required);
+    case "boolean":
+      return createBooleanSchema(field.label, field.required);
+    case "select":
+      return createSelectSchema(
+        field.label,
+        (field.options ?? []).map((option) => option.value),
+        field.required,
+      );
+    case "multi_select":
+      return createMultiSelectSchema(
+        field.label,
+        (field.options ?? []).map((option) => option.value),
+        field.required,
+      );
+  }
+}
+
+function createPublicInquirySubmissionSchema(config: InquiryFormConfig) {
+  const shape: Record<string, z.ZodTypeAny> = {};
+
+  if (config.contactFields.customerName.enabled) {
+    shape.customerName = createRequiredTextSchema({
+      label: config.contactFields.customerName.label,
+      minLength: 2,
+      maxLength: 120,
+    });
+  }
+
+  if (config.contactFields.customerEmail.enabled) {
+    shape.customerEmail = z
       .string()
       .trim()
-      .refine(isValidDateInput, "Enter a valid deadline.")
-      .optional(),
-  ),
-  budget: optionalText(120),
-  details: z
-    .string()
-    .trim()
-    .min(10, "Share a few details so the business can quote accurately.")
-    .max(4000, "Details must be 4,000 characters or fewer."),
-  attachment: publicInquiryAttachmentSchema,
-});
+      .min(1, getTextFieldMessage(config.contactFields.customerEmail.label))
+      .max(320, "Email address must be 320 characters or fewer.")
+      .email("Enter a valid email address.");
+  }
 
-export type PublicInquirySubmissionInput = z.infer<typeof publicInquirySchema>;
+  if (config.contactFields.customerPhone.enabled) {
+    shape.customerPhone = config.contactFields.customerPhone.required
+      ? createRequiredTextSchema({
+          label: config.contactFields.customerPhone.label,
+          maxLength: 40,
+        })
+      : createOptionalTextSchema(40);
+  }
+
+  if (config.contactFields.companyName.enabled) {
+    shape.companyName = config.contactFields.companyName.required
+      ? createRequiredTextSchema({
+          label: config.contactFields.companyName.label,
+          maxLength: 120,
+        })
+      : createOptionalTextSchema(120);
+  }
+
+  for (const field of config.projectFields) {
+    if (field.kind === "system" && !field.enabled) {
+      continue;
+    }
+
+    const inputName = getInquiryFormFieldInputName(field);
+
+    if (field.kind === "custom") {
+      shape[inputName] = createCustomFieldSchema(field);
+      continue;
+    }
+
+    switch (field.key) {
+      case "serviceCategory":
+        shape[inputName] = createRequiredTextSchema({
+          label: field.label,
+          minLength: 2,
+          maxLength: 120,
+        });
+        break;
+      case "requestedDeadline":
+        shape[inputName] = createDateSchema(field.label, field.required);
+        break;
+      case "budgetText":
+        shape[inputName] = field.required
+          ? createRequiredTextSchema({
+              label: field.label,
+              maxLength: 120,
+            })
+          : createOptionalTextSchema(120);
+        break;
+      case "details":
+        shape[inputName] = createRequiredTextSchema({
+          label: field.label,
+          minLength: 10,
+          maxLength: 4000,
+        });
+        break;
+      case "attachment":
+        shape[inputName] = publicInquiryAttachmentSchema;
+        break;
+    }
+  }
+
+  return z.object(shape);
+}
+
+function getSubmittedFieldSnapshotValue(
+  field: InquiryFormFieldDefinition | (typeof inquiryContactFieldKeys)[number],
+  parsedValues: Record<string, unknown>,
+): InquirySubmittedFieldSnapshotField["value"] {
+  const inputName =
+    typeof field === "string" ? field : getInquiryFormFieldInputName(field);
+  const value = parsedValues[inputName];
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+
+    return trimmedValue ? trimmedValue : null;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? value : null;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (value instanceof File) {
+    return value.name.trim() ? value.name : null;
+  }
+
+  return null;
+}
+
+function buildSubmittedFieldSnapshot(
+  config: InquiryFormConfig,
+  parsedValues: Record<string, unknown>,
+) {
+  const fields: InquirySubmittedFieldSnapshotField[] = [];
+
+  for (const contactKey of inquiryContactFieldKeys) {
+    const field = config.contactFields[contactKey];
+
+    if (!field.enabled) {
+      continue;
+    }
+
+    const value = getSubmittedFieldSnapshotValue(contactKey, parsedValues);
+
+    fields.push({
+      id: contactKey,
+      label: field.label,
+      value,
+      displayValue: getInquirySubmittedFieldValueDisplay(value),
+    });
+  }
+
+  for (const field of config.projectFields) {
+    if (field.kind === "system" && !field.enabled) {
+      continue;
+    }
+
+    const value = getSubmittedFieldSnapshotValue(field, parsedValues);
+
+    fields.push({
+      id: field.kind === "system" ? field.key : field.id,
+      label: field.label,
+      value,
+      displayValue: getInquirySubmittedFieldValueDisplay(value),
+    });
+  }
+
+  return {
+    version: 1,
+    businessType: config.businessType,
+    fields,
+  } satisfies InquirySubmittedFieldSnapshot;
+}
+
+export function validatePublicInquirySubmission(
+  config: InquiryFormConfig,
+  formData: FormData,
+) {
+  const schema = createPublicInquirySubmissionSchema(config);
+  const candidate: Record<string, unknown> = {};
+
+  for (const contactKey of inquiryContactFieldKeys) {
+    if (!config.contactFields[contactKey].enabled) {
+      continue;
+    }
+
+    candidate[contactKey] = getRawFormValue(formData, contactKey);
+  }
+
+  for (const field of config.projectFields) {
+    if (field.kind === "system" && !field.enabled) {
+      continue;
+    }
+
+    const inputName = getInquiryFormFieldInputName(field);
+    candidate[inputName] =
+      field.kind === "custom" && field.fieldType === "multi_select"
+        ? getRawFormValues(formData, inputName)
+        : getRawFormValue(formData, inputName);
+  }
+
+  const validationResult = schema.safeParse(candidate);
+
+  if (!validationResult.success) {
+    return validationResult;
+  }
+
+  const parsedValues = validationResult.data as Record<string, unknown>;
+
+  return {
+    success: true as const,
+    data: {
+      customerName: String(parsedValues.customerName ?? ""),
+      customerEmail: String(parsedValues.customerEmail ?? ""),
+      customerPhone:
+        typeof parsedValues.customerPhone === "string"
+          ? parsedValues.customerPhone
+          : undefined,
+      companyName:
+        typeof parsedValues.companyName === "string"
+          ? parsedValues.companyName
+          : undefined,
+      serviceCategory: String(parsedValues.serviceCategory ?? ""),
+      requestedDeadline:
+        typeof parsedValues.requestedDeadline === "string"
+          ? parsedValues.requestedDeadline
+          : undefined,
+      budgetText:
+        typeof parsedValues.budgetText === "string"
+          ? parsedValues.budgetText
+          : undefined,
+      details: String(parsedValues.details ?? ""),
+      attachment:
+        parsedValues.attachment instanceof File
+          ? parsedValues.attachment
+          : undefined,
+      submittedFieldSnapshot: buildSubmittedFieldSnapshot(config, parsedValues),
+    } satisfies PublicInquirySubmissionInput,
+  };
+}
 
 export const inquiryIdSchema = z.string().trim().min(1).max(128);
 
@@ -172,6 +583,12 @@ export const inquiryListFiltersSchema = z.object({
     .preprocess(
       (value) => firstString(value) ?? "all",
       z.enum(inquiryStatusFilterValues),
+    )
+    .catch("all"),
+  form: z
+    .preprocess(
+      (value) => firstString(value) ?? "all",
+      z.string().trim().max(120),
     )
     .catch("all"),
 });

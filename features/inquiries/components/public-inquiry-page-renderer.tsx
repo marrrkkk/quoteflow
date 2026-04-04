@@ -34,6 +34,8 @@ export function PublicInquiryPageRenderer({
   return (
     <div className="public-page">
       <div className="public-page-stack">
+        {beforeHero}
+
         <header className="public-page-header">
           <WorkspaceInquiryBrand workspace={workspace} />
           {headerAction ? (
@@ -42,8 +44,6 @@ export function PublicInquiryPageRenderer({
             </div>
           ) : null}
         </header>
-
-        {beforeHero}
 
         {config.template === "stacked" ? (
           <StackedInquiryTemplate
@@ -170,8 +170,7 @@ function WorkspaceInquiryBrand({ workspace }: { workspace: PublicInquiryWorkspac
     <div className="flex min-w-0 items-center gap-4">
       <WorkspaceBrandBadge workspace={workspace} size="md" />
       <div className="min-w-0">
-        <p className="meta-label">Workspace brand</p>
-        <p className="mt-1 truncate font-heading text-lg font-semibold tracking-tight text-foreground">
+        <p className="truncate font-heading text-lg font-semibold tracking-tight text-foreground">
           {workspace.name}
         </p>
         {brandTagline ? (

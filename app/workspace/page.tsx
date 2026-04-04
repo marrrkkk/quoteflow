@@ -40,10 +40,6 @@ export default async function WorkspacePage() {
                 <h1 className="font-heading text-[2rem] font-semibold tracking-tight text-foreground sm:text-[2.35rem]">
                   Choose a workspace
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                  Open an existing workspace or create a new one before entering
-                  the dashboard.
-                </p>
               </div>
             </div>
           </div>
@@ -138,21 +134,13 @@ export default async function WorkspacePage() {
               <Card className="border-dashed">
                 <CardHeader>
                   <CardTitle>Start with your first workspace</CardTitle>
-                  <CardDescription>
-                    Create one workspace for each business, brand, or operating
-                    unit you want to manage separately.
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="soft-panel flex items-start gap-3 px-4 py-4 shadow-none">
                     <PlusCircle className="mt-0.5 size-5 text-primary" />
                     <div className="space-y-1.5">
                       <p className="text-sm font-medium text-foreground">
-                        You do not have any workspaces yet.
-                      </p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        Create one from the panel on the right to unlock the
-                        dashboard, requests, quotes, and settings.
+                        No workspaces yet.
                       </p>
                     </div>
                   </div>
@@ -164,11 +152,7 @@ export default async function WorkspacePage() {
           <aside>
             <Card className="sticky top-6">
               <CardHeader>
-                <CardTitle>Create another workspace</CardTitle>
-                <CardDescription>
-                  Use a separate workspace when you need a different public form,
-                  pricing library, or quote history.
-                </CardDescription>
+                <CardTitle>Create workspace</CardTitle>
               </CardHeader>
               <CardContent>
                 <CreateWorkspaceForm action={createWorkspaceAction} />

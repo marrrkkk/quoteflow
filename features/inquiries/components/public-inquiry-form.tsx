@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { ArrowRight, CircleAlert, CircleCheckBig } from "lucide-react";
 
 import {
@@ -9,13 +9,19 @@ import {
   FormNote,
   FormSection,
 } from "@/components/shared/form-layout";
-import { getFieldError } from "@/lib/action-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -23,13 +29,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  publicInquiryAttachmentAccept,
-  publicInquiryAttachmentLabel,
-} from "@/features/inquiries/schemas";
+  getInquiryFormFieldInputName,
+  inquiryContactFieldKeys,
+  type InquiryContactFieldKey,
+  type InquiryFormFieldDefinition,
+  type InquiryFormSystemFieldDefinition,
+} from "@/features/inquiries/form-config";
+import { publicInquiryAttachmentAccept } from "@/features/inquiries/schemas";
 import type {
   PublicInquiryFormState,
   PublicInquiryWorkspace,
 } from "@/features/inquiries/types";
+import { cn } from "@/lib/utils";
 
 type PublicInquiryFormProps = {
   workspace: PublicInquiryWorkspace;
@@ -42,6 +53,43 @@ type PublicInquiryFormProps = {
 
 const initialState: PublicInquiryFormState = {};
 
+function getContactFieldMaxLength(contactKey: InquiryContactFieldKey) {
+  switch (contactKey) {
+    case "customerName":
+      return 120;
+    case "customerEmail":
+      return 320;
+    case "customerPhone":
+      return 40;
+    case "companyName":
+      return 120;
+  }
+}
+
+function getProjectFieldMaxLength(field: InquiryFormFieldDefinition) {
+  if (field.kind === "system") {
+    switch (field.key) {
+      case "serviceCategory":
+        return 120;
+      case "budgetText":
+        return 120;
+      case "details":
+        return 4000;
+      default:
+        return undefined;
+    }
+  }
+
+  switch (field.fieldType) {
+    case "short_text":
+      return 160;
+    case "long_text":
+      return 4000;
+    default:
+      return undefined;
+  }
+}
+
 export function PublicInquiryForm({
   workspace,
   action,
@@ -49,18 +97,40 @@ export function PublicInquiryForm({
 }: PublicInquiryFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
-  const customerNameError = getFieldError(state.fieldErrors, "customerName");
-  const customerEmailError = getFieldError(state.fieldErrors, "customerEmail");
-  const customerPhoneError = getFieldError(state.fieldErrors, "customerPhone");
-  const serviceCategoryError = getFieldError(
-    state.fieldErrors,
-    "serviceCategory",
+  const contactFields = useMemo(
+    () =>
+      inquiryContactFieldKeys.filter(
+        (key) => workspace.inquiryFormConfig.contactFields[key].enabled,
+      ),
+    [workspace.inquiryFormConfig.contactFields],
   );
-  const deadlineError = getFieldError(state.fieldErrors, "deadline");
-  const budgetError = getFieldError(state.fieldErrors, "budget");
-  const detailsError = getFieldError(state.fieldErrors, "details");
-  const attachmentError = getFieldError(state.fieldErrors, "attachment");
+  const attachmentField = useMemo<InquiryFormSystemFieldDefinition | null>(
+    () =>
+      workspace.inquiryFormConfig.projectFields.find(
+        (field): field is InquiryFormSystemFieldDefinition =>
+          field.kind === "system" &&
+          field.key === "attachment" &&
+          field.enabled,
+      ) ?? null,
+    [workspace.inquiryFormConfig.projectFields],
+  );
+  const projectFields = useMemo(
+    () =>
+      workspace.inquiryFormConfig.projectFields.filter(
+        (field) =>
+          field.kind === "custom" ||
+          (field.kind === "system" &&
+            field.enabled &&
+            field.key !== "attachment"),
+      ),
+    [workspace.inquiryFormConfig.projectFields],
+  );
+
+  function getFieldMessage(fieldName: string) {
+    return state.fieldErrors?.[fieldName]?.[0];
+  }
 
   if (state.success) {
     return (
@@ -68,18 +138,11 @@ export function PublicInquiryForm({
         <Alert>
           <CircleCheckBig />
           <AlertTitle>Inquiry received.</AlertTitle>
-          <AlertDescription>
-            {state.success} {workspace.name} can now review it and follow up using
-            the details you shared.
-          </AlertDescription>
+          <AlertDescription>{state.success}</AlertDescription>
         </Alert>
 
         <FormNote className="p-5">
           <div className="flex flex-col gap-3">
-            <p className="text-sm leading-7 text-muted-foreground">
-              Thanks. The business owner now has your inquiry and can reply using
-              the contact details you shared.
-            </p>
             {state.inquiryId ? (
               <p className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-muted-foreground">
                 Reference {state.inquiryId}
@@ -101,235 +164,431 @@ export function PublicInquiryForm({
   }
 
   return (
-    <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert variant="destructive">
-          <CircleAlert />
-          <AlertTitle>We could not submit your inquiry.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
+    <>
+      <form
+        action={formAction}
+        className="form-stack"
+        onSubmit={(event) => {
+          if (!previewMode) {
+            return;
+          }
 
-      <FormSection
-        description={`Share the best way for ${workspace.name} to follow up about the request.`}
-        title="Contact details"
+          event.preventDefault();
+          setIsPreviewDialogOpen(true);
+        }}
       >
-        <FieldGroup>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field data-invalid={Boolean(customerNameError) || undefined}>
-              <FieldLabel htmlFor="customerName">Your name</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="customerName"
-                  name="customerName"
-                  autoComplete="name"
-                  placeholder="Alicia Cruz"
-                  aria-invalid={Boolean(customerNameError) || undefined}
-                  disabled={isPending}
-                />
-                <FieldError
-                  errors={
-                    customerNameError ? [{ message: customerNameError }] : undefined
-                  }
-                />
-              </FieldContent>
-            </Field>
+        {state.error ? (
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertTitle>We could not submit your inquiry.</AlertTitle>
+            <AlertDescription>{state.error}</AlertDescription>
+          </Alert>
+        ) : null}
 
-            <Field data-invalid={Boolean(customerEmailError) || undefined}>
-              <FieldLabel htmlFor="customerEmail">Email address</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="customerEmail"
-                  name="customerEmail"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  aria-invalid={Boolean(customerEmailError) || undefined}
-                  disabled={isPending}
+        <FormSection title="Contact">
+          <FieldGroup>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {contactFields.map((contactKey) => (
+                <ContactField
+                  key={contactKey}
+                  contactKey={contactKey}
+                  error={getFieldMessage(contactKey)}
+                  fieldConfig={workspace.inquiryFormConfig.contactFields[contactKey]}
+                  isPending={isPending}
                 />
-                <FieldError
-                  errors={
-                    customerEmailError
-                      ? [{ message: customerEmailError }]
-                      : undefined
-                  }
-                />
-              </FieldContent>
-            </Field>
-          </div>
+              ))}
+            </div>
+          </FieldGroup>
+        </FormSection>
 
-          <Field data-invalid={Boolean(customerPhoneError) || undefined}>
-            <FieldLabel htmlFor="customerPhone">Phone number</FieldLabel>
-            <FieldContent>
-              <Input
-                id="customerPhone"
-                name="customerPhone"
-                autoComplete="tel"
-                placeholder="Optional"
-                aria-invalid={Boolean(customerPhoneError) || undefined}
-                disabled={isPending}
-              />
-              <FieldDescription>Optional.</FieldDescription>
-              <FieldError
-                errors={
-                  customerPhoneError
-                    ? [{ message: customerPhoneError }]
-                    : undefined
-                }
-              />
-            </FieldContent>
-          </Field>
-        </FieldGroup>
-      </FormSection>
+        {projectFields.length ? (
+          <FormSection title="Project">
+            <FieldGroup>
+              <div className="grid gap-5 sm:grid-cols-2">
+                {projectFields.map((field) => {
+                  const inputName = getInquiryFormFieldInputName(field);
 
-      <FormSection
-        description="Describe the work, timing, and any budget context so the owner can review it quickly."
-        title="Project details"
-      >
-        <FieldGroup>
-          <Field data-invalid={Boolean(serviceCategoryError) || undefined}>
-            <FieldLabel htmlFor="serviceCategory">Service or category</FieldLabel>
-            <FieldContent>
-              <Input
-                id="serviceCategory"
-                name="serviceCategory"
-                placeholder="Banner printing, laptop repair, tutoring package"
-                aria-invalid={Boolean(serviceCategoryError) || undefined}
-                disabled={isPending}
-              />
-              <FieldError
-                errors={
-                  serviceCategoryError
-                    ? [{ message: serviceCategoryError }]
-                    : undefined
-                }
-              />
-            </FieldContent>
-          </Field>
+                  return (
+                    <ProjectField
+                      key={inputName}
+                      error={getFieldMessage(inputName)}
+                      field={field}
+                      isPending={isPending}
+                    />
+                  );
+                })}
+              </div>
+            </FieldGroup>
+          </FormSection>
+        ) : null}
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field data-invalid={Boolean(deadlineError) || undefined}>
-              <FieldLabel htmlFor="deadline">Deadline</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="deadline"
-                  name="deadline"
-                  type="date"
-                  aria-invalid={Boolean(deadlineError) || undefined}
-                  disabled={isPending}
-                />
-                <FieldDescription>Optional.</FieldDescription>
-                <FieldError
-                  errors={deadlineError ? [{ message: deadlineError }] : undefined}
-                />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={Boolean(budgetError) || undefined}>
-              <FieldLabel htmlFor="budget">Budget</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="budget"
-                  name="budget"
-                  placeholder="Optional"
-                  aria-invalid={Boolean(budgetError) || undefined}
-                  disabled={isPending}
-                />
-                <FieldDescription>Optional.</FieldDescription>
-                <FieldError
-                  errors={budgetError ? [{ message: budgetError }] : undefined}
-                />
-              </FieldContent>
-            </Field>
-          </div>
-
-          <Field data-invalid={Boolean(detailsError) || undefined}>
-            <FieldLabel htmlFor="details">Message and details</FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="details"
-                name="details"
-                rows={7}
-                placeholder="Share the scope, size, quantity, timing, location, or anything else that matters."
-                aria-invalid={Boolean(detailsError) || undefined}
-                disabled={isPending}
+        {attachmentField ? (
+          <FormSection title={attachmentField.label}>
+            <FieldGroup>
+              <AttachmentField
+                error={getFieldMessage("attachment")}
+                field={attachmentField}
+                isPending={isPending}
+                onSelectFileName={setSelectedFileName}
+                selectedFileName={selectedFileName}
               />
-              <FieldDescription>
-                The more detail you share, the easier it is to quote well.
-              </FieldDescription>
-              <FieldError
-                errors={detailsError ? [{ message: detailsError }] : undefined}
-              />
-            </FieldContent>
-          </Field>
-        </FieldGroup>
-      </FormSection>
+            </FieldGroup>
+          </FormSection>
+        ) : null}
 
-      <FormSection
-        description={`Optional. Upload ${publicInquiryAttachmentLabel} if it helps explain the request.`}
-        title="Reference file"
-      >
-        <FieldGroup>
-          <Field data-invalid={Boolean(attachmentError) || undefined}>
-            <FieldLabel htmlFor="attachment">Attachment</FieldLabel>
-            <FieldContent>
-              <Input
-                id="attachment"
-                name="attachment"
-                type="file"
-                accept={publicInquiryAttachmentAccept}
-                aria-invalid={Boolean(attachmentError) || undefined}
-                disabled={isPending}
-                onChange={(event) =>
-                  setSelectedFileName(event.currentTarget.files?.[0]?.name ?? null)
-                }
-              />
-              <FieldDescription>
-                Optional. Upload {publicInquiryAttachmentLabel}.
-                {selectedFileName ? ` Selected: ${selectedFileName}.` : ""}
-              </FieldDescription>
-              <FieldError
-                errors={
-                  attachmentError ? [{ message: attachmentError }] : undefined
-                }
-              />
-            </FieldContent>
-          </Field>
-        </FieldGroup>
-      </FormSection>
+        <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden">
+          <label htmlFor="website">Leave this field empty</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
 
-      <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden">
-        <label htmlFor="website">Leave this field empty</label>
-        <input
-          id="website"
-          name="website"
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
+        <div className="toolbar-panel">
+          <FormActions align="between" className="pt-0">
+            {previewMode ? (
+              <span />
+            ) : (
+              <p className="text-sm leading-6 text-muted-foreground">
+                Sent to {workspace.name}.
+              </p>
+            )}
+            <Button
+              className="w-full sm:w-auto"
+              disabled={isPending}
+              type="submit"
+              size="lg"
+            >
+              {isPending ? "Sending inquiry..." : "Send inquiry"}
+            </Button>
+          </FormActions>
+        </div>
+      </form>
+
+      <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>This is a preview</DialogTitle>
+            <DialogDescription>
+              Submission is disabled here. Open the live page to send a real inquiry.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setIsPreviewDialogOpen(false)} type="button">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function ContactField({
+  contactKey,
+  error,
+  fieldConfig,
+  isPending,
+}: {
+  contactKey: InquiryContactFieldKey;
+  error?: string;
+  fieldConfig: PublicInquiryWorkspace["inquiryFormConfig"]["contactFields"][InquiryContactFieldKey];
+  isPending: boolean;
+}) {
+  const inputId = `inquiry-${contactKey}`;
+  const inputType = contactKey === "customerEmail" ? "email" : "text";
+  const autoComplete =
+    contactKey === "customerName"
+      ? "name"
+      : contactKey === "customerEmail"
+        ? "email"
+        : contactKey === "customerPhone"
+          ? "tel"
+          : "organization";
+
+  return (
+    <Field data-invalid={Boolean(error) || undefined}>
+      <FieldLabel htmlFor={inputId}>
+        <FieldLabelText
+          label={fieldConfig.label}
+          required={fieldConfig.required}
         />
-      </div>
+      </FieldLabel>
+      <FieldContent>
+        <Input
+          autoComplete={autoComplete}
+          disabled={isPending}
+          id={inputId}
+          inputMode={contactKey === "customerPhone" ? "tel" : undefined}
+          maxLength={getContactFieldMaxLength(contactKey)}
+          name={contactKey}
+          placeholder={fieldConfig.placeholder}
+          required={fieldConfig.required}
+          type={inputType}
+        />
+        <FieldError errors={error ? [{ message: error }] : undefined} />
+      </FieldContent>
+    </Field>
+  );
+}
 
-      <div className="toolbar-panel">
-        <FormActions align="between" className="pt-0">
-          <p className="text-sm leading-6 text-muted-foreground">
-            {previewMode
-              ? "Preview mode. Submission is disabled on this page."
-              : `Sent directly to ${workspace.name}.`}
-          </p>
-          <Button
-            className="w-full sm:w-auto"
-            disabled={isPending || previewMode}
-            type={previewMode ? "button" : "submit"}
-            size="lg"
-          >
-            {previewMode
-              ? "Preview only"
-              : isPending
-                ? "Sending your inquiry..."
-                : "Send inquiry"}
-          </Button>
-        </FormActions>
-      </div>
-    </form>
+function ProjectField({
+  field,
+  error,
+  isPending,
+}: {
+  field: InquiryFormFieldDefinition;
+  error?: string;
+  isPending: boolean;
+}) {
+  const inputName = getInquiryFormFieldInputName(field);
+  const inputId = `inquiry-${inputName}`;
+  const isWide =
+    (field.kind === "system" && field.key === "details") ||
+    (field.kind === "custom" &&
+      (field.fieldType === "long_text" || field.fieldType === "multi_select"));
+
+  return (
+    <Field
+      className={cn(isWide && "sm:col-span-2")}
+      data-invalid={Boolean(error) || undefined}
+    >
+      <FieldLabel htmlFor={inputId}>
+        <FieldLabelText label={field.label} required={field.required} />
+      </FieldLabel>
+      <FieldContent>
+        {renderProjectInput({
+          field,
+          inputId,
+          inputName,
+          isPending,
+        })}
+        <FieldError errors={error ? [{ message: error }] : undefined} />
+      </FieldContent>
+    </Field>
+  );
+}
+
+function renderProjectInput({
+  field,
+  inputId,
+  inputName,
+  isPending,
+}: {
+  field: InquiryFormFieldDefinition;
+  inputId: string;
+  inputName: string;
+  isPending: boolean;
+}) {
+  if (field.kind === "system") {
+    if (field.key === "requestedDeadline") {
+      return (
+        <Input
+          disabled={isPending}
+          id={inputId}
+          name={inputName}
+          required={field.required}
+          type="date"
+        />
+      );
+    }
+
+    if (field.key === "details") {
+      return (
+        <Textarea
+          disabled={isPending}
+          id={inputId}
+          maxLength={4000}
+          minLength={10}
+          name={inputName}
+          placeholder={field.placeholder}
+          required={field.required}
+          rows={7}
+        />
+      );
+    }
+
+    return (
+      <Input
+        disabled={isPending}
+        id={inputId}
+        maxLength={getProjectFieldMaxLength(field)}
+        minLength={field.key === "serviceCategory" ? 2 : undefined}
+        name={inputName}
+        placeholder={field.placeholder}
+        required={field.required}
+      />
+    );
+  }
+
+  switch (field.fieldType) {
+    case "long_text":
+      return (
+        <Textarea
+          disabled={isPending}
+          id={inputId}
+          maxLength={4000}
+          name={inputName}
+          placeholder={field.placeholder}
+          required={field.required}
+          rows={5}
+        />
+      );
+    case "select":
+      return (
+        <select
+          className="h-10 w-full rounded-lg border border-input/95 bg-background/92 px-3 text-sm shadow-xs outline-none transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+          defaultValue=""
+          disabled={isPending}
+          id={inputId}
+          name={inputName}
+          required={field.required}
+        >
+          <option value="">
+            {field.placeholder ?? "Select an option"}
+          </option>
+          {(field.options ?? []).map((option) => (
+            <option key={option.id} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      );
+    case "multi_select":
+      return (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(field.options ?? []).map((option) => {
+            const optionId = `${inputId}-${option.id}`;
+
+            return (
+              <label
+                key={option.id}
+                className="soft-panel flex items-center gap-3 px-3 py-3 shadow-none"
+                htmlFor={optionId}
+              >
+                <input
+                  className="size-4 rounded border border-input/95"
+                  disabled={isPending}
+                  id={optionId}
+                  name={inputName}
+                  type="checkbox"
+                  value={option.value}
+                />
+                <span className="text-sm text-foreground">{option.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      );
+    case "number":
+      return (
+        <Input
+          disabled={isPending}
+          id={inputId}
+          inputMode="decimal"
+          name={inputName}
+          placeholder={field.placeholder}
+          required={field.required}
+          step="any"
+          type="number"
+        />
+      );
+    case "date":
+      return (
+        <Input
+          disabled={isPending}
+          id={inputId}
+          name={inputName}
+          required={field.required}
+          type="date"
+        />
+      );
+    case "boolean":
+      return (
+        <select
+          className="h-10 w-full rounded-lg border border-input/95 bg-background/92 px-3 text-sm shadow-xs outline-none transition-[color,box-shadow,border-color] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+          defaultValue=""
+          disabled={isPending}
+          id={inputId}
+          name={inputName}
+          required={field.required}
+        >
+          <option value="">
+            {field.placeholder ?? "Choose an option"}
+          </option>
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      );
+    case "short_text":
+    default:
+      return (
+        <Input
+          disabled={isPending}
+          id={inputId}
+          maxLength={160}
+          name={inputName}
+          placeholder={field.placeholder}
+          required={field.required}
+        />
+      );
+  }
+}
+
+function AttachmentField({
+  error,
+  field,
+  isPending,
+  selectedFileName,
+  onSelectFileName,
+}: {
+  error?: string;
+  field: InquiryFormSystemFieldDefinition;
+  isPending: boolean;
+  selectedFileName: string | null;
+  onSelectFileName: (fileName: string | null) => void;
+}) {
+  return (
+    <Field data-invalid={Boolean(error) || undefined}>
+      <FieldLabel htmlFor="inquiry-attachment">
+        <FieldLabelText label={field.label} required={false} />
+      </FieldLabel>
+      <FieldContent>
+        <Input
+          accept={publicInquiryAttachmentAccept}
+          disabled={isPending}
+          id="inquiry-attachment"
+          name="attachment"
+          onChange={(event) =>
+            onSelectFileName(event.currentTarget.files?.[0]?.name ?? null)
+          }
+          type="file"
+        />
+        {selectedFileName ? (
+          <p className="text-sm text-muted-foreground">Selected: {selectedFileName}</p>
+        ) : null}
+        <FieldError errors={error ? [{ message: error }] : undefined} />
+      </FieldContent>
+    </Field>
+  );
+}
+
+function FieldLabelText({
+  label,
+  required,
+}: {
+  label: string;
+  required: boolean;
+}) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span>{label}</span>
+      {!required ? (
+        <span className="text-xs font-medium text-muted-foreground">Optional</span>
+      ) : null}
+    </span>
   );
 }

@@ -21,14 +21,20 @@ type SendPublicInquiryNotificationEmailInput = {
   recipients: string[];
   workspaceName: string;
   dashboardUrl: string;
+  inquiryFormName: string;
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  companyName?: string;
   serviceCategory: string;
   deadline?: string;
   budget?: string;
   details: string;
   attachmentName?: string | null;
+  additionalFields?: Array<{
+    label: string;
+    value: string;
+  }>;
 };
 
 type SendQuoteEmailInput = {
@@ -112,14 +118,17 @@ export async function sendPublicInquiryNotificationEmail({
   recipients,
   workspaceName,
   dashboardUrl,
+  inquiryFormName,
   customerName,
   customerEmail,
   customerPhone,
+  companyName,
   serviceCategory,
   deadline,
   budget,
   details,
   attachmentName,
+  additionalFields,
 }: SendPublicInquiryNotificationEmailInput) {
   if (!recipients.length) {
     return;
@@ -135,14 +144,17 @@ export async function sendPublicInquiryNotificationEmail({
   const template = renderPublicInquiryNotificationEmail({
     workspaceName,
     dashboardUrl,
+    inquiryFormName,
     customerName,
     customerEmail,
     customerPhone,
+    companyName,
     serviceCategory,
     deadline,
     budget,
     details,
     attachmentName,
+    additionalFields,
   });
 
   const { error } = await resend.emails.send(

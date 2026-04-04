@@ -64,10 +64,13 @@ export function InquiryNoteForm({
             <FieldContent>
               <Textarea
                 id="inquiry-note"
+                maxLength={2000}
+                minLength={1}
                 name="body"
                 rows={4}
                 placeholder="Capture follow-ups, scope clarifications, or internal context for the next reply."
                 aria-invalid={Boolean(state.fieldErrors?.body) || undefined}
+                required
                 disabled={isPending}
               />
               <FieldError
@@ -91,10 +94,13 @@ export function InquiryNoteForm({
               <FieldContent>
                 <Textarea
                   id="inquiry-note"
+                  maxLength={2000}
+                  minLength={1}
                   name="body"
                   rows={4}
                   placeholder="Capture follow-ups, scope clarifications, or internal context for the next reply."
                   aria-invalid={Boolean(state.fieldErrors?.body) || undefined}
+                  required
                   disabled={isPending}
                 />
                 <FieldError

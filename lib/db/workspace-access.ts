@@ -6,7 +6,12 @@ import { cookies } from "next/headers";
 import { getSession, requireUser, type AuthUser } from "@/lib/auth/session";
 import { activeWorkspaceSlugCookieName } from "@/features/workspaces/routes";
 import { db } from "@/lib/db/client";
-import { user, workspaceMembers, workspaces } from "@/lib/db/schema";
+import {
+  user,
+  workspaceInquiryForms,
+  workspaceMembers,
+  workspaces,
+} from "@/lib/db/schema";
 
 export type WorkspaceContext = {
   membershipId: string;
@@ -44,6 +49,15 @@ export type OwnerWorkspaceActionContext =
     };
 
 export async function getWorkspaceMembershipsForUser(userId: string) {
+  const publicInquiryEnabledSelection = sql<boolean>`coalesce((
+    select ${workspaceInquiryForms.publicInquiryEnabled}
+    from ${workspaceInquiryForms}
+    where ${workspaceInquiryForms.workspaceId} = ${workspaces.id}
+      and ${workspaceInquiryForms.isDefault} = true
+      and ${workspaceInquiryForms.archivedAt} is null
+    limit 1
+  ), false)`;
+
   const memberships = await db
     .select({
       membershipId: workspaceMembers.id,
@@ -53,7 +67,7 @@ export async function getWorkspaceMembershipsForUser(userId: string) {
       workspaceSlug: workspaces.slug,
       workspaceLogoStoragePath: workspaces.logoStoragePath,
       defaultCurrency: workspaces.defaultCurrency,
-      publicInquiryEnabled: workspaces.publicInquiryEnabled,
+      publicInquiryEnabled: publicInquiryEnabledSelection,
     })
     .from(workspaceMembers)
     .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
@@ -82,6 +96,15 @@ export async function getWorkspaceContextForMembershipSlug(
   userId: string,
   workspaceSlug: string,
 ) {
+  const publicInquiryEnabledSelection = sql<boolean>`coalesce((
+    select ${workspaceInquiryForms.publicInquiryEnabled}
+    from ${workspaceInquiryForms}
+    where ${workspaceInquiryForms.workspaceId} = ${workspaces.id}
+      and ${workspaceInquiryForms.isDefault} = true
+      and ${workspaceInquiryForms.archivedAt} is null
+    limit 1
+  ), false)`;
+
   const [context] = await db
     .select({
       membershipId: workspaceMembers.id,
@@ -91,7 +114,7 @@ export async function getWorkspaceContextForMembershipSlug(
       workspaceSlug: workspaces.slug,
       workspaceLogoStoragePath: workspaces.logoStoragePath,
       defaultCurrency: workspaces.defaultCurrency,
-      publicInquiryEnabled: workspaces.publicInquiryEnabled,
+      publicInquiryEnabled: publicInquiryEnabledSelection,
     })
     .from(workspaceMembers)
     .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))

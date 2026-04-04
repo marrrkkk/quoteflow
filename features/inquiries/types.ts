@@ -1,3 +1,8 @@
+import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type {
+  InquiryFormConfig,
+  InquirySubmittedFieldSnapshot,
+} from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
 
 export const inquiryStatuses = [
@@ -15,6 +20,9 @@ export type InquiryStatusFilterValue = (typeof inquiryStatusFilterValues)[number
 
 export type DashboardInquiryListItem = {
   id: string;
+  workspaceInquiryFormId: string;
+  inquiryFormName: string;
+  inquiryFormSlug: string;
   customerName: string;
   customerEmail: string;
   serviceCategory: string;
@@ -61,9 +69,14 @@ export type DashboardInquiryRelatedQuote = {
 export type DashboardInquiryDetail = {
   id: string;
   workspaceId: string;
+  workspaceInquiryFormId: string;
+  inquiryFormName: string;
+  inquiryFormSlug: string;
+  inquiryFormBusinessType: WorkspaceBusinessType;
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
+  companyName: string | null;
   serviceCategory: string;
   requestedDeadline: string | null;
   budgetText: string | null;
@@ -77,11 +90,25 @@ export type DashboardInquiryDetail = {
   notes: DashboardInquiryNote[];
   activities: DashboardInquiryActivity[];
   relatedQuote: DashboardInquiryRelatedQuote | null;
+  submittedFieldSnapshot: InquirySubmittedFieldSnapshot | null;
 };
 
 export type InquiryListFilters = {
   q?: string;
   status: InquiryStatusFilterValue;
+  form: string;
+};
+
+export type WorkspaceInquiryFormSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  businessType: WorkspaceBusinessType;
+  isDefault: boolean;
+  publicInquiryEnabled: boolean;
+  archivedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type InquiryNoteFieldErrors = Partial<Record<"body", string[] | undefined>>;
@@ -105,23 +132,23 @@ export type PublicInquiryWorkspace = {
   id: string;
   name: string;
   slug: string;
+  businessType: WorkspaceBusinessType;
   shortDescription: string | null;
   logoUrl: string | null;
+  form: {
+    id: string;
+    name: string;
+    slug: string;
+    businessType: WorkspaceBusinessType;
+    isDefault: boolean;
+    publicInquiryEnabled: boolean;
+  };
+  inquiryFormConfig: InquiryFormConfig;
   inquiryPageConfig: InquiryPageConfig;
 };
 
-export type PublicInquiryFieldName =
-  | "customerName"
-  | "customerEmail"
-  | "customerPhone"
-  | "serviceCategory"
-  | "deadline"
-  | "budget"
-  | "details"
-  | "attachment";
-
 export type PublicInquiryFieldErrors = Partial<
-  Record<PublicInquiryFieldName, string[] | undefined>
+  Record<string, string[] | undefined>
 >;
 
 export type PublicInquiryFormState = {

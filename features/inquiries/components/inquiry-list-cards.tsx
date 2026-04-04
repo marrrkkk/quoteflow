@@ -53,6 +53,14 @@ export function InquiryListCards({
           <CardContent className="data-list-card-meta pt-0">
             <div className="info-tile h-full px-3.5 py-3 shadow-none">
               <span className="meta-label">
+                Form
+              </span>
+              <p className="mt-2 line-clamp-2 text-sm text-foreground">
+                {inquiry.inquiryFormName}
+              </p>
+            </div>
+            <div className="info-tile h-full px-3.5 py-3 shadow-none">
+              <span className="meta-label">
                 Category
               </span>
               <p className="mt-2 line-clamp-2 text-sm text-foreground">

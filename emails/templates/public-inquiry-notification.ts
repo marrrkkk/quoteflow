@@ -1,14 +1,20 @@
 type PublicInquiryNotificationTemplateInput = {
   workspaceName: string;
   dashboardUrl: string;
+  inquiryFormName: string;
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  companyName?: string;
   serviceCategory: string;
   deadline?: string;
   budget?: string;
   details: string;
   attachmentName?: string | null;
+  additionalFields?: Array<{
+    label: string;
+    value: string;
+  }>;
 };
 
 function escapeHtml(value: string) {
@@ -31,24 +37,36 @@ function buildOptionalLine(label: string, value?: string | null) {
 export function renderPublicInquiryNotificationEmail({
   workspaceName,
   dashboardUrl,
+  inquiryFormName,
   customerName,
   customerEmail,
   customerPhone,
+  companyName,
   serviceCategory,
   deadline,
   budget,
   details,
   attachmentName,
+  additionalFields = [],
 }: PublicInquiryNotificationTemplateInput) {
   const subject = `New inquiry for ${workspaceName}`;
   const detailLines = [
+    `Form: ${inquiryFormName}`,
     `Customer: ${customerName}`,
     `Email: ${customerEmail}`,
     buildOptionalLine("Phone", customerPhone),
+    buildOptionalLine("Company", companyName),
     `Service/category: ${serviceCategory}`,
     buildOptionalLine("Deadline", deadline),
     buildOptionalLine("Budget", budget),
     buildOptionalLine("Attachment", attachmentName),
+    ...(additionalFields.length
+      ? [
+          "",
+          "Additional details:",
+          ...additionalFields.map((field) => `${field.label}: ${field.value}`),
+        ]
+      : []),
     "",
     "Message/details:",
     details,
@@ -64,10 +82,16 @@ export function renderPublicInquiryNotificationEmail({
       <p style="margin: 0 0 18px;">A customer submitted a new inquiry through your Relay public page.</p>
       <div style="border: 1px solid #d9deeb; border-radius: 16px; background: #ffffff; padding: 18px; margin-bottom: 18px;">
         <p style="margin: 0 0 8px;"><strong>Customer:</strong> ${escapeHtml(customerName)}</p>
+        <p style="margin: 0 0 8px;"><strong>Form:</strong> ${escapeHtml(inquiryFormName)}</p>
         <p style="margin: 0 0 8px;"><strong>Email:</strong> ${escapeHtml(customerEmail)}</p>
         ${
           customerPhone
             ? `<p style="margin: 0 0 8px;"><strong>Phone:</strong> ${escapeHtml(customerPhone)}</p>`
+            : ""
+        }
+        ${
+          companyName
+            ? `<p style="margin: 0 0 8px;"><strong>Company:</strong> ${escapeHtml(companyName)}</p>`
             : ""
         }
         <p style="margin: 0 0 8px;"><strong>Service/category:</strong> ${escapeHtml(serviceCategory)}</p>
@@ -87,6 +111,21 @@ export function renderPublicInquiryNotificationEmail({
             : ""
         }
       </div>
+      ${
+        additionalFields.length
+          ? `
+      <div style="border: 1px solid #d9deeb; border-radius: 16px; background: #ffffff; padding: 18px; margin-bottom: 18px;">
+        <p style="margin: 0 0 10px;"><strong>Additional details</strong></p>
+        ${additionalFields
+          .map(
+            (field) =>
+              `<p style="margin: 0 0 8px;"><strong>${escapeHtml(field.label)}:</strong> ${escapeHtml(field.value)}</p>`,
+          )
+          .join("")}
+      </div>
+      `
+          : ""
+      }
       <div style="border: 1px solid #d9deeb; border-radius: 16px; background: #f7f9fc; padding: 18px; margin-bottom: 18px;">
         <p style="margin: 0 0 10px;"><strong>Message/details</strong></p>
         <p style="margin: 0;">${escapedDetails}</p>

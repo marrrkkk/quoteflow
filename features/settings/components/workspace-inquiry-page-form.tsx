@@ -4,11 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import {
-  ArrowUpRight,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Eye,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -22,14 +20,12 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -68,8 +64,6 @@ type WorkspaceInquiryPageFormProps = {
   settings: WorkspaceInquiryPageSettingsView;
   logoPreviewUrl: string | null;
   generalSettingsHref: string;
-  previewHref: string;
-  publicInquiryHref: string;
 };
 
 const initialState: WorkspaceInquiryPageActionState = {};
@@ -79,8 +73,6 @@ export function WorkspaceInquiryPageForm({
   settings,
   logoPreviewUrl,
   generalSettingsHref,
-  previewHref,
-  publicInquiryHref,
 }: WorkspaceInquiryPageFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [publicInquiryEnabled, setPublicInquiryEnabled] = useState(
@@ -170,6 +162,7 @@ export function WorkspaceInquiryPageForm({
         </Alert>
       ) : null}
 
+      <input name="formId" type="hidden" value={settings.formId} />
       <input
         name="publicInquiryEnabled"
         type="hidden"
@@ -181,39 +174,9 @@ export function WorkspaceInquiryPageForm({
       <Card className="gap-0 border-border/75 bg-card/97">
         <CardHeader className="gap-3 pb-5">
           <CardTitle>Inquiry page layout and branding</CardTitle>
-          <CardDescription>
-            Pick the saved layout, keep the page live or private, and reuse the
-            workspace brand from General settings.
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6 pt-0">
-          <FormSection
-            title="Publishing"
-            description="Control whether the public inquiry page is available and jump to the saved preview."
-            action={
-              <div className="dashboard-actions">
-                <Button asChild variant="outline">
-                  <Link href={previewHref} prefetch={false}>
-                    <Eye data-icon="inline-start" />
-                    Preview saved page
-                  </Link>
-                </Button>
-                {publicInquiryEnabled ? (
-                  <Button asChild variant="ghost">
-                    <Link
-                      href={publicInquiryHref}
-                      prefetch={false}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      <ArrowUpRight data-icon="inline-start" />
-                      Open public page
-                    </Link>
-                  </Button>
-                ) : null}
-              </div>
-            }
-          >
+          <FormSection title="Publishing">
             <label
               className={cn(
                 "soft-panel flex items-start gap-3 px-4 py-4 transition-colors hover:bg-accent/30",
@@ -230,20 +193,13 @@ export function WorkspaceInquiryPageForm({
                 <p className="text-sm font-medium text-foreground">
                   Enable public inquiry page
                 </p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  When on, customers can open the public page and submit new
-                  inquiries directly to this workspace.
-                </p>
               </div>
             </label>
           </FormSection>
 
           <Separator />
 
-          <FormSection
-            title="Template"
-            description="Choose the saved layout customers will see. Switching templates keeps your copy and cards."
-          >
+          <FormSection title="Template">
             <div className="grid gap-3 xl:grid-cols-3">
               {(
                 Object.keys(inquiryPageTemplateMeta) as InquiryPageTemplate[]
@@ -293,7 +249,6 @@ export function WorkspaceInquiryPageForm({
 
           <FormSection
             title="Workspace brand"
-            description="The inquiry page uses the logo and business name from General settings."
             action={
               <Button asChild variant="outline">
                 <Link href={generalSettingsHref} prefetch={false}>
@@ -325,19 +280,13 @@ export function WorkspaceInquiryPageForm({
                   <p className="mt-1 truncate font-heading text-xl font-semibold tracking-tight text-foreground">
                     {settings.name}
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Upload or replace the logo from General settings. The
-                    tagline below is specific to the inquiry page.
-                  </p>
                 </div>
               </div>
 
               <div className="info-tile bg-muted/20">
                 <p className="meta-label">Saved preview mode</p>
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                  Preview always opens the last saved version of the inquiry
-                  page. Save first if you want the preview page to reflect your
-                  latest edits.
+                  Preview shows the last saved version.
                 </p>
               </div>
             </div>
@@ -348,16 +297,9 @@ export function WorkspaceInquiryPageForm({
       <Card className="gap-0 border-border/75 bg-card/97">
         <CardHeader className="gap-3 pb-5">
           <CardTitle>Page copy</CardTitle>
-          <CardDescription>
-            Control the headline, supporting text, and form card copy for the
-            public inquiry page.
-          </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
-          <FormSection
-            title="Content"
-            description="Keep it specific to how customers should introduce a new request."
-          >
+          <FormSection title="Content">
             <FieldGroup>
               <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
                 <Field data-invalid={Boolean(eyebrowError) || undefined}>
@@ -367,10 +309,10 @@ export function WorkspaceInquiryPageForm({
                       defaultValue={settings.inquiryPageConfig.eyebrow ?? ""}
                       disabled={isPending}
                       id="inquiry-page-eyebrow"
+                      maxLength={48}
                       name="eyebrow"
                       placeholder="Inquiry page"
                     />
-                    <FieldDescription>Optional.</FieldDescription>
                     <FieldError
                       errors={eyebrowError ? [{ message: eyebrowError }] : undefined}
                     />
@@ -386,13 +328,10 @@ export function WorkspaceInquiryPageForm({
                       defaultValue={settings.inquiryPageConfig.brandTagline ?? ""}
                       disabled={isPending}
                       id="inquiry-page-brand-tagline"
+                      maxLength={120}
                       name="brandTagline"
                       placeholder="Optional short brand line for this page"
                     />
-                    <FieldDescription>
-                      Optional inquiry-page-specific line under the workspace
-                      name.
-                    </FieldDescription>
                     <FieldError
                       errors={
                         brandTaglineError
@@ -411,8 +350,10 @@ export function WorkspaceInquiryPageForm({
                     defaultValue={settings.inquiryPageConfig.headline}
                     disabled={isPending}
                     id="inquiry-page-headline"
+                    maxLength={120}
                     name="headline"
                     placeholder={`Tell ${settings.name} what you need.`}
+                    required
                     rows={3}
                   />
                   <FieldError
@@ -430,11 +371,11 @@ export function WorkspaceInquiryPageForm({
                     defaultValue={settings.inquiryPageConfig.description ?? ""}
                     disabled={isPending}
                     id="inquiry-page-description"
+                    maxLength={280}
                     name="description"
                     placeholder="Explain what customers should include so the request is easy to review."
                     rows={4}
                   />
-                  <FieldDescription>Optional.</FieldDescription>
                   <FieldError
                     errors={
                       descriptionError ? [{ message: descriptionError }] : undefined
@@ -453,8 +394,10 @@ export function WorkspaceInquiryPageForm({
                       defaultValue={settings.inquiryPageConfig.formTitle}
                       disabled={isPending}
                       id="inquiry-page-form-title"
+                      maxLength={80}
                       name="formTitle"
                       placeholder="Send inquiry"
+                      required
                     />
                     <FieldError
                       errors={
@@ -475,11 +418,11 @@ export function WorkspaceInquiryPageForm({
                       }
                       disabled={isPending}
                       id="inquiry-page-form-description"
+                      maxLength={200}
                       name="formDescription"
                       placeholder="Optional short note above the inquiry form"
                       rows={3}
                     />
-                    <FieldDescription>Optional.</FieldDescription>
                     <FieldError
                       errors={
                         formDescriptionError
@@ -498,14 +441,10 @@ export function WorkspaceInquiryPageForm({
       <Card className="gap-0 border-border/75 bg-card/97">
         <CardHeader className="gap-3 pb-5">
           <CardTitle>Supporting cards</CardTitle>
-          <CardDescription>
-            Edit the saved details cards shown beside or above the inquiry form.
-          </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
           <FormSection
             title="Cards"
-            description="Add, remove, or reorder the informational cards. You can leave this section empty."
             action={
               <Button
                 disabled={isPending || cards.length >= 8}
@@ -612,10 +551,12 @@ export function WorkspaceInquiryPageForm({
                               <Input
                                 disabled={isPending}
                                 id={`inquiry-card-title-${card.id}`}
+                                maxLength={80}
                                 onChange={(event) =>
                                   updateCard(card.id, "title", event.currentTarget.value)
                                 }
                                 placeholder="Clear details"
+                                required
                                 value={card.title}
                               />
                             </FieldContent>
@@ -631,6 +572,7 @@ export function WorkspaceInquiryPageForm({
                               <Textarea
                                 disabled={isPending}
                                 id={`inquiry-card-description-${card.id}`}
+                                maxLength={240}
                                 onChange={(event) =>
                                   updateCard(
                                     card.id,
@@ -640,6 +582,7 @@ export function WorkspaceInquiryPageForm({
                                 }
                                 placeholder="Explain why this detail matters."
                                 rows={3}
+                                required
                                 value={card.description}
                               />
                             </FieldContent>
@@ -672,8 +615,7 @@ export function WorkspaceInquiryPageForm({
       <div className="toolbar-panel">
         <FormActions align="between" className="pt-0">
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Save before opening the preview page if you want to see your latest
-            edits reflected there.
+            Save before previewing changes.
           </p>
           <Button disabled={isPending} size="lg" type="submit">
             {isPending ? "Saving inquiry page..." : "Save inquiry page"}

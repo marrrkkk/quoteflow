@@ -16,7 +16,11 @@ export default async function PublicInquiryPage({
     notFound();
   }
 
-  const submitPublicInquiry = submitPublicInquiryAction.bind(null, workspace.slug);
+  const submitPublicInquiry = submitPublicInquiryAction.bind(
+    null,
+    workspace.slug,
+    workspace.form.slug,
+  );
 
   return (
     <PublicInquiryPageRenderer

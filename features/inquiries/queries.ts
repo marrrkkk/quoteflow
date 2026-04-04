@@ -1,7 +1,11 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNull, or } from "drizzle-orm";
 
+import {
+  getNormalizedInquiryFormConfig,
+  getNormalizedInquirySubmittedFieldSnapshot,
+} from "@/features/inquiries/form-config";
 import { getNormalizedInquiryPageConfig } from "@/features/inquiries/page-config";
 import { db } from "@/lib/db/client";
 import {
@@ -11,6 +15,7 @@ import {
   inquiryNotes,
   quotes,
   user,
+  workspaceInquiryForms,
   workspaceMembers,
   workspaces,
 } from "@/lib/db/schema";
@@ -29,14 +34,29 @@ export async function getPublicInquiryWorkspaceBySlug(
       id: workspaces.id,
       name: workspaces.name,
       slug: workspaces.slug,
+      workspaceBusinessType: workspaces.businessType,
       shortDescription: workspaces.shortDescription,
       logoStoragePath: workspaces.logoStoragePath,
       updatedAt: workspaces.updatedAt,
       inquiryHeadline: workspaces.inquiryHeadline,
-      inquiryPageConfig: workspaces.inquiryPageConfig,
-      publicInquiryEnabled: workspaces.publicInquiryEnabled,
+      formId: workspaceInquiryForms.id,
+      formName: workspaceInquiryForms.name,
+      formSlug: workspaceInquiryForms.slug,
+      formBusinessType: workspaceInquiryForms.businessType,
+      formIsDefault: workspaceInquiryForms.isDefault,
+      publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: workspaceInquiryForms.inquiryFormConfig,
+      inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
     })
     .from(workspaces)
+    .innerJoin(
+      workspaceInquiryForms,
+      and(
+        eq(workspaceInquiryForms.workspaceId, workspaces.id),
+        eq(workspaceInquiryForms.isDefault, true),
+        isNull(workspaceInquiryForms.archivedAt),
+      ),
+    )
     .where(eq(workspaces.slug, slug))
     .limit(1);
 
@@ -48,14 +68,128 @@ export async function getPublicInquiryWorkspaceBySlug(
     id: workspace.id,
     name: workspace.name,
     slug: workspace.slug,
+    businessType: workspace.formBusinessType,
     shortDescription: workspace.shortDescription,
     logoUrl: workspace.logoStoragePath
       ? `/api/public/workspaces/${workspace.slug}/logo?v=${workspace.updatedAt.getTime()}`
       : null,
+    form: {
+      id: workspace.formId,
+      name: workspace.formName,
+      slug: workspace.formSlug,
+      businessType: workspace.formBusinessType,
+      isDefault: workspace.formIsDefault,
+      publicInquiryEnabled: workspace.publicInquiryEnabled,
+    },
+    inquiryFormConfig: getNormalizedInquiryFormConfig(workspace.inquiryFormConfig, {
+      businessType: workspace.formBusinessType,
+    }),
     inquiryPageConfig: getNormalizedInquiryPageConfig(workspace.inquiryPageConfig, {
       workspaceName: workspace.name,
       workspaceShortDescription: workspace.shortDescription,
       legacyInquiryHeadline: workspace.inquiryHeadline,
+      businessType: workspace.formBusinessType,
+    }),
+  };
+}
+
+export async function getPublicInquiryWorkspaceByFormSlug({
+  workspaceSlug,
+  formSlug,
+}: {
+  workspaceSlug: string;
+  formSlug: string;
+}): Promise<PublicInquiryWorkspace | null> {
+  return getInquiryWorkspaceByFormSlug({
+    workspaceSlug,
+    formSlug,
+    includeDisabled: false,
+  });
+}
+
+export async function getInquiryWorkspacePreviewByFormSlug({
+  workspaceSlug,
+  formSlug,
+}: {
+  workspaceSlug: string;
+  formSlug: string;
+}): Promise<PublicInquiryWorkspace | null> {
+  return getInquiryWorkspaceByFormSlug({
+    workspaceSlug,
+    formSlug,
+    includeDisabled: true,
+  });
+}
+
+async function getInquiryWorkspaceByFormSlug({
+  workspaceSlug,
+  formSlug,
+  includeDisabled,
+}: {
+  workspaceSlug: string;
+  formSlug: string;
+  includeDisabled: boolean;
+}): Promise<PublicInquiryWorkspace | null> {
+  const [workspace] = await db
+    .select({
+      id: workspaces.id,
+      name: workspaces.name,
+      slug: workspaces.slug,
+      workspaceBusinessType: workspaces.businessType,
+      shortDescription: workspaces.shortDescription,
+      logoStoragePath: workspaces.logoStoragePath,
+      updatedAt: workspaces.updatedAt,
+      inquiryHeadline: workspaces.inquiryHeadline,
+      formId: workspaceInquiryForms.id,
+      formName: workspaceInquiryForms.name,
+      formSlug: workspaceInquiryForms.slug,
+      formBusinessType: workspaceInquiryForms.businessType,
+      formIsDefault: workspaceInquiryForms.isDefault,
+      publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: workspaceInquiryForms.inquiryFormConfig,
+      inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
+    })
+    .from(workspaces)
+    .innerJoin(
+      workspaceInquiryForms,
+      and(
+        eq(workspaceInquiryForms.workspaceId, workspaces.id),
+        eq(workspaceInquiryForms.slug, formSlug),
+        isNull(workspaceInquiryForms.archivedAt),
+      ),
+    )
+    .where(eq(workspaces.slug, workspaceSlug))
+    .limit(1);
+
+  if (!workspace || (!includeDisabled && !workspace.publicInquiryEnabled)) {
+    return null;
+  }
+
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    slug: workspace.slug,
+    businessType: workspace.formBusinessType,
+    shortDescription: workspace.shortDescription,
+    logoUrl: workspace.logoStoragePath
+      ? `/api/public/workspaces/${workspace.slug}/logo?v=${workspace.updatedAt.getTime()}`
+      : null,
+    form: {
+      id: workspace.formId,
+      name: workspace.formName,
+      slug: workspace.formSlug,
+      businessType: workspace.formBusinessType,
+      isDefault: workspace.formIsDefault,
+      publicInquiryEnabled: workspace.publicInquiryEnabled,
+    },
+    inquiryFormConfig: getNormalizedInquiryFormConfig(workspace.inquiryFormConfig, {
+      businessType: workspace.formBusinessType,
+    }),
+    inquiryPageConfig: getNormalizedInquiryPageConfig(workspace.inquiryPageConfig, {
+      workspaceName: workspace.name,
+      workspaceShortDescription: workspace.shortDescription,
+      legacyInquiryHeadline: workspace.inquiryHeadline,
+      businessType: workspace.formBusinessType,
     }),
   };
 }
@@ -135,9 +269,16 @@ export async function getInquiryListForWorkspace({
     );
   }
 
+  if (filters.form !== "all") {
+    conditions.push(eq(workspaceInquiryForms.slug, filters.form));
+  }
+
   return db
     .select({
       id: inquiries.id,
+      workspaceInquiryFormId: inquiries.workspaceInquiryFormId,
+      inquiryFormName: workspaceInquiryForms.name,
+      inquiryFormSlug: workspaceInquiryForms.slug,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
       serviceCategory: inquiries.serviceCategory,
@@ -148,6 +289,10 @@ export async function getInquiryListForWorkspace({
       createdAt: inquiries.createdAt,
     })
     .from(inquiries)
+    .innerJoin(
+      workspaceInquiryForms,
+      eq(inquiries.workspaceInquiryFormId, workspaceInquiryForms.id),
+    )
     .where(and(...conditions))
     .orderBy(desc(inquiries.submittedAt), desc(inquiries.createdAt));
 }
@@ -165,9 +310,14 @@ export async function getInquiryDetailForWorkspace({
     .select({
       id: inquiries.id,
       workspaceId: inquiries.workspaceId,
+      workspaceInquiryFormId: inquiries.workspaceInquiryFormId,
+      inquiryFormName: workspaceInquiryForms.name,
+      inquiryFormSlug: workspaceInquiryForms.slug,
+      inquiryFormBusinessType: workspaceInquiryForms.businessType,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
       customerPhone: inquiries.customerPhone,
+      companyName: inquiries.companyName,
       serviceCategory: inquiries.serviceCategory,
       requestedDeadline: inquiries.requestedDeadline,
       budgetText: inquiries.budgetText,
@@ -177,8 +327,13 @@ export async function getInquiryDetailForWorkspace({
       status: inquiries.status,
       submittedAt: inquiries.submittedAt,
       createdAt: inquiries.createdAt,
+      submittedFieldSnapshot: inquiries.submittedFieldSnapshot,
     })
     .from(inquiries)
+    .innerJoin(
+      workspaceInquiryForms,
+      eq(inquiries.workspaceInquiryFormId, workspaceInquiryForms.id),
+    )
     .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
     .limit(1);
 
@@ -267,11 +422,34 @@ export async function getInquiryDetailForWorkspace({
 
   return {
     ...inquiry,
+    submittedFieldSnapshot: getNormalizedInquirySubmittedFieldSnapshot(
+      inquiry.submittedFieldSnapshot,
+    ),
     attachments,
     notes,
     activities,
     relatedQuote,
   };
+}
+
+export async function getWorkspaceInquiryFormOptionsForWorkspace(
+  workspaceId: string,
+) {
+  return db
+    .select({
+      id: workspaceInquiryForms.id,
+      name: workspaceInquiryForms.name,
+      slug: workspaceInquiryForms.slug,
+      isDefault: workspaceInquiryForms.isDefault,
+    })
+    .from(workspaceInquiryForms)
+    .where(
+      and(
+        eq(workspaceInquiryForms.workspaceId, workspaceId),
+        isNull(workspaceInquiryForms.archivedAt),
+      ),
+    )
+    .orderBy(desc(workspaceInquiryForms.isDefault), asc(workspaceInquiryForms.name));
 }
 
 type GetInquiryAttachmentForWorkspaceInput = {

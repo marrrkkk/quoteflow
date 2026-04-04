@@ -20,6 +20,7 @@ export async function createWorkspaceAction(
   const user = await requireUser();
   const validationResult = createWorkspaceSchema.safeParse({
     name: formData.get("name"),
+    businessType: formData.get("businessType"),
   });
 
   if (!validationResult.success) {
@@ -29,13 +30,16 @@ export async function createWorkspaceAction(
     );
   }
 
+  let dashboardPath: string | null = null;
+
   try {
     const workspace = await createWorkspaceForUser({
       user,
       name: validationResult.data.name,
+      businessType: validationResult.data.businessType,
     });
 
-    redirect(getWorkspaceDashboardPath(workspace.slug));
+    dashboardPath = getWorkspaceDashboardPath(workspace.slug);
   } catch (error) {
     console.error("Failed to create workspace.", error);
 
@@ -43,4 +47,12 @@ export async function createWorkspaceAction(
       error: "We couldn't create that workspace right now.",
     };
   }
+
+  if (dashboardPath) {
+    redirect(dashboardPath);
+  }
+
+  return {
+    error: "We couldn't create that workspace right now.",
+  };
 }

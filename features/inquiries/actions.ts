@@ -10,19 +10,21 @@ import {
 import { env } from "@/lib/env";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import { sendPublicInquiryNotificationEmail } from "@/lib/resend/client";
+import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import {
   addInquiryNoteForWorkspace,
   changeInquiryStatusForWorkspace,
   createPublicInquirySubmission,
 } from "@/features/inquiries/mutations";
 import {
+  getPublicInquiryWorkspaceByFormSlug,
   getPublicInquiryWorkspaceBySlug,
   getWorkspaceOwnerNotificationEmails,
 } from "@/features/inquiries/queries";
 import {
   inquiryNoteSchema,
   inquiryStatusChangeSchema,
-  publicInquirySchema,
+  validatePublicInquirySubmission,
 } from "@/features/inquiries/schemas";
 import {
   getWorkspaceInquiriesPath,
@@ -43,6 +45,7 @@ function getTextValue(formData: FormData, key: string) {
 
 export async function submitPublicInquiryAction(
   slug: string,
+  formSlug: string | null,
   _prevState: PublicInquiryFormState,
   formData: FormData,
 ): Promise<PublicInquiryFormState> {
@@ -54,7 +57,12 @@ export async function submitPublicInquiryAction(
     };
   }
 
-  const workspace = await getPublicInquiryWorkspaceBySlug(slug);
+  const workspace = formSlug
+    ? await getPublicInquiryWorkspaceByFormSlug({
+        workspaceSlug: slug,
+        formSlug,
+      })
+    : await getPublicInquiryWorkspaceBySlug(slug);
 
   if (!workspace) {
     return {
@@ -62,16 +70,10 @@ export async function submitPublicInquiryAction(
     };
   }
 
-  const validationResult = publicInquirySchema.safeParse({
-    customerName: formData.get("customerName"),
-    customerEmail: formData.get("customerEmail"),
-    customerPhone: formData.get("customerPhone"),
-    serviceCategory: formData.get("serviceCategory"),
-    deadline: formData.get("deadline"),
-    budget: formData.get("budget"),
-    details: formData.get("details"),
-    attachment: formData.get("attachment"),
-  });
+  const validationResult = validatePublicInquirySubmission(
+    workspace.inquiryFormConfig,
+    formData,
+  );
 
   if (!validationResult.success) {
     return getValidationActionState(validationResult.error, "Check the highlighted fields and try again.");
@@ -114,11 +116,19 @@ export async function submitPublicInquiryAction(
           customerName: validationResult.data.customerName,
           customerEmail: validationResult.data.customerEmail,
           customerPhone: validationResult.data.customerPhone,
+          companyName: validationResult.data.companyName,
+          inquiryFormName: workspace.form.name,
           serviceCategory: validationResult.data.serviceCategory,
-          deadline: validationResult.data.deadline,
-          budget: validationResult.data.budget,
+          deadline: validationResult.data.requestedDeadline,
+          budget: validationResult.data.budgetText,
           details: validationResult.data.details,
           attachmentName: createdInquiry.attachmentName,
+          additionalFields: getAdditionalInquirySubmittedFields(
+            validationResult.data.submittedFieldSnapshot,
+          ).map((field) => ({
+            label: field.label,
+            value: field.displayValue,
+          })),
         });
       } catch (error) {
         console.error(

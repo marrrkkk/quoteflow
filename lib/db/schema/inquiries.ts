@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -12,7 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "@/lib/db/schema/auth";
+import { workspaceInquiryForms } from "@/lib/db/schema/workspace-inquiry-forms";
 import { workspaces } from "@/lib/db/schema/workspaces";
+import type { InquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
 
 export const inquiryStatusEnum = pgEnum("inquiry_status", [
   "new",
@@ -30,6 +33,9 @@ export const inquiries = pgTable(
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
+    workspaceInquiryFormId: text("workspace_inquiry_form_id")
+      .notNull()
+      .references(() => workspaceInquiryForms.id, { onDelete: "restrict" }),
     status: inquiryStatusEnum("status").notNull().default("new"),
     subject: text("subject"),
     customerName: text("customer_name").notNull(),
@@ -40,6 +46,8 @@ export const inquiries = pgTable(
     budgetText: text("budget_text"),
     companyName: text("company_name"),
     details: text("details").notNull(),
+    submittedFieldSnapshot:
+      jsonb("submitted_field_snapshot").$type<InquirySubmittedFieldSnapshot>(),
     source: text("source"),
     quoteRequested: boolean("quote_requested").notNull().default(true),
     submittedAt: timestamp("submitted_at", { withTimezone: true })
@@ -55,6 +63,9 @@ export const inquiries = pgTable(
   },
   (table) => [
     index("inquiries_workspace_id_idx").on(table.workspaceId),
+    index("inquiries_workspace_inquiry_form_id_idx").on(
+      table.workspaceInquiryFormId,
+    ),
     index("inquiries_workspace_status_idx").on(table.workspaceId, table.status),
     index("inquiries_workspace_submitted_at_idx").on(
       table.workspaceId,

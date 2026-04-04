@@ -6,6 +6,7 @@ import { createQuoteAction } from "@/features/quotes/actions";
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { getQuoteLibraryForWorkspace } from "@/features/quotes/quote-library-queries";
 import { getInquiryQuotePrefillForWorkspace } from "@/features/quotes/queries";
+import { getWorkspaceSettingsForWorkspace } from "@/features/settings/queries";
 import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
 import {
   createQuoteEditorLineItem,
@@ -30,7 +31,8 @@ export default async function NewQuotePage({
     id: rawInquiryId,
   });
   const inquiryId = parsedInquiryId.success ? parsedInquiryId.data.id : undefined;
-  const [inquiryPrefill, pricingLibrary] = await Promise.all([
+  const [workspaceSettings, inquiryPrefill, pricingLibrary] = await Promise.all([
+    getWorkspaceSettingsForWorkspace(workspaceContext.workspace.id),
     inquiryId
       ? getInquiryQuotePrefillForWorkspace({
           workspaceId: workspaceContext.workspace.id,
@@ -40,18 +42,27 @@ export default async function NewQuotePage({
     getQuoteLibraryForWorkspace(workspaceContext.workspace.id),
   ]);
 
+  if (!workspaceSettings) {
+    notFound();
+  }
+
   if (rawInquiryId && inquiryId && !inquiryPrefill) {
     notFound();
   }
 
   const initialValues = inquiryPrefill
-    ? getQuoteEditorInitialValuesFromInquiry(inquiryPrefill)
+    ? getQuoteEditorInitialValuesFromInquiry(inquiryPrefill, {
+        defaultQuoteNotes: workspaceSettings.defaultQuoteNotes,
+        defaultQuoteValidityDays: workspaceSettings.defaultQuoteValidityDays,
+      })
     : {
         title: "",
         customerName: "",
         customerEmail: "",
-        notes: "",
-        validUntil: getDefaultQuoteValidityDate(),
+        notes: workspaceSettings.defaultQuoteNotes ?? "",
+        validUntil: getDefaultQuoteValidityDate(
+          workspaceSettings.defaultQuoteValidityDays,
+        ),
         discount: "",
         items: [createQuoteEditorLineItem()],
       };
@@ -74,11 +85,6 @@ export default async function NewQuotePage({
           linkedInquiry
             ? "Turn this inquiry into a quote"
             : "Create a new quote"
-        }
-        description={
-          linkedInquiry
-            ? "Customer details are prefilled from the linked inquiry."
-            : "Add the customer, line items, and validity date."
         }
       />
 

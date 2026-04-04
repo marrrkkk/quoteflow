@@ -2,10 +2,19 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 
+import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import { createInquiryFormPreset } from "@/features/inquiries/inquiry-forms";
+import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
 import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
 import { ensureProfileForUser } from "@/lib/auth/workspace-bootstrap";
 import { db } from "@/lib/db/client";
-import { activityLogs, workspaceMembers, workspaces } from "@/lib/db/schema";
+import {
+  activityLogs,
+  workspaceInquiryForms,
+  workspaceMembers,
+  workspaces,
+} from "@/lib/db/schema";
+import { appendRandomSlugSuffix, slugifyPublicName } from "@/lib/slugs";
 
 type CreateWorkspaceForUserInput = {
   user: {
@@ -14,25 +23,15 @@ type CreateWorkspaceForUserInput = {
     email: string;
   };
   name: string;
+  businessType: WorkspaceBusinessType;
 };
 
 function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-function slugifyWorkspaceName(value: string) {
-  const normalized = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-
-  return normalized || "workspace";
-}
-
 async function getAvailableWorkspaceSlug(baseSlug: string) {
   let candidate = baseSlug;
-  let counter = 2;
 
   while (true) {
     const [existingWorkspace] = await db
@@ -45,19 +44,29 @@ async function getAvailableWorkspaceSlug(baseSlug: string) {
       return candidate;
     }
 
-    candidate = `${baseSlug}-${counter}`;
-    counter += 1;
+    candidate = appendRandomSlugSuffix(baseSlug, {
+      fallback: "workspace",
+    });
   }
 }
 
 export async function createWorkspaceForUser({
   user,
   name,
+  businessType,
 }: CreateWorkspaceForUserInput) {
   const trimmedName = name.trim();
   const now = new Date();
-  const slug = await getAvailableWorkspaceSlug(slugifyWorkspaceName(trimmedName));
+  const slug = await getAvailableWorkspaceSlug(
+    slugifyPublicName(trimmedName, {
+      fallback: "workspace",
+    }),
+  );
   const workspaceId = createId("ws");
+  const defaultInquiryForm = createInquiryFormPreset({
+    businessType,
+    workspaceName: trimmedName,
+  });
 
   await ensureProfileForUser(user);
 
@@ -66,10 +75,29 @@ export async function createWorkspaceForUser({
       id: workspaceId,
       name: trimmedName,
       slug,
+      businessType,
       contactEmail: user.email,
+      inquiryFormConfig: createInquiryFormConfigDefaults({
+        businessType,
+      }),
       inquiryPageConfig: createInquiryPageConfigDefaults({
         workspaceName: trimmedName,
+        businessType,
       }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await tx.insert(workspaceInquiryForms).values({
+      id: createId("ifm"),
+      workspaceId,
+      name: defaultInquiryForm.name,
+      slug: defaultInquiryForm.slug,
+      businessType: defaultInquiryForm.businessType,
+      isDefault: true,
+      publicInquiryEnabled: defaultInquiryForm.publicInquiryEnabled,
+      inquiryFormConfig: defaultInquiryForm.inquiryFormConfig,
+      inquiryPageConfig: defaultInquiryForm.inquiryPageConfig,
       createdAt: now,
       updatedAt: now,
     });

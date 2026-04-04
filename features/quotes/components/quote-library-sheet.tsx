@@ -119,21 +119,21 @@ export function QuoteLibrarySheet({
         <div className="flex flex-1 flex-col overflow-y-auto p-5">
           {entries.length === 0 ? (
             <Empty className="border-border/70 bg-background/80">
-              <EmptyHeader>
-                <EmptyTitle>No pricing library yet</EmptyTitle>
-                <EmptyDescription>
-                  Save pricing blocks or service packages in the Workspace pricing library first.
-                </EmptyDescription>
-              </EmptyHeader>
+                <EmptyHeader>
+                  <EmptyTitle>No pricing library yet</EmptyTitle>
+                  <EmptyDescription>
+                    Save pricing blocks or service packages in Workspace settings first.
+                  </EmptyDescription>
+                </EmptyHeader>
               <Button asChild variant="outline">
                 <Link
                   href={
                     workspaceSlug
-                      ? getWorkspaceSettingsPath(workspaceSlug, "pricing-library")
+                      ? getWorkspaceSettingsPath(workspaceSlug, "pricing")
                       : workspaceHubPath
                   }
                 >
-                  Open pricing library
+                  Open pricing
                 </Link>
               </Button>
             </Empty>

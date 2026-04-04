@@ -17,6 +17,7 @@ import {
 import { InfoTile } from "@/components/shared/info-tile";
 import { generateInquiryAssistantAction } from "@/features/ai/actions";
 import { InquiryAiPanel } from "@/features/ai/components/inquiry-ai-panel";
+import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import {
   addInquiryNoteAction,
   changeInquiryStatusAction,
@@ -68,6 +69,9 @@ export default async function InquiryDetailPage({
   const noteAction = addInquiryNoteAction.bind(null, inquiry.id);
   const statusAction = changeInquiryStatusAction.bind(null, inquiry.id);
   const aiAction = generateInquiryAssistantAction.bind(null, inquiry.id);
+  const additionalFields = getAdditionalInquirySubmittedFields(
+    inquiry.submittedFieldSnapshot,
+  );
 
   return (
     <DashboardPage>
@@ -109,6 +113,7 @@ export default async function InquiryDetailPage({
           >
             <DashboardStatsGrid className="xl:grid-cols-4">
               <InfoTile label="Category" value={inquiry.serviceCategory} />
+              <InfoTile label="Form" value={inquiry.inquiryFormName} />
               <InfoTile
                 label="Budget"
                 value={formatInquiryBudget(inquiry.budgetText)}
@@ -138,6 +143,21 @@ export default async function InquiryDetailPage({
                 {inquiry.details}
               </p>
             </div>
+
+            {additionalFields.length ? (
+              <div className="soft-panel px-5 py-5 shadow-none">
+                <p className="meta-label">Submitted fields</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {additionalFields.map((field) => (
+                    <InfoTile
+                      key={field.id}
+                      label={field.label}
+                      value={field.displayValue}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </DashboardSection>
 
           <DashboardSection
@@ -283,6 +303,9 @@ export default async function InquiryDetailPage({
                   )
                 }
               />
+              {inquiry.companyName ? (
+                <InfoTile label="Company" value={inquiry.companyName} />
+              ) : null}
           </DashboardSection>
 
           <DashboardSection

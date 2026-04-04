@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { DashboardPage } from "@/components/shared/dashboard-layout";
-import { WorkspaceSectionNav } from "@/features/settings/components/workspace-section-nav";
 import { getWorkspaceOwnerPageContext } from "./_lib/page-context";
 
 type WorkspaceSettingsLayoutProps = {
@@ -13,10 +12,5 @@ export default async function WorkspaceSettingsLayout({
 }: WorkspaceSettingsLayoutProps) {
   await getWorkspaceOwnerPageContext();
 
-  return (
-    <DashboardPage>
-      <WorkspaceSectionNav />
-      {children}
-    </DashboardPage>
-  );
+  return <DashboardPage className="dashboard-side-stack min-w-0">{children}</DashboardPage>;
 }

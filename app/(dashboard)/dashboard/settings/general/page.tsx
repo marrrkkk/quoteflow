@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
-import { updateWorkspaceSettingsAction } from "@/features/settings/actions";
+import {
+  deleteWorkspaceAction,
+  updateWorkspaceSettingsAction,
+} from "@/features/settings/actions";
 import { WorkspaceSettingsForm } from "@/features/settings/components/workspace-settings-form";
 import { getWorkspaceSettingsForWorkspace } from "@/features/settings/queries";
 import { getWorkspaceOwnerPageContext } from "../_lib/page-context";
@@ -23,13 +26,14 @@ export default async function WorkspaceGeneralSettingsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Workspace"
-        title="General settings"
-        description="Manage business identity, writing defaults, and owner notification preferences."
+        eyebrow="Settings"
+        title="General"
+        description="Brand, contact, writing defaults, and notifications."
       />
 
       <WorkspaceSettingsForm
         action={updateWorkspaceSettingsAction}
+        deleteAction={deleteWorkspaceAction}
         fallbackContactEmail={user.email}
         logoPreviewUrl={logoPreviewUrl}
         settings={settings}
