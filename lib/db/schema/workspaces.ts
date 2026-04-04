@@ -27,6 +27,12 @@ export const workspaceAiTonePreferenceEnum = pgEnum(
   ["balanced", "warm", "direct", "formal"],
 );
 
+export const profileThemePreferenceEnum = pgEnum("profile_theme_preference", [
+  "light",
+  "dark",
+  "system",
+]);
+
 export const profiles = pgTable("profiles", {
   userId: text("user_id")
     .primaryKey()
@@ -34,6 +40,9 @@ export const profiles = pgTable("profiles", {
   fullName: text("full_name").notNull(),
   phone: text("phone"),
   jobTitle: text("job_title"),
+  themePreference: profileThemePreferenceEnum("theme_preference")
+    .notNull()
+    .default("system"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

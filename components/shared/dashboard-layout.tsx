@@ -175,7 +175,7 @@ export function DashboardSection({
   const hasHeader = Boolean(title || description || action);
 
   return (
-    <Card className={cn("gap-0 border-border/75 bg-card/97", className)}>
+    <Card className={cn("gap-0", className)}>
       {hasHeader ? (
         <CardHeader className={cn("gap-3 pb-5", headerClassName)}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

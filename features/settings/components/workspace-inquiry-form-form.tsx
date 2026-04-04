@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -15,6 +14,7 @@ import {
   FormActions,
   FormSection,
 } from "@/components/shared/form-layout";
+import { useProgressRouter } from "@/hooks/use-progress-router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,7 +90,7 @@ export function WorkspaceInquiryFormForm({
   saveAction,
   settings,
 }: WorkspaceInquiryFormFormProps) {
-  const router = useRouter();
+  const router = useProgressRouter();
   const [saveState, saveFormAction, isSavePending] = useActionState(
     saveAction,
     initialState,

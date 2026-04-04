@@ -105,7 +105,7 @@ function AuthSignal({
 }) {
   return (
     <div className="auth-note">
-      <div className="flex size-9 items-center justify-center rounded-lg border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+      <div className="flex size-9 items-center justify-center rounded-lg border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/8 dark:bg-accent dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.2)]">
         <Icon className="size-4" />
       </div>
       <p className="mt-4 text-sm font-semibold text-foreground">{label}</p>

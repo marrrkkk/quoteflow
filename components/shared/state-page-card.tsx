@@ -32,7 +32,7 @@ export function StatePageCard({
 }: StatePageCardProps) {
   return (
     <div className="state-page">
-      <Card className={cn("mx-auto w-full max-w-2xl gap-0 border-border/75 bg-card/97", className)}>
+      <Card className={cn("mx-auto w-full max-w-2xl gap-0", className)}>
         <CardHeader className="gap-5 pb-5">
           {media ?? <BrandMark subtitle={null} />}
           <div className="flex flex-col gap-2">

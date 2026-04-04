@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border-primary/85 bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(6,36,28,0.16),0_1px_2px_rgba(15,23,42,0.08),0_10px_18px_-14px_rgba(0,128,96,0.38)] enabled:hover:-translate-y-px enabled:hover:bg-primary/95 enabled:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(6,36,28,0.2),0_1px_2px_rgba(15,23,42,0.08),0_14px_24px_-16px_rgba(0,128,96,0.42)]",
+          "button-primary-fixed enabled:hover:-translate-y-px",
         outline:
-          "border-border/85 bg-background/95 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58),inset_0_-1px_0_rgba(23,43,36,0.04),0_1px_2px_rgba(15,23,42,0.04)] enabled:hover:border-border enabled:hover:bg-accent/75 enabled:hover:text-accent-foreground enabled:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_6px_14px_-12px_rgba(15,23,42,0.16)] aria-expanded:bg-accent/75",
+          "control-surface border-border/85 text-foreground enabled:hover:border-border enabled:hover:bg-[var(--control-bg-strong)] enabled:hover:text-accent-foreground enabled:hover:shadow-[var(--control-shadow-hover)] aria-expanded:bg-[var(--control-accent-bg)] aria-expanded:shadow-[var(--control-shadow-hover)]",
         secondary:
-          "border-border/55 bg-secondary/95 text-secondary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(23,43,36,0.03),0_1px_2px_rgba(15,23,42,0.04)] enabled:hover:bg-secondary enabled:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_6px_14px_-12px_rgba(15,23,42,0.14)] aria-expanded:bg-secondary",
+          "control-surface-secondary border-border/55 text-secondary-foreground enabled:hover:bg-[var(--control-secondary-bg-strong)] enabled:hover:shadow-[var(--control-shadow-hover)] aria-expanded:bg-[var(--control-secondary-bg-strong)] aria-expanded:shadow-[var(--control-shadow-hover)]",
         ghost:
-          "border-transparent bg-transparent text-muted-foreground enabled:hover:border-border/60 enabled:hover:bg-accent/70 enabled:hover:text-foreground enabled:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] aria-expanded:border-border/60 aria-expanded:bg-accent/70 aria-expanded:text-foreground",
+          "control-ghost-surface text-muted-foreground enabled:hover:border-border/60 enabled:hover:bg-[var(--control-accent-bg)] enabled:hover:text-foreground enabled:hover:shadow-[var(--control-shadow)] aria-expanded:border-border/60 aria-expanded:bg-[var(--control-accent-bg)] aria-expanded:text-foreground aria-expanded:shadow-[var(--control-shadow)]",
         destructive:
-          "border-destructive/85 bg-destructive text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(95,24,18,0.18),0_1px_2px_rgba(201,55,44,0.14),0_10px_18px_-14px_rgba(201,55,44,0.38)] enabled:hover:-translate-y-px enabled:hover:bg-destructive/95 enabled:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(95,24,18,0.2),0_1px_2px_rgba(201,55,44,0.14),0_14px_24px_-16px_rgba(201,55,44,0.42)] focus-visible:border-destructive focus-visible:ring-destructive/20 dark:text-white",
+          "button-destructive-fixed enabled:hover:-translate-y-px focus-visible:border-destructive focus-visible:ring-destructive/20 dark:text-white",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

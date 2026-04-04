@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
+import { Suspense } from "react";
 
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { RouteProgressBar } from "@/components/shared/route-progress-bar";
+import { getThemeInitScript } from "@/features/theme/init-script";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { themeStorageKey } from "@/features/theme/types";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,10 +41,26 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-        <TooltipProvider>{children}</TooltipProvider>
+        <Script id="relay-theme-init" strategy="beforeInteractive">
+          {getThemeInitScript({
+            storageKey: themeStorageKey,
+          })}
+        </Script>
+        <ThemeProvider
+          defaultTheme="system"
+          disableTransitionOnChange
+          enableSystem
+          storageKey={themeStorageKey}
+        >
+          <Suspense fallback={null}>
+            <RouteProgressBar />
+          </Suspense>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,9 +1,10 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { DataListToolbar } from "@/components/shared/data-list-toolbar";
+import { useProgressRouter } from "@/hooks/use-progress-router";
 import type {
   QuoteListFilters,
   QuoteStatusFilterValue,
@@ -29,7 +30,7 @@ export function QuoteListFilters({
   resultCount,
 }: QuoteListFiltersProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useProgressRouter();
   const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState(filters.q ?? "");
   const [status, setStatus] = useState<QuoteStatusFilterValue>(filters.status);

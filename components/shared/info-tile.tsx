@@ -24,7 +24,7 @@ export function InfoTile({
     <div className={cn("info-tile", className)}>
       <div className="flex items-start gap-3.5">
         {Icon ? (
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-white/8 dark:bg-accent dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.2)]">
             <Icon className="size-4" />
           </div>
         ) : null}

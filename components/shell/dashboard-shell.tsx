@@ -15,6 +15,9 @@ import {
 import { usePathname } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
+import { AppearanceMenuSubmenu } from "@/features/theme/components/appearance-menu";
+import { ThemePreferenceSync } from "@/features/theme/components/theme-preference-sync";
+import type { ThemePreference } from "@/features/theme/types";
 import type { WorkspaceContext } from "@/lib/db/workspace-access";
 import { BrandMark } from "@/components/shared/brand-mark";
 import {
@@ -66,7 +69,9 @@ import { cn } from "@/lib/utils";
 
 type DashboardShellProps = {
   children: ReactNode;
+  themePreference: ThemePreference;
   user: {
+    id: string;
     email: string;
     name: string;
   };
@@ -76,6 +81,7 @@ type DashboardShellProps = {
 
 export function DashboardShell({
   children,
+  themePreference,
   user,
   workspaceContext,
   workspaceMemberships,
@@ -95,6 +101,10 @@ export function DashboardShell({
         } as CSSProperties
       }
     >
+      <ThemePreferenceSync
+        themePreference={themePreference}
+        userId={user.id}
+      />
       <Sidebar collapsible="icon">
         <SidebarHeader className="gap-0 px-0 py-0">
           <div className="flex h-[4.5rem] items-center px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
@@ -159,7 +169,7 @@ export function DashboardShell({
                               <BreadcrumbPage>{item.label}</BreadcrumbPage>
                             ) : (
                               <BreadcrumbLink asChild>
-                                <Link href={item.href} prefetch={false}>
+                                <Link href={item.href} prefetch={true}>
                                   {item.label}
                                 </Link>
                               </BreadcrumbLink>
@@ -205,18 +215,18 @@ function DashboardNavigationItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        className="min-h-11 rounded-lg border border-transparent px-3.5 py-2.5 data-[active=true]:border-sidebar-primary/12 data-[active=true]:bg-sidebar-primary/12 data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
+        className="min-h-11 rounded-lg border border-transparent px-3.5 py-2.5 data-[active=true]:border-sidebar-primary/12 data-[active=true]:bg-sidebar-primary/12 data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
         isActive={isActive}
         tooltip={item.label}
       >
         <Link
           href={item.href}
+          prefetch={true}
           onClick={() => {
             if (isMobile) {
               setOpenMobile(false);
             }
           }}
-          prefetch={false}
         >
           <Icon className={cn("text-muted-foreground", isActive && "text-primary")} />
           <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
@@ -302,8 +312,8 @@ function DashboardUserMenu({
               <DropdownMenuItem asChild>
                 <Link
                   href={getWorkspaceSettingsPath(workspaceSlug)}
+                  prefetch={true}
                   onClick={closeMobileSidebar}
-                  prefetch={false}
                 >
                   <Settings2 data-icon="inline-start" />
                   Workspace settings
@@ -312,13 +322,14 @@ function DashboardUserMenu({
               <DropdownMenuItem asChild>
                 <Link
                   href={workspaceHubPath}
+                  prefetch={true}
                   onClick={closeMobileSidebar}
-                  prefetch={false}
                 >
                   <PanelsTopLeft data-icon="inline-start" />
                   Manage workspaces
                 </Link>
               </DropdownMenuItem>
+              <AppearanceMenuSubmenu userId={user.id} />
               <DropdownMenuItem asChild>
                 <Link
                   href={`/inquire/${workspaceSlug}`}
@@ -362,11 +373,11 @@ function WorkspaceSwitcher({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="w-full rounded-[1.1rem] border border-sidebar-border/90 bg-background/92 p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.42)] transition-colors hover:bg-background"
+          className="w-full rounded-[1.1rem] border border-sidebar-border/90 bg-background/92 p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.42)] transition-colors hover:bg-background dark:border-white/8 dark:bg-card/90 dark:shadow-[0_1px_2px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.04)] dark:hover:bg-accent"
           type="button"
         >
           <div className="flex items-start gap-3.5">
-            <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] border border-sidebar-border bg-muted/55">
+            <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] border border-sidebar-border bg-muted/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] dark:border-white/8 dark:bg-accent dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.18)]">
               {workspace.logoStoragePath ? (
                 <Image
                   alt={`${workspace.name} logo`}
@@ -425,9 +436,9 @@ function WorkspaceSwitcher({
               <DropdownMenuItem asChild key={membership.membershipId}>
                 <Link
                   href={getWorkspaceDashboardPath(membership.workspace.slug)}
-                  prefetch={false}
+                  prefetch={true}
                 >
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background text-[0.72rem] font-semibold tracking-[0.14em] text-foreground">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background text-[0.72rem] font-semibold tracking-[0.14em] text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:border-white/8 dark:bg-card dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.18)]">
                     {getInitials(membership.workspace.name)}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -449,7 +460,7 @@ function WorkspaceSwitcher({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={workspaceHubPath} prefetch={false}>
+          <Link href={workspaceHubPath} prefetch={true}>
             <PanelsTopLeft data-icon="inline-start" />
             Manage workspaces
           </Link>

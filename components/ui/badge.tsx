@@ -10,15 +10,15 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-primary/80 bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(6,36,28,0.12),0_1px_1px_rgba(15,23,42,0.08),0_8px_14px_-12px_rgba(0,128,96,0.32)]",
+          "border-primary/80 bg-primary text-primary-foreground shadow-[var(--control-primary-shadow)]",
         secondary:
-          "border-border/80 bg-secondary/95 text-secondary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(23,43,36,0.03),0_1px_1px_rgba(15,23,42,0.04)]",
+          "control-surface-secondary border-border/80 text-secondary-foreground",
         destructive:
-          "border-destructive/22 bg-destructive/10 text-destructive shadow-[inset_0_1px_0_rgba(255,255,255,0.22),inset_0_-1px_0_rgba(95,24,18,0.06),0_1px_1px_rgba(201,55,44,0.08)] focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40",
+          "border-destructive/22 bg-destructive/10 text-destructive shadow-[var(--control-shadow)] focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
-          "border-border/85 bg-background/95 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.58),inset_0_-1px_0_rgba(23,43,36,0.03),0_1px_1px_rgba(15,23,42,0.04)]",
+          "control-surface border-border/85 text-foreground",
         ghost:
-          "border-transparent bg-transparent text-muted-foreground hover:border-border/55 hover:bg-muted/75 hover:text-foreground hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.34)] dark:hover:bg-muted/50",
+          "control-ghost-surface text-muted-foreground hover:border-border/55 hover:bg-[var(--control-accent-bg)] hover:text-foreground hover:shadow-[var(--control-shadow)]",
         link: "text-primary underline-offset-4 hover:underline",
       },
     },

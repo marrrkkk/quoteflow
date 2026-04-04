@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
+import { useProgressRouter } from "@/hooks/use-progress-router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { QuoteLibraryDeleteActionState } from "@/features/quotes/types";
@@ -20,7 +20,7 @@ const initialState: QuoteLibraryDeleteActionState = {};
 export function QuoteLibraryEntryDeleteButton({
   action,
 }: QuoteLibraryEntryDeleteButtonProps) {
-  const router = useRouter();
+  const router = useProgressRouter();
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   useEffect(() => {

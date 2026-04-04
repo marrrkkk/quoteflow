@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useId, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import {
   FormActions,
 } from "@/components/shared/form-layout";
+import { useProgressRouter } from "@/hooks/use-progress-router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +65,7 @@ export function QuoteLibraryEntryForm({
   onSuccess,
   idPrefix = "quote-library-entry",
 }: QuoteLibraryEntryFormProps) {
-  const router = useRouter();
+  const router = useProgressRouter();
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   useEffect(() => {

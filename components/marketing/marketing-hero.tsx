@@ -606,7 +606,7 @@ function HeroSignalPill({
   value: string;
 }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-border/75 bg-background/88 px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+    <div className="inline-flex items-center gap-2 rounded-full border border-border/75 bg-background/88 px-3.5 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:border-white/10 dark:bg-card dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.16)]">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
     </div>
@@ -666,7 +666,7 @@ function MarketingFeatureCard({
   return (
     <Card className={className} size="sm">
       <CardHeader className="gap-4">
-        <div className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.34)]">
+        <div className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-accent/85 text-accent-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.34)] dark:border-white/8 dark:bg-accent dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.2)]">
           <Icon className="size-4" />
         </div>
         <div className="flex flex-col gap-2">
