@@ -29,11 +29,11 @@ When making changes in this repo:
 3. Keep code production-minded, typed, and modular.
 4. Reuse existing utilities and components where possible.
 5. Do not invent fake implementations if a real one can be built.
-6. If a feature is too large, implement the MVP slice first.
+6. If a feature is too large, implement the smallest production-ready slice first.
 7. After coding, run relevant checks and summarize what changed.
 
 ## Product constraints
-This is an MVP. Do not add:
+Keep scope disciplined. Do not add:
 - billing/subscriptions
 - team collaboration beyond owner-first flows
 - marketplace features

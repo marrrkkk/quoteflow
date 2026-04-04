@@ -49,6 +49,9 @@ Optional but commonly needed:
 ### Resend
 
 - Leave `RESEND_API_KEY` blank if you do not need live email locally.
+- Set `RESEND_FROM_EMAIL` to an address on a domain you verified in Resend.
+- Do not use consumer mailbox domains such as `gmail.com`, `outlook.com`, `hotmail.com`, `yahoo.com`, or `icloud.com` for `RESEND_FROM_EMAIL`.
+- Keep your normal inbox in `RESEND_REPLY_TO_EMAIL` if you want customer replies to go there.
 - Password reset and inquiry notification emails will be skipped when Resend is not configured.
 - Quote sending intentionally returns an error when Resend is not configured, because the action is explicit and user-facing.
 

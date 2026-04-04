@@ -2,7 +2,7 @@
 
 Turn messy customer inquiries into organized quotes and bookings.
 
-Relay is an owner-first SaaS app for small service businesses such as print shops, repair shops, tutors, event suppliers, and small agencies. This repository already contains a working MVP foundation with authentication, a public inquiry page, dashboard flows, quotes, knowledge, AI drafting, analytics, and settings.
+Relay is an owner-first SaaS app for small service businesses such as print shops, repair shops, tutors, event suppliers, and small agencies. This repository already contains a working product foundation with authentication, a public inquiry page, dashboard flows, quotes, knowledge, AI drafting, analytics, and settings.
 
 ## Current Status
 
@@ -14,7 +14,7 @@ Relay is an owner-first SaaS app for small service businesses such as print shop
 
 - [Local setup](docs/setup/local.md)
 - [Deployment setup](docs/setup/deployment.md)
-- [MVP architecture](docs/architecture/mvp-architecture.md)
+- [Architecture](docs/architecture/relay-architecture.md)
 
 ## Quick Start
 
@@ -108,7 +108,7 @@ Read [docs/setup/local.md](docs/setup/local.md) for local expectations and [docs
 - `lib/` contains cross-cutting helpers for auth, database access, Supabase, Resend, OpenRouter, env validation, and file utilities.
 - `emails/templates/` holds transactional email rendering.
 
-The detailed target structure and reuse guidance live in [docs/architecture/mvp-architecture.md](docs/architecture/mvp-architecture.md).
+The detailed target structure and reuse guidance live in [docs/architecture/relay-architecture.md](docs/architecture/relay-architecture.md).
 
 ## Integration Notes
 
@@ -128,6 +128,7 @@ The detailed target structure and reuse guidance live in [docs/architecture/mvp-
 ### Resend
 
 - Password reset emails, public inquiry notifications, quote delivery, and owner quote notifications are implemented.
+- `RESEND_FROM_EMAIL` must use a domain verified in Resend. Personal mailbox domains like `gmail.com` belong in `RESEND_REPLY_TO_EMAIL`, not the sender field.
 - Password reset and inquiry notification email sending are best-effort when Resend is not configured.
 - Quote sending intentionally fails when Resend is not configured.
 

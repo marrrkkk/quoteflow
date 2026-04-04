@@ -48,8 +48,9 @@ Relay deploys cleanly as a Next.js app with a Postgres database, Supabase storag
 
 - Create a Resend API key.
 - Verify the sender domain or sender address.
-- Set `RESEND_FROM_EMAIL` to a plain verified email address.
-- Set `RESEND_REPLY_TO_EMAIL` to the reply target mailbox.
+- Set `RESEND_FROM_EMAIL` to a plain email address on a domain you verified in Resend.
+- Do not use personal mailbox domains such as `gmail.com`, `outlook.com`, `hotmail.com`, `yahoo.com`, or `icloud.com` for `RESEND_FROM_EMAIL`.
+- Set `RESEND_REPLY_TO_EMAIL` to the reply target mailbox if customer replies should go to a different inbox.
 - Expect password reset and inquiry notification email flows to be best-effort when Resend is absent.
 - Expect quote sending to fail clearly when Resend is absent.
 

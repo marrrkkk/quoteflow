@@ -1,4 +1,4 @@
-# Relay MVP Architecture
+# Relay Architecture
 
 ## Summary
 
