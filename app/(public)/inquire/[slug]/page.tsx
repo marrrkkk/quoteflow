@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { submitPublicInquiryAction } from "@/features/inquiries/actions";
 import { PublicInquiryPageRenderer } from "@/features/inquiries/components/public-inquiry-page-renderer";
-import { getPublicInquiryWorkspaceBySlug } from "@/features/inquiries/queries";
+import { getPublicInquiryBusinessBySlug } from "@/features/inquiries/queries";
 
 export default async function PublicInquiryPage({
   params,
@@ -10,21 +10,21 @@ export default async function PublicInquiryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const workspace = await getPublicInquiryWorkspaceBySlug(slug);
+  const business = await getPublicInquiryBusinessBySlug(slug);
 
-  if (!workspace) {
+  if (!business) {
     notFound();
   }
 
   const submitPublicInquiry = submitPublicInquiryAction.bind(
     null,
-    workspace.slug,
-    workspace.form.slug,
+    business.slug,
+    business.form.slug,
   );
 
   return (
     <PublicInquiryPageRenderer
-      workspace={workspace}
+      business={business}
       action={submitPublicInquiry}
     />
   );

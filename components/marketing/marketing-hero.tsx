@@ -90,7 +90,7 @@ const featureCards = [
   {
     icon: Sparkles,
     title: "Write faster",
-    description: "Draft practical replies using your workspace context.",
+    description: "Draft practical replies using your business context.",
     points: ["Knowledge files", "Reply drafts"],
   },
 ] as const;
@@ -190,7 +190,7 @@ export function MarketingHero() {
                 Turn customer inquiries into clear, sent quotes.
               </h1>
               <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                Collect requests, build quotes, and follow up in one workspace.
+                Collect requests, build quotes, and follow up in one business.
               </p>
             </div>
 
@@ -226,7 +226,7 @@ export function MarketingHero() {
                   className="border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-200"
                   variant="secondary"
                 >
-                  Live workspace
+                  Live business
                 </Badge>
               </div>
 
@@ -382,7 +382,7 @@ export function MarketingHero() {
             </div>
 
             <Button asChild className="w-full sm:w-auto" variant="secondary">
-              <Link href="/signup">Create workspace</Link>
+              <Link href="/signup">Create business</Link>
             </Button>
           </div>
 
@@ -395,7 +395,7 @@ export function MarketingHero() {
                     <Badge variant="ghost">Inquiries</Badge>
                     <Badge variant="ghost">Quotes</Badge>
                   </div>
-                  <span className="text-xs text-muted-foreground">Owner workspace</span>
+                  <span className="text-xs text-muted-foreground">Owner business</span>
                 </div>
 
                 <div className="grid gap-4 p-4">
@@ -518,7 +518,7 @@ export function MarketingHero() {
                 Start
               </Badge>
               <h3 className="font-heading text-2xl font-semibold tracking-tight text-balance">
-                Launch one workspace and start collecting requests.
+                Launch one business and start collecting requests.
               </h3>
               <p className="text-sm leading-7 text-muted-foreground">
                 Email/password auth, a public inquiry page, and quote tracking are
@@ -529,7 +529,7 @@ export function MarketingHero() {
             <div className="grid gap-2 text-sm leading-6 text-foreground">
               {[
                 "Protected owner dashboard",
-                "Public intake scoped to each workspace",
+                "Public intake scoped to each business",
                 "Quote creation, sending, and response tracking",
               ].map((item) => (
                 <div className="flex items-start gap-2.5" key={item}>
@@ -568,7 +568,7 @@ export function MarketingHero() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link href="/signup">
-                Create workspace
+                Create business
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>

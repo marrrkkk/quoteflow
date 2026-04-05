@@ -2,28 +2,28 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import {
-  activeWorkspaceSlugCookieName,
-  getWorkspaceDashboardSlugFromPathname,
-} from "@/features/workspaces/routes";
+  activeBusinessSlugCookieName,
+  getBusinessDashboardSlugFromPathname,
+} from "@/features/businesses/routes";
 
 export function proxy(request: NextRequest) {
-  const workspaceSlug = getWorkspaceDashboardSlugFromPathname(
+  const businessSlug = getBusinessDashboardSlugFromPathname(
     request.nextUrl.pathname,
   );
 
-  if (!workspaceSlug) {
+  if (!businessSlug) {
     return NextResponse.next();
   }
 
-  request.cookies.set(activeWorkspaceSlugCookieName, workspaceSlug);
+  request.cookies.set(activeBusinessSlugCookieName, businessSlug);
 
   const response = NextResponse.next({
     request,
   });
 
   response.cookies.set({
-    name: activeWorkspaceSlugCookieName,
-    value: workspaceSlug,
+    name: activeBusinessSlugCookieName,
+    value: businessSlug,
     httpOnly: true,
     path: "/",
     sameSite: "lax",
@@ -34,5 +34,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/workspace/:slug/dashboard/:path*", "/workspace/:slug/preview/:path*"],
+  matcher: ["/businesses/:slug/dashboard/:path*", "/businesses/:slug/preview/:path*"],
 };

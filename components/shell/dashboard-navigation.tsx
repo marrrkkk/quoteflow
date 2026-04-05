@@ -7,14 +7,14 @@ import {
 } from "lucide-react";
 
 import {
-  getWorkspaceAnalyticsPath,
-  getWorkspaceDashboardPath,
-  getWorkspaceDashboardSlugFromPathname,
-  getWorkspaceInquiriesPath,
-  getWorkspaceKnowledgeCompatibilityPath,
-  getWorkspaceQuotesPath,
-  getWorkspaceSettingsPath,
-} from "@/features/workspaces/routes";
+  getBusinessAnalyticsPath,
+  getBusinessDashboardPath,
+  getBusinessDashboardSlugFromPathname,
+  getBusinessInquiriesPath,
+  getBusinessKnowledgeCompatibilityPath,
+  getBusinessQuotesPath,
+  getBusinessSettingsPath,
+} from "@/features/businesses/routes";
 
 export type DashboardNavigationItem = {
   href: string;
@@ -31,51 +31,51 @@ export type DashboardBreadcrumbItem = {
 export function getDashboardNavigation(slug: string): DashboardNavigationItem[] {
   return [
     {
-      href: getWorkspaceDashboardPath(slug),
+      href: getBusinessDashboardPath(slug),
       label: "Overview",
       description: "Action queues, momentum, and the next owner actions.",
       icon: LayoutDashboard,
     },
     {
-      href: getWorkspaceInquiriesPath(slug),
+      href: getBusinessInquiriesPath(slug),
       label: "Requests",
       description: "Capture, review, and move customer requests forward.",
       icon: Inbox,
     },
     {
-      href: getWorkspaceQuotesPath(slug),
+      href: getBusinessQuotesPath(slug),
       label: "Quotes",
       description: "Draft, send, and track quotes from one place.",
       icon: FileText,
     },
     {
-      href: getWorkspaceSettingsPath(slug),
+      href: getBusinessSettingsPath(slug),
       label: "Settings",
-      description: "Manage workspace, inquiry, quote, pricing, and knowledge settings.",
+      description: "Manage business, inquiry, quote, pricing, and knowledge settings.",
       icon: Settings2,
     },
   ];
 }
 
 function resolveDashboardActivePathname(pathname: string) {
-  const slug = getWorkspaceDashboardSlugFromPathname(pathname);
+  const slug = getBusinessDashboardSlugFromPathname(pathname);
 
   if (!slug) {
     return pathname;
   }
 
-  const analyticsPath = getWorkspaceAnalyticsPath(slug);
-  const knowledgeCompatibilityPath = getWorkspaceKnowledgeCompatibilityPath(slug);
+  const analyticsPath = getBusinessAnalyticsPath(slug);
+  const knowledgeCompatibilityPath = getBusinessKnowledgeCompatibilityPath(slug);
 
   if (pathname === analyticsPath || pathname.startsWith(`${analyticsPath}/`)) {
-    return getWorkspaceDashboardPath(slug);
+    return getBusinessDashboardPath(slug);
   }
 
   if (
     pathname === knowledgeCompatibilityPath ||
     pathname.startsWith(`${knowledgeCompatibilityPath}/`)
   ) {
-    return getWorkspaceSettingsPath(slug, "knowledge");
+    return getBusinessSettingsPath(slug, "knowledge");
   }
 
   return pathname;
@@ -96,7 +96,7 @@ export function isDashboardNavigationItemActive(
 
 export function getActiveDashboardNavigationItem(pathname: string) {
   const activePathname = resolveDashboardActivePathname(pathname);
-  const slug = getWorkspaceDashboardSlugFromPathname(activePathname);
+  const slug = getBusinessDashboardSlugFromPathname(activePathname);
 
   if (!slug) {
     return null;
@@ -124,17 +124,17 @@ function formatBreadcrumbLabel(value: string) {
 }
 
 export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[] {
-  const slug = getWorkspaceDashboardSlugFromPathname(pathname);
+  const slug = getBusinessDashboardSlugFromPathname(pathname);
 
   if (!slug) {
     return [];
   }
 
-  const dashboardPath = getWorkspaceDashboardPath(slug);
-  const analyticsPath = getWorkspaceAnalyticsPath(slug);
-  const inquiriesPath = getWorkspaceInquiriesPath(slug);
-  const quotesPath = getWorkspaceQuotesPath(slug);
-  const settingsPath = getWorkspaceSettingsPath(slug);
+  const dashboardPath = getBusinessDashboardPath(slug);
+  const analyticsPath = getBusinessAnalyticsPath(slug);
+  const inquiriesPath = getBusinessInquiriesPath(slug);
+  const quotesPath = getBusinessQuotesPath(slug);
+  const settingsPath = getBusinessSettingsPath(slug);
 
   if (pathname === dashboardPath) {
     return [{ label: "Dashboard" }];
@@ -213,7 +213,7 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
         },
         {
           label: sectionLabel,
-          href: getWorkspaceSettingsPath(slug, "inquiry"),
+          href: getBusinessSettingsPath(slug, "inquiry"),
         },
         {
           label: formatBreadcrumbLabel(segments[1]),

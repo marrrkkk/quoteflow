@@ -19,17 +19,17 @@ export function DashboardAccessFallback({
       actions={
         <>
           <Button asChild>
-            <Link href="/workspace">Open workspaces</Link>
+            <Link href="/businesses">Open businesses</Link>
           </Button>
           <LogoutButton variant="ghost" />
         </>
       }
-      description={`We retried workspace setup for ${user.email}, but the dashboard context is still unavailable.`}
-      eyebrow="Workspace required"
-      title="Workspace not ready yet."
+      description={`We retried business setup for ${user.email}, but the dashboard context is still unavailable.`}
+      eyebrow="Business required"
+      title="Business not ready yet."
     >
       <div className="state-card-note">
-        Open the workspace hub to create or select a workspace first.
+        Open the business hub to create or select a business first.
       </div>
       <div className="state-card-note">
         If it keeps failing, sign out and back in to restart the session

@@ -76,8 +76,8 @@ export default async function PublicQuotePage({
                   {quote.title}
                 </h1>
                 <p className="max-w-xl text-base leading-8 text-muted-foreground sm:text-lg">
-                  {quote.workspaceShortDescription?.trim() ||
-                    `${quote.workspaceName} prepared this quote for ${quote.customerName}. Review the details and respond when you're ready.`}
+                  {quote.businessShortDescription?.trim() ||
+                    `${quote.businessName} prepared this quote for ${quote.customerName}. Review the details and respond when you're ready.`}
                 </p>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default async function PublicQuotePage({
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 pt-0 sm:grid-cols-2">
-                <Stat label="Prepared by" value={quote.workspaceName} />
+                <Stat label="Prepared by" value={quote.businessName} />
                 <Stat label="Prepared for" value={quote.customerName} />
                 <Stat
                   label="Total"
@@ -172,12 +172,12 @@ export default async function PublicQuotePage({
                   </div>
                 </div>
               </CardHeader>
-              {quote.workspaceContactEmail ? (
+              {quote.businessContactEmail ? (
                 <CardContent className="pt-0">
                   <Button asChild className="w-full sm:w-auto" variant="outline">
-                    <a href={`mailto:${quote.workspaceContactEmail}`}>
+                    <a href={`mailto:${quote.businessContactEmail}`}>
                       <Mail data-icon="inline-start" />
-                      Contact {quote.workspaceName}
+                      Contact {quote.businessName}
                     </a>
                   </Button>
                 </CardContent>
@@ -186,7 +186,7 @@ export default async function PublicQuotePage({
           </div>
 
           <QuotePreview
-            workspaceName={quote.workspaceName}
+            businessName={quote.businessName}
             quoteNumber={quote.quoteNumber}
             title={quote.title}
             customerName={quote.customerName}

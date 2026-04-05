@@ -1,0 +1,36 @@
+import { redirect } from "next/navigation";
+
+import { getDefaultBusinessInquiryFormForBusiness } from "@/features/settings/queries";
+import { requireSession } from "@/lib/auth/session";
+import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
+import {
+  getBusinessDashboardPath,
+  getBusinessInquiryFormPreviewPath,
+  businessesHubPath,
+} from "@/features/businesses/routes";
+
+export default async function BusinessInquiryPagePreviewRedirect({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const [session, { slug }] = await Promise.all([requireSession(), params]);
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    slug,
+  );
+
+  if (!businessContext) {
+    redirect(businessesHubPath);
+  }
+
+  if (businessContext.role !== "owner") {
+    redirect(getBusinessDashboardPath(businessContext.business.slug));
+  }
+
+  const form = await getDefaultBusinessInquiryFormForBusiness(
+    businessContext.business.id,
+  );
+
+  redirect(getBusinessInquiryFormPreviewPath(slug, form?.slug ?? "main"));
+}

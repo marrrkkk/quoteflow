@@ -12,7 +12,7 @@ type BrandMarkProps = {
 export function BrandMark({
   className,
   collapseLabel = false,
-  subtitle = "Owner workspace",
+  subtitle = "Owner business",
 }: BrandMarkProps) {
   return (
     <Link

@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { demoWorkspaceSlug } from "./fixtures";
+import { demoBusinessSlug } from "./fixtures";
 
 test("invalid public inquiry links show the public not-found state", async ({
   page,
 }) => {
-  await page.goto("/inquire/not-a-real-workspace");
+  await page.goto("/inquire/not-a-real-business");
 
   await expect(
     page.getByText("This public page is unavailable."),
@@ -13,7 +13,7 @@ test("invalid public inquiry links show the public not-found state", async ({
 });
 
 test("public inquiry page rejects unsupported attachments", async ({ page }) => {
-  await page.goto(`/inquire/${demoWorkspaceSlug}`);
+  await page.goto(`/inquire/${demoBusinessSlug}`);
   await page.waitForLoadState("networkidle");
 
   await page.getByLabel("Your name").fill("Taylor Nguyen");
@@ -38,7 +38,7 @@ test("public inquiry page rejects unsupported attachments", async ({ page }) => 
 });
 
 test("public inquiry page accepts a new submission", async ({ page }) => {
-  await page.goto(`/inquire/${demoWorkspaceSlug}`);
+  await page.goto(`/inquire/${demoBusinessSlug}`);
   await page.waitForLoadState("networkidle");
 
   await page.getByLabel("Your name").fill("Taylor Nguyen");

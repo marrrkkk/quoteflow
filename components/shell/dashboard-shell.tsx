@@ -18,7 +18,7 @@ import { authClient } from "@/lib/auth/client";
 import { AppearanceMenuSubmenu } from "@/features/theme/components/appearance-menu";
 import { ThemePreferenceSync } from "@/features/theme/components/theme-preference-sync";
 import type { ThemePreference } from "@/features/theme/types";
-import type { WorkspaceContext } from "@/lib/db/workspace-access";
+import type { BusinessContext } from "@/lib/db/business-access";
 import { BrandMark } from "@/components/shared/brand-mark";
 import {
   getDashboardBreadcrumbs,
@@ -61,10 +61,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  getWorkspaceDashboardPath,
-  getWorkspaceSettingsPath,
-  workspaceHubPath,
-} from "@/features/workspaces/routes";
+  getBusinessDashboardPath,
+  getBusinessSettingsPath,
+  businessesHubPath,
+} from "@/features/businesses/routes";
 import { cn } from "@/lib/utils";
 
 type DashboardShellProps = {
@@ -75,21 +75,21 @@ type DashboardShellProps = {
     email: string;
     name: string;
   };
-  workspaceContext: WorkspaceContext;
-  workspaceMemberships: WorkspaceContext[];
+  businessContext: BusinessContext;
+  businessMemberships: BusinessContext[];
 };
 
 export function DashboardShell({
   children,
   themePreference,
   user,
-  workspaceContext,
-  workspaceMemberships,
+  businessContext,
+  businessMemberships,
 }: DashboardShellProps) {
   const pathname = usePathname();
   const breadcrumbs = getDashboardBreadcrumbs(pathname);
-  const dashboardNavigation = getDashboardNavigation(workspaceContext.workspace.slug);
-  const workspace = workspaceContext.workspace;
+  const dashboardNavigation = getDashboardNavigation(businessContext.business.slug);
+  const business = businessContext.business;
 
   return (
     <SidebarProvider
@@ -116,9 +116,9 @@ export function DashboardShell({
           </div>
           <SidebarSeparator />
           <div className="px-3 py-3 group-data-[collapsible=icon]:hidden">
-            <WorkspaceSwitcher
-              currentWorkspace={workspaceContext}
-              memberships={workspaceMemberships}
+            <BusinessSwitcher
+              currentBusiness={businessContext}
+              memberships={businessMemberships}
             />
           </div>
         </SidebarHeader>
@@ -140,7 +140,7 @@ export function DashboardShell({
         <SidebarSeparator />
 
         <SidebarFooter className="p-3 pt-2 group-data-[collapsible=icon]:px-2">
-          <DashboardUserMenu user={user} workspaceSlug={workspace.slug} />
+          <DashboardUserMenu user={user} businessSlug={business.slug} />
         </SidebarFooter>
 
         <SidebarRail />
@@ -182,8 +182,8 @@ export function DashboardShell({
                 </Breadcrumb>
               </div>
               <div className="hidden items-center gap-2 xl:flex">
-                <Badge variant="secondary">/{workspace.slug}</Badge>
-                <Badge variant="outline">{workspace.defaultCurrency}</Badge>
+                <Badge variant="secondary">/{business.slug}</Badge>
+                <Badge variant="outline">{business.defaultCurrency}</Badge>
               </div>
             </div>
           </div>
@@ -238,10 +238,10 @@ function DashboardNavigationItem({
 
 function DashboardUserMenu({
   user,
-  workspaceSlug,
+  businessSlug,
 }: {
   user: DashboardShellProps["user"];
-  workspaceSlug: string;
+  businessSlug: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -311,28 +311,28 @@ function DashboardUserMenu({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link
-                  href={getWorkspaceSettingsPath(workspaceSlug)}
+                  href={getBusinessSettingsPath(businessSlug)}
                   prefetch={true}
                   onClick={closeMobileSidebar}
                 >
                   <Settings2 data-icon="inline-start" />
-                  Workspace settings
+                  Business settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href={workspaceHubPath}
+                  href={businessesHubPath}
                   prefetch={true}
                   onClick={closeMobileSidebar}
                 >
                   <PanelsTopLeft data-icon="inline-start" />
-                  Manage workspaces
+                  Manage businesses
                 </Link>
               </DropdownMenuItem>
               <AppearanceMenuSubmenu userId={user.id} />
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/inquire/${workspaceSlug}`}
+                  href={`/inquire/${businessSlug}`}
                   onClick={closeMobileSidebar}
                   prefetch={false}
                   target="_blank"
@@ -360,14 +360,14 @@ function DashboardUserMenu({
   );
 }
 
-function WorkspaceSwitcher({
-  currentWorkspace,
+function BusinessSwitcher({
+  currentBusiness,
   memberships,
 }: {
-  currentWorkspace: DashboardShellProps["workspaceContext"];
-  memberships: DashboardShellProps["workspaceMemberships"];
+  currentBusiness: DashboardShellProps["businessContext"];
+  memberships: DashboardShellProps["businessMemberships"];
 }) {
-  const workspace = currentWorkspace.workspace;
+  const business = currentBusiness.business;
 
   return (
     <DropdownMenu>
@@ -378,31 +378,31 @@ function WorkspaceSwitcher({
         >
           <div className="flex items-start gap-3.5">
             <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[0.9rem] border border-sidebar-border bg-muted/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] dark:border-white/8 dark:bg-accent dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.18)]">
-              {workspace.logoStoragePath ? (
+              {business.logoStoragePath ? (
                 <Image
-                  alt={`${workspace.name} logo`}
+                  alt={`${business.name} logo`}
                   className="h-auto max-h-10 w-auto object-contain"
                   height={48}
-                  src="/api/workspace/logo"
+                  src="/api/business/logo"
                   unoptimized
                   width={48}
                 />
               ) : (
                 <span className="text-sm font-semibold tracking-[0.16em] text-sidebar-foreground">
-                  {getInitials(workspace.name)}
+                  {getInitials(business.name)}
                 </span>
               )}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
-                <p className="meta-label text-sidebar-foreground/60">Workspace</p>
+                <p className="meta-label text-sidebar-foreground/60">Business</p>
                 <ChevronsUpDown className="size-4 text-muted-foreground" />
               </div>
               <p className="mt-2 truncate text-sm font-semibold text-sidebar-foreground">
-                {workspace.name}
+                {business.name}
               </p>
               <p className="mt-1 truncate text-sm text-muted-foreground">
-                /{workspace.slug}
+                /{business.slug}
               </p>
             </div>
           </div>
@@ -411,42 +411,42 @@ function WorkspaceSwitcher({
               className="border-sidebar-border bg-background text-sidebar-foreground"
               variant="outline"
             >
-              {workspace.defaultCurrency}
+              {business.defaultCurrency}
             </Badge>
             <Badge
               className="bg-sidebar-accent text-sidebar-accent-foreground"
               variant="secondary"
             >
-              {workspace.publicInquiryEnabled ? "Public form live" : "Public form off"}
+              {business.publicInquiryEnabled ? "Public form live" : "Public form off"}
             </Badge>
           </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72 rounded-xl">
         <DropdownMenuLabel className="px-2 py-2.5">
-          Switch workspace
+          Switch business
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {memberships.map((membership) => {
             const isCurrent =
-              membership.workspace.id === currentWorkspace.workspace.id;
+              membership.business.id === currentBusiness.business.id;
 
             return (
               <DropdownMenuItem asChild key={membership.membershipId}>
                 <Link
-                  href={getWorkspaceDashboardPath(membership.workspace.slug)}
+                  href={getBusinessDashboardPath(membership.business.slug)}
                   prefetch={true}
                 >
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background text-[0.72rem] font-semibold tracking-[0.14em] text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:border-white/8 dark:bg-card dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.18)]">
-                    {getInitials(membership.workspace.name)}
+                    {getInitials(membership.business.name)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">
-                      {membership.workspace.name}
+                      {membership.business.name}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      /{membership.workspace.slug}
+                      /{membership.business.slug}
                     </p>
                   </div>
                   <span className="text-[0.68rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -460,9 +460,9 @@ function WorkspaceSwitcher({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={workspaceHubPath} prefetch={true}>
+          <Link href={businessesHubPath} prefetch={true}>
             <PanelsTopLeft data-icon="inline-start" />
-            Manage workspaces
+            Manage businesses
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

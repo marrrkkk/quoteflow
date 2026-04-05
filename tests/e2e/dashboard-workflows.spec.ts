@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   demoOwnerEmail,
   demoOwnerPassword,
-  demoWorkspaceSlug,
+  demoBusinessSlug,
 } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
@@ -16,11 +16,11 @@ async function signIn(page: Page) {
   await page.getByLabel("Password").fill(demoOwnerPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL(/\/workspace$/, { timeout: 20_000 });
+  await expect(page).toHaveURL(/\/businesses$/, { timeout: 20_000 });
 }
 
-async function openWorkspacePage(page: Page, path: string) {
-  await page.goto(`/workspace/${demoWorkspaceSlug}/dashboard${path}`);
+async function openBusinessesPage(page: Page, path: string) {
+  await page.goto(`/businesses/${demoBusinessSlug}/dashboard${path}`);
   await page.waitForLoadState("networkidle");
 }
 
@@ -44,7 +44,7 @@ test("dashboard and detail pages surface follow-up, expiring-soon, and customer 
 }) => {
   await signIn(page);
 
-  await openWorkspacePage(page, "");
+  await openBusinessesPage(page, "");
 
   const followUpSection = getSection(page, "Follow up due");
   await expect(followUpSection.getByText("Foundry Labs booth kit")).toBeVisible();
@@ -58,7 +58,7 @@ test("dashboard and detail pages surface follow-up, expiring-soon, and customer 
     expiringSoonSection.getByText("Expires", { exact: false }),
   ).toBeVisible();
 
-  await openWorkspacePage(page, "/quotes/demo_quote_sent_1002");
+  await openBusinessesPage(page, "/quotes/demo_quote_sent_1002");
 
   await expect(
     page.getByRole("alert").filter({
@@ -84,7 +84,7 @@ test("dashboard and detail pages surface follow-up, expiring-soon, and customer 
     page.getByRole("link", { name: "Q-1002 | Foundry Labs booth kit" }),
   ).toHaveCount(0);
 
-  await openWorkspacePage(page, "/inquiries/demo_inquiry_quoted_booth_kit");
+  await openBusinessesPage(page, "/inquiries/demo_inquiry_quoted_booth_kit");
 
   await expect(page.getByRole("link", { name: "Office signage" })).toBeVisible();
   await expect(
@@ -111,7 +111,7 @@ test("owner can create, edit, insert, and delete a saved reply snippet", async (
 
   await signIn(page);
 
-  await openWorkspacePage(page, "/settings/inquiry");
+  await openBusinessesPage(page, "/settings/inquiry");
 
   await page.locator("#reply-snippet-create-title").fill(initialTitle);
   await page.locator("#reply-snippet-create-body").fill(initialBody);
@@ -129,7 +129,7 @@ test("owner can create, edit, insert, and delete a saved reply snippet", async (
   await expect(updatedSnippetCard).toBeVisible({ timeout: 20_000 });
   await expect(updatedSnippetCard.getByText(updatedBody)).toBeVisible();
 
-  await openWorkspacePage(page, "/inquiries/demo_inquiry_new_storefront");
+  await openBusinessesPage(page, "/inquiries/demo_inquiry_new_storefront");
 
   const updatedSnippetOption = page
     .getByTestId("inquiry-reply-snippet-option")
@@ -157,7 +157,7 @@ test("owner can create, edit, insert, and delete a saved reply snippet", async (
     `${updatedBody}\n\n${existingSnippetBody}`,
   );
 
-  await openWorkspacePage(page, "/settings/inquiry");
+  await openBusinessesPage(page, "/settings/inquiry");
 
   const deletableSnippetCard = getSnippetCard(page, updatedTitle);
   await deletableSnippetCard.getByRole("button", { name: "Delete" }).click();
@@ -172,7 +172,7 @@ test("accepted quotes can move from booked to scheduled", async ({ page }) => {
 
   await signIn(page);
 
-  await openWorkspacePage(page, "/quotes/demo_quote_accepted_1003");
+  await openBusinessesPage(page, "/quotes/demo_quote_accepted_1003");
 
   const postAcceptanceSelect = page.getByRole("combobox", {
     name: "Move accepted work forward",

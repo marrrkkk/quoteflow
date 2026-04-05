@@ -45,7 +45,7 @@ export function RoutePlaceholder({
           <CardHeader className="gap-2">
             <CardTitle>What this route is ready for</CardTitle>
             <CardDescription>
-              The shared dashboard shell, routing, and workspace access are in
+              The shared dashboard shell, routing, and business access are in
               place for the next product slice.
             </CardDescription>
           </CardHeader>

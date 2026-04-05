@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   demoOwnerEmail,
   demoOwnerPassword,
-  demoWorkspaceSlug,
+  demoBusinessSlug,
 } from "./fixtures";
 
 async function signIn(page: Page) {
@@ -14,7 +14,7 @@ async function signIn(page: Page) {
   await page.getByLabel("Password").fill(demoOwnerPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL(/\/workspace$/, { timeout: 20_000 });
+  await expect(page).toHaveURL(/\/businesses$/, { timeout: 20_000 });
 }
 
 test("owner can save a pricing block and insert it into a new quote", async ({
@@ -24,11 +24,11 @@ test("owner can save a pricing block and insert it into a new quote", async ({
 
   const entryName = `Rush install ${Date.now()}`;
   const lineItemDescription = "Rush installation fee";
-  const workspaceBasePath = `/workspace/${demoWorkspaceSlug}/dashboard`;
+  const businessBasePath = `/businesses/${demoBusinessSlug}/dashboard`;
 
   await signIn(page);
 
-  await page.goto(`${workspaceBasePath}/settings/pricing-library`);
+  await page.goto(`${businessBasePath}/settings/pricing-library`);
   await page.waitForLoadState("networkidle");
 
   await page.getByRole("textbox", { name: "Name", exact: true }).fill(entryName);
@@ -47,7 +47,7 @@ test("owner can save a pricing block and insert it into a new quote", async ({
     timeout: 20_000,
   });
 
-  await page.goto(`${workspaceBasePath}/quotes/new`);
+  await page.goto(`${businessBasePath}/quotes/new`);
   await page.waitForLoadState("networkidle");
 
   await page.getByRole("button", { name: "Insert saved" }).click();
@@ -69,7 +69,7 @@ test("owner can save a pricing block and insert it into a new quote", async ({
 
   await expect(
     page,
-  ).toHaveURL(new RegExp(`/workspace/${demoWorkspaceSlug}/dashboard/quotes/.+$`), {
+  ).toHaveURL(new RegExp(`/businesses/${demoBusinessSlug}/dashboard/quotes/.+$`), {
     timeout: 20_000,
   });
   await expect(

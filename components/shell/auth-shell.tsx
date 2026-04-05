@@ -23,13 +23,13 @@ export function AuthShell({
         <div className="auth-story-panel">
           <div className="flex items-center justify-between gap-4">
             <BrandMark />
-            <span className="eyebrow">Owner workspace</span>
+            <span className="eyebrow">Owner business</span>
           </div>
 
           <div className="flex max-w-3xl flex-col gap-8">
             <div className="flex max-w-2xl flex-col gap-4">
               <h1 className="font-heading text-5xl font-semibold leading-[0.95] tracking-tight text-balance">
-                Inquiry, quotes, and customer replies in one calm workspace.
+                Inquiry, quotes, and customer replies in one calm business.
               </h1>
               <p className="max-w-xl text-base leading-8 text-muted-foreground">
                 Built for service businesses.
@@ -43,7 +43,7 @@ export function AuthShell({
                 label="Organized intake"
               />
               <AuthSignal
-                description="Draft and send customer-ready quotes from the same workspace."
+                description="Draft and send customer-ready quotes from the same business."
                 icon={FileText}
                 label="Quote workflow"
               />
@@ -56,7 +56,7 @@ export function AuthShell({
           </div>
 
           <div className="soft-panel grid gap-4 p-5 sm:grid-cols-2">
-            {[  
+            {[
               "Protected email/password login",
               "Public inquiry and quote pages",
               "Owner-first dashboard",

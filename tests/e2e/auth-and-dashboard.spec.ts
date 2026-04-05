@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   demoOwnerEmail,
   demoOwnerPassword,
-  demoWorkspaceSlug,
+  demoBusinessSlug,
 } from "./fixtures";
 
 async function signIn(page: Page) {
@@ -14,16 +14,16 @@ async function signIn(page: Page) {
   await page.getByLabel("Password").fill(demoOwnerPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL(/\/workspace$/, { timeout: 20_000 });
+  await expect(page).toHaveURL(/\/businesses$/, { timeout: 20_000 });
   await expect(
-    page.getByRole("heading", { name: "Choose a workspace" }),
+    page.getByRole("heading", { name: "Choose a business" }),
   ).toBeVisible({ timeout: 20_000 });
 }
 
-async function openDemoWorkspace(page: Page) {
-  await page.goto(`/workspace/${demoWorkspaceSlug}/dashboard`);
+async function openDemoBusiness(page: Page) {
+  await page.goto(`/businesses/${demoBusinessSlug}/dashboard`);
   await expect(page).toHaveURL(
-    new RegExp(`/workspace/${demoWorkspaceSlug}/dashboard$`),
+    new RegExp(`/businesses/${demoBusinessSlug}/dashboard$`),
     { timeout: 20_000 },
   );
   await expect(
@@ -37,7 +37,7 @@ test("owner can sign in, reach the dashboard overview, and sign out", async ({
   test.setTimeout(60_000);
 
   await signIn(page);
-  await openDemoWorkspace(page);
+  await openDemoBusiness(page);
 
   await page
     .getByRole("button", { name: `Morgan Lee ${demoOwnerEmail}` })
@@ -52,7 +52,7 @@ test("dashboard shows a branded not-found state for unknown records", async ({
 }) => {
   await signIn(page);
 
-  await page.goto(`/workspace/${demoWorkspaceSlug}/dashboard/inquiries/does-not-exist`);
+  await page.goto(`/businesses/${demoBusinessSlug}/dashboard/inquiries/does-not-exist`);
 
   await expect(
     page.getByText("That dashboard record could not be found."),
@@ -66,7 +66,7 @@ test("sending a draft quote shows a safe delivery error when email is unavailabl
   await signIn(page);
 
   await page.goto(
-    `/workspace/${demoWorkspaceSlug}/dashboard/quotes/demo_quote_draft_1001`,
+    `/businesses/${demoBusinessSlug}/dashboard/quotes/demo_quote_draft_1001`,
   );
   await page.waitForLoadState("networkidle");
 
