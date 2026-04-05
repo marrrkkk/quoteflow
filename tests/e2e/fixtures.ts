@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 export const demoOwnerEmail =
-  process.env.DEMO_OWNER_EMAIL ?? "demo@relay.local";
+  process.env.DEMO_OWNER_EMAIL ?? "demo@requo.local";
 export const demoOwnerPassword =
   process.env.DEMO_OWNER_PASSWORD ?? "ChangeMe123456!";
 export const demoBusinessSlug =

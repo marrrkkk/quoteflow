@@ -163,7 +163,7 @@ export default async function QuoteDetailPage({
               key={activity.id}
               meta={
                 <>
-                  <span>{activity.actorName ?? "Relay"}</span>
+                  <span>{activity.actorName ?? "Requo"}</span>
                   <span aria-hidden="true">|</span>
                   <span>{formatQuoteDateTime(activity.createdAt)}</span>
                 </>

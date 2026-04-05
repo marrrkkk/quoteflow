@@ -55,7 +55,7 @@ export default async function PublicQuotePage({
         <Button asChild variant="ghost">
           <Link href="/">
             <ArrowLeft data-icon="inline-start" />
-            Back to Relay
+            Back to Requo
           </Link>
         </Button>
       }

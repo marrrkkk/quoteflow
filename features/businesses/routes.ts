@@ -1,5 +1,5 @@
 export const businessesHubPath = "/businesses";
-export const activeBusinessSlugCookieName = "relay-active-business";
+export const activeBusinessSlugCookieName = "requo-active-business";
 
 export type BusinessSettingsSection =
   | "general"

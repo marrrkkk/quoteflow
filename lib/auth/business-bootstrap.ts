@@ -66,7 +66,7 @@ export async function ensureProfileForUser(user: BootstrapUser) {
 
 export async function bootstrapBusinessForUser(user: BootstrapUser) {
   const businessBaseName =
-    user.name.trim() || user.email.split("@")[0] || "Relay";
+    user.name.trim() || user.email.split("@")[0] || "Requo";
   const businessName = `${businessBaseName}'s Business`;
   const now = new Date();
 

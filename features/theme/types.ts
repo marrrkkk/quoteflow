@@ -2,8 +2,8 @@ export const themePreferences = ["light", "dark", "system"] as const;
 
 export type ThemePreference = (typeof themePreferences)[number];
 
-export const themeStorageKey = "relay-theme";
-export const themeUserStorageKey = "relay-theme-user";
+export const themeStorageKey = "requo-theme";
+export const themeUserStorageKey = "requo-theme-user";
 
 export const themePreferenceLabels: Record<ThemePreference, string> = {
   light: "Light",

@@ -37,7 +37,7 @@ type DemoBusiness = {
 
 const demoConfig = {
   ownerName: getSeedValue("DEMO_OWNER_NAME", "Morgan Lee"),
-  ownerEmail: getSeedValue("DEMO_OWNER_EMAIL", "demo@relay.local").toLowerCase(),
+  ownerEmail: getSeedValue("DEMO_OWNER_EMAIL", "demo@requo.local").toLowerCase(),
   ownerPassword: getSeedValue("DEMO_OWNER_PASSWORD", "ChangeMe123456!"),
   businessName: getSeedValue("DEMO_BUSINESS_NAME", "BrightSide Print Studio"),
   businessSlug: getSeedValue(
@@ -1141,7 +1141,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
       quoteId: null,
       actorUserId: demoUser.id,
       type: "business.demo_seeded",
-      summary: "Sample Relay MVP data refreshed for local setup.",
+      summary: "Sample Requo MVP data refreshed for local setup.",
       metadata: { source: "demo-seed" },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1183,7 +1183,7 @@ async function main() {
   ).toString();
 
   console.log("");
-  console.log("Relay demo data seeded.");
+  console.log("Requo demo data seeded.");
   console.log(`Business: ${business.name}`);
   console.log(`Business slug: ${business.slug}`);
   console.log(`Demo owner email: ${demoUser.email}`);
@@ -1198,7 +1198,7 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error("Failed to seed Relay demo data.");
+    console.error("Failed to seed Requo demo data.");
     console.error(error);
     process.exitCode = 1;
   })

@@ -71,7 +71,7 @@ export function renderPublicInquiryNotificationEmail({
     "Message/details:",
     details,
     "",
-    `Open in Relay: ${dashboardUrl}`,
+    `Open in Requo: ${dashboardUrl}`,
   ].filter(Boolean);
 
   const escapedDetails = escapeHtml(details).replace(/\n/g, "<br />");
@@ -79,7 +79,7 @@ export function renderPublicInquiryNotificationEmail({
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #172033;">
       <h1 style="font-size: 24px; margin-bottom: 16px;">New inquiry for ${escapeHtml(businessName)}</h1>
-      <p style="margin: 0 0 18px;">A customer submitted a new inquiry through your Relay public page.</p>
+      <p style="margin: 0 0 18px;">A customer submitted a new inquiry through your Requo public page.</p>
       <div style="border: 1px solid #d9deeb; border-radius: 16px; background: #ffffff; padding: 18px; margin-bottom: 18px;">
         <p style="margin: 0 0 8px;"><strong>Customer:</strong> ${escapeHtml(customerName)}</p>
         <p style="margin: 0 0 8px;"><strong>Form:</strong> ${escapeHtml(inquiryFormName)}</p>
@@ -132,7 +132,7 @@ export function renderPublicInquiryNotificationEmail({
       </div>
       <p style="margin: 0;">
         <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 12px; background: #2d4ea0; color: #ffffff; text-decoration: none; font-weight: 600;">
-          Open in Relay
+          Open in Requo
         </a>
       </p>
     </div>

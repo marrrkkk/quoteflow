@@ -47,7 +47,7 @@ function buildTrustedOrigins() {
 }
 
 export const auth = betterAuth({
-  appName: "Relay",
+  appName: "Requo",
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: buildTrustedOrigins(),
   secret: env.BETTER_AUTH_SECRET,

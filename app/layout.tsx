@@ -22,11 +22,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Relay",
-    template: "%s | Relay",
+    default: "Requo",
+    template: "%s | Requo",
   },
   description:
-    "Relay helps small service businesses turn scattered customer inquiries into organized quotes and bookings.",
+    "Requo helps small service businesses turn scattered customer inquiries into organized quotes and bookings.",
   icons: {
     icon: "/logo.svg",
     shortcut: "/logo.svg",
@@ -45,7 +45,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-        <Script id="relay-theme-init" strategy="beforeInteractive">
+        <Script id="requo-theme-init" strategy="beforeInteractive">
           {getThemeInitScript({
             storageKey: themeStorageKey,
           })}

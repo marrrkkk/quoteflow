@@ -1,5 +1,5 @@
-export const routeProgressStartEvent = "relay:route-progress-start";
-export const routeProgressCompleteEvent = "relay:route-progress-complete";
+export const routeProgressStartEvent = "requo:route-progress-start";
+export const routeProgressCompleteEvent = "requo:route-progress-complete";
 
 export type RouteProgressStartDetail = {
   force?: boolean;

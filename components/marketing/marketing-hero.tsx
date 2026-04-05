@@ -182,7 +182,7 @@ export function MarketingHero() {
         <div className="flex flex-col gap-10">
           <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 pt-2 text-center sm:pt-4">
             <Badge className="w-fit" variant="outline">
-              Relay for small service businesses
+              Requo for small service businesses
             </Badge>
 
             <div className="flex flex-col items-center gap-4">
@@ -558,7 +558,7 @@ export function MarketingHero() {
         <div className="flex flex-col gap-6 px-5 py-6 sm:px-6 sm:py-7 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-3">
             <Badge className="w-fit" variant="outline">
-              Relay
+              Requo
             </Badge>
             <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
               Keep inquiries, quotes, and follow-up in one place.

@@ -17,7 +17,7 @@ export function BrandMark({
   return (
     <Link
       href="/"
-      aria-label="Relay"
+      aria-label="Requo"
       className={cn(
         "inline-flex items-center gap-3 text-foreground",
         collapseLabel && "group-data-[collapsible=icon]:gap-0",
@@ -40,7 +40,7 @@ export function BrandMark({
         )}
       >
         <span className="truncate font-heading text-[1.02rem] font-semibold tracking-tight">
-          Relay
+          Requo
         </span>
         {subtitle !== null ? (
           <span className="truncate text-[0.64rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
