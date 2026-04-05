@@ -2,26 +2,26 @@ import "server-only";
 
 import { and, eq, isNull, ne } from "drizzle-orm";
 
-import { type WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import { type BusinessType } from "@/features/inquiries/business-types";
 import { normalizeInquiryFormSlug } from "@/features/inquiries/inquiry-forms";
 import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
 import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
 import type {
-  WorkspaceDeleteInput,
-  WorkspaceGeneralSettingsInput,
-  WorkspaceInquiryFormCreateInput,
-  WorkspaceInquiryFormPresetInput,
-  WorkspaceInquiryFormSettingsInput,
-  WorkspaceInquiryPageSettingsInput,
-  WorkspaceQuoteSettingsInput,
+  BusinessDeleteInput,
+  BusinessGeneralSettingsInput,
+  BusinessInquiryFormCreateInput,
+  BusinessInquiryFormPresetInput,
+  BusinessInquiryFormSettingsInput,
+  BusinessInquiryPageSettingsInput,
+  BusinessQuoteSettingsInput,
 } from "@/features/settings/schemas";
 import { publicInquiryAttachmentBucket } from "@/features/inquiries/schemas";
 import { knowledgeFilesBucket } from "@/features/knowledge/schemas";
 import { resolveSafeContentType } from "@/lib/files";
 import {
-  sanitizeWorkspaceLogoFileName,
-  workspaceLogoBucket,
-  workspaceLogoExtensionToMimeType,
+  sanitizeBusinessLogoFileName,
+  businessLogoBucket,
+  businessLogoExtensionToMimeType,
 } from "@/features/settings/utils";
 import { db } from "@/lib/db/client";
 import {
@@ -29,69 +29,69 @@ import {
   inquiries,
   inquiryAttachments,
   knowledgeFiles,
-  workspaceInquiryForms,
-  workspaces,
+  businessInquiryForms,
+  businesses,
 } from "@/lib/db/schema";
 import { appendRandomSlugSuffix } from "@/lib/slugs";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-type UpdateWorkspaceGeneralSettingsInput = {
-  workspaceId: string;
+type UpdateBusinessGeneralSettingsInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceGeneralSettingsInput;
+  values: BusinessGeneralSettingsInput;
 };
 
-type UpdateWorkspaceQuoteSettingsInput = {
-  workspaceId: string;
+type UpdateBusinessQuoteSettingsInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceQuoteSettingsInput;
+  values: BusinessQuoteSettingsInput;
 };
 
-type DeleteWorkspaceInput = {
-  workspaceId: string;
+type DeleteBusinessInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceDeleteInput;
+  values: BusinessDeleteInput;
 };
 
-type UpdateWorkspaceInquiryPageInput = {
-  workspaceId: string;
+type UpdateBusinessInquiryPageInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceInquiryPageSettingsInput;
+  values: BusinessInquiryPageSettingsInput;
 };
 
-type UpdateWorkspaceInquiryFormInput = {
-  workspaceId: string;
+type UpdateBusinessInquiryFormInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceInquiryFormSettingsInput;
+  values: BusinessInquiryFormSettingsInput;
 };
 
-type ApplyWorkspaceInquiryFormPresetInput = {
-  workspaceId: string;
+type ApplyBusinessInquiryFormPresetInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceInquiryFormPresetInput;
+  values: BusinessInquiryFormPresetInput;
 };
 
-type CreateWorkspaceInquiryFormInput = {
-  workspaceId: string;
+type CreateBusinessInquiryFormInput = {
+  businessId: string;
   actorUserId: string;
-  values: WorkspaceInquiryFormCreateInput;
+  values: BusinessInquiryFormCreateInput;
 };
 
-type TargetWorkspaceInquiryFormInput = {
-  workspaceId: string;
+type TargetBusinessInquiryFormInput = {
+  businessId: string;
   actorUserId: string;
   targetFormId: string;
 };
 
-type UpdateWorkspaceSettingsResult =
+type UpdateBusinessSettingsResult =
   | { ok: true; previousSlug: string; nextSlug: string }
   | { ok: false; reason: "not-found" | "slug-taken" };
 
-type DeleteWorkspaceResult =
-  | { ok: true; workspaceSlug: string }
+type DeleteBusinessResult =
+  | { ok: true; businessSlug: string }
   | { ok: false; reason: "not-found" | "confirmation-mismatch" };
 
-type UpdateWorkspaceInquiryFormSettingsResult =
+type UpdateBusinessInquiryFormSettingsResult =
   | {
       ok: true;
       previousSlug: string;
@@ -101,8 +101,8 @@ type UpdateWorkspaceInquiryFormSettingsResult =
     }
   | { ok: false; reason: "not-found" | "slug-taken" };
 
-type WorkspaceInquiryFormMutationResult =
-  | { ok: true; workspaceSlug: string; formSlug: string }
+type BusinessInquiryFormMutationResult =
+  | { ok: true; businessSlug: string; formSlug: string }
   | {
       ok: false;
       reason:
@@ -147,12 +147,12 @@ async function removeStoragePaths(
   }
 }
 
-async function getAvailableWorkspaceInquiryFormSlug({
-  workspaceId,
+async function getAvailableBusinessInquiryFormSlug({
+  businessId,
   baseSlug,
   excludeFormId,
 }: {
-  workspaceId: string;
+  businessId: string;
   baseSlug: string;
   excludeFormId?: string;
 }) {
@@ -161,17 +161,17 @@ async function getAvailableWorkspaceInquiryFormSlug({
 
   while (true) {
     const conditions = [
-      eq(workspaceInquiryForms.workspaceId, workspaceId),
-      eq(workspaceInquiryForms.slug, candidate),
+      eq(businessInquiryForms.businessId, businessId),
+      eq(businessInquiryForms.slug, candidate),
     ];
 
     if (excludeFormId) {
-      conditions.push(ne(workspaceInquiryForms.id, excludeFormId));
+      conditions.push(ne(businessInquiryForms.id, excludeFormId));
     }
 
     const [existingForm] = await db
-      .select({ id: workspaceInquiryForms.id })
-      .from(workspaceInquiryForms)
+      .select({ id: businessInquiryForms.id })
+      .from(businessInquiryForms)
       .where(and(...conditions))
       .limit(1);
 
@@ -194,20 +194,20 @@ function createDuplicateInquiryFormName(name: string) {
 function createInquiryFormSeedValues({
   businessType,
   name,
-  workspaceName,
-  workspaceShortDescription,
+  businessName,
+  businessShortDescription,
 }: {
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   name: string;
-  workspaceName: string;
-  workspaceShortDescription?: string | null;
+  businessName: string;
+  businessShortDescription?: string | null;
 }) {
   const inquiryFormConfig = createInquiryFormConfigDefaults({
     businessType,
   });
   const inquiryPageConfig = createInquiryPageConfigDefaults({
-    workspaceName,
-    workspaceShortDescription,
+    businessName,
+    businessShortDescription,
     businessType,
   });
 
@@ -223,36 +223,36 @@ function createInquiryFormSeedValues({
   };
 }
 
-export async function updateWorkspaceSettings({
-  workspaceId,
+export async function updateBusinessSettings({
+  businessId,
   actorUserId,
   values,
-}: UpdateWorkspaceGeneralSettingsInput): Promise<UpdateWorkspaceSettingsResult> {
-  const [currentWorkspace] = await db
+}: UpdateBusinessGeneralSettingsInput): Promise<UpdateBusinessSettingsResult> {
+  const [currentBusiness] = await db
     .select({
-      id: workspaces.id,
-      slug: workspaces.slug,
-      logoStoragePath: workspaces.logoStoragePath,
-      logoContentType: workspaces.logoContentType,
+      id: businesses.id,
+      slug: businesses.slug,
+      logoStoragePath: businesses.logoStoragePath,
+      logoContentType: businesses.logoContentType,
     })
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
     .limit(1);
 
-  if (!currentWorkspace) {
+  if (!currentBusiness) {
     return {
       ok: false,
       reason: "not-found",
     };
   }
 
-  const [conflictingWorkspace] = await db
-    .select({ id: workspaces.id })
-    .from(workspaces)
-    .where(and(eq(workspaces.slug, values.slug), ne(workspaces.id, workspaceId)))
+  const [conflictingBusiness] = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .where(and(eq(businesses.slug, values.slug), ne(businesses.id, businessId)))
     .limit(1);
 
-  if (conflictingWorkspace) {
+  if (conflictingBusiness) {
     return {
       ok: false,
       reason: "slug-taken",
@@ -262,37 +262,37 @@ export async function updateWorkspaceSettings({
   const now = new Date();
   const logoFile = values.logo;
   const storageClient = logoFile ? createSupabaseAdminClient() : null;
-  const previousLogoStoragePath = currentWorkspace.logoStoragePath;
+  const previousLogoStoragePath = currentBusiness.logoStoragePath;
   const nextLogoContentType = logoFile
     ? resolveSafeContentType(logoFile, {
-        extensionToMimeType: workspaceLogoExtensionToMimeType,
+        extensionToMimeType: businessLogoExtensionToMimeType,
         fallback: "application/octet-stream",
       })
     : null;
   const nextLogoStoragePath =
     logoFile && storageClient
-      ? `${workspaceId}/logo/${createId("asset")}-${sanitizeWorkspaceLogoFileName(
+      ? `${businessId}/logo/${createId("asset")}-${sanitizeBusinessLogoFileName(
           logoFile.name,
         )}`
       : null;
 
   if (nextLogoStoragePath && storageClient && logoFile) {
     const { error } = await storageClient.storage
-      .from(workspaceLogoBucket)
+      .from(businessLogoBucket)
       .upload(nextLogoStoragePath, logoFile, {
         contentType: nextLogoContentType ?? "application/octet-stream",
         upsert: false,
       });
 
     if (error) {
-      throw new Error(`Failed to upload workspace logo: ${error.message}`);
+      throw new Error(`Failed to upload business logo: ${error.message}`);
     }
   }
 
   try {
     await db.transaction(async (tx) => {
       await tx
-        .update(workspaces)
+        .update(businesses)
         .set({
           name: values.name,
           slug: values.slug,
@@ -303,20 +303,20 @@ export async function updateWorkspaceSettings({
             : nextLogoStoragePath ?? previousLogoStoragePath ?? null,
           logoContentType: values.removeLogo
             ? nextLogoContentType
-            : nextLogoContentType ?? currentWorkspace.logoContentType ?? null,
+            : nextLogoContentType ?? currentBusiness.logoContentType ?? null,
           defaultEmailSignature: values.defaultEmailSignature ?? null,
           aiTonePreference: values.aiTonePreference,
           notifyOnNewInquiry: values.notifyOnNewInquiry,
           updatedAt: now,
         })
-        .where(eq(workspaces.id, workspaceId));
+        .where(eq(businesses.id, businessId));
 
       await tx.insert(activityLogs).values({
         id: createId("act"),
-        workspaceId,
+        businessId,
         actorUserId,
-        type: "workspace.settings_updated",
-        summary: "Workspace settings updated.",
+        type: "business.settings_updated",
+        summary: "Business settings updated.",
         metadata: {
           slug: values.slug,
           hasLogo: Boolean(logoFile || previousLogoStoragePath) && !values.removeLogo,
@@ -330,12 +330,12 @@ export async function updateWorkspaceSettings({
   } catch (error) {
     if (nextLogoStoragePath && storageClient) {
       const { error: cleanupError } = await storageClient.storage
-        .from(workspaceLogoBucket)
+        .from(businessLogoBucket)
         .remove([nextLogoStoragePath]);
 
       if (cleanupError) {
         console.error(
-          "Failed to clean up uploaded workspace logo after a database error.",
+          "Failed to clean up uploaded business logo after a database error.",
           cleanupError,
         );
       }
@@ -352,36 +352,36 @@ export async function updateWorkspaceSettings({
   if (shouldRemovePreviousLogo) {
     const storageClient = createSupabaseAdminClient();
     const { error } = await storageClient.storage
-      .from(workspaceLogoBucket)
+      .from(businessLogoBucket)
       .remove([previousLogoStoragePath]);
 
     if (error) {
-      console.error("Failed to clean up the previous workspace logo.", error);
+      console.error("Failed to clean up the previous business logo.", error);
     }
   }
 
   return {
     ok: true,
-    previousSlug: currentWorkspace.slug,
+    previousSlug: currentBusiness.slug,
     nextSlug: values.slug,
   };
 }
 
-export async function updateWorkspaceQuoteSettings({
-  workspaceId,
+export async function updateBusinessQuoteSettings({
+  businessId,
   actorUserId,
   values,
-}: UpdateWorkspaceQuoteSettingsInput): Promise<UpdateWorkspaceSettingsResult> {
-  const [workspace] = await db
+}: UpdateBusinessQuoteSettingsInput): Promise<UpdateBusinessSettingsResult> {
+  const [business] = await db
     .select({
-      id: workspaces.id,
-      slug: workspaces.slug,
+      id: businesses.id,
+      slug: businesses.slug,
     })
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
     .limit(1);
 
-  if (!workspace) {
+  if (!business) {
     return {
       ok: false,
       reason: "not-found",
@@ -392,7 +392,7 @@ export async function updateWorkspaceQuoteSettings({
 
   await db.transaction(async (tx) => {
     await tx
-      .update(workspaces)
+      .update(businesses)
       .set({
         defaultQuoteNotes: values.defaultQuoteNotes ?? null,
         defaultQuoteValidityDays: values.defaultQuoteValidityDays,
@@ -400,13 +400,13 @@ export async function updateWorkspaceQuoteSettings({
         defaultCurrency: values.defaultCurrency,
         updatedAt: now,
       })
-      .where(eq(workspaces.id, workspaceId));
+      .where(eq(businesses.id, businessId));
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.quote_settings_updated",
+      type: "business.quote_settings_updated",
       summary: "Quote settings updated.",
       metadata: {
         defaultCurrency: values.defaultCurrency,
@@ -421,37 +421,37 @@ export async function updateWorkspaceQuoteSettings({
 
   return {
     ok: true,
-    previousSlug: workspace.slug,
-    nextSlug: workspace.slug,
+    previousSlug: business.slug,
+    nextSlug: business.slug,
   };
 }
 
-export async function deleteWorkspace({
-  workspaceId,
+export async function deleteBusiness({
+  businessId,
   actorUserId,
   values,
-}: DeleteWorkspaceInput): Promise<DeleteWorkspaceResult> {
+}: DeleteBusinessInput): Promise<DeleteBusinessResult> {
   void actorUserId;
 
-  const [workspace] = await db
+  const [business] = await db
     .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      slug: workspaces.slug,
-      logoStoragePath: workspaces.logoStoragePath,
+      id: businesses.id,
+      name: businesses.name,
+      slug: businesses.slug,
+      logoStoragePath: businesses.logoStoragePath,
     })
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
     .limit(1);
 
-  if (!workspace) {
+  if (!business) {
     return {
       ok: false,
       reason: "not-found",
     };
   }
 
-  if (values.confirmation !== workspace.name) {
+  if (values.confirmation !== business.name) {
     return {
       ok: false,
       reason: "confirmation-mismatch",
@@ -464,19 +464,19 @@ export async function deleteWorkspace({
         storagePath: knowledgeFiles.storagePath,
       })
       .from(knowledgeFiles)
-      .where(eq(knowledgeFiles.workspaceId, workspaceId)),
+      .where(eq(knowledgeFiles.businessId, businessId)),
     db
       .select({
         storagePath: inquiryAttachments.storagePath,
       })
       .from(inquiryAttachments)
-      .where(eq(inquiryAttachments.workspaceId, workspaceId)),
+      .where(eq(inquiryAttachments.businessId, businessId)),
   ]);
 
-  await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
+  await db.delete(businesses).where(eq(businesses.id, businessId));
 
   await Promise.all([
-    removeStoragePaths(workspaceLogoBucket, [workspace.logoStoragePath]),
+    removeStoragePaths(businessLogoBucket, [business.logoStoragePath]),
     removeStoragePaths(
       knowledgeFilesBucket,
       knowledgeFileRows.map((row) => row.storagePath),
@@ -489,44 +489,44 @@ export async function deleteWorkspace({
 
   return {
     ok: true,
-    workspaceSlug: workspace.slug,
+    businessSlug: business.slug,
   };
 }
 
-export async function updateWorkspaceInquiryPageSettings({
-  workspaceId,
+export async function updateBusinessInquiryPageSettings({
+  businessId,
   actorUserId,
   values,
-}: UpdateWorkspaceInquiryPageInput): Promise<UpdateWorkspaceSettingsResult> {
-  const [currentWorkspace, currentForm] = await Promise.all([
+}: UpdateBusinessInquiryPageInput): Promise<UpdateBusinessSettingsResult> {
+  const [currentBusiness, currentForm] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
+        id: businesses.id,
+        slug: businesses.slug,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        slug: workspaceInquiryForms.slug,
+        id: businessInquiryForms.id,
+        slug: businessInquiryForms.slug,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, values.formId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, values.formId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
   ]);
 
-  const workspace = currentWorkspace[0];
+  const business = currentBusiness[0];
   const form = currentForm[0];
 
-  if (!workspace || !form) {
+  if (!business || !form) {
     return {
       ok: false,
       reason: "not-found",
@@ -537,7 +537,7 @@ export async function updateWorkspaceInquiryPageSettings({
 
   await db.transaction(async (tx) => {
     await tx
-      .update(workspaceInquiryForms)
+      .update(businessInquiryForms)
       .set({
         publicInquiryEnabled: values.publicInquiryEnabled,
         inquiryPageConfig: {
@@ -554,16 +554,16 @@ export async function updateWorkspaceInquiryPageSettings({
       })
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, values.formId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, values.formId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_page_updated",
+      type: "business.inquiry_form_page_updated",
       summary: `Inquiry page updated for ${form.slug}.`,
       metadata: {
         inquiryFormId: values.formId,
@@ -579,45 +579,45 @@ export async function updateWorkspaceInquiryPageSettings({
 
   return {
     ok: true,
-    previousSlug: workspace.slug,
-    nextSlug: workspace.slug,
+    previousSlug: business.slug,
+    nextSlug: business.slug,
   };
 }
 
-export async function updateWorkspaceInquiryFormSettings({
-  workspaceId,
+export async function updateBusinessInquiryFormSettings({
+  businessId,
   actorUserId,
   values,
-}: UpdateWorkspaceInquiryFormInput): Promise<UpdateWorkspaceInquiryFormSettingsResult> {
-  const [currentWorkspace, currentForm] = await Promise.all([
+}: UpdateBusinessInquiryFormInput): Promise<UpdateBusinessInquiryFormSettingsResult> {
+  const [currentBusiness, currentForm] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
+        id: businesses.id,
+        slug: businesses.slug,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        slug: workspaceInquiryForms.slug,
+        id: businessInquiryForms.id,
+        slug: businessInquiryForms.slug,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, values.formId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, values.formId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
   ]);
 
-  const workspace = currentWorkspace[0];
+  const business = currentBusiness[0];
   const form = currentForm[0];
 
-  if (!workspace || !form) {
+  if (!business || !form) {
     return {
       ok: false,
       reason: "not-found",
@@ -626,13 +626,13 @@ export async function updateWorkspaceInquiryFormSettings({
 
   if (values.slug !== form.slug) {
     const [conflictingForm] = await db
-      .select({ id: workspaceInquiryForms.id })
-      .from(workspaceInquiryForms)
+      .select({ id: businessInquiryForms.id })
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.slug, values.slug),
-          ne(workspaceInquiryForms.id, values.formId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.slug, values.slug),
+          ne(businessInquiryForms.id, values.formId),
         ),
       )
       .limit(1);
@@ -649,7 +649,7 @@ export async function updateWorkspaceInquiryFormSettings({
 
   await db.transaction(async (tx) => {
     await tx
-      .update(workspaceInquiryForms)
+      .update(businessInquiryForms)
       .set({
         name: values.name,
         slug: values.slug,
@@ -662,16 +662,16 @@ export async function updateWorkspaceInquiryFormSettings({
       })
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, values.formId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, values.formId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_updated",
+      type: "business.inquiry_form_updated",
       summary: `Inquiry form updated for ${form.slug}.`,
       metadata: {
         inquiryFormId: values.formId,
@@ -687,52 +687,52 @@ export async function updateWorkspaceInquiryFormSettings({
 
   return {
     ok: true,
-    previousSlug: workspace.slug,
-    nextSlug: workspace.slug,
+    previousSlug: business.slug,
+    nextSlug: business.slug,
     previousFormSlug: form.slug,
     nextFormSlug: values.slug,
   };
 }
 
-export async function applyWorkspaceInquiryFormPreset({
-  workspaceId,
+export async function applyBusinessInquiryFormPreset({
+  businessId,
   actorUserId,
   values,
-}: ApplyWorkspaceInquiryFormPresetInput): Promise<UpdateWorkspaceSettingsResult> {
-  const [currentWorkspace, currentForm] = await Promise.all([
+}: ApplyBusinessInquiryFormPresetInput): Promise<UpdateBusinessSettingsResult> {
+  const [currentBusiness, currentForm] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
-        name: workspaces.name,
-        shortDescription: workspaces.shortDescription,
-        inquiryHeadline: workspaces.inquiryHeadline,
+        id: businesses.id,
+        slug: businesses.slug,
+        name: businesses.name,
+        shortDescription: businesses.shortDescription,
+        inquiryHeadline: businesses.inquiryHeadline,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        slug: workspaceInquiryForms.slug,
-        name: workspaceInquiryForms.name,
-        publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
+        id: businessInquiryForms.id,
+        slug: businessInquiryForms.slug,
+        name: businessInquiryForms.name,
+        publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, values.formId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, values.formId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
   ]);
 
-  const workspace = currentWorkspace[0];
+  const business = currentBusiness[0];
   const form = currentForm[0];
 
-  if (!workspace || !form) {
+  if (!business || !form) {
     return {
       ok: false,
       reason: "not-found",
@@ -743,7 +743,7 @@ export async function applyWorkspaceInquiryFormPreset({
 
   await db.transaction(async (tx) => {
     await tx
-      .update(workspaceInquiryForms)
+      .update(businessInquiryForms)
       .set({
         businessType: values.businessType,
         inquiryFormConfig: createInquiryFormConfigDefaults({
@@ -751,9 +751,9 @@ export async function applyWorkspaceInquiryFormPreset({
         }),
         inquiryPageConfig: {
           ...createInquiryPageConfigDefaults({
-            workspaceName: workspace.name,
-            workspaceShortDescription: workspace.shortDescription,
-            legacyInquiryHeadline: workspace.inquiryHeadline,
+            businessName: business.name,
+            businessShortDescription: business.shortDescription,
+            legacyInquiryHeadline: business.inquiryHeadline,
             businessType: values.businessType,
           }),
           formTitle: form.name,
@@ -763,16 +763,16 @@ export async function applyWorkspaceInquiryFormPreset({
       })
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, values.formId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, values.formId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_preset_applied",
+      type: "business.inquiry_form_preset_applied",
       summary: `Inquiry preset applied to ${form.slug}.`,
       metadata: {
         inquiryFormId: values.formId,
@@ -786,28 +786,28 @@ export async function applyWorkspaceInquiryFormPreset({
 
   return {
     ok: true,
-    previousSlug: workspace.slug,
-    nextSlug: workspace.slug,
+    previousSlug: business.slug,
+    nextSlug: business.slug,
   };
 }
 
-export async function createWorkspaceInquiryForm({
-  workspaceId,
+export async function createBusinessInquiryForm({
+  businessId,
   actorUserId,
   values,
-}: CreateWorkspaceInquiryFormInput): Promise<WorkspaceInquiryFormMutationResult> {
-  const [workspace] = await db
+}: CreateBusinessInquiryFormInput): Promise<BusinessInquiryFormMutationResult> {
+  const [business] = await db
     .select({
-      id: workspaces.id,
-      slug: workspaces.slug,
-      name: workspaces.name,
-      shortDescription: workspaces.shortDescription,
+      id: businesses.id,
+      slug: businesses.slug,
+      name: businesses.name,
+      shortDescription: businesses.shortDescription,
     })
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
     .limit(1);
 
-  if (!workspace) {
+  if (!business) {
     return {
       ok: false,
       reason: "not-found",
@@ -819,18 +819,18 @@ export async function createWorkspaceInquiryForm({
   const formSeed = createInquiryFormSeedValues({
     businessType: values.businessType,
     name: values.name,
-    workspaceName: workspace.name,
-    workspaceShortDescription: workspace.shortDescription,
+    businessName: business.name,
+    businessShortDescription: business.shortDescription,
   });
-  const formSlug = await getAvailableWorkspaceInquiryFormSlug({
-    workspaceId,
+  const formSlug = await getAvailableBusinessInquiryFormSlug({
+    businessId,
     baseSlug: values.name,
   });
 
   await db.transaction(async (tx) => {
-    await tx.insert(workspaceInquiryForms).values({
+    await tx.insert(businessInquiryForms).values({
       id: formId,
-      workspaceId,
+      businessId,
       name: formSeed.name,
       slug: formSlug,
       businessType: formSeed.businessType,
@@ -844,9 +844,9 @@ export async function createWorkspaceInquiryForm({
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_created",
+      type: "business.inquiry_form_created",
       summary: `Inquiry form created: ${formSeed.name}.`,
       metadata: {
         inquiryFormId: formId,
@@ -860,49 +860,49 @@ export async function createWorkspaceInquiryForm({
 
   return {
     ok: true,
-    workspaceSlug: workspace.slug,
+    businessSlug: business.slug,
     formSlug,
   };
 }
 
-export async function duplicateWorkspaceInquiryForm({
-  workspaceId,
+export async function duplicateBusinessInquiryForm({
+  businessId,
   actorUserId,
   targetFormId,
-}: TargetWorkspaceInquiryFormInput): Promise<WorkspaceInquiryFormMutationResult> {
-  const [workspaceRows, sourceFormRows] = await Promise.all([
+}: TargetBusinessInquiryFormInput): Promise<BusinessInquiryFormMutationResult> {
+  const [businessRows, sourceFormRows] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
+        id: businesses.id,
+        slug: businesses.slug,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        name: workspaceInquiryForms.name,
-        businessType: workspaceInquiryForms.businessType,
-        publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
-        inquiryFormConfig: workspaceInquiryForms.inquiryFormConfig,
-        inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
+        id: businessInquiryForms.id,
+        name: businessInquiryForms.name,
+        businessType: businessInquiryForms.businessType,
+        publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+        inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+        inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
   ]);
 
-  const workspace = workspaceRows[0];
+  const business = businessRows[0];
   const sourceForm = sourceFormRows[0];
 
-  if (!workspace || !sourceForm) {
+  if (!business || !sourceForm) {
     return {
       ok: false,
       reason: "not-found",
@@ -912,15 +912,15 @@ export async function duplicateWorkspaceInquiryForm({
   const now = new Date();
   const nextName = createDuplicateInquiryFormName(sourceForm.name);
   const formId = createId("ifm");
-  const formSlug = await getAvailableWorkspaceInquiryFormSlug({
-    workspaceId,
+  const formSlug = await getAvailableBusinessInquiryFormSlug({
+    businessId,
     baseSlug: nextName,
   });
 
   await db.transaction(async (tx) => {
-    await tx.insert(workspaceInquiryForms).values({
+    await tx.insert(businessInquiryForms).values({
       id: formId,
-      workspaceId,
+      businessId,
       name: nextName,
       slug: formSlug,
       businessType: sourceForm.businessType,
@@ -937,9 +937,9 @@ export async function duplicateWorkspaceInquiryForm({
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_duplicated",
+      type: "business.inquiry_form_duplicated",
       summary: `Inquiry form duplicated: ${nextName}.`,
       metadata: {
         inquiryFormId: formId,
@@ -953,45 +953,45 @@ export async function duplicateWorkspaceInquiryForm({
 
   return {
     ok: true,
-    workspaceSlug: workspace.slug,
+    businessSlug: business.slug,
     formSlug,
   };
 }
 
-export async function setDefaultWorkspaceInquiryForm({
-  workspaceId,
+export async function setDefaultBusinessInquiryForm({
+  businessId,
   actorUserId,
   targetFormId,
-}: TargetWorkspaceInquiryFormInput): Promise<WorkspaceInquiryFormMutationResult> {
-  const [workspaceRows, targetFormRows] = await Promise.all([
+}: TargetBusinessInquiryFormInput): Promise<BusinessInquiryFormMutationResult> {
+  const [businessRows, targetFormRows] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
+        id: businesses.id,
+        slug: businesses.slug,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        slug: workspaceInquiryForms.slug,
+        id: businessInquiryForms.id,
+        slug: businessInquiryForms.slug,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
   ]);
 
-  const workspace = workspaceRows[0];
+  const business = businessRows[0];
   const targetForm = targetFormRows[0];
 
-  if (!workspace || !targetForm) {
+  if (!business || !targetForm) {
     return {
       ok: false,
       reason: "not-found",
@@ -1002,31 +1002,31 @@ export async function setDefaultWorkspaceInquiryForm({
 
   await db.transaction(async (tx) => {
     await tx
-      .update(workspaceInquiryForms)
+      .update(businessInquiryForms)
       .set({
         isDefault: false,
         updatedAt: now,
       })
-      .where(eq(workspaceInquiryForms.workspaceId, workspaceId));
+      .where(eq(businessInquiryForms.businessId, businessId));
 
     await tx
-      .update(workspaceInquiryForms)
+      .update(businessInquiryForms)
       .set({
         isDefault: true,
         updatedAt: now,
       })
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_default_changed",
+      type: "business.inquiry_form_default_changed",
       summary: `Default inquiry form set to ${targetForm.slug}.`,
       metadata: {
         inquiryFormId: targetFormId,
@@ -1039,57 +1039,57 @@ export async function setDefaultWorkspaceInquiryForm({
 
   return {
     ok: true,
-    workspaceSlug: workspace.slug,
+    businessSlug: business.slug,
     formSlug: targetForm.slug,
   };
 }
 
-export async function archiveWorkspaceInquiryForm({
-  workspaceId,
+export async function archiveBusinessInquiryForm({
+  businessId,
   actorUserId,
   targetFormId,
-}: TargetWorkspaceInquiryFormInput): Promise<WorkspaceInquiryFormMutationResult> {
-  const [workspaceRows, targetFormRows, activeForms] = await Promise.all([
+}: TargetBusinessInquiryFormInput): Promise<BusinessInquiryFormMutationResult> {
+  const [businessRows, targetFormRows, activeForms] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
+        id: businesses.id,
+        slug: businesses.slug,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        slug: workspaceInquiryForms.slug,
-        isDefault: workspaceInquiryForms.isDefault,
+        id: businessInquiryForms.id,
+        slug: businessInquiryForms.slug,
+        isDefault: businessInquiryForms.isDefault,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
+        id: businessInquiryForms.id,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       ),
   ]);
 
-  const workspace = workspaceRows[0];
+  const business = businessRows[0];
   const targetForm = targetFormRows[0];
 
-  if (!workspace || !targetForm) {
+  if (!business || !targetForm) {
     return {
       ok: false,
       reason: "not-found",
@@ -1114,7 +1114,7 @@ export async function archiveWorkspaceInquiryForm({
 
   await db.transaction(async (tx) => {
     await tx
-      .update(workspaceInquiryForms)
+      .update(businessInquiryForms)
       .set({
         archivedAt: now,
         isDefault: false,
@@ -1122,16 +1122,16 @@ export async function archiveWorkspaceInquiryForm({
       })
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_archived",
+      type: "business.inquiry_form_archived",
       summary: `Inquiry form archived: ${targetForm.slug}.`,
       metadata: {
         inquiryFormId: targetFormId,
@@ -1144,49 +1144,49 @@ export async function archiveWorkspaceInquiryForm({
 
   return {
     ok: true,
-    workspaceSlug: workspace.slug,
+    businessSlug: business.slug,
     formSlug: targetForm.slug,
   };
 }
 
-export async function deleteWorkspaceInquiryForm({
-  workspaceId,
+export async function deleteBusinessInquiryForm({
+  businessId,
   actorUserId,
   targetFormId,
-}: TargetWorkspaceInquiryFormInput): Promise<WorkspaceInquiryFormMutationResult> {
-  const [workspaceRows, targetFormRows, activeForms, linkedInquiries] = await Promise.all([
+}: TargetBusinessInquiryFormInput): Promise<BusinessInquiryFormMutationResult> {
+  const [businessRows, targetFormRows, activeForms, linkedInquiries] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        slug: workspaces.slug,
+        id: businesses.id,
+        slug: businesses.slug,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
-        slug: workspaceInquiryForms.slug,
-        isDefault: workspaceInquiryForms.isDefault,
+        id: businessInquiryForms.id,
+        slug: businessInquiryForms.slug,
+        isDefault: businessInquiryForms.isDefault,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       )
       .limit(1),
     db
       .select({
-        id: workspaceInquiryForms.id,
+        id: businessInquiryForms.id,
       })
-      .from(workspaceInquiryForms)
+      .from(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          isNull(workspaceInquiryForms.archivedAt),
+          eq(businessInquiryForms.businessId, businessId),
+          isNull(businessInquiryForms.archivedAt),
         ),
       ),
     db
@@ -1194,14 +1194,14 @@ export async function deleteWorkspaceInquiryForm({
         id: inquiries.id,
       })
       .from(inquiries)
-      .where(eq(inquiries.workspaceInquiryFormId, targetFormId))
+      .where(eq(inquiries.businessInquiryFormId, targetFormId))
       .limit(1),
   ]);
 
-  const workspace = workspaceRows[0];
+  const business = businessRows[0];
   const targetForm = targetFormRows[0];
 
-  if (!workspace || !targetForm) {
+  if (!business || !targetForm) {
     return {
       ok: false,
       reason: "not-found",
@@ -1233,19 +1233,19 @@ export async function deleteWorkspaceInquiryForm({
 
   await db.transaction(async (tx) => {
     await tx
-      .delete(workspaceInquiryForms)
+      .delete(businessInquiryForms)
       .where(
         and(
-          eq(workspaceInquiryForms.workspaceId, workspaceId),
-          eq(workspaceInquiryForms.id, targetFormId),
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.id, targetFormId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
-      type: "workspace.inquiry_form_deleted",
+      type: "business.inquiry_form_deleted",
       summary: `Inquiry form deleted: ${targetForm.slug}.`,
       metadata: {
         inquiryFormId: targetFormId,
@@ -1258,7 +1258,7 @@ export async function deleteWorkspaceInquiryForm({
 
   return {
     ok: true,
-    workspaceSlug: workspace.slug,
+    businessSlug: business.slug,
     formSlug: targetForm.slug,
   };
 }

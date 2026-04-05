@@ -6,7 +6,7 @@ type QuoteEmailLineItem = {
 };
 
 type QuoteEmailTemplateInput = {
-  workspaceName: string;
+  businessName: string;
   customerName: string;
   quoteNumber: string;
   title: string;
@@ -47,7 +47,7 @@ function formatDate(value: string) {
 }
 
 export function renderQuoteEmail({
-  workspaceName,
+  businessName,
   customerName,
   quoteNumber,
   title,
@@ -61,7 +61,7 @@ export function renderQuoteEmail({
   emailSignature,
   items,
 }: QuoteEmailTemplateInput) {
-  const subject = `${quoteNumber} from ${workspaceName}`;
+  const subject = `${quoteNumber} from ${businessName}`;
   const escapedNotes = notes
     ? escapeHtml(notes).replace(/\n/g, "<br />")
     : null;
@@ -83,7 +83,7 @@ export function renderQuoteEmail({
   const textLines = [
     `Hi ${customerName},`,
     "",
-    `${workspaceName} prepared a quote for you.`,
+    `${businessName} prepared a quote for you.`,
     `Quote number: ${quoteNumber}`,
     `Title: ${title}`,
     `Valid until: ${formatDate(validUntil)}`,
@@ -114,7 +114,7 @@ export function renderQuoteEmail({
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #172033;">
       <p style="margin: 0 0 18px;">Hi ${escapeHtml(customerName)},</p>
       <h1 style="font-size: 28px; margin: 0 0 12px;">${escapeHtml(title)}</h1>
-      <p style="margin: 0 0 20px;">${escapeHtml(workspaceName)} prepared quote <strong>${escapeHtml(quoteNumber)}</strong> for you.</p>
+      <p style="margin: 0 0 20px;">${escapeHtml(businessName)} prepared quote <strong>${escapeHtml(quoteNumber)}</strong> for you.</p>
       <div style="border: 1px solid #d9deeb; border-radius: 18px; background: #ffffff; padding: 18px; margin-bottom: 20px;">
         <p style="margin: 0 0 8px;"><strong>Quote number:</strong> ${escapeHtml(quoteNumber)}</p>
         <p style="margin: 0 0 8px;"><strong>Valid until:</strong> ${escapeHtml(formatDate(validUntil))}</p>

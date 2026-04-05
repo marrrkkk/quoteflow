@@ -4,52 +4,52 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { getNormalizedInquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
 import { getNormalizedInquiryPageConfig } from "@/features/inquiries/page-config";
-import { buildWorkspaceKnowledgeContext } from "@/features/knowledge/queries";
+import { buildBusinessKnowledgeContext } from "@/features/knowledge/queries";
 import type { InquiryAssistantContext } from "@/features/ai/types";
 import { db } from "@/lib/db/client";
 import {
   inquiries,
   inquiryNotes,
   user,
-  workspaceInquiryForms,
-  workspaces,
+  businessInquiryForms,
+  businesses,
 } from "@/lib/db/schema";
 
-type GetInquiryAssistantContextForWorkspaceInput = {
-  workspaceId: string;
+type GetInquiryAssistantContextForBusinessInput = {
+  businessId: string;
   inquiryId: string;
 };
 
-export async function getInquiryAssistantContextForWorkspace({
-  workspaceId,
+export async function getInquiryAssistantContextForBusiness({
+  businessId,
   inquiryId,
-}: GetInquiryAssistantContextForWorkspaceInput): Promise<InquiryAssistantContext | null> {
-  const [workspaceRow, inquiryRow, notes, knowledge] = await Promise.all([
+}: GetInquiryAssistantContextForBusinessInput): Promise<InquiryAssistantContext | null> {
+  const [businessRow, inquiryRow, notes, knowledge] = await Promise.all([
     db
       .select({
-        id: workspaces.id,
-        name: workspaces.name,
-        slug: workspaces.slug,
-        businessType: workspaces.businessType,
-        shortDescription: workspaces.shortDescription,
-        contactEmail: workspaces.contactEmail,
-        defaultCurrency: workspaces.defaultCurrency,
-        defaultEmailSignature: workspaces.defaultEmailSignature,
-        defaultQuoteNotes: workspaces.defaultQuoteNotes,
-        aiTonePreference: workspaces.aiTonePreference,
+        id: businesses.id,
+        name: businesses.name,
+        slug: businesses.slug,
+        businessType: businesses.businessType,
+        shortDescription: businesses.shortDescription,
+        contactEmail: businesses.contactEmail,
+        defaultCurrency: businesses.defaultCurrency,
+        defaultEmailSignature: businesses.defaultEmailSignature,
+        defaultQuoteNotes: businesses.defaultQuoteNotes,
+        aiTonePreference: businesses.aiTonePreference,
       })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1),
     db
       .select({
         id: inquiries.id,
-        workspaceInquiryFormId: inquiries.workspaceInquiryFormId,
-        inquiryFormName: workspaceInquiryForms.name,
-        inquiryFormSlug: workspaceInquiryForms.slug,
-        inquiryFormBusinessType: workspaceInquiryForms.businessType,
-        publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
-        inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
+        businessInquiryFormId: inquiries.businessInquiryFormId,
+        inquiryFormName: businessInquiryForms.name,
+        inquiryFormSlug: businessInquiryForms.slug,
+        inquiryFormBusinessType: businessInquiryForms.businessType,
+        publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+        inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
         customerName: inquiries.customerName,
         customerEmail: inquiries.customerEmail,
         customerPhone: inquiries.customerPhone,
@@ -67,10 +67,10 @@ export async function getInquiryAssistantContextForWorkspace({
       })
       .from(inquiries)
       .innerJoin(
-        workspaceInquiryForms,
-        eq(inquiries.workspaceInquiryFormId, workspaceInquiryForms.id),
+        businessInquiryForms,
+        eq(inquiries.businessInquiryFormId, businessInquiryForms.id),
       )
-      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
+      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
       .limit(1),
     db
       .select({
@@ -83,42 +83,42 @@ export async function getInquiryAssistantContextForWorkspace({
       .leftJoin(user, eq(inquiryNotes.authorUserId, user.id))
       .where(
         and(
-          eq(inquiryNotes.workspaceId, workspaceId),
+          eq(inquiryNotes.businessId, businessId),
           eq(inquiryNotes.inquiryId, inquiryId),
         ),
       )
       .orderBy(desc(inquiryNotes.createdAt))
       .limit(6),
-    buildWorkspaceKnowledgeContext(workspaceId),
+    buildBusinessKnowledgeContext(businessId),
   ]);
 
-  const workspace = workspaceRow[0];
+  const business = businessRow[0];
   const inquiry = inquiryRow[0];
 
-  if (!workspace || !inquiry) {
+  if (!business || !inquiry) {
     return null;
   }
 
   const inquiryPageConfig = getNormalizedInquiryPageConfig(
     inquiry.inquiryPageConfig,
     {
-      workspaceName: workspace.name,
-      workspaceShortDescription: workspace.shortDescription,
+      businessName: business.name,
+      businessShortDescription: business.shortDescription,
       businessType: inquiry.inquiryFormBusinessType,
     },
   );
 
   return {
-    workspace: {
-      id: workspace.id,
-      name: workspace.name,
-      slug: workspace.slug,
-      shortDescription: workspace.shortDescription,
-      contactEmail: workspace.contactEmail,
-      defaultCurrency: workspace.defaultCurrency,
-      defaultEmailSignature: workspace.defaultEmailSignature,
-      defaultQuoteNotes: workspace.defaultQuoteNotes,
-      aiTonePreference: workspace.aiTonePreference,
+    business: {
+      id: business.id,
+      name: business.name,
+      slug: business.slug,
+      shortDescription: business.shortDescription,
+      contactEmail: business.contactEmail,
+      defaultCurrency: business.defaultCurrency,
+      defaultEmailSignature: business.defaultEmailSignature,
+      defaultQuoteNotes: business.defaultQuoteNotes,
+      aiTonePreference: business.aiTonePreference,
       inquiryPageHeadline: inquiryPageConfig.headline,
       inquiryPageTemplate: inquiryPageConfig.template,
       publicInquiryEnabled: inquiry.publicInquiryEnabled,

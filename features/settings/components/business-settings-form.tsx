@@ -65,39 +65,39 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type {
-  WorkspaceAiTonePreference,
-  WorkspaceDeleteActionState,
-  WorkspaceSettingsActionState,
-  WorkspaceSettingsView,
+  BusinessAiTonePreference,
+  BusinessDeleteActionState,
+  BusinessSettingsActionState,
+  BusinessSettingsView,
 } from "@/features/settings/types";
 import {
-  formatWorkspaceAiToneLabel,
-  getWorkspacePublicInquiryUrl,
-  workspaceLogoAccept,
-  workspaceLogoAllowedMimeTypes,
-  workspaceLogoMaxSize,
-  workspaceSlugMaxLength,
-  workspaceSlugPattern,
+  formatBusinessAiToneLabel,
+  getBusinessPublicInquiryUrl,
+  businessLogoAccept,
+  businessLogoAllowedMimeTypes,
+  businessLogoMaxSize,
+  businessSlugMaxLength,
+  businessSlugPattern,
 } from "@/features/settings/utils";
-import { WorkspaceDeleteZone } from "@/features/settings/components/workspace-delete-zone";
+import { BusinessDeleteZone } from "@/features/settings/components/business-delete-zone";
 
-type WorkspaceSettingsFormProps = {
+type BusinessSettingsFormProps = {
   action: (
-    state: WorkspaceSettingsActionState,
+    state: BusinessSettingsActionState,
     formData: FormData,
-  ) => Promise<WorkspaceSettingsActionState>;
+  ) => Promise<BusinessSettingsActionState>;
   deleteAction: (
-    state: WorkspaceDeleteActionState,
+    state: BusinessDeleteActionState,
     formData: FormData,
-  ) => Promise<WorkspaceDeleteActionState>;
+  ) => Promise<BusinessDeleteActionState>;
   fallbackContactEmail: string;
   logoPreviewUrl: string | null;
-  settings: WorkspaceSettingsView;
+  settings: BusinessSettingsView;
 };
 
-const initialState: WorkspaceSettingsActionState = {};
+const initialState: BusinessSettingsActionState = {};
 
-const aiToneOptions: WorkspaceAiTonePreference[] = [
+const aiToneOptions: BusinessAiTonePreference[] = [
   "balanced",
   "warm",
   "direct",
@@ -120,19 +120,19 @@ type LoadedLogoAsset = {
   height: number;
 };
 
-export function WorkspaceSettingsForm({
+export function BusinessSettingsForm({
   action,
   deleteAction,
   fallbackContactEmail,
   logoPreviewUrl,
   settings,
-}: WorkspaceSettingsFormProps) {
+}: BusinessSettingsFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [notifyOnNewInquiry, setNotifyOnNewInquiry] = useState(
     settings.notifyOnNewInquiry,
   );
   const [removeLogo, setRemoveLogo] = useState(false);
-  const [aiTonePreference, setAiTonePreference] = useState<WorkspaceAiTonePreference>(
+  const [aiTonePreference, setAiTonePreference] = useState<BusinessAiTonePreference>(
     settings.aiTonePreference,
   );
   const aiToneError = getFieldError(state.fieldErrors, "aiTonePreference");
@@ -201,10 +201,10 @@ export function WorkspaceSettingsForm({
                         defaultValue={settings.slug}
                         disabled={isPending}
                         id="settings-slug"
-                        maxLength={workspaceSlugMaxLength}
+                        maxLength={businessSlugMaxLength}
                         minLength={2}
                         name="slug"
-                        pattern={workspaceSlugPattern}
+                        pattern={businessSlugPattern}
                         placeholder="northline-print"
                         required
                         spellCheck={false}
@@ -213,12 +213,12 @@ export function WorkspaceSettingsForm({
                         Public URL:{" "}
                         <Link
                           className="underline underline-offset-4"
-                          href={getWorkspacePublicInquiryUrl(settings.slug)}
+                          href={getBusinessPublicInquiryUrl(settings.slug)}
                           prefetch={false}
                           rel="noreferrer"
                           target="_blank"
                         >
-                          {getWorkspacePublicInquiryUrl(settings.slug)}
+                          {getBusinessPublicInquiryUrl(settings.slug)}
                         </Link>
                       </FieldDescription>
                       <FieldError
@@ -289,7 +289,7 @@ export function WorkspaceSettingsForm({
             <Separator />
 
             <FormSection title="Brand asset">
-              <WorkspaceLogoField
+              <BusinessLogoField
                 disabled={isPending}
                 fieldError={state.fieldErrors?.logo?.[0]}
                 initialPreviewUrl={logoPreviewUrl}
@@ -314,7 +314,7 @@ export function WorkspaceSettingsForm({
                   <FieldContent>
                     <Select
                       onValueChange={(value) =>
-                        setAiTonePreference(value as WorkspaceAiTonePreference)
+                        setAiTonePreference(value as BusinessAiTonePreference)
                       }
                       value={aiTonePreference}
                     >
@@ -325,7 +325,7 @@ export function WorkspaceSettingsForm({
                         <SelectGroup>
                           {aiToneOptions.map((option) => (
                             <SelectItem key={option} value={option}>
-                              {formatWorkspaceAiToneLabel(option)}
+                              {formatBusinessAiToneLabel(option)}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -398,12 +398,12 @@ export function WorkspaceSettingsForm({
         </div>
       </form>
 
-      <WorkspaceDeleteZone action={deleteAction} workspaceName={settings.name} />
+      <BusinessDeleteZone action={deleteAction} businessName={settings.name} />
     </>
   );
 }
 
-function WorkspaceLogoField({
+function BusinessLogoField({
   disabled,
   fieldError,
   initialPreviewUrl,
@@ -573,7 +573,7 @@ function WorkspaceLogoField({
             </FieldDescription>
             <Input
               ref={inputRef}
-              accept={workspaceLogoAccept}
+              accept={businessLogoAccept}
               disabled={disabled}
               id="settings-logo"
               name="logo"
@@ -670,7 +670,7 @@ function WorkspaceLogoField({
           <DialogHeader className="gap-3 border-b border-border/70 pb-4">
             <DialogTitle>Crop brand asset</DialogTitle>
             <DialogDescription>
-              Adjust the framing before the logo is uploaded to your workspace.
+              Adjust the framing before the logo is uploaded to your business.
             </DialogDescription>
           </DialogHeader>
 
@@ -866,8 +866,8 @@ async function createCroppedLogoFile(
   cropAreaPixels: Area,
 ) {
   const image = await loadCanvasImage(sourceUrl);
-  const outputMimeType = workspaceLogoAllowedMimeTypes.includes(
-    sourceFile.type as (typeof workspaceLogoAllowedMimeTypes)[number],
+  const outputMimeType = businessLogoAllowedMimeTypes.includes(
+    sourceFile.type as (typeof businessLogoAllowedMimeTypes)[number],
   )
     ? sourceFile.type
     : "image/png";
@@ -923,7 +923,7 @@ async function createCroppedLogoFile(
       },
     );
 
-    if (croppedFile.size <= workspaceLogoMaxSize) {
+    if (croppedFile.size <= businessLogoMaxSize) {
       return croppedFile;
     }
   }
@@ -945,7 +945,7 @@ function loadCanvasImage(url: string) {
 function buildCroppedLogoFileName(fileName: string, extension: string) {
   const baseName = fileName.replace(/\.[^.]+$/, "");
 
-  return `${baseName || "workspace-logo"}-cropped${extension}`;
+  return `${baseName || "business-logo"}-cropped${extension}`;
 }
 
 function getLogoExtensionForMimeType(mimeType: string) {

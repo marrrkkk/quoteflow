@@ -37,7 +37,7 @@ type SendPasswordResetEmailInput = {
 type SendPublicInquiryNotificationEmailInput = {
   inquiryId: string;
   recipients: string[];
-  workspaceName: string;
+  businessName: string;
   dashboardUrl: string;
   inquiryFormName: string;
   customerName: string;
@@ -58,7 +58,7 @@ type SendPublicInquiryNotificationEmailInput = {
 type SendQuoteEmailInput = {
   quoteId: string;
   updatedAt: Date;
-  workspaceName: string;
+  businessName: string;
   customerName: string;
   customerEmail: string;
   quoteNumber: string;
@@ -84,7 +84,7 @@ type SendQuoteSentOwnerNotificationEmailInput = {
   quoteId: string;
   updatedAt: Date;
   recipients: string[];
-  workspaceName: string;
+  businessName: string;
   customerName: string;
   customerEmail: string;
   quoteNumber: string;
@@ -181,7 +181,7 @@ export async function sendPasswordResetEmail({
 export async function sendPublicInquiryNotificationEmail({
   inquiryId,
   recipients,
-  workspaceName,
+  businessName,
   dashboardUrl,
   inquiryFormName,
   customerName,
@@ -216,7 +216,7 @@ export async function sendPublicInquiryNotificationEmail({
   }
 
   const template = renderPublicInquiryNotificationEmail({
-    workspaceName,
+    businessName,
     dashboardUrl,
     inquiryFormName,
     customerName,
@@ -253,7 +253,7 @@ export async function sendPublicInquiryNotificationEmail({
 export async function sendQuoteEmail({
   quoteId,
   updatedAt,
-  workspaceName,
+  businessName,
   customerName,
   customerEmail,
   quoteNumber,
@@ -280,7 +280,7 @@ export async function sendQuoteEmail({
   }
 
   const template = renderQuoteEmail({
-    workspaceName,
+    businessName,
     customerName,
     quoteNumber,
     title,
@@ -322,7 +322,7 @@ export async function sendQuoteSentOwnerNotificationEmail({
   quoteId,
   updatedAt,
   recipients,
-  workspaceName,
+  businessName,
   customerName,
   customerEmail,
   quoteNumber,
@@ -351,7 +351,7 @@ export async function sendQuoteSentOwnerNotificationEmail({
   }
 
   const template = renderQuoteSentOwnerNotificationEmail({
-    workspaceName,
+    businessName,
     customerName,
     customerEmail,
     quoteNumber,

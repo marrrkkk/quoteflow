@@ -2,7 +2,7 @@
 
 import { eq } from "drizzle-orm";
 
-import { ensureProfileForUser } from "@/lib/auth/workspace-bootstrap";
+import { ensureProfileForUser } from "@/lib/auth/business-bootstrap";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";

@@ -51,29 +51,29 @@ import {
   type InquiryPageTemplate,
 } from "@/features/inquiries/page-config";
 import type {
-  WorkspaceInquiryPageActionState,
-  WorkspaceInquiryPageSettingsView,
+  BusinessInquiryPageActionState,
+  BusinessInquiryPageSettingsView,
 } from "@/features/settings/types";
 import { cn } from "@/lib/utils";
 
-type WorkspaceInquiryPageFormProps = {
+type BusinessInquiryPageFormProps = {
   action: (
-    state: WorkspaceInquiryPageActionState,
+    state: BusinessInquiryPageActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryPageActionState>;
-  settings: WorkspaceInquiryPageSettingsView;
+  ) => Promise<BusinessInquiryPageActionState>;
+  settings: BusinessInquiryPageSettingsView;
   logoPreviewUrl: string | null;
   generalSettingsHref: string;
 };
 
-const initialState: WorkspaceInquiryPageActionState = {};
+const initialState: BusinessInquiryPageActionState = {};
 
-export function WorkspaceInquiryPageForm({
+export function BusinessInquiryPageForm({
   action,
   settings,
   logoPreviewUrl,
   generalSettingsHref,
-}: WorkspaceInquiryPageFormProps) {
+}: BusinessInquiryPageFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [publicInquiryEnabled, setPublicInquiryEnabled] = useState(
     settings.publicInquiryEnabled,
@@ -248,7 +248,7 @@ export function WorkspaceInquiryPageForm({
           <Separator />
 
           <FormSection
-            title="Workspace brand"
+            title="Business brand"
             action={
               <Button asChild variant="outline">
                 <Link href={generalSettingsHref}>
@@ -276,7 +276,7 @@ export function WorkspaceInquiryPageForm({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="meta-label">Current workspace brand</p>
+                  <p className="meta-label">Current business brand</p>
                   <p className="mt-1 truncate font-heading text-xl font-semibold tracking-tight text-foreground">
                     {settings.name}
                   </p>

@@ -1,4 +1,4 @@
-export const workspaceBusinessTypes = [
+export const businessTypes = [
   "general_services",
   "print_signage",
   "home_services",
@@ -11,10 +11,10 @@ export const workspaceBusinessTypes = [
   "coaching_consulting",
 ] as const;
 
-export type WorkspaceBusinessType = (typeof workspaceBusinessTypes)[number];
+export type BusinessType = (typeof businessTypes)[number];
 
-export const workspaceBusinessTypeMeta: Record<
-  WorkspaceBusinessType,
+export const businessTypeMeta: Record<
+  BusinessType,
   {
     label: string;
     description: string;

@@ -18,18 +18,18 @@ import {
   formatQuoteDate,
   formatQuoteMoney,
 } from "@/features/quotes/utils";
-import { getWorkspaceQuotePath } from "@/features/workspaces/routes";
+import { getBusinessQuotePath } from "@/features/businesses/routes";
 
 type QuoteListCardsProps = {
   quotes: DashboardQuoteListItem[];
   currency: string;
-  workspaceSlug: string;
+  businessSlug: string;
 };
 
 export function QuoteListCards({
   quotes,
   currency,
-  workspaceSlug,
+  businessSlug,
 }: QuoteListCardsProps) {
   return (
     <div className="data-list-mobile-grid">
@@ -41,7 +41,7 @@ export function QuoteListCards({
                 <CardTitle className="text-lg leading-tight">
                   <Link
                     className="block truncate underline-offset-4 transition-colors hover:text-primary hover:underline"
-                    href={getWorkspaceQuotePath(workspaceSlug, quote.id)}
+                    href={getBusinessQuotePath(businessSlug, quote.id)}
                     prefetch={true}
                   >
                     {quote.quoteNumber}
@@ -101,11 +101,11 @@ export function QuoteListCards({
             <span className="text-sm text-muted-foreground">
               {quote.inquiryId
                 ? "Linked to the original inquiry"
-                : "Created manually from the workspace"}
+                : "Created manually from the business"}
             </span>
             <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
               <Link
-                href={getWorkspaceQuotePath(workspaceSlug, quote.id)}
+                href={getBusinessQuotePath(businessSlug, quote.id)}
                 prefetch={true}
               >
                 Open quote

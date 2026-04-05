@@ -12,27 +12,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { WorkspaceInquiryFormDangerActionState } from "@/features/settings/types";
+import type { BusinessInquiryFormDangerActionState } from "@/features/settings/types";
 
-type WorkspaceInquiryFormDangerZoneProps = {
+type BusinessInquiryFormDangerZoneProps = {
   activeFormCount: number;
   archiveAction: (
-    state: WorkspaceInquiryFormDangerActionState,
+    state: BusinessInquiryFormDangerActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormDangerActionState>;
+  ) => Promise<BusinessInquiryFormDangerActionState>;
   deleteAction: (
-    state: WorkspaceInquiryFormDangerActionState,
+    state: BusinessInquiryFormDangerActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormDangerActionState>;
+  ) => Promise<BusinessInquiryFormDangerActionState>;
   formId: string;
   inquiryListHref: string;
   isDefault: boolean;
   submittedInquiryCount: number;
 };
 
-const initialState: WorkspaceInquiryFormDangerActionState = {};
+const initialState: BusinessInquiryFormDangerActionState = {};
 
-export function WorkspaceInquiryFormDangerZone({
+export function BusinessInquiryFormDangerZone({
   activeFormCount,
   archiveAction,
   deleteAction,
@@ -40,7 +40,7 @@ export function WorkspaceInquiryFormDangerZone({
   inquiryListHref,
   isDefault,
   submittedInquiryCount,
-}: WorkspaceInquiryFormDangerZoneProps) {
+}: BusinessInquiryFormDangerZoneProps) {
   const router = useProgressRouter();
   const [deleteState, deleteFormAction, isDeletePending] = useActionState(
     deleteAction,

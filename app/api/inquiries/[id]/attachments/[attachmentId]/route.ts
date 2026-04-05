@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 import { buildContentDisposition } from "@/lib/files";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentWorkspaceRequestContext } from "@/lib/db/workspace-access";
+import { getCurrentBusinessRequestContext } from "@/lib/db/business-access";
 import {
-  getInquiryAttachmentForWorkspace,
+  getInquiryAttachmentForBusiness,
 } from "@/features/inquiries/queries";
 import {
   inquiryAttachmentRouteParamsSchema,
@@ -19,7 +19,7 @@ type InquiryAttachmentRouteContext = {
 };
 
 export async function GET(_request: Request, context: InquiryAttachmentRouteContext) {
-  const requestContext = await getCurrentWorkspaceRequestContext();
+  const requestContext = await getCurrentBusinessRequestContext();
 
   if (!requestContext) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
@@ -33,8 +33,8 @@ export async function GET(_request: Request, context: InquiryAttachmentRouteCont
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
-  const attachment = await getInquiryAttachmentForWorkspace({
-    workspaceId: requestContext.workspaceContext.workspace.id,
+  const attachment = await getInquiryAttachmentForBusiness({
+    businessId: requestContext.businessContext.business.id,
     inquiryId: parsedParams.data.id,
     attachmentId: parsedParams.data.attachmentId,
   });

@@ -21,17 +21,17 @@ function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-type UploadKnowledgeFileForWorkspaceInput = {
-  workspaceId: string;
+type UploadKnowledgeFileForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   knowledgeFile: KnowledgeFileUploadInput;
 };
 
-export async function uploadKnowledgeFileForWorkspace({
-  workspaceId,
+export async function uploadKnowledgeFileForBusiness({
+  businessId,
   actorUserId,
   knowledgeFile,
-}: UploadKnowledgeFileForWorkspaceInput) {
+}: UploadKnowledgeFileForBusinessInput) {
   const fileId = createId("kfile");
   const now = new Date();
   const file = knowledgeFile.file;
@@ -44,7 +44,7 @@ export async function uploadKnowledgeFileForWorkspace({
     throw new Error("Upload a file with readable text content.");
   }
 
-  const storagePath = `${workspaceId}/${fileId}/${sanitizeKnowledgeFileName(
+  const storagePath = `${businessId}/${fileId}/${sanitizeKnowledgeFileName(
     file.name,
   )}`;
   const supabaseAdminClient = createSupabaseAdminClient();
@@ -63,7 +63,7 @@ export async function uploadKnowledgeFileForWorkspace({
     await db.transaction(async (tx) => {
       await tx.insert(knowledgeFiles).values({
         id: fileId,
-        workspaceId,
+        businessId,
         title,
         fileName: file.name,
         contentType,
@@ -76,7 +76,7 @@ export async function uploadKnowledgeFileForWorkspace({
 
       await tx.insert(activityLogs).values({
         id: createId("act"),
-        workspaceId,
+        businessId,
         actorUserId,
         type: "knowledge.file_uploaded",
         summary: `Knowledge file ${title} uploaded.`,
@@ -110,17 +110,17 @@ export async function uploadKnowledgeFileForWorkspace({
   };
 }
 
-type DeleteKnowledgeFileForWorkspaceInput = {
-  workspaceId: string;
+type DeleteKnowledgeFileForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   knowledgeFileId: string;
 };
 
-export async function deleteKnowledgeFileForWorkspace({
-  workspaceId,
+export async function deleteKnowledgeFileForBusiness({
+  businessId,
   actorUserId,
   knowledgeFileId,
-}: DeleteKnowledgeFileForWorkspaceInput) {
+}: DeleteKnowledgeFileForBusinessInput) {
   const now = new Date();
   const deletedFile = await db.transaction(async (tx) => {
     const [targetFile] = await tx
@@ -133,7 +133,7 @@ export async function deleteKnowledgeFileForWorkspace({
       .from(knowledgeFiles)
       .where(
         and(
-          eq(knowledgeFiles.workspaceId, workspaceId),
+          eq(knowledgeFiles.businessId, businessId),
           eq(knowledgeFiles.id, knowledgeFileId),
         ),
       )
@@ -147,14 +147,14 @@ export async function deleteKnowledgeFileForWorkspace({
       .delete(knowledgeFiles)
       .where(
         and(
-          eq(knowledgeFiles.workspaceId, workspaceId),
+          eq(knowledgeFiles.businessId, businessId),
           eq(knowledgeFiles.id, knowledgeFileId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "knowledge.file_deleted",
       summary: `Knowledge file ${targetFile.title} deleted.`,
@@ -188,17 +188,17 @@ export async function deleteKnowledgeFileForWorkspace({
   return deletedFile;
 }
 
-type CreateKnowledgeFaqForWorkspaceInput = {
-  workspaceId: string;
+type CreateKnowledgeFaqForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   faq: KnowledgeFaqInput;
 };
 
-export async function createKnowledgeFaqForWorkspace({
-  workspaceId,
+export async function createKnowledgeFaqForBusiness({
+  businessId,
   actorUserId,
   faq,
-}: CreateKnowledgeFaqForWorkspaceInput) {
+}: CreateKnowledgeFaqForBusinessInput) {
   const faqId = createId("faq");
   const now = new Date();
 
@@ -208,14 +208,14 @@ export async function createKnowledgeFaqForWorkspace({
         position: knowledgeFaqs.position,
       })
       .from(knowledgeFaqs)
-      .where(eq(knowledgeFaqs.workspaceId, workspaceId))
+      .where(eq(knowledgeFaqs.businessId, businessId))
       .orderBy(desc(knowledgeFaqs.position), desc(knowledgeFaqs.createdAt))
       .limit(1);
     const nextPosition = (latestFaq?.position ?? -1) + 1;
 
     await tx.insert(knowledgeFaqs).values({
       id: faqId,
-      workspaceId,
+      businessId,
       question: faq.question,
       answer: faq.answer,
       position: nextPosition,
@@ -225,10 +225,10 @@ export async function createKnowledgeFaqForWorkspace({
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "knowledge.faq_created",
-      summary: "FAQ added to the workspace knowledge base.",
+      summary: "FAQ added to the business knowledge base.",
       metadata: {
         knowledgeFaqId: faqId,
         question: faq.question,
@@ -243,19 +243,19 @@ export async function createKnowledgeFaqForWorkspace({
   });
 }
 
-type UpdateKnowledgeFaqForWorkspaceInput = {
-  workspaceId: string;
+type UpdateKnowledgeFaqForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   knowledgeFaqId: string;
   faq: KnowledgeFaqInput;
 };
 
-export async function updateKnowledgeFaqForWorkspace({
-  workspaceId,
+export async function updateKnowledgeFaqForBusiness({
+  businessId,
   actorUserId,
   knowledgeFaqId,
   faq,
-}: UpdateKnowledgeFaqForWorkspaceInput) {
+}: UpdateKnowledgeFaqForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -266,7 +266,7 @@ export async function updateKnowledgeFaqForWorkspace({
       .from(knowledgeFaqs)
       .where(
         and(
-          eq(knowledgeFaqs.workspaceId, workspaceId),
+          eq(knowledgeFaqs.businessId, businessId),
           eq(knowledgeFaqs.id, knowledgeFaqId),
         ),
       )
@@ -285,17 +285,17 @@ export async function updateKnowledgeFaqForWorkspace({
       })
       .where(
         and(
-          eq(knowledgeFaqs.workspaceId, workspaceId),
+          eq(knowledgeFaqs.businessId, businessId),
           eq(knowledgeFaqs.id, knowledgeFaqId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "knowledge.faq_updated",
-      summary: "FAQ updated in the workspace knowledge base.",
+      summary: "FAQ updated in the business knowledge base.",
       metadata: {
         knowledgeFaqId,
         question: faq.question,
@@ -310,17 +310,17 @@ export async function updateKnowledgeFaqForWorkspace({
   });
 }
 
-type DeleteKnowledgeFaqForWorkspaceInput = {
-  workspaceId: string;
+type DeleteKnowledgeFaqForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   knowledgeFaqId: string;
 };
 
-export async function deleteKnowledgeFaqForWorkspace({
-  workspaceId,
+export async function deleteKnowledgeFaqForBusiness({
+  businessId,
   actorUserId,
   knowledgeFaqId,
-}: DeleteKnowledgeFaqForWorkspaceInput) {
+}: DeleteKnowledgeFaqForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -332,7 +332,7 @@ export async function deleteKnowledgeFaqForWorkspace({
       .from(knowledgeFaqs)
       .where(
         and(
-          eq(knowledgeFaqs.workspaceId, workspaceId),
+          eq(knowledgeFaqs.businessId, businessId),
           eq(knowledgeFaqs.id, knowledgeFaqId),
         ),
       )
@@ -346,17 +346,17 @@ export async function deleteKnowledgeFaqForWorkspace({
       .delete(knowledgeFaqs)
       .where(
         and(
-          eq(knowledgeFaqs.workspaceId, workspaceId),
+          eq(knowledgeFaqs.businessId, businessId),
           eq(knowledgeFaqs.id, knowledgeFaqId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "knowledge.faq_deleted",
-      summary: "FAQ removed from the workspace knowledge base.",
+      summary: "FAQ removed from the business knowledge base.",
       metadata: {
         knowledgeFaqId,
         question: existingFaq.question,

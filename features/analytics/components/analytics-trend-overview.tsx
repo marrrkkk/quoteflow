@@ -7,13 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { WorkspaceAnalyticsTrendPoint } from "@/features/analytics/types";
+import type { BusinessAnalyticsTrendPoint } from "@/features/analytics/types";
 import { getTrendBarHeight } from "@/features/analytics/utils";
 
 export function AnalyticsTrendOverview({
   points,
 }: {
-  points: WorkspaceAnalyticsTrendPoint[];
+  points: BusinessAnalyticsTrendPoint[];
 }) {
   const maxInquiries = Math.max(...points.map((point) => point.inquiries), 1);
 

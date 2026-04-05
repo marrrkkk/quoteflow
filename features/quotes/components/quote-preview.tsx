@@ -10,7 +10,7 @@ type QuotePreviewItem = {
 };
 
 type QuotePreviewProps = {
-  workspaceName: string;
+  businessName: string;
   quoteNumber: string;
   title: string;
   customerName: string;
@@ -26,7 +26,7 @@ type QuotePreviewProps = {
 };
 
 export function QuotePreview({
-  workspaceName,
+  businessName,
   quoteNumber,
   title,
   customerName,
@@ -55,7 +55,7 @@ export function QuotePreview({
               <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance">
                 {title}
               </h2>
-              <p className="text-sm text-muted-foreground">{workspaceName}</p>
+              <p className="text-sm text-muted-foreground">{businessName}</p>
             </div>
             <div className="soft-panel w-full px-4 py-3 text-sm shadow-none sm:w-auto sm:min-w-52">
               <p className="text-sm font-semibold text-foreground">{quoteNumber}</p>

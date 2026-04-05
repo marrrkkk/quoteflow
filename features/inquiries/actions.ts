@@ -4,35 +4,35 @@ import { revalidateTag, updateTag } from "next/cache";
 
 import { getValidationActionState } from "@/lib/action-state";
 import {
-  getWorkspaceInquiryDetailCacheTags,
-  getWorkspaceInquiryFormsCacheTags,
-  getWorkspaceInquiryListCacheTags,
+  getBusinessInquiryDetailCacheTags,
+  getBusinessInquiryFormsCacheTags,
+  getBusinessInquiryListCacheTags,
   uniqueCacheTags,
-} from "@/lib/cache/workspace-tags";
+} from "@/lib/cache/business-tags";
 import {
-  getWorkspaceMessagingSettings,
-  getOwnerWorkspaceActionContext,
-} from "@/lib/db/workspace-access";
+  getBusinessMessagingSettings,
+  getOwnerBusinessActionContext,
+} from "@/lib/db/business-access";
 import { env } from "@/lib/env";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import { sendPublicInquiryNotificationEmail } from "@/lib/resend/client";
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import {
-  addInquiryNoteForWorkspace,
-  changeInquiryStatusForWorkspace,
+  addInquiryNoteForBusiness,
+  changeInquiryStatusForBusiness,
   createPublicInquirySubmission,
 } from "@/features/inquiries/mutations";
 import {
-  getPublicInquiryWorkspaceByFormSlug,
-  getPublicInquiryWorkspaceBySlug,
-  getWorkspaceOwnerNotificationEmails,
+  getPublicInquiryBusinessByFormSlug,
+  getPublicInquiryBusinessBySlug,
+  getBusinessOwnerNotificationEmails,
 } from "@/features/inquiries/queries";
 import {
   inquiryNoteSchema,
   inquiryStatusChangeSchema,
   validatePublicInquirySubmission,
 } from "@/features/inquiries/schemas";
-import { getWorkspaceInquiryPath } from "@/features/workspaces/routes";
+import { getBusinessInquiryPath } from "@/features/businesses/routes";
 import type {
   InquiryNoteActionState,
   InquiryStatusActionState,
@@ -72,21 +72,21 @@ export async function submitPublicInquiryAction(
     };
   }
 
-  const workspace = formSlug
-    ? await getPublicInquiryWorkspaceByFormSlug({
-        workspaceSlug: slug,
+  const business = formSlug
+    ? await getPublicInquiryBusinessByFormSlug({
+        businessSlug: slug,
         formSlug,
       })
-    : await getPublicInquiryWorkspaceBySlug(slug);
+    : await getPublicInquiryBusinessBySlug(slug);
 
-  if (!workspace) {
+  if (!business) {
     return {
       error: "This inquiry page is unavailable right now.",
     };
   }
 
   const validationResult = validatePublicInquirySubmission(
-    workspace.inquiryFormConfig,
+    business.inquiryFormConfig,
     formData,
   );
 
@@ -96,7 +96,7 @@ export async function submitPublicInquiryAction(
 
   const allowed = await assertPublicActionRateLimit({
     action: "public-inquiry-submit",
-    scope: workspace.id,
+    scope: business.id,
     limit: 6,
     windowMs: 15 * 60 * 1000,
   });
@@ -109,35 +109,35 @@ export async function submitPublicInquiryAction(
 
   try {
     const createdInquiry = await createPublicInquirySubmission({
-      workspace,
+      business,
       submission: validationResult.data,
     });
 
     revalidateCacheTags([
-      ...getWorkspaceInquiryListCacheTags(workspace.id),
-      ...getWorkspaceInquiryFormsCacheTags(workspace.id),
+      ...getBusinessInquiryListCacheTags(business.id),
+      ...getBusinessInquiryFormsCacheTags(business.id),
     ]);
 
-    const [recipients, workspaceSettings] = await Promise.all([
-      getWorkspaceOwnerNotificationEmails(workspace.id),
-      getWorkspaceMessagingSettings(workspace.id),
+    const [recipients, businessSettings] = await Promise.all([
+      getBusinessOwnerNotificationEmails(business.id),
+      getBusinessMessagingSettings(business.id),
     ]);
 
-    if (workspaceSettings?.notifyOnNewInquiry && recipients.length) {
+    if (businessSettings?.notifyOnNewInquiry && recipients.length) {
       try {
         await sendPublicInquiryNotificationEmail({
           inquiryId: createdInquiry.inquiryId,
           recipients,
-          workspaceName: workspaceSettings.name,
+          businessName: businessSettings.name,
           dashboardUrl: new URL(
-            getWorkspaceInquiryPath(slug, createdInquiry.inquiryId),
+            getBusinessInquiryPath(slug, createdInquiry.inquiryId),
             env.BETTER_AUTH_URL,
           ).toString(),
           customerName: validationResult.data.customerName,
           customerEmail: validationResult.data.customerEmail,
           customerPhone: validationResult.data.customerPhone,
           companyName: validationResult.data.companyName,
-          inquiryFormName: workspace.form.name,
+          inquiryFormName: business.form.name,
           serviceCategory: validationResult.data.serviceCategory,
           deadline: validationResult.data.requestedDeadline,
           budget: validationResult.data.budgetText,
@@ -176,7 +176,7 @@ export async function addInquiryNoteAction(
   _prevState: InquiryNoteActionState,
   formData: FormData,
 ): Promise<InquiryNoteActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -184,7 +184,7 @@ export async function addInquiryNoteAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   const validationResult = inquiryNoteSchema.safeParse({
     body: formData.get("body"),
@@ -195,8 +195,8 @@ export async function addInquiryNoteAction(
   }
 
   try {
-    const result = await addInquiryNoteForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await addInquiryNoteForBusiness({
+      businessId: businessContext.business.id,
       inquiryId,
       authorUserId: user.id,
       body: validationResult.data.body,
@@ -209,7 +209,7 @@ export async function addInquiryNoteAction(
     }
 
     updateCacheTags(
-      getWorkspaceInquiryDetailCacheTags(workspaceContext.workspace.id, inquiryId),
+      getBusinessInquiryDetailCacheTags(businessContext.business.id, inquiryId),
     );
     return {
       success: "Internal note added.",
@@ -228,7 +228,7 @@ export async function changeInquiryStatusAction(
   _prevState: InquiryStatusActionState,
   formData: FormData,
 ): Promise<InquiryStatusActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -236,7 +236,7 @@ export async function changeInquiryStatusAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   const validationResult = inquiryStatusChangeSchema.safeParse({
     status: formData.get("status"),
@@ -247,8 +247,8 @@ export async function changeInquiryStatusAction(
   }
 
   try {
-    const result = await changeInquiryStatusForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await changeInquiryStatusForBusiness({
+      businessId: businessContext.business.id,
       inquiryId,
       actorUserId: user.id,
       nextStatus: validationResult.data.status,
@@ -261,7 +261,7 @@ export async function changeInquiryStatusAction(
     }
 
     updateCacheTags(
-      getWorkspaceInquiryDetailCacheTags(workspaceContext.workspace.id, inquiryId),
+      getBusinessInquiryDetailCacheTags(businessContext.business.id, inquiryId),
     );
     if (!result.changed) {
       return {

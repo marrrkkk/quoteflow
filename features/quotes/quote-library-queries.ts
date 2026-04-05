@@ -9,21 +9,21 @@ import {
   quoteLibraryEntryItems,
 } from "@/lib/db/schema";
 import {
-  getWorkspacePricingCacheTags,
-  settingsWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessPricingCacheTags,
+  settingsBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import type {
   DashboardQuoteLibraryEntry,
   DashboardQuoteLibrarySummary,
 } from "@/features/quotes/types";
 
-export async function getQuoteLibraryForWorkspace(
-  workspaceId: string,
+export async function getQuoteLibraryForBusiness(
+  businessId: string,
 ): Promise<DashboardQuoteLibraryEntry[]> {
   "use cache";
 
-  cacheLife(settingsWorkspaceCacheLife);
-  cacheTag(...getWorkspacePricingCacheTags(workspaceId));
+  cacheLife(settingsBusinessCacheLife);
+  cacheTag(...getBusinessPricingCacheTags(businessId));
 
   const entries = await db
     .select({
@@ -35,7 +35,7 @@ export async function getQuoteLibraryForWorkspace(
       updatedAt: quoteLibraryEntries.updatedAt,
     })
     .from(quoteLibraryEntries)
-    .where(eq(quoteLibraryEntries.workspaceId, workspaceId))
+    .where(eq(quoteLibraryEntries.businessId, businessId))
     .orderBy(asc(quoteLibraryEntries.kind), asc(quoteLibraryEntries.name));
 
   if (!entries.length) {
@@ -103,20 +103,20 @@ export async function getQuoteLibraryForWorkspace(
   });
 }
 
-export async function getQuoteLibrarySummaryForWorkspace(
-  workspaceId: string,
+export async function getQuoteLibrarySummaryForBusiness(
+  businessId: string,
 ): Promise<DashboardQuoteLibrarySummary> {
   "use cache";
 
-  cacheLife(settingsWorkspaceCacheLife);
-  cacheTag(...getWorkspacePricingCacheTags(workspaceId));
+  cacheLife(settingsBusinessCacheLife);
+  cacheTag(...getBusinessPricingCacheTags(businessId));
 
   const [entrySummary] = await db
     .select({
       entryCount: count(quoteLibraryEntries.id),
     })
     .from(quoteLibraryEntries)
-    .where(eq(quoteLibraryEntries.workspaceId, workspaceId));
+    .where(eq(quoteLibraryEntries.businessId, businessId));
 
   const kindCounts = await db
     .select({
@@ -124,7 +124,7 @@ export async function getQuoteLibrarySummaryForWorkspace(
       count: count(quoteLibraryEntries.id),
     })
     .from(quoteLibraryEntries)
-    .where(eq(quoteLibraryEntries.workspaceId, workspaceId))
+    .where(eq(quoteLibraryEntries.businessId, businessId))
     .groupBy(quoteLibraryEntries.kind);
 
   return {

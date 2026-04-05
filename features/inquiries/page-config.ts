@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 
 function emptyToUndefined(value: unknown) {
   if (value == null) {
@@ -138,15 +138,15 @@ export const inquiryPageConfigSchema = z.object({
 export type InquiryPageConfig = z.infer<typeof inquiryPageConfigSchema>;
 
 type InquiryPageConfigDefaultsInput = {
-  workspaceName: string;
-  workspaceShortDescription?: string | null;
+  businessName: string;
+  businessShortDescription?: string | null;
   legacyInquiryHeadline?: string | null;
-  businessType?: WorkspaceBusinessType;
+  businessType?: BusinessType;
   template?: InquiryPageTemplate;
 };
 
 function createDefaultInquiryPageCards(
-  businessType: WorkspaceBusinessType,
+  businessType: BusinessType,
 ): InquiryPageCard[] {
   switch (businessType) {
     case "print_signage":
@@ -364,8 +364,8 @@ function createDefaultInquiryPageCards(
 }
 
 export function createInquiryPageConfigDefaults({
-  workspaceName,
-  workspaceShortDescription,
+  businessName,
+  businessShortDescription,
   legacyInquiryHeadline,
   businessType = "general_services",
   template,
@@ -380,53 +380,53 @@ export function createInquiryPageConfigDefaults({
         : "split");
 
   let eyebrow = "Inquiry";
-  let headline = `Tell ${workspaceName} what you need.`;
+  let headline = `Tell ${businessName} what you need.`;
   let description =
     legacyInquiryHeadline?.trim() ||
-    `Send a request directly to ${workspaceName}.`;
+    `Send a request directly to ${businessName}.`;
   let formTitle = "Send inquiry";
-  const formDescription = `Your request goes straight to ${workspaceName}.`;
+  const formDescription = `Your request goes straight to ${businessName}.`;
 
   switch (businessType) {
     case "print_signage":
       eyebrow = "Project request";
-      headline = `Start your print or signage request with ${workspaceName}.`;
+      headline = `Start your print or signage request with ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
-        `Share specs, timing, and files so ${workspaceName} can quote accurately.`;
+        `Share specs, timing, and files so ${businessName} can quote accurately.`;
       formTitle = "Send project request";
       break;
     case "home_services":
       eyebrow = "Service request";
-      headline = `Book a service request with ${workspaceName}.`;
+      headline = `Book a service request with ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the job, location, and preferred timing.`;
       break;
     case "repair_services":
       eyebrow = "Repair request";
-      headline = `Tell ${workspaceName} what needs repair.`;
+      headline = `Tell ${businessName} what needs repair.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the item, issue, and any photos that help.`;
       break;
     case "cleaning_services":
       eyebrow = "Cleaning request";
-      headline = `Request cleaning service from ${workspaceName}.`;
+      headline = `Request cleaning service from ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the space, schedule, and service needs.`;
       break;
     case "landscaping_outdoor":
       eyebrow = "Outdoor project";
-      headline = `Start your outdoor project with ${workspaceName}.`;
+      headline = `Start your outdoor project with ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the property, work needed, and preferred timing.`;
       break;
     case "creative_studio_agency":
       eyebrow = "Project brief";
-      headline = `Send your project brief to ${workspaceName}.`;
+      headline = `Send your project brief to ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the goal, deliverables, and launch timing.`;
@@ -434,14 +434,14 @@ export function createInquiryPageConfigDefaults({
       break;
     case "it_web_services":
       eyebrow = "Project request";
-      headline = `Tell ${workspaceName} what you need help with.`;
+      headline = `Tell ${businessName} what you need help with.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the issue, system, and desired outcome.`;
       break;
     case "photo_video_events":
       eyebrow = "Booking request";
-      headline = `Start your booking request with ${workspaceName}.`;
+      headline = `Start your booking request with ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the event, date, location, and coverage needed.`;
@@ -449,7 +449,7 @@ export function createInquiryPageConfigDefaults({
       break;
     case "coaching_consulting":
       eyebrow = "Discovery request";
-      headline = `Start your request with ${workspaceName}.`;
+      headline = `Start your request with ${businessName}.`;
       description =
         legacyInquiryHeadline?.trim() ||
         `Share the goal, context, and preferred start date.`;
@@ -464,7 +464,7 @@ export function createInquiryPageConfigDefaults({
     eyebrow,
     headline,
     description,
-    brandTagline: workspaceShortDescription?.trim() || undefined,
+    brandTagline: businessShortDescription?.trim() || undefined,
     formTitle,
     formDescription,
     cards: createDefaultInquiryPageCards(businessType),

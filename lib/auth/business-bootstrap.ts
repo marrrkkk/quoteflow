@@ -7,9 +7,9 @@ import { db } from "@/lib/db/client";
 import {
   activityLogs,
   profiles,
-  workspaceInquiryForms,
-  workspaceMembers,
-  workspaces,
+  businessInquiryForms,
+  businessMembers,
+  businesses,
 } from "@/lib/db/schema";
 import { appendRandomSlugSuffix, slugifyPublicName } from "@/lib/slugs";
 
@@ -23,14 +23,14 @@ function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-async function getAvailableWorkspaceSlug(baseSlug: string) {
+async function getAvailableBusinessSlug(baseSlug: string) {
   let candidate = baseSlug;
 
   while (true) {
     const existing = await db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(eq(workspaces.slug, candidate))
+      .select({ id: businesses.id })
+      .from(businesses)
+      .where(eq(businesses.slug, candidate))
       .limit(1);
 
     if (!existing[0]) {
@@ -38,7 +38,7 @@ async function getAvailableWorkspaceSlug(baseSlug: string) {
     }
 
     candidate = appendRandomSlugSuffix(baseSlug, {
-      fallback: "workspace",
+      fallback: "business",
     });
   }
 }
@@ -64,10 +64,10 @@ export async function ensureProfileForUser(user: BootstrapUser) {
   });
 }
 
-export async function bootstrapWorkspaceForUser(user: BootstrapUser) {
-  const workspaceBaseName =
+export async function bootstrapBusinessForUser(user: BootstrapUser) {
+  const businessBaseName =
     user.name.trim() || user.email.split("@")[0] || "Relay";
-  const workspaceName = `${workspaceBaseName}'s Workspace`;
+  const businessName = `${businessBaseName}'s Business`;
   const now = new Date();
 
   await db.transaction(async (tx) => {
@@ -88,53 +88,53 @@ export async function bootstrapWorkspaceForUser(user: BootstrapUser) {
 
     const [existingMembership] = await tx
       .select({
-        membershipId: workspaceMembers.id,
-        workspaceId: workspaceMembers.workspaceId,
-        role: workspaceMembers.role,
+        membershipId: businessMembers.id,
+        businessId: businessMembers.businessId,
+        role: businessMembers.role,
       })
-      .from(workspaceMembers)
-      .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
-      .where(eq(workspaceMembers.userId, user.id))
+      .from(businessMembers)
+      .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+      .where(eq(businessMembers.userId, user.id))
       .orderBy(
-        sql`case when ${workspaceMembers.role} = 'owner' then 0 else 1 end`,
-        workspaceMembers.createdAt,
+        sql`case when ${businessMembers.role} = 'owner' then 0 else 1 end`,
+        businessMembers.createdAt,
       )
       .limit(1);
 
     if (!existingMembership) {
-      const workspaceSlug = await getAvailableWorkspaceSlug(
-        slugifyPublicName(workspaceBaseName, {
-          fallback: "workspace",
+      const businessSlug = await getAvailableBusinessSlug(
+        slugifyPublicName(businessBaseName, {
+          fallback: "business",
         }),
       );
-      const workspaceId = createId("ws");
-      const membershipId = createId("wm");
+      const businessId = createId("biz");
+      const membershipId = createId("bm");
       const activityId = createId("act");
       const defaultInquiryForm = createInquiryFormPreset({
         businessType: "general_services",
-        workspaceName,
+        businessName,
       });
 
-      await tx.insert(workspaces).values({
-        id: workspaceId,
-        name: workspaceName,
-        slug: workspaceSlug,
+      await tx.insert(businesses).values({
+        id: businessId,
+        name: businessName,
+        slug: businessSlug,
         businessType: "general_services",
         contactEmail: user.email,
         inquiryFormConfig: createInquiryFormConfigDefaults({
           businessType: "general_services",
         }),
         inquiryPageConfig: createInquiryPageConfigDefaults({
-          workspaceName,
+          businessName,
           businessType: "general_services",
         }),
         createdAt: now,
         updatedAt: now,
       });
 
-      await tx.insert(workspaceInquiryForms).values({
+      await tx.insert(businessInquiryForms).values({
         id: createId("ifm"),
-        workspaceId,
+        businessId,
         name: defaultInquiryForm.name,
         slug: defaultInquiryForm.slug,
         businessType: defaultInquiryForm.businessType,
@@ -146,9 +146,9 @@ export async function bootstrapWorkspaceForUser(user: BootstrapUser) {
         updatedAt: now,
       });
 
-      await tx.insert(workspaceMembers).values({
+      await tx.insert(businessMembers).values({
         id: membershipId,
-        workspaceId,
+        businessId,
         userId: user.id,
         role: "owner",
         createdAt: now,
@@ -157,10 +157,10 @@ export async function bootstrapWorkspaceForUser(user: BootstrapUser) {
 
       await tx.insert(activityLogs).values({
         id: activityId,
-        workspaceId,
+        businessId,
         actorUserId: user.id,
-        type: "workspace.created",
-        summary: "Workspace created during initial signup bootstrap.",
+        type: "business.created",
+        summary: "Business created during initial signup bootstrap.",
         metadata: {
           source: "better-auth-signup",
         },
@@ -173,12 +173,12 @@ export async function bootstrapWorkspaceForUser(user: BootstrapUser) {
 
     if (existingMembership.role !== "owner") {
       await tx
-        .update(workspaceMembers)
+        .update(businessMembers)
         .set({
           role: "owner",
           updatedAt: now,
         })
-        .where(eq(workspaceMembers.id, existingMembership.membershipId));
+        .where(eq(businessMembers.id, existingMembership.membershipId));
     }
   });
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { workspaceBusinessTypes } from "@/features/inquiries/business-types";
+import { businessTypes } from "@/features/inquiries/business-types";
 import { inquiryFormConfigSchema } from "@/features/inquiries/form-config";
 import { inquiryPageCardSchema, inquiryPageTemplates } from "@/features/inquiries/page-config";
 import { isAcceptedFileType } from "@/lib/files";
@@ -9,13 +9,13 @@ import {
   publicSlugMaxLength,
   publicSlugRegex,
 } from "@/lib/slugs";
-import { workspaceAiTonePreferences } from "@/features/settings/types";
+import { businessAiTonePreferences } from "@/features/settings/types";
 import {
-  workspaceCurrencyOptions,
-  workspaceLogoAllowedExtensions,
-  normalizeWorkspaceSlug,
-  workspaceLogoAllowedMimeTypes,
-  workspaceLogoMaxSize,
+  businessCurrencyOptions,
+  businessLogoAllowedExtensions,
+  normalizeBusinessSlug,
+  businessLogoAllowedMimeTypes,
+  businessLogoMaxSize,
 } from "@/features/settings/utils";
 
 function emptyToUndefined(value: unknown) {
@@ -71,7 +71,7 @@ function jsonField<T extends z.ZodTypeAny>(schema: T, emptyFallback: unknown) {
   }, schema);
 }
 
-const workspaceLogoSchema = z.preprocess(
+const businessLogoSchema = z.preprocess(
   (value) => {
     if (!(value instanceof File)) {
       return undefined;
@@ -86,28 +86,28 @@ const workspaceLogoSchema = z.preprocess(
   z
     .instanceof(File)
     .refine(
-      (file) => file.size <= workspaceLogoMaxSize,
+      (file) => file.size <= businessLogoMaxSize,
       "Upload a logo that is 2 MB or smaller.",
     )
     .refine(
       (file) =>
         isAcceptedFileType(file, {
-          allowedExtensions: workspaceLogoAllowedExtensions,
-          allowedMimeTypes: workspaceLogoAllowedMimeTypes,
+          allowedExtensions: businessLogoAllowedExtensions,
+          allowedMimeTypes: businessLogoAllowedMimeTypes,
         }),
       "Upload a JPG, PNG, or WEBP logo.",
     )
     .optional(),
 );
 
-export const workspaceGeneralSettingsSchema = z.object({
+export const businessGeneralSettingsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z
     .string()
     .trim()
     .min(2)
     .max(publicSlugMaxLength)
-    .transform(normalizeWorkspaceSlug)
+    .transform(normalizeBusinessSlug)
     .refine(
       (value) => publicSlugRegex.test(value),
       "Use lowercase letters, numbers, and hyphens only.",
@@ -115,17 +115,17 @@ export const workspaceGeneralSettingsSchema = z.object({
   shortDescription: optionalText(280),
   contactEmail: optionalEmail(),
   defaultEmailSignature: optionalText(1200),
-  aiTonePreference: z.enum(workspaceAiTonePreferences),
+  aiTonePreference: z.enum(businessAiTonePreferences),
   notifyOnNewInquiry: formBoolean(),
-  logo: workspaceLogoSchema,
+  logo: businessLogoSchema,
   removeLogo: formBoolean().default(false),
 });
 
-export type WorkspaceGeneralSettingsInput = z.infer<
-  typeof workspaceGeneralSettingsSchema
+export type BusinessGeneralSettingsInput = z.infer<
+  typeof businessGeneralSettingsSchema
 >;
 
-export const workspaceQuoteSettingsSchema = z.object({
+export const businessQuoteSettingsSchema = z.object({
   defaultQuoteNotes: optionalText(1600),
   defaultQuoteValidityDays: z.preprocess(
     (value) => {
@@ -148,20 +148,20 @@ export const workspaceQuoteSettingsSchema = z.object({
     z.number().int().min(1).max(365),
   ),
   notifyOnQuoteSent: formBoolean(),
-  defaultCurrency: z.enum(workspaceCurrencyOptions).default("USD"),
+  defaultCurrency: z.enum(businessCurrencyOptions).default("USD"),
 });
 
-export type WorkspaceQuoteSettingsInput = z.infer<
-  typeof workspaceQuoteSettingsSchema
+export type BusinessQuoteSettingsInput = z.infer<
+  typeof businessQuoteSettingsSchema
 >;
 
-export const workspaceDeleteSchema = z.object({
+export const businessDeleteSchema = z.object({
   confirmation: z.string().trim().min(1).max(120),
 });
 
-export type WorkspaceDeleteInput = z.infer<typeof workspaceDeleteSchema>;
+export type BusinessDeleteInput = z.infer<typeof businessDeleteSchema>;
 
-export const workspaceInquiryPageSettingsSchema = z.object({
+export const businessInquiryPageSettingsSchema = z.object({
   formId: z.string().trim().min(1).max(128),
   publicInquiryEnabled: formBoolean(),
   template: z.enum(inquiryPageTemplates),
@@ -174,11 +174,11 @@ export const workspaceInquiryPageSettingsSchema = z.object({
   cards: jsonField(z.array(inquiryPageCardSchema).max(8), []),
 });
 
-export type WorkspaceInquiryPageSettingsInput = z.infer<
-  typeof workspaceInquiryPageSettingsSchema
+export type BusinessInquiryPageSettingsInput = z.infer<
+  typeof businessInquiryPageSettingsSchema
 >;
 
-export const workspaceInquiryFormSettingsSchema = z.object({
+export const businessInquiryFormSettingsSchema = z.object({
   formId: z.string().trim().min(1).max(128),
   name: z.string().trim().min(2).max(80),
   slug: z
@@ -191,36 +191,36 @@ export const workspaceInquiryFormSettingsSchema = z.object({
       (value) => publicSlugRegex.test(value),
       "Use lowercase letters, numbers, and hyphens only.",
     ),
-  businessType: z.enum(workspaceBusinessTypes),
+  businessType: z.enum(businessTypes),
   inquiryFormConfig: jsonField(inquiryFormConfigSchema, Symbol.for("invalid-json-field")),
 });
 
-export type WorkspaceInquiryFormSettingsInput = z.infer<
-  typeof workspaceInquiryFormSettingsSchema
+export type BusinessInquiryFormSettingsInput = z.infer<
+  typeof businessInquiryFormSettingsSchema
 >;
 
-export const workspaceInquiryFormPresetSchema = z.object({
+export const businessInquiryFormPresetSchema = z.object({
   formId: z.string().trim().min(1).max(128),
-  businessType: z.enum(workspaceBusinessTypes),
+  businessType: z.enum(businessTypes),
 });
 
-export type WorkspaceInquiryFormPresetInput = z.infer<
-  typeof workspaceInquiryFormPresetSchema
+export type BusinessInquiryFormPresetInput = z.infer<
+  typeof businessInquiryFormPresetSchema
 >;
 
-export const workspaceInquiryFormCreateSchema = z.object({
+export const businessInquiryFormCreateSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  businessType: z.enum(workspaceBusinessTypes),
+  businessType: z.enum(businessTypes),
 });
 
-export type WorkspaceInquiryFormCreateInput = z.infer<
-  typeof workspaceInquiryFormCreateSchema
+export type BusinessInquiryFormCreateInput = z.infer<
+  typeof businessInquiryFormCreateSchema
 >;
 
-export const workspaceInquiryFormTargetSchema = z.object({
+export const businessInquiryFormTargetSchema = z.object({
   targetFormId: z.string().trim().min(1).max(128),
 });
 
-export type WorkspaceInquiryFormTargetInput = z.infer<
-  typeof workspaceInquiryFormTargetSchema
+export type BusinessInquiryFormTargetInput = z.infer<
+  typeof businessInquiryFormTargetSchema
 >;

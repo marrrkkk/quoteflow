@@ -169,7 +169,7 @@ export function InquiryAiPanel({
           {[
             "Inquiry context",
             "Internal notes",
-            "Workspace FAQs",
+            "Business FAQs",
             "Knowledge snippets",
           ].map((label) => (
             <span

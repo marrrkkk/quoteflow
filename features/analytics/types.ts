@@ -1,11 +1,11 @@
 import type { InquiryStatus } from "@/features/inquiries/types";
 
-export type WorkspaceAnalyticsStatusCount = {
+export type BusinessAnalyticsStatusCount = {
   status: InquiryStatus;
   count: number;
 };
 
-export type WorkspaceAnalyticsTrendPoint = {
+export type BusinessAnalyticsTrendPoint = {
   label: string;
   weekStart: string;
   inquiries: number;
@@ -14,12 +14,12 @@ export type WorkspaceAnalyticsTrendPoint = {
   acceptedQuotes: number;
 };
 
-export type WorkspaceAnalyticsData = {
+export type BusinessAnalyticsData = {
   totalInquiries: number;
   inquiriesThisWeek: number;
   wonCount: number;
   lostCount: number;
-  inquiryStatusCounts: WorkspaceAnalyticsStatusCount[];
+  inquiryStatusCounts: BusinessAnalyticsStatusCount[];
   quoteSummary: {
     totalQuotes: number;
     sentQuotes: number;
@@ -30,5 +30,5 @@ export type WorkspaceAnalyticsData = {
     acceptanceRate: number;
     inquiryCoverageRate: number;
   };
-  recentTrend: WorkspaceAnalyticsTrendPoint[];
+  recentTrend: BusinessAnalyticsTrendPoint[];
 };

@@ -2,17 +2,17 @@
 
 import type { AiAssistantActionState } from "@/features/ai/types";
 import { getValidationActionState } from "@/lib/action-state";
-import { getInquiryAssistantContextForWorkspace } from "@/features/ai/queries";
+import { getInquiryAssistantContextForBusiness } from "@/features/ai/queries";
 import { aiAssistantRequestSchema } from "@/features/ai/schemas";
 import { generateInquiryAssistantResult } from "@/features/ai/service";
-import { getOwnerWorkspaceActionContext } from "@/lib/db/workspace-access";
+import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
 
 export async function generateInquiryAssistantAction(
   inquiryId: string,
   prevState: AiAssistantActionState,
   formData: FormData,
 ): Promise<AiAssistantActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -21,7 +21,7 @@ export async function generateInquiryAssistantAction(
     };
   }
 
-  const { workspaceContext } = ownerAccess;
+  const { businessContext } = ownerAccess;
 
   const validationResult = aiAssistantRequestSchema.safeParse({
     intent: formData.get("intent"),
@@ -36,8 +36,8 @@ export async function generateInquiryAssistantAction(
     };
   }
 
-  const context = await getInquiryAssistantContextForWorkspace({
-    workspaceId: workspaceContext.workspace.id,
+  const context = await getInquiryAssistantContextForBusiness({
+    businessId: businessContext.business.id,
     inquiryId,
   });
 

@@ -3,10 +3,13 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 import { auth } from "@/lib/auth/server";
 
 export const getSession = cache(async () => {
+  await connection();
+
   return auth.api.getSession({
     headers: await headers(),
   });
@@ -16,7 +19,7 @@ export async function getCurrentUser() {
   return (await getSession())?.user ?? null;
 }
 
-export async function redirectIfAuthenticated(redirectTo = "/workspace") {
+export async function redirectIfAuthenticated(redirectTo = "/businesses") {
   const session = await getSession();
 
   if (session) {

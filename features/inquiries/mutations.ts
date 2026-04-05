@@ -19,11 +19,11 @@ import {
 } from "@/features/inquiries/schemas";
 import type { InquiryStatus } from "@/features/inquiries/types";
 import { getInquiryStatusLabel } from "@/features/inquiries/utils";
-import type { PublicInquiryWorkspace } from "@/features/inquiries/types";
+import type { PublicInquiryBusiness } from "@/features/inquiries/types";
 import { and, eq } from "drizzle-orm";
 
 type CreatePublicInquirySubmissionInput = {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
   submission: PublicInquirySubmissionInput;
 };
 
@@ -45,7 +45,7 @@ function createId(prefix: string) {
 }
 
 export async function createPublicInquirySubmission({
-  workspace,
+  business,
   submission,
 }: CreatePublicInquirySubmissionInput): Promise<CreatePublicInquirySubmissionResult> {
   const inquiryId = createId("inq");
@@ -62,7 +62,7 @@ export async function createPublicInquirySubmission({
       extensionToMimeType: publicInquiryExtensionToMimeType,
       fallback: "application/octet-stream",
     });
-    const storagePath = `${workspace.id}/${inquiryId}/${sanitizeStorageFileName(
+    const storagePath = `${business.id}/${inquiryId}/${sanitizeStorageFileName(
       attachment.name,
       "attachment",
     )}`;
@@ -92,8 +92,8 @@ export async function createPublicInquirySubmission({
     await db.transaction(async (tx) => {
       await tx.insert(inquiries).values({
         id: inquiryId,
-        workspaceId: workspace.id,
-        workspaceInquiryFormId: workspace.form.id,
+        businessId: business.id,
+        businessInquiryFormId: business.form.id,
         status: "new",
         subject: submission.serviceCategory,
         customerName: submission.customerName,
@@ -115,7 +115,7 @@ export async function createPublicInquirySubmission({
       if (preparedAttachment) {
         await tx.insert(inquiryAttachments).values({
           id: preparedAttachment.id,
-          workspaceId: workspace.id,
+          businessId: business.id,
           inquiryId,
           fileName: preparedAttachment.fileName,
           contentType: preparedAttachment.contentType,
@@ -128,17 +128,17 @@ export async function createPublicInquirySubmission({
 
       await tx.insert(activityLogs).values({
         id: activityId,
-        workspaceId: workspace.id,
+        businessId: business.id,
         inquiryId,
         actorUserId: null,
         type: "inquiry.submitted_public",
         summary: "Inquiry submitted through the public inquiry page.",
         metadata: {
           source: "public-inquiry-page",
-          workspaceSlug: workspace.slug,
-          inquiryFormId: workspace.form.id,
-          inquiryFormSlug: workspace.form.slug,
-          inquiryFormName: workspace.form.name,
+          businessSlug: business.slug,
+          inquiryFormId: business.form.id,
+          inquiryFormSlug: business.form.slug,
+          inquiryFormName: business.form.name,
           hasAttachment: Boolean(preparedAttachment),
           serviceCategory: submission.serviceCategory,
         },
@@ -169,19 +169,19 @@ export async function createPublicInquirySubmission({
   };
 }
 
-type AddInquiryNoteForWorkspaceInput = {
-  workspaceId: string;
+type AddInquiryNoteForBusinessInput = {
+  businessId: string;
   inquiryId: string;
   authorUserId: string;
   body: string;
 };
 
-export async function addInquiryNoteForWorkspace({
-  workspaceId,
+export async function addInquiryNoteForBusiness({
+  businessId,
   inquiryId,
   authorUserId,
   body,
-}: AddInquiryNoteForWorkspaceInput) {
+}: AddInquiryNoteForBusinessInput) {
   const noteId = createId("note");
   const activityId = createId("act");
   const now = new Date();
@@ -190,7 +190,7 @@ export async function addInquiryNoteForWorkspace({
     const [inquiry] = await tx
       .select({ id: inquiries.id })
       .from(inquiries)
-      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
+      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
       .limit(1);
 
     if (!inquiry) {
@@ -199,7 +199,7 @@ export async function addInquiryNoteForWorkspace({
 
     await tx.insert(inquiryNotes).values({
       id: noteId,
-      workspaceId,
+      businessId,
       inquiryId,
       authorUserId,
       body,
@@ -209,7 +209,7 @@ export async function addInquiryNoteForWorkspace({
 
     await tx.insert(activityLogs).values({
       id: activityId,
-      workspaceId,
+      businessId,
       inquiryId,
       actorUserId: authorUserId,
       type: "inquiry.note_added",
@@ -227,19 +227,19 @@ export async function addInquiryNoteForWorkspace({
   });
 }
 
-type ChangeInquiryStatusForWorkspaceInput = {
-  workspaceId: string;
+type ChangeInquiryStatusForBusinessInput = {
+  businessId: string;
   inquiryId: string;
   actorUserId: string;
   nextStatus: InquiryStatus;
 };
 
-export async function changeInquiryStatusForWorkspace({
-  workspaceId,
+export async function changeInquiryStatusForBusiness({
+  businessId,
   inquiryId,
   actorUserId,
   nextStatus,
-}: ChangeInquiryStatusForWorkspaceInput) {
+}: ChangeInquiryStatusForBusinessInput) {
   const activityId = createId("act");
   const now = new Date();
 
@@ -250,7 +250,7 @@ export async function changeInquiryStatusForWorkspace({
         status: inquiries.status,
       })
       .from(inquiries)
-      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
+      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
       .limit(1);
 
     if (!existingInquiry) {
@@ -271,11 +271,11 @@ export async function changeInquiryStatusForWorkspace({
         status: nextStatus,
         updatedAt: now,
       })
-      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)));
+      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)));
 
     await tx.insert(activityLogs).values({
       id: activityId,
-      workspaceId,
+      businessId,
       inquiryId,
       actorUserId,
       type: "inquiry.status_changed",

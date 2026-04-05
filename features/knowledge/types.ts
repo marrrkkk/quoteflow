@@ -46,7 +46,7 @@ export type KnowledgeContextFaq = {
   position: number;
 };
 
-export type WorkspaceKnowledgeContext = {
+export type BusinessKnowledgeContext = {
   faqs: KnowledgeContextFaq[];
   files: KnowledgeContextFile[];
   combinedText: string;

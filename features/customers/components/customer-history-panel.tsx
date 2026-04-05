@@ -15,22 +15,22 @@ import { QuotePostAcceptanceStatusBadge } from "@/features/quotes/components/quo
 import { QuoteStatusBadge } from "@/features/quotes/components/quote-status-badge";
 import { formatQuoteMoney } from "@/features/quotes/utils";
 import {
-  getWorkspaceInquiryPath,
-  getWorkspaceQuotePath,
-} from "@/features/workspaces/routes";
+  getBusinessInquiryPath,
+  getBusinessQuotePath,
+} from "@/features/businesses/routes";
 
 type CustomerHistoryPanelProps = {
   history: CustomerHistoryData | null;
-  workspaceSlug: string;
+  businessSlug: string;
 };
 
 export function CustomerHistoryPanel({
   history,
-  workspaceSlug,
+  businessSlug,
 }: CustomerHistoryPanelProps) {
   return (
     <DashboardSection
-      description="Past records for this customer email inside the current workspace."
+      description="Past records for this customer email inside the current business."
       title="Customer history"
     >
       {history ? (
@@ -76,7 +76,7 @@ export function CustomerHistoryPanel({
                       title={
                         <Link
                           className="underline-offset-4 hover:text-primary hover:underline"
-                          href={getWorkspaceInquiryPath(workspaceSlug, inquiry.id)}
+                          href={getBusinessInquiryPath(businessSlug, inquiry.id)}
                         >
                           {inquiry.serviceCategory}
                         </Link>
@@ -106,7 +106,7 @@ export function CustomerHistoryPanel({
                       title={
                         <Link
                           className="underline-offset-4 hover:text-primary hover:underline"
-                          href={getWorkspaceQuotePath(workspaceSlug, quote.id)}
+                          href={getBusinessQuotePath(businessSlug, quote.id)}
                         >
                           {quote.quoteNumber} | {quote.title}
                         </Link>
@@ -138,7 +138,7 @@ export function CustomerHistoryPanel({
         </div>
       ) : (
         <DashboardEmptyState
-          description="This customer does not have other inquiry or quote records in the workspace yet."
+          description="This customer does not have other inquiry or quote records in the business yet."
           icon={History}
           title="No customer history"
           variant="section"

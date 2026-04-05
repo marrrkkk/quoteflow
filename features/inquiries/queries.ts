@@ -9,12 +9,12 @@ import {
 } from "@/features/inquiries/form-config";
 import { getNormalizedInquiryPageConfig } from "@/features/inquiries/page-config";
 import {
-  getWorkspaceInquiryDetailCacheTags,
-  getWorkspaceInquiryFormCacheTags,
-  getWorkspaceInquiryFormsCacheTags,
-  getWorkspaceInquiryListCacheTags,
-  hotWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessInquiryDetailCacheTags,
+  getBusinessInquiryFormCacheTags,
+  getBusinessInquiryFormsCacheTags,
+  getBusinessInquiryListCacheTags,
+  hotBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import { db } from "@/lib/db/client";
 import {
   activityLogs,
@@ -23,232 +23,232 @@ import {
   inquiryNotes,
   quotes,
   user,
-  workspaceInquiryForms,
-  workspaceMembers,
-  workspaces,
+  businessInquiryForms,
+  businessMembers,
+  businesses,
 } from "@/lib/db/schema";
 import type {
   DashboardInquiryDetail,
   DashboardInquiryListItem,
   InquiryListFilters,
-  PublicInquiryWorkspace,
+  PublicInquiryBusiness,
 } from "@/features/inquiries/types";
 
-export async function getPublicInquiryWorkspaceBySlug(
+export async function getPublicInquiryBusinessBySlug(
   slug: string,
-): Promise<PublicInquiryWorkspace | null> {
-  const [workspace] = await db
+): Promise<PublicInquiryBusiness | null> {
+  const [business] = await db
     .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      slug: workspaces.slug,
-      workspaceBusinessType: workspaces.businessType,
-      shortDescription: workspaces.shortDescription,
-      logoStoragePath: workspaces.logoStoragePath,
-      updatedAt: workspaces.updatedAt,
-      inquiryHeadline: workspaces.inquiryHeadline,
-      formId: workspaceInquiryForms.id,
-      formName: workspaceInquiryForms.name,
-      formSlug: workspaceInquiryForms.slug,
-      formBusinessType: workspaceInquiryForms.businessType,
-      formIsDefault: workspaceInquiryForms.isDefault,
-      publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
-      inquiryFormConfig: workspaceInquiryForms.inquiryFormConfig,
-      inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
+      id: businesses.id,
+      name: businesses.name,
+      slug: businesses.slug,
+      businessType: businesses.businessType,
+      shortDescription: businesses.shortDescription,
+      logoStoragePath: businesses.logoStoragePath,
+      updatedAt: businesses.updatedAt,
+      inquiryHeadline: businesses.inquiryHeadline,
+      formId: businessInquiryForms.id,
+      formName: businessInquiryForms.name,
+      formSlug: businessInquiryForms.slug,
+      formBusinessType: businessInquiryForms.businessType,
+      formIsDefault: businessInquiryForms.isDefault,
+      publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+      inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
     })
-    .from(workspaces)
+    .from(businesses)
     .innerJoin(
-      workspaceInquiryForms,
+      businessInquiryForms,
       and(
-        eq(workspaceInquiryForms.workspaceId, workspaces.id),
-        eq(workspaceInquiryForms.isDefault, true),
-        isNull(workspaceInquiryForms.archivedAt),
+        eq(businessInquiryForms.businessId, businesses.id),
+        eq(businessInquiryForms.isDefault, true),
+        isNull(businessInquiryForms.archivedAt),
       ),
     )
-    .where(eq(workspaces.slug, slug))
+    .where(eq(businesses.slug, slug))
     .limit(1);
 
-  if (!workspace || !workspace.publicInquiryEnabled) {
+  if (!business || !business.publicInquiryEnabled) {
     return null;
   }
 
   return {
-    id: workspace.id,
-    name: workspace.name,
-    slug: workspace.slug,
-    businessType: workspace.formBusinessType,
-    shortDescription: workspace.shortDescription,
-    logoUrl: workspace.logoStoragePath
-      ? `/api/public/workspaces/${workspace.slug}/logo?v=${workspace.updatedAt.getTime()}`
+    id: business.id,
+    name: business.name,
+    slug: business.slug,
+    businessType: business.formBusinessType,
+    shortDescription: business.shortDescription,
+    logoUrl: business.logoStoragePath
+      ? `/api/public/businesses/${business.slug}/logo?v=${business.updatedAt.getTime()}`
       : null,
     form: {
-      id: workspace.formId,
-      name: workspace.formName,
-      slug: workspace.formSlug,
-      businessType: workspace.formBusinessType,
-      isDefault: workspace.formIsDefault,
-      publicInquiryEnabled: workspace.publicInquiryEnabled,
+      id: business.formId,
+      name: business.formName,
+      slug: business.formSlug,
+      businessType: business.formBusinessType,
+      isDefault: business.formIsDefault,
+      publicInquiryEnabled: business.publicInquiryEnabled,
     },
-    inquiryFormConfig: getNormalizedInquiryFormConfig(workspace.inquiryFormConfig, {
-      businessType: workspace.formBusinessType,
+    inquiryFormConfig: getNormalizedInquiryFormConfig(business.inquiryFormConfig, {
+      businessType: business.formBusinessType,
     }),
-    inquiryPageConfig: getNormalizedInquiryPageConfig(workspace.inquiryPageConfig, {
-      workspaceName: workspace.name,
-      workspaceShortDescription: workspace.shortDescription,
-      legacyInquiryHeadline: workspace.inquiryHeadline,
-      businessType: workspace.formBusinessType,
+    inquiryPageConfig: getNormalizedInquiryPageConfig(business.inquiryPageConfig, {
+      businessName: business.name,
+      businessShortDescription: business.shortDescription,
+      legacyInquiryHeadline: business.inquiryHeadline,
+      businessType: business.formBusinessType,
     }),
   };
 }
 
-export async function getPublicInquiryWorkspaceByFormSlug({
-  workspaceSlug,
+export async function getPublicInquiryBusinessByFormSlug({
+  businessSlug,
   formSlug,
 }: {
-  workspaceSlug: string;
+  businessSlug: string;
   formSlug: string;
-}): Promise<PublicInquiryWorkspace | null> {
-  return getInquiryWorkspaceByFormSlug({
-    workspaceSlug,
+}): Promise<PublicInquiryBusiness | null> {
+  return getInquiryBusinessByFormSlug({
+    businessSlug,
     formSlug,
     includeDisabled: false,
   });
 }
 
-export async function getInquiryWorkspacePreviewByFormSlug({
-  workspaceSlug,
+export async function getInquiryBusinessPreviewByFormSlug({
+  businessSlug,
   formSlug,
 }: {
-  workspaceSlug: string;
+  businessSlug: string;
   formSlug: string;
-}): Promise<PublicInquiryWorkspace | null> {
-  return getCachedInquiryWorkspacePreviewByFormSlug({
-    workspaceSlug,
+}): Promise<PublicInquiryBusiness | null> {
+  return getCachedInquiryBusinessPreviewByFormSlug({
+    businessSlug,
     formSlug,
   });
 }
 
-async function getCachedInquiryWorkspacePreviewByFormSlug({
-  workspaceSlug,
+async function getCachedInquiryBusinessPreviewByFormSlug({
+  businessSlug,
   formSlug,
 }: {
-  workspaceSlug: string;
+  businessSlug: string;
   formSlug: string;
-}): Promise<PublicInquiryWorkspace | null> {
+}): Promise<PublicInquiryBusiness | null> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
+  cacheLife(hotBusinessCacheLife);
 
-  const workspace = await getInquiryWorkspaceByFormSlug({
-    workspaceSlug,
+  const business = await getInquiryBusinessByFormSlug({
+    businessSlug,
     formSlug,
     includeDisabled: true,
   });
 
-  if (workspace) {
-    cacheTag(...getWorkspaceInquiryFormCacheTags(workspace.id, workspace.form.slug));
+  if (business) {
+    cacheTag(...getBusinessInquiryFormCacheTags(business.id, business.form.slug));
   }
 
-  return workspace;
+  return business;
 }
 
-async function getInquiryWorkspaceByFormSlug({
-  workspaceSlug,
+async function getInquiryBusinessByFormSlug({
+  businessSlug,
   formSlug,
   includeDisabled,
 }: {
-  workspaceSlug: string;
+  businessSlug: string;
   formSlug: string;
   includeDisabled: boolean;
-}): Promise<PublicInquiryWorkspace | null> {
-  const [workspace] = await db
+}): Promise<PublicInquiryBusiness | null> {
+  const [business] = await db
     .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      slug: workspaces.slug,
-      workspaceBusinessType: workspaces.businessType,
-      shortDescription: workspaces.shortDescription,
-      logoStoragePath: workspaces.logoStoragePath,
-      updatedAt: workspaces.updatedAt,
-      inquiryHeadline: workspaces.inquiryHeadline,
-      formId: workspaceInquiryForms.id,
-      formName: workspaceInquiryForms.name,
-      formSlug: workspaceInquiryForms.slug,
-      formBusinessType: workspaceInquiryForms.businessType,
-      formIsDefault: workspaceInquiryForms.isDefault,
-      publicInquiryEnabled: workspaceInquiryForms.publicInquiryEnabled,
-      inquiryFormConfig: workspaceInquiryForms.inquiryFormConfig,
-      inquiryPageConfig: workspaceInquiryForms.inquiryPageConfig,
+      id: businesses.id,
+      name: businesses.name,
+      slug: businesses.slug,
+      businessType: businesses.businessType,
+      shortDescription: businesses.shortDescription,
+      logoStoragePath: businesses.logoStoragePath,
+      updatedAt: businesses.updatedAt,
+      inquiryHeadline: businesses.inquiryHeadline,
+      formId: businessInquiryForms.id,
+      formName: businessInquiryForms.name,
+      formSlug: businessInquiryForms.slug,
+      formBusinessType: businessInquiryForms.businessType,
+      formIsDefault: businessInquiryForms.isDefault,
+      publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+      inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
     })
-    .from(workspaces)
+    .from(businesses)
     .innerJoin(
-      workspaceInquiryForms,
+      businessInquiryForms,
       and(
-        eq(workspaceInquiryForms.workspaceId, workspaces.id),
-        eq(workspaceInquiryForms.slug, formSlug),
-        isNull(workspaceInquiryForms.archivedAt),
+        eq(businessInquiryForms.businessId, businesses.id),
+        eq(businessInquiryForms.slug, formSlug),
+        isNull(businessInquiryForms.archivedAt),
       ),
     )
-    .where(eq(workspaces.slug, workspaceSlug))
+    .where(eq(businesses.slug, businessSlug))
     .limit(1);
 
-  if (!workspace || (!includeDisabled && !workspace.publicInquiryEnabled)) {
+  if (!business || (!includeDisabled && !business.publicInquiryEnabled)) {
     return null;
   }
 
   return {
-    id: workspace.id,
-    name: workspace.name,
-    slug: workspace.slug,
-    businessType: workspace.formBusinessType,
-    shortDescription: workspace.shortDescription,
-    logoUrl: workspace.logoStoragePath
-      ? `/api/public/workspaces/${workspace.slug}/logo?v=${workspace.updatedAt.getTime()}`
+    id: business.id,
+    name: business.name,
+    slug: business.slug,
+    businessType: business.formBusinessType,
+    shortDescription: business.shortDescription,
+    logoUrl: business.logoStoragePath
+      ? `/api/public/businesses/${business.slug}/logo?v=${business.updatedAt.getTime()}`
       : null,
     form: {
-      id: workspace.formId,
-      name: workspace.formName,
-      slug: workspace.formSlug,
-      businessType: workspace.formBusinessType,
-      isDefault: workspace.formIsDefault,
-      publicInquiryEnabled: workspace.publicInquiryEnabled,
+      id: business.formId,
+      name: business.formName,
+      slug: business.formSlug,
+      businessType: business.formBusinessType,
+      isDefault: business.formIsDefault,
+      publicInquiryEnabled: business.publicInquiryEnabled,
     },
-    inquiryFormConfig: getNormalizedInquiryFormConfig(workspace.inquiryFormConfig, {
-      businessType: workspace.formBusinessType,
+    inquiryFormConfig: getNormalizedInquiryFormConfig(business.inquiryFormConfig, {
+      businessType: business.formBusinessType,
     }),
-    inquiryPageConfig: getNormalizedInquiryPageConfig(workspace.inquiryPageConfig, {
-      workspaceName: workspace.name,
-      workspaceShortDescription: workspace.shortDescription,
-      legacyInquiryHeadline: workspace.inquiryHeadline,
-      businessType: workspace.formBusinessType,
+    inquiryPageConfig: getNormalizedInquiryPageConfig(business.inquiryPageConfig, {
+      businessName: business.name,
+      businessShortDescription: business.shortDescription,
+      legacyInquiryHeadline: business.inquiryHeadline,
+      businessType: business.formBusinessType,
     }),
   };
 }
 
-export async function getPublicWorkspaceLogoAssetBySlug(slug: string) {
-  const [workspace] = await db
+export async function getPublicBusinessLogoAssetBySlug(slug: string) {
+  const [business] = await db
     .select({
-      logoStoragePath: workspaces.logoStoragePath,
-      logoContentType: workspaces.logoContentType,
+      logoStoragePath: businesses.logoStoragePath,
+      logoContentType: businesses.logoContentType,
     })
-    .from(workspaces)
-    .where(eq(workspaces.slug, slug))
+    .from(businesses)
+    .where(eq(businesses.slug, slug))
     .limit(1);
 
-  return workspace ?? null;
+  return business ?? null;
 }
 
-export async function getWorkspaceOwnerNotificationEmails(workspaceId: string) {
+export async function getBusinessOwnerNotificationEmails(businessId: string) {
   const rows = await db
     .select({
       email: user.email,
     })
-    .from(workspaceMembers)
-    .innerJoin(user, eq(workspaceMembers.userId, user.id))
+    .from(businessMembers)
+    .innerJoin(user, eq(businessMembers.userId, user.id))
     .where(
       and(
-        eq(workspaceMembers.workspaceId, workspaceId),
-        eq(workspaceMembers.role, "owner"),
+        eq(businessMembers.businessId, businessId),
+        eq(businessMembers.role, "owner"),
       ),
     )
     .orderBy(asc(user.email));
@@ -272,21 +272,21 @@ export async function getWorkspaceOwnerNotificationEmails(workspaceId: string) {
   return Array.from(dedupedEmails.values());
 }
 
-type GetInquiryListForWorkspaceInput = {
-  workspaceId: string;
+type GetInquiryListForBusinessInput = {
+  businessId: string;
   filters: InquiryListFilters;
 };
 
-export async function getInquiryListForWorkspace({
-  workspaceId,
+export async function getInquiryListForBusiness({
+  businessId,
   filters,
-}: GetInquiryListForWorkspaceInput): Promise<DashboardInquiryListItem[]> {
+}: GetInquiryListForBusinessInput): Promise<DashboardInquiryListItem[]> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceInquiryListCacheTags(workspaceId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessInquiryListCacheTags(businessId));
 
-  const conditions = [eq(inquiries.workspaceId, workspaceId)];
+  const conditions = [eq(inquiries.businessId, businessId)];
 
   if (filters.status !== "all") {
     conditions.push(eq(inquiries.status, filters.status));
@@ -306,15 +306,15 @@ export async function getInquiryListForWorkspace({
   }
 
   if (filters.form !== "all") {
-    conditions.push(eq(workspaceInquiryForms.slug, filters.form));
+    conditions.push(eq(businessInquiryForms.slug, filters.form));
   }
 
   return db
     .select({
       id: inquiries.id,
-      workspaceInquiryFormId: inquiries.workspaceInquiryFormId,
-      inquiryFormName: workspaceInquiryForms.name,
-      inquiryFormSlug: workspaceInquiryForms.slug,
+      businessInquiryFormId: inquiries.businessInquiryFormId,
+      inquiryFormName: businessInquiryForms.name,
+      inquiryFormSlug: businessInquiryForms.slug,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
       serviceCategory: inquiries.serviceCategory,
@@ -326,35 +326,35 @@ export async function getInquiryListForWorkspace({
     })
     .from(inquiries)
     .innerJoin(
-      workspaceInquiryForms,
-      eq(inquiries.workspaceInquiryFormId, workspaceInquiryForms.id),
+      businessInquiryForms,
+      eq(inquiries.businessInquiryFormId, businessInquiryForms.id),
     )
     .where(and(...conditions))
     .orderBy(desc(inquiries.submittedAt), desc(inquiries.createdAt));
 }
 
-type GetInquiryDetailForWorkspaceInput = {
-  workspaceId: string;
+type GetInquiryDetailForBusinessInput = {
+  businessId: string;
   inquiryId: string;
 };
 
-export async function getInquiryDetailForWorkspace({
-  workspaceId,
+export async function getInquiryDetailForBusiness({
+  businessId,
   inquiryId,
-}: GetInquiryDetailForWorkspaceInput): Promise<DashboardInquiryDetail | null> {
+}: GetInquiryDetailForBusinessInput): Promise<DashboardInquiryDetail | null> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceInquiryDetailCacheTags(workspaceId, inquiryId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessInquiryDetailCacheTags(businessId, inquiryId));
 
   const [inquiry] = await db
     .select({
       id: inquiries.id,
-      workspaceId: inquiries.workspaceId,
-      workspaceInquiryFormId: inquiries.workspaceInquiryFormId,
-      inquiryFormName: workspaceInquiryForms.name,
-      inquiryFormSlug: workspaceInquiryForms.slug,
-      inquiryFormBusinessType: workspaceInquiryForms.businessType,
+      businessId: inquiries.businessId,
+      businessInquiryFormId: inquiries.businessInquiryFormId,
+      inquiryFormName: businessInquiryForms.name,
+      inquiryFormSlug: businessInquiryForms.slug,
+      inquiryFormBusinessType: businessInquiryForms.businessType,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
       customerPhone: inquiries.customerPhone,
@@ -372,10 +372,10 @@ export async function getInquiryDetailForWorkspace({
     })
     .from(inquiries)
     .innerJoin(
-      workspaceInquiryForms,
-      eq(inquiries.workspaceInquiryFormId, workspaceInquiryForms.id),
+      businessInquiryForms,
+      eq(inquiries.businessInquiryFormId, businessInquiryForms.id),
     )
-    .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
+    .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
     .limit(1);
 
   if (!inquiry) {
@@ -395,7 +395,7 @@ export async function getInquiryDetailForWorkspace({
         .from(inquiryAttachments)
         .where(
           and(
-            eq(inquiryAttachments.workspaceId, workspaceId),
+            eq(inquiryAttachments.businessId, businessId),
             eq(inquiryAttachments.inquiryId, inquiryId),
           ),
         )
@@ -412,7 +412,7 @@ export async function getInquiryDetailForWorkspace({
         .leftJoin(user, eq(inquiryNotes.authorUserId, user.id))
         .where(
           and(
-            eq(inquiryNotes.workspaceId, workspaceId),
+            eq(inquiryNotes.businessId, businessId),
             eq(inquiryNotes.inquiryId, inquiryId),
           ),
         )
@@ -429,7 +429,7 @@ export async function getInquiryDetailForWorkspace({
         .leftJoin(user, eq(activityLogs.actorUserId, user.id))
         .where(
           and(
-            eq(activityLogs.workspaceId, workspaceId),
+            eq(activityLogs.businessId, businessId),
             eq(activityLogs.inquiryId, inquiryId),
           ),
         )
@@ -443,7 +443,7 @@ export async function getInquiryDetailForWorkspace({
           createdAt: quotes.createdAt,
         })
         .from(quotes)
-        .where(and(eq(quotes.workspaceId, workspaceId), eq(quotes.inquiryId, inquiryId)))
+        .where(and(eq(quotes.businessId, businessId), eq(quotes.inquiryId, inquiryId)))
         .orderBy(desc(quotes.createdAt))
         .limit(1),
       db
@@ -451,7 +451,7 @@ export async function getInquiryDetailForWorkspace({
           count: count(),
         })
         .from(quotes)
-        .where(and(eq(quotes.workspaceId, workspaceId), eq(quotes.inquiryId, inquiryId))),
+        .where(and(eq(quotes.businessId, businessId), eq(quotes.inquiryId, inquiryId))),
     ]);
 
   const relatedQuote = relatedQuoteRows[0]
@@ -473,42 +473,42 @@ export async function getInquiryDetailForWorkspace({
   };
 }
 
-export async function getWorkspaceInquiryFormOptionsForWorkspace(
-  workspaceId: string,
+export async function getBusinessInquiryFormOptionsForBusiness(
+  businessId: string,
 ) {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceInquiryFormsCacheTags(workspaceId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessInquiryFormsCacheTags(businessId));
 
   return db
     .select({
-      id: workspaceInquiryForms.id,
-      name: workspaceInquiryForms.name,
-      slug: workspaceInquiryForms.slug,
-      isDefault: workspaceInquiryForms.isDefault,
+      id: businessInquiryForms.id,
+      name: businessInquiryForms.name,
+      slug: businessInquiryForms.slug,
+      isDefault: businessInquiryForms.isDefault,
     })
-    .from(workspaceInquiryForms)
+    .from(businessInquiryForms)
     .where(
       and(
-        eq(workspaceInquiryForms.workspaceId, workspaceId),
-        isNull(workspaceInquiryForms.archivedAt),
+        eq(businessInquiryForms.businessId, businessId),
+        isNull(businessInquiryForms.archivedAt),
       ),
     )
-    .orderBy(desc(workspaceInquiryForms.isDefault), asc(workspaceInquiryForms.name));
+    .orderBy(desc(businessInquiryForms.isDefault), asc(businessInquiryForms.name));
 }
 
-type GetInquiryAttachmentForWorkspaceInput = {
-  workspaceId: string;
+type GetInquiryAttachmentForBusinessInput = {
+  businessId: string;
   inquiryId: string;
   attachmentId: string;
 };
 
-export async function getInquiryAttachmentForWorkspace({
-  workspaceId,
+export async function getInquiryAttachmentForBusiness({
+  businessId,
   inquiryId,
   attachmentId,
-}: GetInquiryAttachmentForWorkspaceInput) {
+}: GetInquiryAttachmentForBusinessInput) {
   const [attachment] = await db
     .select({
       id: inquiryAttachments.id,
@@ -521,16 +521,16 @@ export async function getInquiryAttachmentForWorkspace({
       inquiries,
       and(
         eq(inquiryAttachments.inquiryId, inquiries.id),
-        eq(inquiryAttachments.workspaceId, inquiries.workspaceId),
+        eq(inquiryAttachments.businessId, inquiries.businessId),
       ),
     )
     .where(
       and(
         eq(inquiryAttachments.id, attachmentId),
         eq(inquiryAttachments.inquiryId, inquiryId),
-        eq(inquiryAttachments.workspaceId, workspaceId),
+        eq(inquiryAttachments.businessId, businessId),
         eq(inquiries.id, inquiryId),
-        eq(inquiries.workspaceId, workspaceId),
+        eq(inquiries.businessId, businessId),
       ),
     )
     .limit(1);

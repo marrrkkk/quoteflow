@@ -44,7 +44,7 @@ type QuoteEditorProps = {
     state: QuoteEditorActionState,
     formData: FormData,
   ) => Promise<QuoteEditorActionState>;
-  workspaceName: string;
+  businessName: string;
   currency: string;
   initialValues: QuoteEditorValues;
   linkedInquiry: QuoteLinkedInquirySummary | null;
@@ -58,7 +58,7 @@ const initialState: QuoteEditorActionState = {};
 
 export function QuoteEditor({
   action,
-  workspaceName,
+  businessName,
   currency,
   initialValues,
   linkedInquiry,
@@ -556,7 +556,7 @@ export function QuoteEditor({
       />
 
       <QuotePreview
-        workspaceName={workspaceName}
+        businessName={businessName}
         quoteNumber={quoteNumber ?? "Assigned after save"}
         title={title || "Untitled quote"}
         customerName={customerName || "Customer name"}

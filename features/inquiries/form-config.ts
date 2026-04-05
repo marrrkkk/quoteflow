@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import {
-  workspaceBusinessTypes,
-  type WorkspaceBusinessType,
+  businessTypes,
+  type BusinessType,
 } from "@/features/inquiries/business-types";
 
 function emptyToUndefined(value: unknown) {
@@ -107,7 +107,7 @@ export type InquiryFormFieldDefinition =
 
 export type InquiryFormConfig = {
   version: 1;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   contactFields: Record<InquiryContactFieldKey, InquiryContactFieldConfig>;
   projectFields: InquiryFormFieldDefinition[];
 };
@@ -121,7 +121,7 @@ export type InquirySubmittedFieldSnapshotField = {
 
 export type InquirySubmittedFieldSnapshot = {
   version: 1;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   fields: InquirySubmittedFieldSnapshotField[];
 };
 
@@ -187,14 +187,14 @@ export const inquirySubmittedFieldSnapshotFieldSchema = z.object({
 
 export const inquirySubmittedFieldSnapshotSchema = z.object({
   version: z.literal(1),
-  businessType: z.enum(workspaceBusinessTypes),
+  businessType: z.enum(businessTypes),
   fields: z.array(inquirySubmittedFieldSnapshotFieldSchema).max(40),
 });
 
 export const inquiryFormConfigSchema = z
   .object({
     version: z.literal(1),
-    businessType: z.enum(workspaceBusinessTypes),
+    businessType: z.enum(businessTypes),
     contactFields: z.object({
       customerName: inquiryContactFieldConfigSchema,
       customerEmail: inquiryContactFieldConfigSchema,
@@ -278,7 +278,7 @@ export const inquiryFormConfigSchema = z
   });
 
 type CreateInquiryFormConfigDefaultsInput = {
-  businessType?: WorkspaceBusinessType;
+  businessType?: BusinessType;
 };
 
 type ContactFieldOverrides = Partial<
@@ -688,7 +688,7 @@ function createItWebServicesFields() {
     }),
     createCustomField("platform", "short_text", {
       label: "Platform",
-      placeholder: "WordPress, Shopify, Google Workspace",
+      placeholder: "WordPress, Shopify, Google Business",
     }),
     createCustomField("priority", "select", {
       label: "Priority",

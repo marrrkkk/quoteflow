@@ -6,57 +6,57 @@ import { redirect } from "next/navigation";
 
 import { getValidationActionState } from "@/lib/action-state";
 import {
-  getWorkspaceInquiryFormCacheTags,
-  getWorkspaceInquiryFormsCacheTags,
-  getWorkspaceSettingsCacheTags,
+  getBusinessInquiryFormCacheTags,
+  getBusinessInquiryFormsCacheTags,
+  getBusinessSettingsCacheTags,
   uniqueCacheTags,
-} from "@/lib/cache/workspace-tags";
+} from "@/lib/cache/business-tags";
 import {
-  workspaceDeleteSchema,
-  workspaceGeneralSettingsSchema,
-  workspaceInquiryFormCreateSchema,
-  workspaceInquiryFormPresetSchema,
-  workspaceInquiryFormSettingsSchema,
-  workspaceInquiryFormTargetSchema,
-  workspaceInquiryPageSettingsSchema,
-  workspaceQuoteSettingsSchema,
+  businessDeleteSchema,
+  businessGeneralSettingsSchema,
+  businessInquiryFormCreateSchema,
+  businessInquiryFormPresetSchema,
+  businessInquiryFormSettingsSchema,
+  businessInquiryFormTargetSchema,
+  businessInquiryPageSettingsSchema,
+  businessQuoteSettingsSchema,
 } from "@/features/settings/schemas";
 import type {
-  WorkspaceDeleteActionState,
-  WorkspaceInquiryFormActionState,
-  WorkspaceInquiryFormDangerActionState,
-  WorkspaceInquiryFormsActionState,
-  WorkspaceInquiryPageActionState,
-  WorkspaceQuoteSettingsActionState,
-  WorkspaceSettingsActionState,
+  BusinessDeleteActionState,
+  BusinessInquiryFormActionState,
+  BusinessInquiryFormDangerActionState,
+  BusinessInquiryFormsActionState,
+  BusinessInquiryPageActionState,
+  BusinessQuoteSettingsActionState,
+  BusinessSettingsActionState,
 } from "@/features/settings/types";
 import {
-  archiveWorkspaceInquiryForm,
-  createWorkspaceInquiryForm,
-  deleteWorkspace,
-  deleteWorkspaceInquiryForm,
-  duplicateWorkspaceInquiryForm,
-  applyWorkspaceInquiryFormPreset,
-  setDefaultWorkspaceInquiryForm,
-  updateWorkspaceInquiryFormSettings,
-  updateWorkspaceInquiryPageSettings,
-  updateWorkspaceQuoteSettings,
-  updateWorkspaceSettings,
+  archiveBusinessInquiryForm,
+  createBusinessInquiryForm,
+  deleteBusiness,
+  deleteBusinessInquiryForm,
+  duplicateBusinessInquiryForm,
+  applyBusinessInquiryFormPreset,
+  setDefaultBusinessInquiryForm,
+  updateBusinessInquiryFormSettings,
+  updateBusinessInquiryPageSettings,
+  updateBusinessQuoteSettings,
+  updateBusinessSettings,
 } from "@/features/settings/mutations";
-import { getOwnerWorkspaceActionContext } from "@/lib/db/workspace-access";
+import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
 import {
-  activeWorkspaceSlugCookieName,
-  getWorkspaceDashboardPath,
-  getWorkspaceInquiryFormEditorPath,
-  getWorkspaceInquiryFormPreviewPath,
-  getWorkspaceInquiryFormsPath,
-  getWorkspaceInquiryPageEditorPath,
-  getWorkspacePath,
-  getWorkspaceSettingsPath,
-  workspaceHubPath,
-} from "@/features/workspaces/routes";
-import { getWorkspacePublicInquiryUrl } from "@/features/settings/utils";
-import { getWorkspaceInquiryFormsSettingsForWorkspace } from "@/features/settings/queries";
+  activeBusinessSlugCookieName,
+  getBusinessDashboardPath,
+  getBusinessInquiryFormEditorPath,
+  getBusinessInquiryFormPreviewPath,
+  getBusinessInquiryFormsPath,
+  getBusinessInquiryPageEditorPath,
+  getBusinessPath,
+  getBusinessSettingsPath,
+  businessesHubPath,
+} from "@/features/businesses/routes";
+import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
+import { getBusinessInquiryFormsSettingsForBusiness } from "@/features/settings/queries";
 
 function updateCacheTags(tags: string[]) {
   for (const tag of uniqueCacheTags(tags)) {
@@ -64,30 +64,30 @@ function updateCacheTags(tags: string[]) {
   }
 }
 
-function revalidateWorkspaceInquiryFormPaths(
-  workspaceSlug: string,
+function revalidateBusinessInquiryFormPaths(
+  businessSlug: string,
   formSlug: string,
 ) {
-  revalidatePath(getWorkspaceInquiryFormsPath(workspaceSlug));
-  revalidatePath(getWorkspaceInquiryFormEditorPath(workspaceSlug, formSlug));
-  revalidatePath(getWorkspaceInquiryPageEditorPath(workspaceSlug, formSlug));
-  revalidatePath(getWorkspaceInquiryFormPreviewPath(workspaceSlug, formSlug));
-  revalidatePath(getWorkspacePublicInquiryUrl(workspaceSlug, formSlug));
+  revalidatePath(getBusinessInquiryFormsPath(businessSlug));
+  revalidatePath(getBusinessInquiryFormEditorPath(businessSlug, formSlug));
+  revalidatePath(getBusinessInquiryPageEditorPath(businessSlug, formSlug));
+  revalidatePath(getBusinessInquiryFormPreviewPath(businessSlug, formSlug));
+  revalidatePath(getBusinessPublicInquiryUrl(businessSlug, formSlug));
 }
 
-function revalidateWorkspaceDefaultInquiryPaths(workspaceSlug: string) {
-  revalidatePath(getWorkspacePublicInquiryUrl(workspaceSlug));
-  revalidatePath(`${getWorkspaceSettingsPath(workspaceSlug)}/inquiry-form`);
-  revalidatePath(`${getWorkspaceSettingsPath(workspaceSlug)}/inquiry-page`);
-  revalidatePath(`${getWorkspaceSettingsPath(workspaceSlug)}/inquiry-page/preview`);
-  revalidatePath(`${getWorkspacePath(workspaceSlug)}/preview/inquiry-page`);
+function revalidateBusinessDefaultInquiryPaths(businessSlug: string) {
+  revalidatePath(getBusinessPublicInquiryUrl(businessSlug));
+  revalidatePath(`${getBusinessSettingsPath(businessSlug)}/inquiry-form`);
+  revalidatePath(`${getBusinessSettingsPath(businessSlug)}/inquiry-page`);
+  revalidatePath(`${getBusinessSettingsPath(businessSlug)}/inquiry-page/preview`);
+  revalidatePath(`${getBusinessPath(businessSlug)}/preview/inquiry-page`);
 }
 
-export async function updateWorkspaceSettingsAction(
-  _prevState: WorkspaceSettingsActionState,
+export async function updateBusinessSettingsAction(
+  _prevState: BusinessSettingsActionState,
   formData: FormData,
-): Promise<WorkspaceSettingsActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessSettingsActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -95,9 +95,9 @@ export async function updateWorkspaceSettingsAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
-  const validationResult = workspaceGeneralSettingsSchema.safeParse({
+  const validationResult = businessGeneralSettingsSchema.safeParse({
     name: formData.get("name"),
     slug: formData.get("slug"),
     shortDescription: formData.get("shortDescription"),
@@ -116,8 +116,8 @@ export async function updateWorkspaceSettingsAction(
   let nextSettingsPath: string | null = null;
 
   try {
-    const result = await updateWorkspaceSettings({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateBusinessSettings({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
@@ -133,45 +133,45 @@ export async function updateWorkspaceSettingsAction(
       }
 
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
-    revalidatePath(getWorkspaceDashboardPath(result.previousSlug), "layout");
-    revalidatePath(getWorkspaceDashboardPath(result.nextSlug), "layout");
-    revalidatePath(getWorkspaceSettingsPath(result.previousSlug));
-    revalidatePath(getWorkspaceSettingsPath(result.nextSlug));
-    revalidatePath(getWorkspaceSettingsPath(result.previousSlug, "general"));
-    revalidatePath(getWorkspaceSettingsPath(result.nextSlug, "general"));
-    revalidatePath(getWorkspaceSettingsPath(result.previousSlug, "quote"));
-    revalidatePath(getWorkspaceSettingsPath(result.nextSlug, "quote"));
-    revalidatePath(getWorkspaceSettingsPath(result.previousSlug, "pricing"));
-    revalidatePath(getWorkspaceSettingsPath(result.nextSlug, "pricing"));
-    revalidatePath(getWorkspaceSettingsPath(result.previousSlug, "knowledge"));
-    revalidatePath(getWorkspaceSettingsPath(result.nextSlug, "knowledge"));
+    revalidatePath(getBusinessDashboardPath(result.previousSlug), "layout");
+    revalidatePath(getBusinessDashboardPath(result.nextSlug), "layout");
+    revalidatePath(getBusinessSettingsPath(result.previousSlug));
+    revalidatePath(getBusinessSettingsPath(result.nextSlug));
+    revalidatePath(getBusinessSettingsPath(result.previousSlug, "general"));
+    revalidatePath(getBusinessSettingsPath(result.nextSlug, "general"));
+    revalidatePath(getBusinessSettingsPath(result.previousSlug, "quote"));
+    revalidatePath(getBusinessSettingsPath(result.nextSlug, "quote"));
+    revalidatePath(getBusinessSettingsPath(result.previousSlug, "pricing"));
+    revalidatePath(getBusinessSettingsPath(result.nextSlug, "pricing"));
+    revalidatePath(getBusinessSettingsPath(result.previousSlug, "knowledge"));
+    revalidatePath(getBusinessSettingsPath(result.nextSlug, "knowledge"));
     revalidatePath(`/inquire/${result.previousSlug}`);
     revalidatePath(`/inquire/${result.nextSlug}`);
-    revalidateWorkspaceDefaultInquiryPaths(result.previousSlug);
-    revalidateWorkspaceDefaultInquiryPaths(result.nextSlug);
+    revalidateBusinessDefaultInquiryPaths(result.previousSlug);
+    revalidateBusinessDefaultInquiryPaths(result.nextSlug);
 
-    const inquiryFormsSettings = await getWorkspaceInquiryFormsSettingsForWorkspace(
-      workspaceContext.workspace.id,
+    const inquiryFormsSettings = await getBusinessInquiryFormsSettingsForBusiness(
+      businessContext.business.id,
     );
 
     if (inquiryFormsSettings) {
       for (const form of inquiryFormsSettings.forms) {
-        revalidateWorkspaceInquiryFormPaths(result.previousSlug, form.slug);
-        revalidateWorkspaceInquiryFormPaths(result.nextSlug, form.slug);
+        revalidateBusinessInquiryFormPaths(result.previousSlug, form.slug);
+        revalidateBusinessInquiryFormPaths(result.nextSlug, form.slug);
       }
     }
 
     if (result.previousSlug !== result.nextSlug) {
-      nextSettingsPath = getWorkspaceSettingsPath(result.nextSlug, "general");
+      nextSettingsPath = getBusinessSettingsPath(result.nextSlug, "general");
     }
 
-    updateCacheTags(getWorkspaceSettingsCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessSettingsCacheTags(businessContext.business.id));
   } catch (error) {
-    console.error("Failed to update workspace settings.", error);
+    console.error("Failed to update business settings.", error);
 
     return {
       error: "We couldn't save those settings right now.",
@@ -183,15 +183,15 @@ export async function updateWorkspaceSettingsAction(
   }
 
   return {
-    success: "Workspace settings saved.",
+    success: "Business settings saved.",
   };
 }
 
-export async function updateWorkspaceQuoteSettingsAction(
-  _prevState: WorkspaceQuoteSettingsActionState,
+export async function updateBusinessQuoteSettingsAction(
+  _prevState: BusinessQuoteSettingsActionState,
   formData: FormData,
-): Promise<WorkspaceQuoteSettingsActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessQuoteSettingsActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -199,8 +199,8 @@ export async function updateWorkspaceQuoteSettingsAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceQuoteSettingsSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessQuoteSettingsSchema.safeParse({
     defaultQuoteNotes: formData.get("defaultQuoteNotes"),
     defaultQuoteValidityDays: formData.get("defaultQuoteValidityDays"),
     notifyOnQuoteSent: formData.get("notifyOnQuoteSent"),
@@ -215,25 +215,25 @@ export async function updateWorkspaceQuoteSettingsAction(
   }
 
   try {
-    const result = await updateWorkspaceQuoteSettings({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateBusinessQuoteSettings({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
 
     if (!result.ok) {
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
-    updateCacheTags(getWorkspaceSettingsCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessSettingsCacheTags(businessContext.business.id));
 
     return {
       success: "Quote settings saved.",
     };
   } catch (error) {
-    console.error("Failed to update workspace quote settings.", error);
+    console.error("Failed to update business quote settings.", error);
 
     return {
       error: "We couldn't save the quote settings right now.",
@@ -241,11 +241,11 @@ export async function updateWorkspaceQuoteSettingsAction(
   }
 }
 
-export async function deleteWorkspaceAction(
-  _prevState: WorkspaceDeleteActionState,
+export async function deleteBusinessAction(
+  _prevState: BusinessDeleteActionState,
   formData: FormData,
-): Promise<WorkspaceDeleteActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessDeleteActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -253,23 +253,23 @@ export async function deleteWorkspaceAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceDeleteSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessDeleteSchema.safeParse({
     confirmation: formData.get("confirmation"),
   });
 
   if (!validationResult.success) {
     return getValidationActionState(
       validationResult.error,
-      "Type the workspace name to continue.",
+      "Type the business name to continue.",
     );
   }
 
   let shouldRedirect = false;
 
   try {
-    const result = await deleteWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await deleteBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
@@ -277,47 +277,47 @@ export async function deleteWorkspaceAction(
     if (!result.ok) {
       if (result.reason === "confirmation-mismatch") {
         return {
-          error: "Type the exact workspace name to delete it.",
+          error: "Type the exact business name to delete it.",
           fieldErrors: {
-            confirmation: ["This does not match the workspace name."],
+            confirmation: ["This does not match the business name."],
           },
         };
       }
 
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
     const cookieStore = await cookies();
 
-    cookieStore.delete(activeWorkspaceSlugCookieName);
+    cookieStore.delete(activeBusinessSlugCookieName);
 
-    revalidatePath(workspaceHubPath);
+    revalidatePath(businessesHubPath);
     shouldRedirect = true;
   } catch (error) {
-    console.error("Failed to delete workspace.", error);
+    console.error("Failed to delete business.", error);
 
     return {
-      error: "We couldn't delete the workspace right now.",
+      error: "We couldn't delete the business right now.",
     };
   }
 
   if (shouldRedirect) {
-    redirect(workspaceHubPath);
+    redirect(businessesHubPath);
   }
 
   return {
-    error: "We couldn't delete the workspace right now.",
+    error: "We couldn't delete the business right now.",
   };
 }
 
-export async function updateWorkspaceInquiryPageAction(
+export async function updateBusinessInquiryPageAction(
   formSlug: string,
-  _prevState: WorkspaceInquiryPageActionState,
+  _prevState: BusinessInquiryPageActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryPageActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryPageActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -325,9 +325,9 @@ export async function updateWorkspaceInquiryPageAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
-  const validationResult = workspaceInquiryPageSettingsSchema.safeParse({
+  const validationResult = businessInquiryPageSettingsSchema.safeParse({
     formId: formData.get("formId"),
     publicInquiryEnabled: formData.get("publicInquiryEnabled"),
     template: formData.get("template"),
@@ -348,27 +348,27 @@ export async function updateWorkspaceInquiryPageAction(
   }
 
   try {
-    const result = await updateWorkspaceInquiryPageSettings({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateBusinessInquiryPageSettings({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
 
     if (!result.ok) {
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
     updateCacheTags(
-      getWorkspaceInquiryFormCacheTags(workspaceContext.workspace.id, formSlug),
+      getBusinessInquiryFormCacheTags(businessContext.business.id, formSlug),
     );
 
     return {
       success: "Inquiry page saved.",
     };
   } catch (error) {
-    console.error("Failed to update workspace inquiry page settings.", error);
+    console.error("Failed to update business inquiry page settings.", error);
 
     return {
       error: "We couldn't save the inquiry page right now.",
@@ -376,12 +376,12 @@ export async function updateWorkspaceInquiryPageAction(
   }
 }
 
-export async function updateWorkspaceInquiryFormAction(
+export async function updateBusinessInquiryFormAction(
   _formSlug: string,
-  _prevState: WorkspaceInquiryFormActionState,
+  _prevState: BusinessInquiryFormActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -389,9 +389,9 @@ export async function updateWorkspaceInquiryFormAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
-  const validationResult = workspaceInquiryFormSettingsSchema.safeParse({
+  const validationResult = businessInquiryFormSettingsSchema.safeParse({
     formId: formData.get("formId"),
     name: formData.get("name"),
     slug: formData.get("slug"),
@@ -409,8 +409,8 @@ export async function updateWorkspaceInquiryFormAction(
   let nextEditorPath: string | null = null;
 
   try {
-    const result = await updateWorkspaceInquiryFormSettings({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateBusinessInquiryFormSettings({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
@@ -420,41 +420,41 @@ export async function updateWorkspaceInquiryFormAction(
         return {
           error: "Choose a different form slug.",
           fieldErrors: {
-            slug: ["This form slug is already in use in this workspace."],
+            slug: ["This form slug is already in use in this business."],
           },
         };
       }
 
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.previousFormSlug,
         ),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.nextFormSlug,
         ),
       ]),
     );
 
     if (result.previousFormSlug !== result.nextFormSlug) {
-      revalidateWorkspaceInquiryFormPaths(result.nextSlug, result.previousFormSlug);
-      revalidateWorkspaceInquiryFormPaths(result.nextSlug, result.nextFormSlug);
-      revalidateWorkspaceDefaultInquiryPaths(result.nextSlug);
-      nextEditorPath = getWorkspaceInquiryFormEditorPath(
+      revalidateBusinessInquiryFormPaths(result.nextSlug, result.previousFormSlug);
+      revalidateBusinessInquiryFormPaths(result.nextSlug, result.nextFormSlug);
+      revalidateBusinessDefaultInquiryPaths(result.nextSlug);
+      nextEditorPath = getBusinessInquiryFormEditorPath(
         result.nextSlug,
         result.nextFormSlug,
       );
     }
   } catch (error) {
-    console.error("Failed to update workspace inquiry form settings.", error);
+    console.error("Failed to update business inquiry form settings.", error);
 
     return {
       error: "We couldn't save the inquiry form right now.",
@@ -470,12 +470,12 @@ export async function updateWorkspaceInquiryFormAction(
   };
 }
 
-export async function applyWorkspaceInquiryFormPresetAction(
+export async function applyBusinessInquiryFormPresetAction(
   formSlug: string,
-  _prevState: WorkspaceInquiryFormActionState,
+  _prevState: BusinessInquiryFormActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -483,9 +483,9 @@ export async function applyWorkspaceInquiryFormPresetAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
-  const validationResult = workspaceInquiryFormPresetSchema.safeParse({
+  const validationResult = businessInquiryFormPresetSchema.safeParse({
     formId: formData.get("formId"),
     businessType: formData.get("businessType"),
   });
@@ -498,22 +498,22 @@ export async function applyWorkspaceInquiryFormPresetAction(
   }
 
   try {
-    const result = await applyWorkspaceInquiryFormPreset({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await applyBusinessInquiryFormPreset({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
 
     if (!result.ok) {
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(workspaceContext.workspace.id, formSlug),
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(businessContext.business.id, formSlug),
       ]),
     );
 
@@ -521,7 +521,7 @@ export async function applyWorkspaceInquiryFormPresetAction(
       success: "Preset defaults applied.",
     };
   } catch (error) {
-    console.error("Failed to apply workspace inquiry preset.", error);
+    console.error("Failed to apply business inquiry preset.", error);
 
     return {
       error: "We couldn't apply the preset right now.",
@@ -529,11 +529,11 @@ export async function applyWorkspaceInquiryFormPresetAction(
   }
 }
 
-export async function createWorkspaceInquiryFormAction(
-  _prevState: WorkspaceInquiryFormsActionState,
+export async function createBusinessInquiryFormAction(
+  _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormsActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormsActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -541,8 +541,8 @@ export async function createWorkspaceInquiryFormAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceInquiryFormCreateSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormCreateSchema.safeParse({
     name: formData.get("name"),
     businessType: formData.get("businessType"),
   });
@@ -557,30 +557,30 @@ export async function createWorkspaceInquiryFormAction(
   let editorPath: string | null = null;
 
   try {
-    const result = await createWorkspaceInquiryForm({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await createBusinessInquiryForm({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       values: validationResult.data,
     });
 
     if (!result.ok) {
       return {
-        error: "That workspace could not be found.",
+        error: "That business could not be found.",
       };
     }
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.formSlug,
         ),
       ]),
     );
-    revalidateWorkspaceInquiryFormPaths(result.workspaceSlug, result.formSlug);
-    editorPath = getWorkspaceInquiryFormEditorPath(
-      result.workspaceSlug,
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
+    editorPath = getBusinessInquiryFormEditorPath(
+      result.businessSlug,
       result.formSlug,
     );
   } catch (error) {
@@ -600,11 +600,11 @@ export async function createWorkspaceInquiryFormAction(
   };
 }
 
-export async function duplicateWorkspaceInquiryFormAction(
-  _prevState: WorkspaceInquiryFormsActionState,
+export async function duplicateBusinessInquiryFormAction(
+  _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormsActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormsActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -612,8 +612,8 @@ export async function duplicateWorkspaceInquiryFormAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceInquiryFormTargetSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormTargetSchema.safeParse({
     targetFormId: formData.get("targetFormId"),
   });
 
@@ -624,8 +624,8 @@ export async function duplicateWorkspaceInquiryFormAction(
   let editorPath: string | null = null;
 
   try {
-    const result = await duplicateWorkspaceInquiryForm({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await duplicateBusinessInquiryForm({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       targetFormId: validationResult.data.targetFormId,
     });
@@ -638,16 +638,16 @@ export async function duplicateWorkspaceInquiryFormAction(
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.formSlug,
         ),
       ]),
     );
-    revalidateWorkspaceInquiryFormPaths(result.workspaceSlug, result.formSlug);
-    editorPath = getWorkspaceInquiryFormEditorPath(
-      result.workspaceSlug,
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
+    editorPath = getBusinessInquiryFormEditorPath(
+      result.businessSlug,
       result.formSlug,
     );
   } catch (error) {
@@ -667,11 +667,11 @@ export async function duplicateWorkspaceInquiryFormAction(
   };
 }
 
-export async function setDefaultWorkspaceInquiryFormAction(
-  _prevState: WorkspaceInquiryFormsActionState,
+export async function setDefaultBusinessInquiryFormAction(
+  _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormsActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormsActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -679,8 +679,8 @@ export async function setDefaultWorkspaceInquiryFormAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceInquiryFormTargetSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormTargetSchema.safeParse({
     targetFormId: formData.get("targetFormId"),
   });
 
@@ -689,8 +689,8 @@ export async function setDefaultWorkspaceInquiryFormAction(
   }
 
   try {
-    const result = await setDefaultWorkspaceInquiryForm({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await setDefaultBusinessInquiryForm({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       targetFormId: validationResult.data.targetFormId,
     });
@@ -703,15 +703,15 @@ export async function setDefaultWorkspaceInquiryFormAction(
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.formSlug,
         ),
       ]),
     );
-    revalidateWorkspaceInquiryFormPaths(result.workspaceSlug, result.formSlug);
-    revalidateWorkspaceDefaultInquiryPaths(result.workspaceSlug);
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
+    revalidateBusinessDefaultInquiryPaths(result.businessSlug);
 
     return {
       success: "Default inquiry form updated.",
@@ -725,11 +725,11 @@ export async function setDefaultWorkspaceInquiryFormAction(
   }
 }
 
-export async function archiveWorkspaceInquiryFormAction(
-  _prevState: WorkspaceInquiryFormsActionState,
+export async function archiveBusinessInquiryFormAction(
+  _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormsActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormsActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -737,8 +737,8 @@ export async function archiveWorkspaceInquiryFormAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceInquiryFormTargetSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormTargetSchema.safeParse({
     targetFormId: formData.get("targetFormId"),
   });
 
@@ -747,8 +747,8 @@ export async function archiveWorkspaceInquiryFormAction(
   }
 
   try {
-    const result = await archiveWorkspaceInquiryForm({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await archiveBusinessInquiryForm({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       targetFormId: validationResult.data.targetFormId,
     });
@@ -773,14 +773,14 @@ export async function archiveWorkspaceInquiryFormAction(
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.formSlug,
         ),
       ]),
     );
-    revalidateWorkspaceInquiryFormPaths(result.workspaceSlug, result.formSlug);
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
 
     return {
       success: "Inquiry form archived.",
@@ -794,11 +794,11 @@ export async function archiveWorkspaceInquiryFormAction(
   }
 }
 
-export async function archiveWorkspaceInquiryFormFromDetailAction(
-  _prevState: WorkspaceInquiryFormDangerActionState,
+export async function archiveBusinessInquiryFormFromDetailAction(
+  _prevState: BusinessInquiryFormDangerActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormDangerActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormDangerActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -806,8 +806,8 @@ export async function archiveWorkspaceInquiryFormFromDetailAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceInquiryFormTargetSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormTargetSchema.safeParse({
     targetFormId: formData.get("targetFormId"),
   });
 
@@ -818,8 +818,8 @@ export async function archiveWorkspaceInquiryFormFromDetailAction(
   }
 
   try {
-    const result = await archiveWorkspaceInquiryForm({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await archiveBusinessInquiryForm({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       targetFormId: validationResult.data.targetFormId,
     });
@@ -844,14 +844,14 @@ export async function archiveWorkspaceInquiryFormFromDetailAction(
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.formSlug,
         ),
       ]),
     );
-    revalidateWorkspaceInquiryFormPaths(result.workspaceSlug, result.formSlug);
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
 
     return {
       success: "Inquiry form archived.",
@@ -865,11 +865,11 @@ export async function archiveWorkspaceInquiryFormFromDetailAction(
   }
 }
 
-export async function deleteWorkspaceInquiryFormAction(
-  _prevState: WorkspaceInquiryFormDangerActionState,
+export async function deleteBusinessInquiryFormAction(
+  _prevState: BusinessInquiryFormDangerActionState,
   formData: FormData,
-): Promise<WorkspaceInquiryFormDangerActionState> {
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+): Promise<BusinessInquiryFormDangerActionState> {
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -877,8 +877,8 @@ export async function deleteWorkspaceInquiryFormAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
-  const validationResult = workspaceInquiryFormTargetSchema.safeParse({
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormTargetSchema.safeParse({
     targetFormId: formData.get("targetFormId"),
   });
 
@@ -889,8 +889,8 @@ export async function deleteWorkspaceInquiryFormAction(
   }
 
   try {
-    const result = await deleteWorkspaceInquiryForm({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await deleteBusinessInquiryForm({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       targetFormId: validationResult.data.targetFormId,
     });
@@ -921,14 +921,14 @@ export async function deleteWorkspaceInquiryFormAction(
 
     updateCacheTags(
       uniqueCacheTags([
-        ...getWorkspaceInquiryFormsCacheTags(workspaceContext.workspace.id),
-        ...getWorkspaceInquiryFormCacheTags(
-          workspaceContext.workspace.id,
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
           result.formSlug,
         ),
       ]),
     );
-    revalidateWorkspaceInquiryFormPaths(result.workspaceSlug, result.formSlug);
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
 
     return {
       success: "Inquiry form deleted.",

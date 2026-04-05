@@ -18,7 +18,7 @@ import type {
   ReplySnippetDeleteActionState,
 } from "@/features/inquiries/reply-snippet-types";
 
-type WorkspaceReplySnippetsManagerProps = {
+type BusinessReplySnippetsManagerProps = {
   snippets: DashboardReplySnippet[];
   createAction: (
     state: ReplySnippetActionState,
@@ -36,12 +36,12 @@ type WorkspaceReplySnippetsManagerProps = {
   ) => Promise<ReplySnippetDeleteActionState>;
 };
 
-export function WorkspaceReplySnippetsManager({
+export function BusinessReplySnippetsManager({
   snippets,
   createAction,
   updateAction,
   deleteAction,
-}: WorkspaceReplySnippetsManagerProps) {
+}: BusinessReplySnippetsManagerProps) {
   return (
     <div className="form-stack">
       <Card className="gap-0 border-border/75 bg-card/97">

@@ -97,7 +97,7 @@ export function getKnowledgeTextPreview(text: string | null, maxLength = 220) {
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
-export function buildWorkspaceKnowledgeCombinedText(
+export function buildBusinessKnowledgeCombinedText(
   faqs: KnowledgeContextFaq[],
   files: KnowledgeContextFile[],
   maxLength = knowledgeContextMaxCharacters,
@@ -107,7 +107,7 @@ export function buildWorkspaceKnowledgeCombinedText(
   if (faqs.length) {
     sections.push(
       [
-        "Workspace FAQs",
+        "Business FAQs",
         ...faqs.map(
           (faq) => `Q: ${faq.question}\nA: ${faq.answer}`,
         ),
@@ -118,7 +118,7 @@ export function buildWorkspaceKnowledgeCombinedText(
   if (files.length) {
     sections.push(
       [
-        "Workspace Files",
+        "Business Files",
         ...files.map(
           (file) =>
             `${file.title} (${file.fileName})\n${file.extractedText}`,

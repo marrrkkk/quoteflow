@@ -12,29 +12,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { WorkspaceInquiryFormsActionState } from "@/features/settings/types";
+import type { BusinessInquiryFormsActionState } from "@/features/settings/types";
 
-type WorkspaceInquiryFormManageCardProps = {
+type BusinessInquiryFormManageCardProps = {
   duplicateAction: (
-    state: WorkspaceInquiryFormsActionState,
+    state: BusinessInquiryFormsActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormsActionState>;
+  ) => Promise<BusinessInquiryFormsActionState>;
   formId: string;
   isDefault: boolean;
   setDefaultAction: (
-    state: WorkspaceInquiryFormsActionState,
+    state: BusinessInquiryFormsActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormsActionState>;
+  ) => Promise<BusinessInquiryFormsActionState>;
 };
 
-const initialState: WorkspaceInquiryFormsActionState = {};
+const initialState: BusinessInquiryFormsActionState = {};
 
-export function WorkspaceInquiryFormManageCard({
+export function BusinessInquiryFormManageCard({
   duplicateAction,
   formId,
   isDefault,
   setDefaultAction,
-}: WorkspaceInquiryFormManageCardProps) {
+}: BusinessInquiryFormManageCardProps) {
   const router = useProgressRouter();
   const [duplicateState, duplicateFormAction, isDuplicatePending] =
     useActionState(duplicateAction, initialState);

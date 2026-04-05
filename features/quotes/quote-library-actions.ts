@@ -4,14 +4,14 @@ import { updateTag } from "next/cache";
 
 import { getValidationActionState } from "@/lib/action-state";
 import {
-  getWorkspacePricingCacheTags,
+  getBusinessPricingCacheTags,
   uniqueCacheTags,
-} from "@/lib/cache/workspace-tags";
-import { getOwnerWorkspaceActionContext } from "@/lib/db/workspace-access";
+} from "@/lib/cache/business-tags";
+import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
 import {
-  createQuoteLibraryEntryForWorkspace,
-  deleteQuoteLibraryEntryForWorkspace,
-  updateQuoteLibraryEntryForWorkspace,
+  createQuoteLibraryEntryForBusiness,
+  deleteQuoteLibraryEntryForBusiness,
+  updateQuoteLibraryEntryForBusiness,
 } from "@/features/quotes/quote-library-mutations";
 import {
   quoteLibraryEntryIdSchema,
@@ -48,7 +48,7 @@ export async function createQuoteLibraryEntryAction(
 ): Promise<QuoteLibraryActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -71,16 +71,16 @@ export async function createQuoteLibraryEntryAction(
     );
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    await createQuoteLibraryEntryForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    await createQuoteLibraryEntryForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       entry: validationResult.data,
     });
 
-    updateCacheTags(getWorkspacePricingCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessPricingCacheTags(businessContext.business.id));
     return {
       success:
         validationResult.data.kind === "block"
@@ -111,7 +111,7 @@ export async function updateQuoteLibraryEntryAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -134,11 +134,11 @@ export async function updateQuoteLibraryEntryAction(
     );
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const result = await updateQuoteLibraryEntryForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateQuoteLibraryEntryForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       entryId: parsedId.data,
       entry: validationResult.data,
@@ -150,7 +150,7 @@ export async function updateQuoteLibraryEntryAction(
       };
     }
 
-    updateCacheTags(getWorkspacePricingCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessPricingCacheTags(businessContext.business.id));
     return {
       success:
         validationResult.data.kind === "block"
@@ -182,7 +182,7 @@ export async function deleteQuoteLibraryEntryAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -190,11 +190,11 @@ export async function deleteQuoteLibraryEntryAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const result = await deleteQuoteLibraryEntryForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await deleteQuoteLibraryEntryForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       entryId: parsedId.data,
     });
@@ -205,7 +205,7 @@ export async function deleteQuoteLibraryEntryAction(
       };
     }
 
-    updateCacheTags(getWorkspacePricingCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessPricingCacheTags(businessContext.business.id));
     return {
       success: true,
     };

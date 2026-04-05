@@ -40,36 +40,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  workspaceBusinessTypeMeta,
-  workspaceBusinessTypes,
-  type WorkspaceBusinessType,
+  businessTypeMeta,
+  businessTypes,
+  type BusinessType,
 } from "@/features/inquiries/business-types";
 import type {
-  WorkspaceInquiryFormsActionState,
-  WorkspaceInquiryFormsSettingsView,
+  BusinessInquiryFormsActionState,
+  BusinessInquiryFormsSettingsView,
 } from "@/features/settings/types";
-import { getWorkspaceInquiryFormEditorPath } from "@/features/workspaces/routes";
+import { getBusinessInquiryFormEditorPath } from "@/features/businesses/routes";
 import { cn } from "@/lib/utils";
 
-type WorkspaceInquiryFormsManagerProps = {
-  settings: WorkspaceInquiryFormsSettingsView;
+type BusinessInquiryFormsManagerProps = {
+  settings: BusinessInquiryFormsSettingsView;
   createAction: (
-    state: WorkspaceInquiryFormsActionState,
+    state: BusinessInquiryFormsActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormsActionState>;
+  ) => Promise<BusinessInquiryFormsActionState>;
 };
 
-const initialState: WorkspaceInquiryFormsActionState = {};
+const initialState: BusinessInquiryFormsActionState = {};
 
-export function WorkspaceInquiryFormsManager({
+export function BusinessInquiryFormsManager({
   settings,
   createAction,
-}: WorkspaceInquiryFormsManagerProps) {
+}: BusinessInquiryFormsManagerProps) {
   const [createState, createFormAction, isCreatePending] = useActionState(
     createAction,
     initialState,
   );
-  const [businessType, setBusinessType] = useState<WorkspaceBusinessType>(
+  const [businessType, setBusinessType] = useState<BusinessType>(
     settings.businessType,
   );
   const nameError = createState.fieldErrors?.name?.[0];
@@ -97,13 +97,13 @@ export function WorkspaceInquiryFormsManager({
             <FormSection title="New form">
               <FieldGroup>
                 <Field data-invalid={Boolean(nameError) || undefined}>
-                  <FieldLabel htmlFor="workspace-inquiry-form-create-name">
+                  <FieldLabel htmlFor="business-inquiry-form-create-name">
                     Form name
                   </FieldLabel>
                   <FieldContent>
                     <Input
                       disabled={isCreatePending}
-                      id="workspace-inquiry-form-create-name"
+                      id="business-inquiry-form-create-name"
                       maxLength={80}
                       minLength={2}
                       name="name"
@@ -117,27 +117,27 @@ export function WorkspaceInquiryFormsManager({
                 </Field>
 
                 <Field data-invalid={Boolean(businessTypeError) || undefined}>
-                  <FieldLabel htmlFor="workspace-inquiry-form-create-type">
+                  <FieldLabel htmlFor="business-inquiry-form-create-type">
                     Business type
                   </FieldLabel>
                   <FieldContent>
                     <Select
                       onValueChange={(value) =>
-                        setBusinessType(value as WorkspaceBusinessType)
+                        setBusinessType(value as BusinessType)
                       }
                       value={businessType}
                     >
                       <SelectTrigger
                         className="w-full"
-                        id="workspace-inquiry-form-create-type"
+                        id="business-inquiry-form-create-type"
                       >
                         <SelectValue placeholder="Choose a business type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          {workspaceBusinessTypes.map((option) => (
+                          {businessTypes.map((option) => (
                             <SelectItem key={option} value={option}>
-                              {workspaceBusinessTypeMeta[option].label}
+                              {businessTypeMeta[option].label}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -178,7 +178,7 @@ export function WorkspaceInquiryFormsManager({
                     "flex items-center justify-between gap-4 px-4 py-4 transition-colors hover:bg-accent/35",
                     index > 0 && "border-t border-border/70",
                   )}
-                  href={getWorkspaceInquiryFormEditorPath(settings.slug, form.slug)}
+                  href={getBusinessInquiryFormEditorPath(settings.slug, form.slug)}
                   key={form.id}
                 >
                   <div className="min-w-0 flex-1">
@@ -194,7 +194,7 @@ export function WorkspaceInquiryFormsManager({
                       )}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>{workspaceBusinessTypeMeta[form.businessType].label}</span>
+                      <span>{businessTypeMeta[form.businessType].label}</span>
                       <span>{form.submittedInquiryCount} inquiries</span>
                       <span>{form.inquiryFormConfig.projectFields.length} fields</span>
                       <span>{form.inquiryPageConfig.cards.length} cards</span>

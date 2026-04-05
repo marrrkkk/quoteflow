@@ -4,7 +4,7 @@ import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
 import { createInquiryFormPreset } from "../features/inquiries/inquiry-forms";
 import { auth } from "../lib/auth/config";
-import { bootstrapWorkspaceForUser } from "../lib/auth/workspace-bootstrap";
+import { bootstrapBusinessForUser } from "../lib/auth/business-bootstrap";
 import { db, dbConnection } from "../lib/db/client";
 import {
   activityLogs,
@@ -16,9 +16,9 @@ import {
   quotes,
   replySnippets,
   user,
-  workspaceInquiryForms,
-  workspaceMembers,
-  workspaces,
+  businessInquiryForms,
+  businessMembers,
+  businesses,
 } from "../lib/db/schema";
 import { env } from "../lib/env";
 
@@ -28,7 +28,7 @@ type DemoUser = {
   name: string;
 };
 
-type DemoWorkspace = {
+type DemoBusiness = {
   id: string;
   name: string;
   slug: string;
@@ -39,9 +39,9 @@ const demoConfig = {
   ownerName: getSeedValue("DEMO_OWNER_NAME", "Morgan Lee"),
   ownerEmail: getSeedValue("DEMO_OWNER_EMAIL", "demo@relay.local").toLowerCase(),
   ownerPassword: getSeedValue("DEMO_OWNER_PASSWORD", "ChangeMe123456!"),
-  workspaceName: getSeedValue("DEMO_WORKSPACE_NAME", "BrightSide Print Studio"),
-  workspaceSlug: getSeedValue(
-    "DEMO_WORKSPACE_SLUG",
+  businessName: getSeedValue("DEMO_BUSINESS_NAME", "BrightSide Print Studio"),
+  businessSlug: getSeedValue(
+    "DEMO_BUSINESS_SLUG",
     "brightside-print-studio",
   ),
 };
@@ -125,7 +125,7 @@ const demoActivityIds = [
   "demo_activity_inquiry_history_foundry",
   "demo_activity_quote_created_0998",
   "demo_activity_quote_post_acceptance_0998",
-  "demo_activity_workspace_seeded",
+  "demo_activity_business_seeded",
 ] as const;
 
 function getSeedValue(name: string, fallback: string) {
@@ -157,25 +157,25 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 48);
 
-  return normalized || "workspace";
+  return normalized || "business";
 }
 
-async function getAvailableSlug(baseSlug: string, currentWorkspaceId?: string) {
+async function getAvailableSlug(baseSlug: string, currentBusinessId?: string) {
   const normalizedBaseSlug = slugify(baseSlug);
   let candidate = normalizedBaseSlug;
   let counter = 2;
 
   while (true) {
     const existing = await db
-      .select({ id: workspaces.id })
-      .from(workspaces)
+      .select({ id: businesses.id })
+      .from(businesses)
       .where(
-        currentWorkspaceId
+        currentBusinessId
           ? and(
-              eq(workspaces.slug, candidate),
-              ne(workspaces.id, currentWorkspaceId),
+              eq(businesses.slug, candidate),
+              ne(businesses.id, currentBusinessId),
             )
-          : eq(workspaces.slug, candidate),
+          : eq(businesses.slug, candidate),
       )
       .limit(1);
 
@@ -249,7 +249,7 @@ async function ensureDemoUser(): Promise<DemoUser> {
       },
     });
 
-  await bootstrapWorkspaceForUser({
+  await bootstrapBusinessForUser({
     id: existingUser.id,
     name: demoConfig.ownerName,
     email: demoConfig.ownerEmail,
@@ -262,43 +262,43 @@ async function ensureDemoUser(): Promise<DemoUser> {
   };
 }
 
-async function ensureDemoWorkspace(demoUser: DemoUser): Promise<DemoWorkspace> {
+async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
   const [membership] = await db
     .select({
-      workspaceId: workspaceMembers.workspaceId,
-      role: workspaceMembers.role,
-      workspaceName: workspaces.name,
-      workspaceSlug: workspaces.slug,
+      businessId: businessMembers.businessId,
+      role: businessMembers.role,
+      businessName: businesses.name,
+      businessSlug: businesses.slug,
     })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
+    .from(businessMembers)
+    .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
     .where(
       and(
-        eq(workspaceMembers.userId, demoUser.id),
-        eq(workspaceMembers.role, "owner"),
+        eq(businessMembers.userId, demoUser.id),
+        eq(businessMembers.role, "owner"),
       ),
     )
-    .orderBy(asc(workspaceMembers.createdAt))
+    .orderBy(asc(businessMembers.createdAt))
     .limit(1);
 
   if (!membership) {
-    throw new Error("The demo owner does not have an owner workspace.");
+    throw new Error("The demo owner does not have an owner business.");
   }
 
   const now = new Date();
   const slug = await getAvailableSlug(
-    demoConfig.workspaceSlug,
-    membership.workspaceId,
+    demoConfig.businessSlug,
+    membership.businessId,
   );
   const inquiryPreset = createInquiryFormPreset({
     businessType: "print_signage",
-    workspaceName: demoConfig.workspaceName,
+    businessName: demoConfig.businessName,
   });
 
   await db
-    .update(workspaces)
+    .update(businesses)
     .set({
-      name: demoConfig.workspaceName,
+      name: demoConfig.businessName,
       slug,
       businessType: "print_signage",
       shortDescription:
@@ -309,7 +309,7 @@ async function ensureDemoWorkspace(demoUser: DemoUser): Promise<DemoWorkspace> {
         "Tell us what you need printed and we will turn it into a clean quote.",
       defaultEmailSignature: [
         demoConfig.ownerName,
-        demoConfig.workspaceName,
+        demoConfig.businessName,
         demoUser.email,
         "Same-week rush windows available when files are ready.",
       ].join("\n"),
@@ -321,27 +321,27 @@ async function ensureDemoWorkspace(demoUser: DemoUser): Promise<DemoWorkspace> {
       defaultCurrency: "USD",
       updatedAt: now,
     })
-    .where(eq(workspaces.id, membership.workspaceId));
+    .where(eq(businesses.id, membership.businessId));
 
   const [defaultForm] = await db
     .select({
-      id: workspaceInquiryForms.id,
+      id: businessInquiryForms.id,
     })
-    .from(workspaceInquiryForms)
+    .from(businessInquiryForms)
     .where(
       and(
-        eq(workspaceInquiryForms.workspaceId, membership.workspaceId),
-        eq(workspaceInquiryForms.isDefault, true),
+        eq(businessInquiryForms.businessId, membership.businessId),
+        eq(businessInquiryForms.isDefault, true),
       ),
     )
     .limit(1);
 
   if (!defaultForm) {
-    throw new Error("The demo workspace does not have a default inquiry form.");
+    throw new Error("The demo business does not have a default inquiry form.");
   }
 
   await db
-    .update(workspaceInquiryForms)
+    .update(businessInquiryForms)
     .set({
       name: inquiryPreset.name,
       slug: inquiryPreset.slug,
@@ -351,17 +351,17 @@ async function ensureDemoWorkspace(demoUser: DemoUser): Promise<DemoWorkspace> {
       inquiryPageConfig: inquiryPreset.inquiryPageConfig,
       updatedAt: now,
     })
-    .where(eq(workspaceInquiryForms.id, defaultForm.id));
+    .where(eq(businessInquiryForms.id, defaultForm.id));
 
   return {
-    id: membership.workspaceId,
-    name: demoConfig.workspaceName,
+    id: membership.businessId,
+    name: demoConfig.businessName,
     slug,
     defaultInquiryFormId: defaultForm.id,
   };
 }
 
-async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
+async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
   const noteTimestamps = {
     storefront: daysAgo(1, 14, 20),
     flyers: daysAgo(3, 11, 40),
@@ -372,8 +372,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const inquiryRows = [
     {
       id: demoInquiryIds[0],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "new" as const,
       subject: "New storefront window vinyl",
       customerName: "Olivia Park",
@@ -394,8 +394,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoInquiryIds[1],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "waiting" as const,
       subject: "Restaurant flyer drop",
       customerName: "Daniel Kim",
@@ -416,8 +416,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoInquiryIds[2],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "quoted" as const,
       subject: "Trade show booth kit",
       customerName: "Priya Shah",
@@ -438,8 +438,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoInquiryIds[3],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "won" as const,
       subject: "Cafe menu board refresh",
       customerName: "Maya Chen",
@@ -460,8 +460,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoInquiryIds[4],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "lost" as const,
       subject: "Team merch reorder",
       customerName: "Noah Bennett",
@@ -482,8 +482,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoInquiryIds[5],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "archived" as const,
       subject: "Old menu reprint request",
       customerName: "Hector Ruiz",
@@ -504,8 +504,8 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoInquiryIds[6],
-      workspaceId: workspace.id,
-      workspaceInquiryFormId: workspace.defaultInquiryFormId,
+      businessId: business.id,
+      businessInquiryFormId: business.defaultInquiryFormId,
       status: "won" as const,
       subject: "Foundry Labs rebrand signage",
       customerName: "Priya Shah",
@@ -529,7 +529,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const noteRows = [
     {
       id: demoNoteIds[0],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[0],
       authorUserId: demoUser.id,
       body: "Customer sounds ready to move quickly. Ask for window dimensions and confirm whether installation should be quoted separately.",
@@ -538,7 +538,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoNoteIds[1],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[1],
       authorUserId: demoUser.id,
       body: "Waiting on paper stock preference and whether they want local pickup or courier delivery.",
@@ -547,7 +547,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoNoteIds[2],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[2],
       authorUserId: demoUser.id,
       body: "Files received. Banner hardware options might change cost range, so keep the reply specific but do not lock pricing until finish options are confirmed.",
@@ -556,7 +556,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoNoteIds[3],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[3],
       authorUserId: demoUser.id,
       body: "Customer approved the matte rigid board recommendation and requested install-ready mounting hardware.",
@@ -568,7 +568,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const faqRows = [
     {
       id: demoFaqIds[0],
-      workspaceId: workspace.id,
+      businessId: business.id,
       question: "What is your normal turnaround time?",
       answer:
         "Standard print jobs usually ship or are ready for pickup within 3 to 5 business days after artwork approval. Rush timing depends on file readiness and production load.",
@@ -578,7 +578,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoFaqIds[1],
-      workspaceId: workspace.id,
+      businessId: business.id,
       question: "Which files should customers send?",
       answer:
         "Preferred files are press-ready PDF, AI, or SVG. High-resolution PNG can work for some jobs. If files are not print-ready, we can review them before quoting final production.",
@@ -588,7 +588,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoFaqIds[2],
-      workspaceId: workspace.id,
+      businessId: business.id,
       question: "Do you include revisions in the quote?",
       answer:
         "Quotes normally include one practical round of production adjustments. Larger redesign work or repeated revision rounds are quoted separately once scope is clear.",
@@ -598,7 +598,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoFaqIds[3],
-      workspaceId: workspace.id,
+      businessId: business.id,
       question: "Do you offer pickup, delivery, or installation?",
       answer:
         "Pickup is available during business hours. Local delivery and installation can be quoted when timing, address, and install conditions are confirmed.",
@@ -611,7 +611,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const quoteRows = [
     {
       id: demoQuoteIds[0],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: null,
       status: "draft" as const,
       quoteNumber: "Q-1001",
@@ -637,7 +637,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteIds[1],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[2],
       status: "sent" as const,
       quoteNumber: "Q-1002",
@@ -663,7 +663,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteIds[2],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[3],
       status: "accepted" as const,
       quoteNumber: "Q-1003",
@@ -690,7 +690,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteIds[3],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[4],
       status: "rejected" as const,
       quoteNumber: "Q-1004",
@@ -717,7 +717,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteIds[4],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: null,
       status: "expired" as const,
       quoteNumber: "Q-1005",
@@ -743,7 +743,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteIds[5],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[6],
       status: "accepted" as const,
       quoteNumber: "Q-0998",
@@ -773,7 +773,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const quoteItemRows = [
     {
       id: demoQuoteItemIds[0],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[0],
       description: "A-frame sign panel production",
       quantity: 2,
@@ -785,7 +785,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[1],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[0],
       description: "Weather-laminate finishing and install kit",
       quantity: 1,
@@ -797,7 +797,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[2],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[1],
       description: "Retractable banner kit",
       quantity: 2,
@@ -809,7 +809,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[3],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[1],
       description: "Table throw and mounted booth signage",
       quantity: 1,
@@ -821,7 +821,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[4],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[2],
       description: "Rigid menu board set",
       quantity: 3,
@@ -833,7 +833,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[5],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[2],
       description: "Counter cards and mounting hardware",
       quantity: 1,
@@ -845,7 +845,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[6],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[3],
       description: "Staff t-shirt print run",
       quantity: 40,
@@ -857,7 +857,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[7],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[3],
       description: "Branded tote bags",
       quantity: 25,
@@ -869,7 +869,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[8],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[4],
       description: "Outdoor banner production",
       quantity: 4,
@@ -881,7 +881,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[9],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[4],
       description: "Reinforced grommets and finishing",
       quantity: 1,
@@ -893,7 +893,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[10],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[5],
       description: "Lobby logo wall graphics",
       quantity: 1,
@@ -905,7 +905,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoQuoteItemIds[11],
-      workspaceId: workspace.id,
+      businessId: business.id,
       quoteId: demoQuoteIds[5],
       description: "Door signs and meeting room wayfinding",
       quantity: 1,
@@ -920,7 +920,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const replySnippetRows = [
     {
       id: demoReplySnippetIds[0],
-      workspaceId: workspace.id,
+      businessId: business.id,
       title: "Ask for missing dimensions",
       body:
         "Thanks for sending this over. To price it accurately, could you confirm the final dimensions, quantity, and whether installation should be included?",
@@ -929,7 +929,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoReplySnippetIds[1],
-      workspaceId: workspace.id,
+      businessId: business.id,
       title: "Confirm timeline and files",
       body:
         "Before we lock the quote, please confirm your target install date and send the latest print-ready files or artwork links.",
@@ -941,7 +941,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
   const activityRows = [
     {
       id: demoActivityIds[0],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[0],
       quoteId: null,
       actorUserId: demoUser.id,
@@ -953,7 +953,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[1],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[1],
       quoteId: null,
       actorUserId: demoUser.id,
@@ -965,7 +965,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[2],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[2],
       quoteId: null,
       actorUserId: demoUser.id,
@@ -977,7 +977,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[3],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[3],
       quoteId: null,
       actorUserId: demoUser.id,
@@ -989,7 +989,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[4],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[4],
       quoteId: null,
       actorUserId: demoUser.id,
@@ -1001,7 +1001,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[5],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: null,
       quoteId: demoQuoteIds[0],
       actorUserId: demoUser.id,
@@ -1013,7 +1013,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[6],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[2],
       quoteId: demoQuoteIds[1],
       actorUserId: demoUser.id,
@@ -1025,7 +1025,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[7],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[2],
       quoteId: demoQuoteIds[1],
       actorUserId: demoUser.id,
@@ -1037,7 +1037,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[8],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[3],
       quoteId: demoQuoteIds[2],
       actorUserId: demoUser.id,
@@ -1049,7 +1049,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[9],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[3],
       quoteId: demoQuoteIds[2],
       actorUserId: demoUser.id,
@@ -1061,7 +1061,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[10],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[4],
       quoteId: demoQuoteIds[3],
       actorUserId: demoUser.id,
@@ -1073,7 +1073,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[11],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[4],
       quoteId: demoQuoteIds[3],
       actorUserId: demoUser.id,
@@ -1085,7 +1085,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[12],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: null,
       quoteId: demoQuoteIds[4],
       actorUserId: demoUser.id,
@@ -1097,7 +1097,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[13],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[6],
       quoteId: null,
       actorUserId: demoUser.id,
@@ -1109,7 +1109,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[14],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[6],
       quoteId: demoQuoteIds[5],
       actorUserId: demoUser.id,
@@ -1121,7 +1121,7 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[15],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: demoInquiryIds[6],
       quoteId: demoQuoteIds[5],
       actorUserId: demoUser.id,
@@ -1133,11 +1133,11 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
     },
     {
       id: demoActivityIds[16],
-      workspaceId: workspace.id,
+      businessId: business.id,
       inquiryId: null,
       quoteId: null,
       actorUserId: demoUser.id,
-      type: "workspace.demo_seeded",
+      type: "business.demo_seeded",
       summary: "Sample Relay MVP data refreshed for local setup.",
       metadata: { source: "demo-seed" },
       createdAt: new Date(),
@@ -1166,30 +1166,30 @@ async function seedWorkspaceData(demoUser: DemoUser, workspace: DemoWorkspace) {
 
 async function main() {
   const demoUser = await ensureDemoUser();
-  const workspace = await ensureDemoWorkspace(demoUser);
+  const business = await ensureDemoBusiness(demoUser);
 
-  await seedWorkspaceData(demoUser, workspace);
+  await seedBusinessData(demoUser, business);
 
   const dashboardUrl = new URL(
-    `/workspace/${workspace.slug}/dashboard`,
+    `/businesses/${business.slug}/dashboard`,
     env.BETTER_AUTH_URL,
   ).toString();
   const inquiryUrl = new URL(
-    `/inquire/${workspace.slug}`,
+    `/inquire/${business.slug}`,
     env.BETTER_AUTH_URL,
   ).toString();
 
   console.log("");
   console.log("Relay demo data seeded.");
-  console.log(`Workspace: ${workspace.name}`);
-  console.log(`Workspace slug: ${workspace.slug}`);
+  console.log(`Business: ${business.name}`);
+  console.log(`Business slug: ${business.slug}`);
   console.log(`Demo owner email: ${demoUser.email}`);
   console.log(`Demo owner password: ${demoConfig.ownerPassword}`);
   console.log(`Dashboard URL: ${dashboardUrl}`);
   console.log(`Public inquiry URL: ${inquiryUrl}`);
   console.log("");
   console.log(
-    "The script refreshes the fixed demo records for the demo workspace without touching other workspaces.",
+    "The script refreshes the fixed demo records for the demo business without touching other businesses.",
   );
 }
 

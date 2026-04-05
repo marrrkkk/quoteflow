@@ -1,4 +1,4 @@
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
 import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
 import { slugifyPublicName } from "@/lib/slugs";
@@ -14,7 +14,7 @@ export function normalizeInquiryFormSlug(value: string) {
 }
 
 export function getDefaultInquiryFormName(
-  businessType: WorkspaceBusinessType,
+  businessType: BusinessType,
 ) {
   switch (businessType) {
     case "print_signage":
@@ -42,17 +42,17 @@ export function getDefaultInquiryFormName(
 }
 
 type CreateInquiryFormPresetInput = {
-  businessType: WorkspaceBusinessType;
-  workspaceName: string;
-  workspaceShortDescription?: string | null;
+  businessType: BusinessType;
+  businessName: string;
+  businessShortDescription?: string | null;
   legacyInquiryHeadline?: string | null;
   templateName?: string;
 };
 
 export function createInquiryFormPreset({
   businessType,
-  workspaceName,
-  workspaceShortDescription,
+  businessName,
+  businessShortDescription,
   legacyInquiryHeadline,
 }: CreateInquiryFormPresetInput) {
   const name = getDefaultInquiryFormName(businessType);
@@ -66,8 +66,8 @@ export function createInquiryFormPreset({
       businessType,
     }),
     inquiryPageConfig: createInquiryPageConfigDefaults({
-      workspaceName,
-      workspaceShortDescription,
+      businessName,
+      businessShortDescription,
       legacyInquiryHeadline,
       businessType,
     }),

@@ -1,4 +1,4 @@
-import type { WorkspaceAiTonePreference } from "@/features/settings/types";
+import type { BusinessAiTonePreference } from "@/features/settings/types";
 import { sanitizeStorageFileName } from "@/lib/files";
 import {
   normalizePublicSlugInput,
@@ -7,49 +7,49 @@ import {
   publicSlugRegex,
 } from "@/lib/slugs";
 
-export const workspaceLogoBucket = "workspace-assets";
-export const workspaceLogoMaxSize = 2 * 1024 * 1024;
-export const workspaceSlugMaxLength = publicSlugMaxLength;
-export const workspaceSlugPattern = publicSlugPattern;
-export const workspaceSlugRegex = publicSlugRegex;
-export const workspaceCurrencyOptions = [
+export const businessLogoBucket = "business-assets";
+export const businessLogoMaxSize = 2 * 1024 * 1024;
+export const businessSlugMaxLength = publicSlugMaxLength;
+export const businessSlugPattern = publicSlugPattern;
+export const businessSlugRegex = publicSlugRegex;
+export const businessCurrencyOptions = [
   "USD",
   "CAD",
   "EUR",
   "GBP",
   "AUD",
 ] as const;
-export const workspaceLogoAllowedExtensions = [
+export const businessLogoAllowedExtensions = [
   ".jpg",
   ".jpeg",
   ".png",
   ".webp",
 ] as const;
-export const workspaceLogoAllowedMimeTypes = [
+export const businessLogoAllowedMimeTypes = [
   "image/jpeg",
   "image/png",
   "image/webp",
 ] as const;
-export const workspaceLogoExtensionToMimeType: Record<string, string> = {
+export const businessLogoExtensionToMimeType: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
 };
-export const workspaceLogoAccept = [
-  ...workspaceLogoAllowedExtensions,
-  ...workspaceLogoAllowedMimeTypes,
+export const businessLogoAccept = [
+  ...businessLogoAllowedExtensions,
+  ...businessLogoAllowedMimeTypes,
 ].join(",");
 
-export function normalizeWorkspaceSlug(value: string) {
+export function normalizeBusinessSlug(value: string) {
   return normalizePublicSlugInput(value);
 }
 
-export function sanitizeWorkspaceLogoFileName(fileName: string) {
-  return sanitizeStorageFileName(fileName, "workspace-logo");
+export function sanitizeBusinessLogoFileName(fileName: string) {
+  return sanitizeStorageFileName(fileName, "business-logo");
 }
 
-export function formatWorkspaceAiToneLabel(value: WorkspaceAiTonePreference) {
+export function formatBusinessAiToneLabel(value: BusinessAiTonePreference) {
   switch (value) {
     case "balanced":
       return "Balanced";
@@ -62,6 +62,6 @@ export function formatWorkspaceAiToneLabel(value: WorkspaceAiTonePreference) {
   }
 }
 
-export function getWorkspacePublicInquiryUrl(slug: string, formSlug?: string) {
+export function getBusinessPublicInquiryUrl(slug: string, formSlug?: string) {
   return formSlug ? `/inquire/${slug}/${formSlug}` : `/inquire/${slug}`;
 }

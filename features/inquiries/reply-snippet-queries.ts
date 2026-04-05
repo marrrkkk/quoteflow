@@ -6,18 +6,18 @@ import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import { replySnippets } from "@/lib/db/schema";
 import {
-  getWorkspaceReplySnippetsCacheTags,
-  settingsWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessReplySnippetsCacheTags,
+  settingsBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import type { DashboardReplySnippet } from "@/features/inquiries/reply-snippet-types";
 
-export async function getReplySnippetsForWorkspace(
-  workspaceId: string,
+export async function getReplySnippetsForBusiness(
+  businessId: string,
 ): Promise<DashboardReplySnippet[]> {
   "use cache";
 
-  cacheLife(settingsWorkspaceCacheLife);
-  cacheTag(...getWorkspaceReplySnippetsCacheTags(workspaceId));
+  cacheLife(settingsBusinessCacheLife);
+  cacheTag(...getBusinessReplySnippetsCacheTags(businessId));
 
   return db
     .select({
@@ -28,6 +28,6 @@ export async function getReplySnippetsForWorkspace(
       updatedAt: replySnippets.updatedAt,
     })
     .from(replySnippets)
-    .where(eq(replySnippets.workspaceId, workspaceId))
+    .where(eq(replySnippets.businessId, businessId))
     .orderBy(asc(replySnippets.title), asc(replySnippets.createdAt));
 }

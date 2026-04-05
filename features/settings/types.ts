@@ -1,22 +1,22 @@
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import type {
   InquiryFormConfig,
   InquiryFormFieldDefinition,
 } from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
-import type { WorkspaceInquiryFormSummary } from "@/features/inquiries/types";
+import type { BusinessInquiryFormSummary } from "@/features/inquiries/types";
 
-export const workspaceAiTonePreferences = [
+export const businessAiTonePreferences = [
   "balanced",
   "warm",
   "direct",
   "formal",
 ] as const;
 
-export type WorkspaceAiTonePreference =
-  (typeof workspaceAiTonePreferences)[number];
+export type BusinessAiTonePreference =
+  (typeof businessAiTonePreferences)[number];
 
-export type WorkspaceSettingsView = {
+export type BusinessSettingsView = {
   id: string;
   name: string;
   slug: string;
@@ -27,14 +27,14 @@ export type WorkspaceSettingsView = {
   defaultEmailSignature: string | null;
   defaultQuoteNotes: string | null;
   defaultQuoteValidityDays: number;
-  aiTonePreference: WorkspaceAiTonePreference;
+  aiTonePreference: BusinessAiTonePreference;
   notifyOnNewInquiry: boolean;
   notifyOnQuoteSent: boolean;
   defaultCurrency: string;
   updatedAt: Date;
 };
 
-export type WorkspaceGeneralSettingsFieldName =
+export type BusinessGeneralSettingsFieldName =
   | "name"
   | "slug"
   | "shortDescription"
@@ -43,49 +43,49 @@ export type WorkspaceGeneralSettingsFieldName =
   | "aiTonePreference"
   | "logo";
 
-export type WorkspaceSettingsFieldErrors = Partial<
-  Record<WorkspaceGeneralSettingsFieldName, string[] | undefined>
+export type BusinessSettingsFieldErrors = Partial<
+  Record<BusinessGeneralSettingsFieldName, string[] | undefined>
 >;
 
-export type WorkspaceSettingsActionState = {
+export type BusinessSettingsActionState = {
   error?: string;
   success?: string;
-  fieldErrors?: WorkspaceSettingsFieldErrors;
+  fieldErrors?: BusinessSettingsFieldErrors;
 };
 
-export type WorkspaceQuoteSettingsFieldName =
+export type BusinessQuoteSettingsFieldName =
   | "defaultQuoteNotes"
   | "defaultQuoteValidityDays"
   | "notifyOnQuoteSent"
   | "defaultCurrency";
 
-export type WorkspaceQuoteSettingsFieldErrors = Partial<
-  Record<WorkspaceQuoteSettingsFieldName, string[] | undefined>
+export type BusinessQuoteSettingsFieldErrors = Partial<
+  Record<BusinessQuoteSettingsFieldName, string[] | undefined>
 >;
 
-export type WorkspaceQuoteSettingsActionState = {
+export type BusinessQuoteSettingsActionState = {
   error?: string;
   success?: string;
-  fieldErrors?: WorkspaceQuoteSettingsFieldErrors;
+  fieldErrors?: BusinessQuoteSettingsFieldErrors;
 };
 
-export type WorkspaceDeleteFieldErrors = Partial<
+export type BusinessDeleteFieldErrors = Partial<
   Record<"confirmation", string[] | undefined>
 >;
 
-export type WorkspaceDeleteActionState = {
+export type BusinessDeleteActionState = {
   error?: string;
   success?: string;
-  fieldErrors?: WorkspaceDeleteFieldErrors;
+  fieldErrors?: BusinessDeleteFieldErrors;
 };
 
-export type WorkspaceInquiryFormsSettingsView = {
+export type BusinessInquiryFormsSettingsView = {
   id: string;
   name: string;
   slug: string;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   forms: Array<
-    WorkspaceInquiryFormSummary & {
+    BusinessInquiryFormSummary & {
       submittedInquiryCount: number;
       inquiryFormConfig: InquiryFormConfig;
       inquiryPageConfig: InquiryPageConfig;
@@ -93,7 +93,7 @@ export type WorkspaceInquiryFormsSettingsView = {
   >;
 };
 
-export type WorkspaceInquiryPageSettingsView = {
+export type BusinessInquiryPageSettingsView = {
   id: string;
   name: string;
   slug: string;
@@ -102,7 +102,7 @@ export type WorkspaceInquiryPageSettingsView = {
   formId: string;
   formName: string;
   formSlug: string;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   publicInquiryEnabled: boolean;
   isDefault: boolean;
   inquiryFormConfig: InquiryFormConfig;
@@ -110,7 +110,7 @@ export type WorkspaceInquiryPageSettingsView = {
   updatedAt: Date;
 };
 
-export type WorkspaceInquiryPageFieldName =
+export type BusinessInquiryPageFieldName =
   | "formId"
   | "publicInquiryEnabled"
   | "template"
@@ -122,24 +122,24 @@ export type WorkspaceInquiryPageFieldName =
   | "formDescription"
   | "cards";
 
-export type WorkspaceInquiryPageFieldErrors = Partial<
-  Record<WorkspaceInquiryPageFieldName, string[] | undefined>
+export type BusinessInquiryPageFieldErrors = Partial<
+  Record<BusinessInquiryPageFieldName, string[] | undefined>
 >;
 
-export type WorkspaceInquiryPageActionState = {
+export type BusinessInquiryPageActionState = {
   error?: string;
   success?: string;
-  fieldErrors?: WorkspaceInquiryPageFieldErrors;
+  fieldErrors?: BusinessInquiryPageFieldErrors;
 };
 
-export type WorkspaceInquiryFormSettingsView = {
+export type BusinessInquiryFormSettingsView = {
   id: string;
   name: string;
   slug: string;
   formId: string;
   formName: string;
   formSlug: string;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   publicInquiryEnabled: boolean;
   isDefault: boolean;
   inquiryFormConfig: InquiryFormConfig;
@@ -147,30 +147,30 @@ export type WorkspaceInquiryFormSettingsView = {
   updatedAt: Date;
 };
 
-export type WorkspaceInquiryFormEditorView = WorkspaceInquiryFormSettingsView & {
+export type BusinessInquiryFormEditorView = BusinessInquiryFormSettingsView & {
   shortDescription: string | null;
   logoStoragePath: string | null;
   activeFormCount: number;
   submittedInquiryCount: number;
 };
 
-export type WorkspaceInquiryFormFieldName =
+export type BusinessInquiryFormFieldName =
   | "name"
   | "slug"
   | "businessType"
   | "inquiryFormConfig";
 
-export type WorkspaceInquiryFormFieldErrors = Partial<
-  Record<WorkspaceInquiryFormFieldName, string[] | undefined>
+export type BusinessInquiryFormFieldErrors = Partial<
+  Record<BusinessInquiryFormFieldName, string[] | undefined>
 >;
 
-export type WorkspaceInquiryFormActionState = {
+export type BusinessInquiryFormActionState = {
   error?: string;
   success?: string;
-  fieldErrors?: WorkspaceInquiryFormFieldErrors;
+  fieldErrors?: BusinessInquiryFormFieldErrors;
 };
 
-export type WorkspaceInquiryFormsActionState = {
+export type BusinessInquiryFormsActionState = {
   error?: string;
   success?: string;
   fieldErrors?: Partial<
@@ -178,9 +178,9 @@ export type WorkspaceInquiryFormsActionState = {
   >;
 };
 
-export type WorkspaceInquiryFormDangerActionState = {
+export type BusinessInquiryFormDangerActionState = {
   error?: string;
   success?: string;
 };
 
-export type WorkspaceInquiryFieldDraft = InquiryFormFieldDefinition;
+export type BusinessInquiryFieldDraft = InquiryFormFieldDefinition;

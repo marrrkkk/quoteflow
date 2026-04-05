@@ -10,22 +10,22 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import type { InquiryFormConfig } from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 
-export const workspaceInquiryForms = pgTable(
-  "workspace_inquiry_forms",
+export const businessInquiryForms = pgTable(
+  "business_inquiry_forms",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     businessType: text("business_type")
-      .$type<WorkspaceBusinessType>()
+      .$type<BusinessType>()
       .notNull()
       .default("general_services"),
     isDefault: boolean("is_default").notNull().default(false),
@@ -47,21 +47,21 @@ export const workspaceInquiryForms = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("workspace_inquiry_forms_workspace_slug_unique").on(
-      table.workspaceId,
+    uniqueIndex("business_inquiry_forms_business_slug_unique").on(
+      table.businessId,
       table.slug,
     ),
-    index("workspace_inquiry_forms_workspace_id_idx").on(table.workspaceId),
-    index("workspace_inquiry_forms_workspace_default_idx").on(
-      table.workspaceId,
+    index("business_inquiry_forms_business_id_idx").on(table.businessId),
+    index("business_inquiry_forms_business_default_idx").on(
+      table.businessId,
       table.isDefault,
     ),
-    index("workspace_inquiry_forms_workspace_archived_idx").on(
-      table.workspaceId,
+    index("business_inquiry_forms_business_archived_idx").on(
+      table.businessId,
       table.archivedAt,
     ),
     check(
-      "workspace_inquiry_forms_slug_format",
+      "business_inquiry_forms_slug_format",
       sql`${table.slug} ~ '^[a-z0-9-]+$'`,
     ),
   ],

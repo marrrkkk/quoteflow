@@ -10,24 +10,24 @@ function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-type CreateReplySnippetForWorkspaceInput = {
-  workspaceId: string;
+type CreateReplySnippetForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   snippet: ReplySnippetInput;
 };
 
-export async function createReplySnippetForWorkspace({
-  workspaceId,
+export async function createReplySnippetForBusiness({
+  businessId,
   actorUserId,
   snippet,
-}: CreateReplySnippetForWorkspaceInput) {
+}: CreateReplySnippetForBusinessInput) {
   const snippetId = createId("rsn");
   const now = new Date();
 
   return db.transaction(async (tx) => {
     await tx.insert(replySnippets).values({
       id: snippetId,
-      workspaceId,
+      businessId,
       title: snippet.title,
       body: snippet.body,
       createdAt: now,
@@ -36,7 +36,7 @@ export async function createReplySnippetForWorkspace({
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "reply_snippet.created",
       summary: `Reply snippet ${snippet.title} created.`,
@@ -54,19 +54,19 @@ export async function createReplySnippetForWorkspace({
   });
 }
 
-type UpdateReplySnippetForWorkspaceInput = {
-  workspaceId: string;
+type UpdateReplySnippetForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   replySnippetId: string;
   snippet: ReplySnippetInput;
 };
 
-export async function updateReplySnippetForWorkspace({
-  workspaceId,
+export async function updateReplySnippetForBusiness({
+  businessId,
   actorUserId,
   replySnippetId,
   snippet,
-}: UpdateReplySnippetForWorkspaceInput) {
+}: UpdateReplySnippetForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -77,7 +77,7 @@ export async function updateReplySnippetForWorkspace({
       .from(replySnippets)
       .where(
         and(
-          eq(replySnippets.workspaceId, workspaceId),
+          eq(replySnippets.businessId, businessId),
           eq(replySnippets.id, replySnippetId),
         ),
       )
@@ -96,14 +96,14 @@ export async function updateReplySnippetForWorkspace({
       })
       .where(
         and(
-          eq(replySnippets.workspaceId, workspaceId),
+          eq(replySnippets.businessId, businessId),
           eq(replySnippets.id, replySnippetId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "reply_snippet.updated",
       summary: `Reply snippet ${snippet.title} updated.`,
@@ -121,17 +121,17 @@ export async function updateReplySnippetForWorkspace({
   });
 }
 
-type DeleteReplySnippetForWorkspaceInput = {
-  workspaceId: string;
+type DeleteReplySnippetForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   replySnippetId: string;
 };
 
-export async function deleteReplySnippetForWorkspace({
-  workspaceId,
+export async function deleteReplySnippetForBusiness({
+  businessId,
   actorUserId,
   replySnippetId,
-}: DeleteReplySnippetForWorkspaceInput) {
+}: DeleteReplySnippetForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -143,7 +143,7 @@ export async function deleteReplySnippetForWorkspace({
       .from(replySnippets)
       .where(
         and(
-          eq(replySnippets.workspaceId, workspaceId),
+          eq(replySnippets.businessId, businessId),
           eq(replySnippets.id, replySnippetId),
         ),
       )
@@ -157,14 +157,14 @@ export async function deleteReplySnippetForWorkspace({
       .delete(replySnippets)
       .where(
         and(
-          eq(replySnippets.workspaceId, workspaceId),
+          eq(replySnippets.businessId, businessId),
           eq(replySnippets.id, replySnippetId),
         ),
       );
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId,
       type: "reply_snippet.deleted",
       summary: `Reply snippet ${existingSnippet.title} deleted.`,

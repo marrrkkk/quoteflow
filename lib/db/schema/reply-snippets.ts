@@ -1,14 +1,14 @@
 import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 
 export const replySnippets = pgTable(
   "reply_snippets",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -19,9 +19,9 @@ export const replySnippets = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("reply_snippets_workspace_id_idx").on(table.workspaceId),
-    index("reply_snippets_workspace_created_at_idx").on(
-      table.workspaceId,
+    index("reply_snippets_business_id_idx").on(table.businessId),
+    index("reply_snippets_business_created_at_idx").on(
+      table.businessId,
       table.createdAt,
     ),
   ],

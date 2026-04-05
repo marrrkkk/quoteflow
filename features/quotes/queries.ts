@@ -10,18 +10,18 @@ import {
   quoteItems,
   quotes,
   user,
-  workspaces,
+  businesses,
 } from "@/lib/db/schema";
 import {
   syncExpiredQuoteForPublicToken,
-  syncExpiredQuotesForWorkspace,
+  syncExpiredQuotesForBusiness,
 } from "@/features/quotes/mutations";
 import {
-  getWorkspaceInquiryDetailCacheTags,
-  getWorkspaceQuoteDetailCacheTags,
-  getWorkspaceQuoteListCacheTags,
-  hotWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessInquiryDetailCacheTags,
+  getBusinessQuoteDetailCacheTags,
+  getBusinessQuoteListCacheTags,
+  hotBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import type {
   DashboardQuoteDetail,
   DashboardQuoteListItem,
@@ -31,33 +31,33 @@ import type {
 } from "@/features/quotes/types";
 import { getQuoteReminderKinds } from "@/features/quotes/utils";
 
-type GetQuoteListForWorkspaceInput = {
-  workspaceId: string;
+type GetQuoteListForBusinessInput = {
+  businessId: string;
   filters: QuoteListFilters;
 };
 
-export async function getQuoteListForWorkspace({
-  workspaceId,
+export async function getQuoteListForBusiness({
+  businessId,
   filters,
-}: GetQuoteListForWorkspaceInput): Promise<DashboardQuoteListItem[]> {
-  await syncExpiredQuotesForWorkspace(workspaceId);
+}: GetQuoteListForBusinessInput): Promise<DashboardQuoteListItem[]> {
+  await syncExpiredQuotesForBusiness(businessId);
 
-  return getCachedQuoteListForWorkspace({
-    workspaceId,
+  return getCachedQuoteListForBusiness({
+    businessId,
     filters,
   });
 }
 
-async function getCachedQuoteListForWorkspace({
-  workspaceId,
+async function getCachedQuoteListForBusiness({
+  businessId,
   filters,
-}: GetQuoteListForWorkspaceInput): Promise<DashboardQuoteListItem[]> {
+}: GetQuoteListForBusinessInput): Promise<DashboardQuoteListItem[]> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceQuoteListCacheTags(workspaceId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessQuoteListCacheTags(businessId));
 
-  const conditions = [eq(quotes.workspaceId, workspaceId)];
+  const conditions = [eq(quotes.businessId, businessId)];
 
   if (filters.status !== "all") {
     conditions.push(eq(quotes.status, filters.status));
@@ -108,36 +108,36 @@ async function getCachedQuoteListForWorkspace({
   }));
 }
 
-type GetQuoteDetailForWorkspaceInput = {
-  workspaceId: string;
+type GetQuoteDetailForBusinessInput = {
+  businessId: string;
   quoteId: string;
 };
 
-export async function getQuoteDetailForWorkspace({
-  workspaceId,
+export async function getQuoteDetailForBusiness({
+  businessId,
   quoteId,
-}: GetQuoteDetailForWorkspaceInput): Promise<DashboardQuoteDetail | null> {
-  await syncExpiredQuotesForWorkspace(workspaceId);
+}: GetQuoteDetailForBusinessInput): Promise<DashboardQuoteDetail | null> {
+  await syncExpiredQuotesForBusiness(businessId);
 
-  return getCachedQuoteDetailForWorkspace({
-    workspaceId,
+  return getCachedQuoteDetailForBusiness({
+    businessId,
     quoteId,
   });
 }
 
-async function getCachedQuoteDetailForWorkspace({
-  workspaceId,
+async function getCachedQuoteDetailForBusiness({
+  businessId,
   quoteId,
-}: GetQuoteDetailForWorkspaceInput): Promise<DashboardQuoteDetail | null> {
+}: GetQuoteDetailForBusinessInput): Promise<DashboardQuoteDetail | null> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceQuoteDetailCacheTags(workspaceId, quoteId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessQuoteDetailCacheTags(businessId, quoteId));
 
   const [quote] = await db
     .select({
       id: quotes.id,
-      workspaceId: quotes.workspaceId,
+      businessId: quotes.businessId,
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
       publicToken: quotes.publicToken,
@@ -167,7 +167,7 @@ async function getCachedQuoteDetailForWorkspace({
     })
     .from(quotes)
     .leftJoin(inquiries, eq(quotes.inquiryId, inquiries.id))
-    .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)))
+    .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)))
     .limit(1);
 
   if (!quote) {
@@ -187,7 +187,7 @@ async function getCachedQuoteDetailForWorkspace({
       .from(quoteItems)
       .where(
         and(
-          eq(quoteItems.workspaceId, workspaceId),
+          eq(quoteItems.businessId, businessId),
           eq(quoteItems.quoteId, quoteId),
         ),
       )
@@ -204,7 +204,7 @@ async function getCachedQuoteDetailForWorkspace({
       .leftJoin(user, eq(activityLogs.actorUserId, user.id))
       .where(
         and(
-          eq(activityLogs.workspaceId, workspaceId),
+          eq(activityLogs.businessId, businessId),
           eq(activityLogs.quoteId, quoteId),
         ),
       )
@@ -213,7 +213,7 @@ async function getCachedQuoteDetailForWorkspace({
 
   return {
     id: quote.id,
-    workspaceId: quote.workspaceId,
+    businessId: quote.businessId,
     inquiryId: quote.inquiryId,
     quoteNumber: quote.quoteNumber,
     publicToken: quote.publicToken,
@@ -266,9 +266,9 @@ export async function getPublicQuoteByToken(
       token: quotes.publicToken,
       quoteNumber: quotes.quoteNumber,
       title: quotes.title,
-      workspaceName: workspaces.name,
-      workspaceShortDescription: workspaces.shortDescription,
-      workspaceContactEmail: workspaces.contactEmail,
+      businessName: businesses.name,
+      businessShortDescription: businesses.shortDescription,
+      businessContactEmail: businesses.contactEmail,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
       currency: quotes.currency,
@@ -285,7 +285,7 @@ export async function getPublicQuoteByToken(
       customerResponseMessage: quotes.customerResponseMessage,
     })
     .from(quotes)
-    .innerJoin(workspaces, eq(quotes.workspaceId, workspaces.id))
+    .innerJoin(businesses, eq(quotes.businessId, businesses.id))
     .where(eq(quotes.publicToken, token))
     .limit(1);
 
@@ -312,19 +312,19 @@ export async function getPublicQuoteByToken(
   };
 }
 
-type GetInquiryQuotePrefillForWorkspaceInput = {
-  workspaceId: string;
+type GetInquiryQuotePrefillForBusinessInput = {
+  businessId: string;
   inquiryId: string;
 };
 
-export async function getInquiryQuotePrefillForWorkspace({
-  workspaceId,
+export async function getInquiryQuotePrefillForBusiness({
+  businessId,
   inquiryId,
-}: GetInquiryQuotePrefillForWorkspaceInput): Promise<QuoteInquiryPrefill | null> {
+}: GetInquiryQuotePrefillForBusinessInput): Promise<QuoteInquiryPrefill | null> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceInquiryDetailCacheTags(workspaceId, inquiryId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessInquiryDetailCacheTags(businessId, inquiryId));
 
   const [inquiry] = await db
     .select({
@@ -338,7 +338,7 @@ export async function getInquiryQuotePrefillForWorkspace({
       budgetText: inquiries.budgetText,
     })
     .from(inquiries)
-    .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
+    .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
     .limit(1);
 
   return inquiry ?? null;

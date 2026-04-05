@@ -30,8 +30,8 @@ const envSchema = z.object({
   DEMO_OWNER_NAME: emptyToUndefined(z.string().trim().min(1)),
   DEMO_OWNER_EMAIL: emptyToUndefined(z.email()),
   DEMO_OWNER_PASSWORD: emptyToUndefined(z.string().min(8)),
-  DEMO_WORKSPACE_NAME: emptyToUndefined(z.string().trim().min(1)),
-  DEMO_WORKSPACE_SLUG: emptyToUndefined(z.string().trim().min(1)),
+  DEMO_BUSINESS_NAME: emptyToUndefined(z.string().trim().min(1)),
+  DEMO_BUSINESS_SLUG: emptyToUndefined(z.string().trim().min(1)),
   DEMO_QUOTE_PUBLIC_TOKEN: emptyToUndefined(z.string().trim().min(1)),
   DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN: emptyToUndefined(z.string().trim().min(1)),
 });

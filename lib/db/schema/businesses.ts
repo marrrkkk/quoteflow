@@ -12,18 +12,18 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import type { InquiryFormConfig } from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
 import { user } from "@/lib/db/schema/auth";
 
-export const workspaceMemberRoleEnum = pgEnum("workspace_member_role", [
+export const businessMemberRoleEnum = pgEnum("business_member_role", [
   "owner",
   "member",
 ]);
 
-export const workspaceAiTonePreferenceEnum = pgEnum(
-  "workspace_ai_tone_preference",
+export const businessAiTonePreferenceEnum = pgEnum(
+  "business_ai_tone_preference",
   ["balanced", "warm", "direct", "formal"],
 );
 
@@ -51,14 +51,14 @@ export const profiles = pgTable("profiles", {
     .defaultNow(),
 });
 
-export const workspaces = pgTable(
-  "workspaces",
+export const businesses = pgTable(
+  "businesses",
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     businessType: text("business_type")
-      .$type<WorkspaceBusinessType>()
+      .$type<BusinessType>()
       .notNull()
       .default("general_services"),
     shortDescription: text("short_description"),
@@ -76,7 +76,7 @@ export const workspaces = pgTable(
     defaultQuoteValidityDays: integer("default_quote_validity_days")
       .notNull()
       .default(14),
-    aiTonePreference: workspaceAiTonePreferenceEnum("ai_tone_preference")
+    aiTonePreference: businessAiTonePreferenceEnum("ai_tone_preference")
       .notNull()
       .default("balanced"),
     notifyOnNewInquiry: boolean("notify_on_new_inquiry")
@@ -92,27 +92,27 @@ export const workspaces = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("workspaces_slug_unique").on(table.slug),
-    index("workspaces_created_at_idx").on(table.createdAt),
-    check("workspaces_slug_format", sql`${table.slug} ~ '^[a-z0-9-]+$'`),
+    uniqueIndex("businesses_slug_unique").on(table.slug),
+    index("businesses_created_at_idx").on(table.createdAt),
+    check("businesses_slug_format", sql`${table.slug} ~ '^[a-z0-9-]+$'`),
     check(
-      "workspaces_default_quote_validity_days_range",
+      "businesses_default_quote_validity_days_range",
       sql`${table.defaultQuoteValidityDays} between 1 and 365`,
     ),
   ],
 );
 
-export const workspaceMembers = pgTable(
-  "workspace_members",
+export const businessMembers = pgTable(
+  "business_members",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    role: workspaceMemberRoleEnum("role").notNull().default("member"),
+    role: businessMemberRoleEnum("role").notNull().default("member"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -121,11 +121,11 @@ export const workspaceMembers = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("workspace_members_workspace_user_unique").on(
-      table.workspaceId,
+    uniqueIndex("business_members_business_user_unique").on(
+      table.businessId,
       table.userId,
     ),
-    index("workspace_members_user_id_idx").on(table.userId),
-    index("workspace_members_workspace_role_idx").on(table.workspaceId, table.role),
+    index("business_members_user_id_idx").on(table.userId),
+    index("business_members_business_role_idx").on(table.businessId, table.role),
   ],
 );

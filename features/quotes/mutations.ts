@@ -8,7 +8,7 @@ import {
   inquiries,
   quoteItems,
   quotes,
-  workspaces,
+  businesses,
 } from "@/lib/db/schema";
 import type { QuoteEditorInput } from "@/features/quotes/schemas";
 import type { QuoteStatus } from "@/features/quotes/types";
@@ -61,17 +61,17 @@ function isRetryableUniqueConflict(error: unknown) {
     "code" in error &&
     error.code === "23505" &&
     (("constraint_name" in error &&
-      (error.constraint_name === "quotes_workspace_quote_number_unique" ||
+      (error.constraint_name === "quotes_business_quote_number_unique" ||
         error.constraint_name === "quotes_public_token_unique")) ||
       ("constraint" in error &&
-        (error.constraint === "quotes_workspace_quote_number_unique" ||
+        (error.constraint === "quotes_business_quote_number_unique" ||
           error.constraint === "quotes_public_token_unique")))
   );
 }
 
 async function maybeMoveInquiryToQuoted(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  workspaceId: string,
+  businessId: string,
   inquiryId: string | null,
   now: Date,
 ) {
@@ -88,7 +88,7 @@ async function maybeMoveInquiryToQuoted(
     .where(
       and(
         eq(inquiries.id, inquiryId),
-        eq(inquiries.workspaceId, workspaceId),
+        eq(inquiries.businessId, businessId),
         inArray(inquiries.status, ["new", "waiting"]),
       ),
     )
@@ -99,7 +99,7 @@ async function maybeMoveInquiryToQuoted(
 
 async function maybeMoveInquiryToWon(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  workspaceId: string,
+  businessId: string,
   inquiryId: string | null,
   now: Date,
 ) {
@@ -116,7 +116,7 @@ async function maybeMoveInquiryToWon(
     .where(
       and(
         eq(inquiries.id, inquiryId),
-        eq(inquiries.workspaceId, workspaceId),
+        eq(inquiries.businessId, businessId),
         inArray(inquiries.status, ["new", "quoted", "waiting"]),
       ),
     )
@@ -128,7 +128,7 @@ async function maybeMoveInquiryToWon(
 async function insertQuoteActivity(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   {
-    workspaceId,
+    businessId,
     inquiryId,
     quoteId,
     actorUserId,
@@ -137,7 +137,7 @@ async function insertQuoteActivity(
     metadata,
     now,
   }: {
-    workspaceId: string;
+    businessId: string;
     inquiryId?: string | null;
     quoteId: string;
     actorUserId?: string | null;
@@ -149,7 +149,7 @@ async function insertQuoteActivity(
 ) {
   await tx.insert(activityLogs).values({
     id: createId("act"),
-    workspaceId,
+    businessId,
     inquiryId: inquiryId ?? null,
     quoteId,
     actorUserId: actorUserId ?? null,
@@ -165,7 +165,7 @@ async function expireQuoteRows(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   rows: Array<{
     id: string;
-    workspaceId: string;
+    businessId: string;
     inquiryId: string | null;
     quoteNumber: string;
   }>,
@@ -187,7 +187,7 @@ async function expireQuoteRows(
   await tx.insert(activityLogs).values(
     rows.map((row) => ({
       id: createId("act"),
-      workspaceId: row.workspaceId,
+      businessId: row.businessId,
       inquiryId: row.inquiryId,
       quoteId: row.id,
       actorUserId: null,
@@ -204,19 +204,19 @@ async function expireQuoteRows(
   return rows.length;
 }
 
-export async function syncExpiredQuotesForWorkspace(workspaceId: string) {
+export async function syncExpiredQuotesForBusiness(businessId: string) {
   const today = getTodayUtcDateString();
   const rows = await db
     .select({
       id: quotes.id,
-      workspaceId: quotes.workspaceId,
+      businessId: quotes.businessId,
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
     })
     .from(quotes)
     .where(
       and(
-        eq(quotes.workspaceId, workspaceId),
+        eq(quotes.businessId, businessId),
         eq(quotes.status, "sent"),
         lt(quotes.validUntil, today),
       ),
@@ -234,7 +234,7 @@ export async function syncExpiredQuoteForPublicToken(token: string) {
   const rows = await db
     .select({
       id: quotes.id,
-      workspaceId: quotes.workspaceId,
+      businessId: quotes.businessId,
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
     })
@@ -255,21 +255,21 @@ export async function syncExpiredQuoteForPublicToken(token: string) {
   return db.transaction((tx) => expireQuoteRows(tx, rows));
 }
 
-type CreateQuoteForWorkspaceInput = {
-  workspaceId: string;
+type CreateQuoteForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   currency: string;
   inquiryId?: string | null;
   quote: QuoteEditorInput;
 };
 
-export async function createQuoteForWorkspace({
-  workspaceId,
+export async function createQuoteForBusiness({
+  businessId,
   actorUserId,
   currency,
   inquiryId = null,
   quote,
-}: CreateQuoteForWorkspaceInput) {
+}: CreateQuoteForBusinessInput) {
   const quoteId = createId("qt");
   const totals = calculateQuoteTotals(quote);
 
@@ -280,7 +280,7 @@ export async function createQuoteForWorkspace({
           const [inquiry] = await tx
             .select({ id: inquiries.id })
             .from(inquiries)
-            .where(and(eq(inquiries.id, inquiryId), eq(inquiries.workspaceId, workspaceId)))
+            .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
             .limit(1);
 
           if (!inquiry) {
@@ -293,7 +293,7 @@ export async function createQuoteForWorkspace({
             latestSequence: sql<number>`coalesce(max((nullif(substring(${quotes.quoteNumber} from '[0-9]+$'), ''))::integer), 0)`,
           })
           .from(quotes)
-          .where(eq(quotes.workspaceId, workspaceId))
+          .where(eq(quotes.businessId, businessId))
           .limit(1);
         const quoteNumber = getNextQuoteNumberFromSequence(
           latestQuote?.latestSequence,
@@ -302,7 +302,7 @@ export async function createQuoteForWorkspace({
 
         await tx.insert(quotes).values({
           id: quoteId,
-          workspaceId,
+          businessId,
           inquiryId,
           status: "draft",
           quoteNumber,
@@ -323,7 +323,7 @@ export async function createQuoteForWorkspace({
         await tx.insert(quoteItems).values(
           totals.items.map((item) => ({
             id: item.id,
-            workspaceId,
+            businessId,
             quoteId,
             description: item.description,
             quantity: item.quantity,
@@ -336,7 +336,7 @@ export async function createQuoteForWorkspace({
         );
 
         await insertQuoteActivity(tx, {
-          workspaceId,
+          businessId,
           inquiryId,
           quoteId,
           actorUserId,
@@ -365,19 +365,19 @@ export async function createQuoteForWorkspace({
   throw new Error("Failed to allocate a unique quote number.");
 }
 
-type UpdateQuoteForWorkspaceInput = {
-  workspaceId: string;
+type UpdateQuoteForBusinessInput = {
+  businessId: string;
   quoteId: string;
   actorUserId: string;
   quote: QuoteEditorInput;
 };
 
-export async function updateQuoteForWorkspace({
-  workspaceId,
+export async function updateQuoteForBusiness({
+  businessId,
   quoteId,
   actorUserId,
   quote,
-}: UpdateQuoteForWorkspaceInput) {
+}: UpdateQuoteForBusinessInput) {
   const totals = calculateQuoteTotals(quote);
   const now = new Date();
 
@@ -392,7 +392,7 @@ export async function updateQuoteForWorkspace({
         postAcceptanceStatus: quotes.postAcceptanceStatus,
       })
       .from(quotes)
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)))
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)))
       .limit(1);
 
     if (!existingQuote) {
@@ -420,16 +420,16 @@ export async function updateQuoteForWorkspace({
         validUntil: quote.validUntil,
         updatedAt: now,
       })
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)));
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)));
 
     await tx
       .delete(quoteItems)
-      .where(and(eq(quoteItems.quoteId, quoteId), eq(quoteItems.workspaceId, workspaceId)));
+      .where(and(eq(quoteItems.quoteId, quoteId), eq(quoteItems.businessId, businessId)));
 
     await tx.insert(quoteItems).values(
       totals.items.map((item) => ({
         id: item.id,
-        workspaceId,
+        businessId,
         quoteId,
         description: item.description,
         quantity: item.quantity,
@@ -442,7 +442,7 @@ export async function updateQuoteForWorkspace({
     );
 
     await insertQuoteActivity(tx, {
-      workspaceId,
+      businessId,
       inquiryId: existingQuote.inquiryId,
       quoteId,
       actorUserId,
@@ -463,19 +463,19 @@ export async function updateQuoteForWorkspace({
   });
 }
 
-type ChangeQuoteStatusForWorkspaceInput = {
-  workspaceId: string;
+type ChangeQuoteStatusForBusinessInput = {
+  businessId: string;
   quoteId: string;
   actorUserId: string;
   nextStatus: QuoteStatus;
 };
 
-export async function changeQuoteStatusForWorkspace({
-  workspaceId,
+export async function changeQuoteStatusForBusiness({
+  businessId,
   quoteId,
   actorUserId,
   nextStatus,
-}: ChangeQuoteStatusForWorkspaceInput) {
+}: ChangeQuoteStatusForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -490,7 +490,7 @@ export async function changeQuoteStatusForWorkspace({
         postAcceptanceStatus: quotes.postAcceptanceStatus,
       })
       .from(quotes)
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)))
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)))
       .limit(1);
 
     if (!existingQuote) {
@@ -532,23 +532,23 @@ export async function changeQuoteStatusForWorkspace({
             : "none",
         updatedAt: now,
       })
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)));
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)));
 
     if (nextStatus === "sent") {
       await maybeMoveInquiryToQuoted(
         tx,
-        workspaceId,
+        businessId,
         existingQuote.inquiryId,
         now,
       );
     }
 
     if (nextStatus === "accepted") {
-      await maybeMoveInquiryToWon(tx, workspaceId, existingQuote.inquiryId, now);
+      await maybeMoveInquiryToWon(tx, businessId, existingQuote.inquiryId, now);
     }
 
     await insertQuoteActivity(tx, {
-      workspaceId,
+      businessId,
       inquiryId: existingQuote.inquiryId,
       quoteId,
       actorUserId,
@@ -574,17 +574,17 @@ export async function changeQuoteStatusForWorkspace({
   });
 }
 
-type MarkQuoteSentForWorkspaceInput = {
-  workspaceId: string;
+type MarkQuoteSentForBusinessInput = {
+  businessId: string;
   quoteId: string;
   actorUserId: string;
 };
 
-export async function markQuoteSentForWorkspace({
-  workspaceId,
+export async function markQuoteSentForBusiness({
+  businessId,
   quoteId,
   actorUserId,
-}: MarkQuoteSentForWorkspaceInput) {
+}: MarkQuoteSentForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -598,7 +598,7 @@ export async function markQuoteSentForWorkspace({
         postAcceptanceStatus: quotes.postAcceptanceStatus,
       })
       .from(quotes)
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)))
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)))
       .limit(1);
 
     if (!existingQuote) {
@@ -627,12 +627,12 @@ export async function markQuoteSentForWorkspace({
         postAcceptanceStatus: "none",
         updatedAt: now,
       })
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)));
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)));
 
-    await maybeMoveInquiryToQuoted(tx, workspaceId, existingQuote.inquiryId, now);
+    await maybeMoveInquiryToQuoted(tx, businessId, existingQuote.inquiryId, now);
 
     await insertQuoteActivity(tx, {
-      workspaceId,
+      businessId,
       inquiryId: existingQuote.inquiryId,
       quoteId,
       actorUserId,
@@ -692,8 +692,8 @@ export async function respondToPublicQuoteByToken({
     const [existingQuote] = await tx
       .select({
         id: quotes.id,
-        workspaceId: quotes.workspaceId,
-        workspaceSlug: workspaces.slug,
+        businessId: quotes.businessId,
+        businessSlug: businesses.slug,
         inquiryId: quotes.inquiryId,
         quoteNumber: quotes.quoteNumber,
         status: quotes.status,
@@ -701,7 +701,7 @@ export async function respondToPublicQuoteByToken({
         postAcceptanceStatus: quotes.postAcceptanceStatus,
       })
       .from(quotes)
-      .innerJoin(workspaces, eq(quotes.workspaceId, workspaces.id))
+      .innerJoin(businesses, eq(quotes.businessId, businesses.id))
       .where(eq(quotes.publicToken, token))
       .limit(1);
 
@@ -712,10 +712,10 @@ export async function respondToPublicQuoteByToken({
     if (existingQuote.status !== "sent") {
       return {
         updated: false,
-        workspaceId: existingQuote.workspaceId,
+        businessId: existingQuote.businessId,
         inquiryId: existingQuote.inquiryId,
         quoteId: existingQuote.id,
-        workspaceSlug: existingQuote.workspaceSlug,
+        businessSlug: existingQuote.businessSlug,
         quoteNumber: existingQuote.quoteNumber,
         status: existingQuote.status,
       };
@@ -740,14 +740,14 @@ export async function respondToPublicQuoteByToken({
     if (nextStatus === "accepted") {
       await maybeMoveInquiryToWon(
         tx,
-        existingQuote.workspaceId,
+        existingQuote.businessId,
         existingQuote.inquiryId,
         now,
       );
     }
 
     await insertQuoteActivity(tx, {
-      workspaceId: existingQuote.workspaceId,
+      businessId: existingQuote.businessId,
       inquiryId: existingQuote.inquiryId,
       quoteId: existingQuote.id,
       actorUserId: null,
@@ -769,29 +769,29 @@ export async function respondToPublicQuoteByToken({
 
     return {
       updated: true,
-      workspaceId: existingQuote.workspaceId,
+      businessId: existingQuote.businessId,
       inquiryId: existingQuote.inquiryId,
       quoteId: existingQuote.id,
-      workspaceSlug: existingQuote.workspaceSlug,
+      businessSlug: existingQuote.businessSlug,
       quoteNumber: existingQuote.quoteNumber,
       status: nextStatus,
     };
   });
 }
 
-type UpdateQuotePostAcceptanceStatusForWorkspaceInput = {
-  workspaceId: string;
+type UpdateQuotePostAcceptanceStatusForBusinessInput = {
+  businessId: string;
   quoteId: string;
   actorUserId: string;
   postAcceptanceStatus: "none" | "booked" | "scheduled";
 };
 
-export async function updateQuotePostAcceptanceStatusForWorkspace({
-  workspaceId,
+export async function updateQuotePostAcceptanceStatusForBusiness({
+  businessId,
   quoteId,
   actorUserId,
   postAcceptanceStatus,
-}: UpdateQuotePostAcceptanceStatusForWorkspaceInput) {
+}: UpdateQuotePostAcceptanceStatusForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -804,7 +804,7 @@ export async function updateQuotePostAcceptanceStatusForWorkspace({
         postAcceptanceStatus: quotes.postAcceptanceStatus,
       })
       .from(quotes)
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)))
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)))
       .limit(1);
 
     if (!existingQuote) {
@@ -837,10 +837,10 @@ export async function updateQuotePostAcceptanceStatusForWorkspace({
         postAcceptanceStatus,
         updatedAt: now,
       })
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspaceId)));
+      .where(and(eq(quotes.id, quoteId), eq(quotes.businessId, businessId)));
 
     await insertQuoteActivity(tx, {
-      workspaceId,
+      businessId,
       inquiryId: existingQuote.inquiryId,
       quoteId,
       actorUserId,

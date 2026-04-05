@@ -108,7 +108,7 @@ export type QuoteInquiryPrefill = {
 
 export type DashboardQuoteDetail = {
   id: string;
-  workspaceId: string;
+  businessId: string;
   inquiryId: string | null;
   quoteNumber: string;
   publicToken: string;
@@ -141,9 +141,9 @@ export type PublicQuoteView = {
   token: string;
   quoteNumber: string;
   title: string;
-  workspaceName: string;
-  workspaceShortDescription: string | null;
-  workspaceContactEmail: string | null;
+  businessName: string;
+  businessShortDescription: string | null;
+  businessContactEmail: string | null;
   customerName: string;
   customerEmail: string;
   currency: string;

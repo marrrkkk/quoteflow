@@ -5,11 +5,11 @@ import type {
   QuoteStatus,
 } from "@/features/quotes/types";
 
-export const workspaceMemberRoles = ["owner", "member"] as const;
+export const businessMemberRoles = ["owner", "member"] as const;
 
-export type WorkspaceMemberRole = (typeof workspaceMemberRoles)[number];
+export type BusinessMemberRole = (typeof businessMemberRoles)[number];
 
-export type WorkspaceOverviewInquiryActionItem = {
+export type BusinessOverviewInquiryActionItem = {
   id: string;
   customerName: string;
   customerEmail: string;
@@ -18,7 +18,7 @@ export type WorkspaceOverviewInquiryActionItem = {
   submittedAt: Date;
 };
 
-export type WorkspaceOverviewQuoteActionItem = {
+export type BusinessOverviewQuoteActionItem = {
   id: string;
   inquiryId: string | null;
   quoteNumber: string;
@@ -37,7 +37,7 @@ export type WorkspaceOverviewQuoteActionItem = {
   reminders: QuoteReminderKind[];
 };
 
-export type WorkspaceOverviewCounts = {
+export type BusinessOverviewCounts = {
   overdueReplies: number;
   expiringSoonQuotes: number;
   inquiriesWithoutQuotes: number;
@@ -45,16 +45,16 @@ export type WorkspaceOverviewCounts = {
   recentAcceptedQuotes: number;
 };
 
-export type WorkspaceOverviewData = {
-  overdueReplies: WorkspaceOverviewInquiryActionItem[];
-  expiringSoonQuotes: WorkspaceOverviewQuoteActionItem[];
-  inquiriesWithoutQuotes: WorkspaceOverviewInquiryActionItem[];
-  followUpDueQuotes: WorkspaceOverviewQuoteActionItem[];
-  recentAcceptedQuotes: WorkspaceOverviewQuoteActionItem[];
-  counts: WorkspaceOverviewCounts;
+export type BusinessOverviewData = {
+  overdueReplies: BusinessOverviewInquiryActionItem[];
+  expiringSoonQuotes: BusinessOverviewQuoteActionItem[];
+  inquiriesWithoutQuotes: BusinessOverviewInquiryActionItem[];
+  followUpDueQuotes: BusinessOverviewQuoteActionItem[];
+  recentAcceptedQuotes: BusinessOverviewQuoteActionItem[];
+  counts: BusinessOverviewCounts;
 };
 
-export type CreateWorkspaceActionState = {
+export type CreateBusinessActionState = {
   error?: string;
   fieldErrors?: {
     name?: string[] | undefined;

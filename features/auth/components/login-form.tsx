@@ -61,7 +61,7 @@ export function LoginForm() {
         return;
       }
 
-      window.location.assign("/workspace");
+      window.location.assign("/businesses");
     });
   }
 

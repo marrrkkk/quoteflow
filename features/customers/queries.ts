@@ -4,20 +4,20 @@ import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import type { CustomerHistoryData } from "@/features/customers/types";
-import { hotWorkspaceCacheLife } from "@/lib/cache/workspace-tags";
+import { hotBusinessCacheLife } from "@/lib/cache/business-tags";
 import { db } from "@/lib/db/client";
 import { inquiries, quotes } from "@/lib/db/schema";
 import {
-  getWorkspaceInquiryListCacheTags,
-  getWorkspaceQuoteListCacheTags,
-} from "@/lib/cache/workspace-tags";
+  getBusinessInquiryListCacheTags,
+  getBusinessQuoteListCacheTags,
+} from "@/lib/cache/business-tags";
 
 function normalizeCustomerEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export async function getCustomerHistoryForWorkspace(input: {
-  workspaceId: string;
+export async function getCustomerHistoryForBusiness(input: {
+  businessId: string;
   customerEmail: string;
   excludeInquiryId?: string | null;
   excludeQuoteId?: string | null;
@@ -28,34 +28,34 @@ export async function getCustomerHistoryForWorkspace(input: {
     return null;
   }
 
-  return getCachedCustomerHistoryForWorkspace({
-    workspaceId: input.workspaceId,
+  return getCachedCustomerHistoryForBusiness({
+    businessId: input.businessId,
     customerEmail: normalizedEmail,
     excludeInquiryId: input.excludeInquiryId ?? null,
     excludeQuoteId: input.excludeQuoteId ?? null,
   });
 }
 
-async function getCachedCustomerHistoryForWorkspace(input: {
-  workspaceId: string;
+async function getCachedCustomerHistoryForBusiness(input: {
+  businessId: string;
   customerEmail: string;
   excludeInquiryId: string | null;
   excludeQuoteId: string | null;
 }): Promise<CustomerHistoryData | null> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
+  cacheLife(hotBusinessCacheLife);
   cacheTag(
-    ...getWorkspaceInquiryListCacheTags(input.workspaceId),
-    ...getWorkspaceQuoteListCacheTags(input.workspaceId),
+    ...getBusinessInquiryListCacheTags(input.businessId),
+    ...getBusinessQuoteListCacheTags(input.businessId),
   );
 
   const inquiryConditions = [
-    eq(inquiries.workspaceId, input.workspaceId),
+    eq(inquiries.businessId, input.businessId),
     sql`lower(${inquiries.customerEmail}) = ${input.customerEmail}`,
   ];
   const quoteConditions = [
-    eq(quotes.workspaceId, input.workspaceId),
+    eq(quotes.businessId, input.businessId),
     sql`lower(${quotes.customerEmail}) = ${input.customerEmail}`,
   ];
 

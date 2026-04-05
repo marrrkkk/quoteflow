@@ -10,7 +10,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 
 export const quoteLibraryEntryKindEnum = pgEnum("quote_library_entry_kind", [
   "block",
@@ -21,9 +21,9 @@ export const quoteLibraryEntries = pgTable(
   "quote_library_entries",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     kind: quoteLibraryEntryKindEnum("kind").notNull(),
     name: text("name").notNull(),
     description: text("description"),
@@ -35,14 +35,14 @@ export const quoteLibraryEntries = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("quote_library_entries_workspace_id_idx").on(table.workspaceId),
-    index("quote_library_entries_workspace_kind_name_idx").on(
-      table.workspaceId,
+    index("quote_library_entries_business_id_idx").on(table.businessId),
+    index("quote_library_entries_business_kind_name_idx").on(
+      table.businessId,
       table.kind,
       table.name,
     ),
-    index("quote_library_entries_workspace_created_at_idx").on(
-      table.workspaceId,
+    index("quote_library_entries_business_created_at_idx").on(
+      table.businessId,
       table.createdAt,
     ),
   ],
@@ -52,9 +52,9 @@ export const quoteLibraryEntryItems = pgTable(
   "quote_library_entry_items",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     entryId: text("entry_id")
       .notNull()
       .references(() => quoteLibraryEntries.id, { onDelete: "cascade" }),
@@ -70,7 +70,7 @@ export const quoteLibraryEntryItems = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("quote_library_entry_items_workspace_id_idx").on(table.workspaceId),
+    index("quote_library_entry_items_business_id_idx").on(table.businessId),
     index("quote_library_entry_items_entry_id_idx").on(table.entryId),
     uniqueIndex("quote_library_entry_items_entry_position_unique").on(
       table.entryId,

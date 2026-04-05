@@ -85,7 +85,7 @@ export function InquiryNoteForm({
         </FieldGroup>
       ) : (
         <FormSection
-          description="Visible only inside the workspace."
+          description="Visible only inside the business."
           title="Internal note"
         >
           <FieldGroup>

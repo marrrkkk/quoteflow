@@ -12,13 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { WorkspaceAnalyticsData } from "@/features/analytics/types";
+import type { BusinessAnalyticsData } from "@/features/analytics/types";
 import { formatAnalyticsPercent } from "@/features/analytics/utils";
 
 export function AnalyticsQuoteSummary({
   data,
 }: {
-  data: WorkspaceAnalyticsData["quoteSummary"];
+  data: BusinessAnalyticsData["quoteSummary"];
 }) {
   return (
     <Card className="gap-0 bg-background/72">

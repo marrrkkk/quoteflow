@@ -1,5 +1,5 @@
 type PublicInquiryNotificationTemplateInput = {
-  workspaceName: string;
+  businessName: string;
   dashboardUrl: string;
   inquiryFormName: string;
   customerName: string;
@@ -35,7 +35,7 @@ function buildOptionalLine(label: string, value?: string | null) {
 }
 
 export function renderPublicInquiryNotificationEmail({
-  workspaceName,
+  businessName,
   dashboardUrl,
   inquiryFormName,
   customerName,
@@ -49,7 +49,7 @@ export function renderPublicInquiryNotificationEmail({
   attachmentName,
   additionalFields = [],
 }: PublicInquiryNotificationTemplateInput) {
-  const subject = `New inquiry for ${workspaceName}`;
+  const subject = `New inquiry for ${businessName}`;
   const detailLines = [
     `Form: ${inquiryFormName}`,
     `Customer: ${customerName}`,
@@ -78,7 +78,7 @@ export function renderPublicInquiryNotificationEmail({
 
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #172033;">
-      <h1 style="font-size: 24px; margin-bottom: 16px;">New inquiry for ${escapeHtml(workspaceName)}</h1>
+      <h1 style="font-size: 24px; margin-bottom: 16px;">New inquiry for ${escapeHtml(businessName)}</h1>
       <p style="margin: 0 0 18px;">A customer submitted a new inquiry through your Relay public page.</p>
       <div style="border: 1px solid #d9deeb; border-radius: 16px; background: #ffffff; padding: 18px; margin-bottom: 18px;">
         <p style="margin: 0 0 8px;"><strong>Customer:</strong> ${escapeHtml(customerName)}</p>

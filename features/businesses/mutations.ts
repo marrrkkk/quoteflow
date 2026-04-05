@@ -2,77 +2,77 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import { createInquiryFormPreset } from "@/features/inquiries/inquiry-forms";
 import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
 import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
-import { ensureProfileForUser } from "@/lib/auth/workspace-bootstrap";
+import { ensureProfileForUser } from "@/lib/auth/business-bootstrap";
 import { db } from "@/lib/db/client";
 import {
   activityLogs,
-  workspaceInquiryForms,
-  workspaceMembers,
-  workspaces,
+  businessInquiryForms,
+  businessMembers,
+  businesses,
 } from "@/lib/db/schema";
 import { appendRandomSlugSuffix, slugifyPublicName } from "@/lib/slugs";
 
-type CreateWorkspaceForUserInput = {
+type CreateBusinessForUserInput = {
   user: {
     id: string;
     name: string;
     email: string;
   };
   name: string;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
 };
 
 function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-async function getAvailableWorkspaceSlug(baseSlug: string) {
+async function getAvailableBusinessSlug(baseSlug: string) {
   let candidate = baseSlug;
 
   while (true) {
-    const [existingWorkspace] = await db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(eq(workspaces.slug, candidate))
+    const [existingBusiness] = await db
+      .select({ id: businesses.id })
+      .from(businesses)
+      .where(eq(businesses.slug, candidate))
       .limit(1);
 
-    if (!existingWorkspace) {
+    if (!existingBusiness) {
       return candidate;
     }
 
     candidate = appendRandomSlugSuffix(baseSlug, {
-      fallback: "workspace",
+      fallback: "business",
     });
   }
 }
 
-export async function createWorkspaceForUser({
+export async function createBusinessForUser({
   user,
   name,
   businessType,
-}: CreateWorkspaceForUserInput) {
+}: CreateBusinessForUserInput) {
   const trimmedName = name.trim();
   const now = new Date();
-  const slug = await getAvailableWorkspaceSlug(
+  const slug = await getAvailableBusinessSlug(
     slugifyPublicName(trimmedName, {
-      fallback: "workspace",
+      fallback: "business",
     }),
   );
-  const workspaceId = createId("ws");
+  const businessId = createId("biz");
   const defaultInquiryForm = createInquiryFormPreset({
     businessType,
-    workspaceName: trimmedName,
+    businessName: trimmedName,
   });
 
   await ensureProfileForUser(user);
 
   await db.transaction(async (tx) => {
-    await tx.insert(workspaces).values({
-      id: workspaceId,
+    await tx.insert(businesses).values({
+      id: businessId,
       name: trimmedName,
       slug,
       businessType,
@@ -81,16 +81,16 @@ export async function createWorkspaceForUser({
         businessType,
       }),
       inquiryPageConfig: createInquiryPageConfigDefaults({
-        workspaceName: trimmedName,
+        businessName: trimmedName,
         businessType,
       }),
       createdAt: now,
       updatedAt: now,
     });
 
-    await tx.insert(workspaceInquiryForms).values({
+    await tx.insert(businessInquiryForms).values({
       id: createId("ifm"),
-      workspaceId,
+      businessId,
       name: defaultInquiryForm.name,
       slug: defaultInquiryForm.slug,
       businessType: defaultInquiryForm.businessType,
@@ -102,9 +102,9 @@ export async function createWorkspaceForUser({
       updatedAt: now,
     });
 
-    await tx.insert(workspaceMembers).values({
-      id: createId("wm"),
-      workspaceId,
+    await tx.insert(businessMembers).values({
+      id: createId("bm"),
+      businessId,
       userId: user.id,
       role: "owner",
       createdAt: now,
@@ -113,12 +113,12 @@ export async function createWorkspaceForUser({
 
     await tx.insert(activityLogs).values({
       id: createId("act"),
-      workspaceId,
+      businessId,
       actorUserId: user.id,
-      type: "workspace.created",
-      summary: "Workspace created.",
+      type: "business.created",
+      summary: "Business created.",
       metadata: {
-        source: "workspace-hub",
+        source: "business-hub",
       },
       createdAt: now,
       updatedAt: now,
@@ -126,7 +126,7 @@ export async function createWorkspaceForUser({
   });
 
   return {
-    id: workspaceId,
+    id: businessId,
     slug,
   };
 }

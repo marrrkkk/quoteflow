@@ -17,14 +17,14 @@ function createId(prefix: string) {
 async function insertQuoteLibraryActivity(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   {
-    workspaceId,
+    businessId,
     actorUserId,
     type,
     summary,
     metadata,
     now,
   }: {
-    workspaceId: string;
+    businessId: string;
     actorUserId: string;
     type: string;
     summary: string;
@@ -34,7 +34,7 @@ async function insertQuoteLibraryActivity(
 ) {
   await tx.insert(activityLogs).values({
     id: createId("act"),
-    workspaceId,
+    businessId,
     actorUserId,
     type,
     summary,
@@ -44,24 +44,24 @@ async function insertQuoteLibraryActivity(
   });
 }
 
-type CreateQuoteLibraryEntryForWorkspaceInput = {
-  workspaceId: string;
+type CreateQuoteLibraryEntryForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   entry: QuoteLibraryEntryInput;
 };
 
-export async function createQuoteLibraryEntryForWorkspace({
-  workspaceId,
+export async function createQuoteLibraryEntryForBusiness({
+  businessId,
   actorUserId,
   entry,
-}: CreateQuoteLibraryEntryForWorkspaceInput) {
+}: CreateQuoteLibraryEntryForBusinessInput) {
   const entryId = createId("qlib");
   const now = new Date();
 
   return db.transaction(async (tx) => {
     await tx.insert(quoteLibraryEntries).values({
       id: entryId,
-      workspaceId,
+      businessId,
       kind: entry.kind,
       name: entry.name,
       description: entry.description ?? null,
@@ -72,7 +72,7 @@ export async function createQuoteLibraryEntryForWorkspace({
     await tx.insert(quoteLibraryEntryItems).values(
       entry.items.map((item, index) => ({
         id: createId("qli"),
-        workspaceId,
+        businessId,
         entryId,
         description: item.description,
         quantity: item.quantity,
@@ -84,7 +84,7 @@ export async function createQuoteLibraryEntryForWorkspace({
     );
 
     await insertQuoteLibraryActivity(tx, {
-      workspaceId,
+      businessId,
       actorUserId,
       type: "quote_library.entry_created",
       summary: `${entry.name} added to the pricing library.`,
@@ -102,19 +102,19 @@ export async function createQuoteLibraryEntryForWorkspace({
   });
 }
 
-type UpdateQuoteLibraryEntryForWorkspaceInput = {
-  workspaceId: string;
+type UpdateQuoteLibraryEntryForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   entryId: string;
   entry: QuoteLibraryEntryInput;
 };
 
-export async function updateQuoteLibraryEntryForWorkspace({
-  workspaceId,
+export async function updateQuoteLibraryEntryForBusiness({
+  businessId,
   actorUserId,
   entryId,
   entry,
-}: UpdateQuoteLibraryEntryForWorkspaceInput) {
+}: UpdateQuoteLibraryEntryForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -125,7 +125,7 @@ export async function updateQuoteLibraryEntryForWorkspace({
       .from(quoteLibraryEntries)
       .where(
         and(
-          eq(quoteLibraryEntries.workspaceId, workspaceId),
+          eq(quoteLibraryEntries.businessId, businessId),
           eq(quoteLibraryEntries.id, entryId),
         ),
       )
@@ -145,7 +145,7 @@ export async function updateQuoteLibraryEntryForWorkspace({
       })
       .where(
         and(
-          eq(quoteLibraryEntries.workspaceId, workspaceId),
+          eq(quoteLibraryEntries.businessId, businessId),
           eq(quoteLibraryEntries.id, entryId),
         ),
       );
@@ -154,7 +154,7 @@ export async function updateQuoteLibraryEntryForWorkspace({
       .delete(quoteLibraryEntryItems)
       .where(
         and(
-          eq(quoteLibraryEntryItems.workspaceId, workspaceId),
+          eq(quoteLibraryEntryItems.businessId, businessId),
           eq(quoteLibraryEntryItems.entryId, entryId),
         ),
       );
@@ -162,7 +162,7 @@ export async function updateQuoteLibraryEntryForWorkspace({
     await tx.insert(quoteLibraryEntryItems).values(
       entry.items.map((item, index) => ({
         id: createId("qli"),
-        workspaceId,
+        businessId,
         entryId,
         description: item.description,
         quantity: item.quantity,
@@ -174,7 +174,7 @@ export async function updateQuoteLibraryEntryForWorkspace({
     );
 
     await insertQuoteLibraryActivity(tx, {
-      workspaceId,
+      businessId,
       actorUserId,
       type: "quote_library.entry_updated",
       summary: `${entry.name} updated in the pricing library.`,
@@ -192,17 +192,17 @@ export async function updateQuoteLibraryEntryForWorkspace({
   });
 }
 
-type DeleteQuoteLibraryEntryForWorkspaceInput = {
-  workspaceId: string;
+type DeleteQuoteLibraryEntryForBusinessInput = {
+  businessId: string;
   actorUserId: string;
   entryId: string;
 };
 
-export async function deleteQuoteLibraryEntryForWorkspace({
-  workspaceId,
+export async function deleteQuoteLibraryEntryForBusiness({
+  businessId,
   actorUserId,
   entryId,
-}: DeleteQuoteLibraryEntryForWorkspaceInput) {
+}: DeleteQuoteLibraryEntryForBusinessInput) {
   const now = new Date();
 
   return db.transaction(async (tx) => {
@@ -215,7 +215,7 @@ export async function deleteQuoteLibraryEntryForWorkspace({
       .from(quoteLibraryEntries)
       .where(
         and(
-          eq(quoteLibraryEntries.workspaceId, workspaceId),
+          eq(quoteLibraryEntries.businessId, businessId),
           eq(quoteLibraryEntries.id, entryId),
         ),
       )
@@ -229,13 +229,13 @@ export async function deleteQuoteLibraryEntryForWorkspace({
       .delete(quoteLibraryEntries)
       .where(
         and(
-          eq(quoteLibraryEntries.workspaceId, workspaceId),
+          eq(quoteLibraryEntries.businessId, businessId),
           eq(quoteLibraryEntries.id, entryId),
         ),
       );
 
     await insertQuoteLibraryActivity(tx, {
-      workspaceId,
+      businessId,
       actorUserId,
       type: "quote_library.entry_deleted",
       summary: `${existingEntry.name} removed from the pricing library.`,

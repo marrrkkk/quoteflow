@@ -1,17 +1,17 @@
-export const hotWorkspaceCacheLife = {
+export const hotBusinessCacheLife = {
   stale: 20,
   revalidate: 20,
   expire: 300,
 } as const;
 
-export const settingsWorkspaceCacheLife = {
+export const settingsBusinessCacheLife = {
   stale: 60,
   revalidate: 60,
   expire: 600,
 } as const;
 
-function getWorkspaceScopeTag(workspaceId: string) {
-  return `workspace:${workspaceId}`;
+function getBusinessScopeTag(businessId: string) {
+  return `business:${businessId}`;
 }
 
 export function uniqueCacheTags(
@@ -22,14 +22,14 @@ export function uniqueCacheTags(
   );
 }
 
-export function getWorkspaceSettingsCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessSettingsCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([scopeTag, `${scopeTag}:settings`]);
 }
 
-export function getWorkspaceInquiryFormsCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessInquiryFormsCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -38,11 +38,11 @@ export function getWorkspaceInquiryFormsCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceInquiryFormCacheTags(
-  workspaceId: string,
+export function getBusinessInquiryFormCacheTags(
+  businessId: string,
   formSlug: string,
 ) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -52,8 +52,8 @@ export function getWorkspaceInquiryFormCacheTags(
   ]);
 }
 
-export function getWorkspaceInquiryListCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessInquiryListCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -62,11 +62,11 @@ export function getWorkspaceInquiryListCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceInquiryDetailCacheTags(
-  workspaceId: string,
+export function getBusinessInquiryDetailCacheTags(
+  businessId: string,
   inquiryId: string,
 ) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -77,8 +77,8 @@ export function getWorkspaceInquiryDetailCacheTags(
   ]);
 }
 
-export function getWorkspaceQuoteListCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessQuoteListCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -87,11 +87,11 @@ export function getWorkspaceQuoteListCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceQuoteDetailCacheTags(
-  workspaceId: string,
+export function getBusinessQuoteDetailCacheTags(
+  businessId: string,
   quoteId: string,
 ) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -102,8 +102,8 @@ export function getWorkspaceQuoteDetailCacheTags(
   ]);
 }
 
-export function getWorkspacePricingCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessPricingCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -112,8 +112,8 @@ export function getWorkspacePricingCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceReplySnippetsCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessReplySnippetsCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -123,8 +123,8 @@ export function getWorkspaceReplySnippetsCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceKnowledgeCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessKnowledgeCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -133,8 +133,8 @@ export function getWorkspaceKnowledgeCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceAnalyticsCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessAnalyticsCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,
@@ -145,8 +145,8 @@ export function getWorkspaceAnalyticsCacheTags(workspaceId: string) {
   ]);
 }
 
-export function getWorkspaceOverviewCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessOverviewCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([
     scopeTag,

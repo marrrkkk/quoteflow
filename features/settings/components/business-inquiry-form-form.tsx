@@ -61,35 +61,35 @@ import {
   type InquiryFormSystemFieldDefinition,
 } from "@/features/inquiries/form-config";
 import {
-  workspaceBusinessTypeMeta,
-  type WorkspaceBusinessType,
+  businessTypeMeta,
+  type BusinessType,
 } from "@/features/inquiries/business-types";
 import type {
-  WorkspaceInquiryFormActionState,
-  WorkspaceInquiryFormSettingsView,
+  BusinessInquiryFormActionState,
+  BusinessInquiryFormSettingsView,
 } from "@/features/settings/types";
 import { publicSlugMaxLength, publicSlugPattern } from "@/lib/slugs";
 import { cn } from "@/lib/utils";
 
-type WorkspaceInquiryFormFormProps = {
+type BusinessInquiryFormFormProps = {
   applyPresetAction: (
-    state: WorkspaceInquiryFormActionState,
+    state: BusinessInquiryFormActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormActionState>;
+  ) => Promise<BusinessInquiryFormActionState>;
   saveAction: (
-    state: WorkspaceInquiryFormActionState,
+    state: BusinessInquiryFormActionState,
     formData: FormData,
-  ) => Promise<WorkspaceInquiryFormActionState>;
-  settings: WorkspaceInquiryFormSettingsView;
+  ) => Promise<BusinessInquiryFormActionState>;
+  settings: BusinessInquiryFormSettingsView;
 };
 
-const initialState: WorkspaceInquiryFormActionState = {};
+const initialState: BusinessInquiryFormActionState = {};
 
-export function WorkspaceInquiryFormForm({
+export function BusinessInquiryFormForm({
   applyPresetAction,
   saveAction,
   settings,
-}: WorkspaceInquiryFormFormProps) {
+}: BusinessInquiryFormFormProps) {
   const router = useProgressRouter();
   const [saveState, saveFormAction, isSavePending] = useActionState(
     saveAction,
@@ -337,7 +337,7 @@ export function WorkspaceInquiryFormForm({
             >
               <div className="grid gap-5">
                 <Field>
-                  <FieldLabel htmlFor="workspace-inquiry-form-name">
+                  <FieldLabel htmlFor="business-inquiry-form-name">
                     Form name
                   </FieldLabel>
                   <FieldContent>
@@ -345,7 +345,7 @@ export function WorkspaceInquiryFormForm({
                       aria-invalid={Boolean(nameError) || undefined}
                       defaultValue={settings.formName}
                       disabled={isSavePending}
-                      id="workspace-inquiry-form-name"
+                      id="business-inquiry-form-name"
                       maxLength={80}
                       minLength={2}
                       name="name"
@@ -358,7 +358,7 @@ export function WorkspaceInquiryFormForm({
                 </Field>
 
                 <Field data-invalid={Boolean(slugError) || undefined}>
-                  <FieldLabel htmlFor="workspace-inquiry-form-slug">
+                  <FieldLabel htmlFor="business-inquiry-form-slug">
                     Form slug
                   </FieldLabel>
                   <FieldContent>
@@ -366,7 +366,7 @@ export function WorkspaceInquiryFormForm({
                       aria-invalid={Boolean(slugError) || undefined}
                       defaultValue={settings.formSlug}
                       disabled={isSavePending}
-                      id="workspace-inquiry-form-slug"
+                      id="business-inquiry-form-slug"
                       maxLength={publicSlugMaxLength}
                       minLength={2}
                       name="slug"
@@ -382,25 +382,25 @@ export function WorkspaceInquiryFormForm({
 
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                   <Field data-invalid={Boolean(businessTypeError) || undefined}>
-                    <FieldLabel htmlFor="workspace-inquiry-business-type">
+                    <FieldLabel htmlFor="business-inquiry-business-type">
                       Type
                     </FieldLabel>
                     <FieldContent>
                       <Select
                         onValueChange={(value) =>
-                          setBusinessType(value as WorkspaceBusinessType)
+                          setBusinessType(value as BusinessType)
                         }
                         value={businessType}
                       >
                         <SelectTrigger
                           className="w-full"
-                          id="workspace-inquiry-business-type"
+                          id="business-inquiry-business-type"
                         >
                           <SelectValue placeholder="Choose a business type" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            {Object.entries(workspaceBusinessTypeMeta).map(
+                            {Object.entries(businessTypeMeta).map(
                               ([value, meta]) => (
                                 <SelectItem key={value} value={value}>
                                   {meta.label}
@@ -423,10 +423,10 @@ export function WorkspaceInquiryFormForm({
                   <div className="soft-panel flex flex-col justify-between gap-3 px-4 py-4 shadow-none">
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {workspaceBusinessTypeMeta[businessType].label}
+                        {businessTypeMeta[businessType].label}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {workspaceBusinessTypeMeta[businessType].description}
+                        {businessTypeMeta[businessType].description}
                       </p>
                     </div>
                     <div className="dashboard-meta-row">
@@ -543,7 +543,7 @@ export function WorkspaceInquiryFormForm({
             <DialogTitle>Apply preset defaults?</DialogTitle>
             <DialogDescription>
               This will replace the current inquiry form and inquiry page with the{" "}
-              {workspaceBusinessTypeMeta[businessType].label} preset.
+              {businessTypeMeta[businessType].label} preset.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

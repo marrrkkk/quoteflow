@@ -1,5 +1,5 @@
 type QuoteSentOwnerNotificationTemplateInput = {
-  workspaceName: string;
+  businessName: string;
   customerName: string;
   customerEmail: string;
   quoteNumber: string;
@@ -18,7 +18,7 @@ function escapeHtml(value: string) {
 }
 
 export function renderQuoteSentOwnerNotificationEmail({
-  workspaceName,
+  businessName,
   customerName,
   customerEmail,
   quoteNumber,
@@ -29,7 +29,7 @@ export function renderQuoteSentOwnerNotificationEmail({
   const subject = `${quoteNumber} sent to ${customerName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #172033;">
-      <p style="margin: 0 0 18px;">${escapeHtml(workspaceName)} just sent a quote to the customer.</p>
+      <p style="margin: 0 0 18px;">${escapeHtml(businessName)} just sent a quote to the customer.</p>
       <div style="border: 1px solid #d9deeb; border-radius: 18px; background: #ffffff; padding: 18px; margin-bottom: 20px;">
         <p style="margin: 0 0 8px;"><strong>Quote:</strong> ${escapeHtml(quoteNumber)} · ${escapeHtml(title)}</p>
         <p style="margin: 0 0 8px;"><strong>Customer:</strong> ${escapeHtml(customerName)}</p>
@@ -46,7 +46,7 @@ export function renderQuoteSentOwnerNotificationEmail({
     </div>
   `;
   const text = [
-    `${workspaceName} just sent a quote to the customer.`,
+    `${businessName} just sent a quote to the customer.`,
     "",
     `Quote: ${quoteNumber} - ${title}`,
     `Customer: ${customerName}`,

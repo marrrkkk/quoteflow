@@ -8,12 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
-import type { WorkspaceAnalyticsStatusCount } from "@/features/analytics/types";
+import type { BusinessAnalyticsStatusCount } from "@/features/analytics/types";
 
 export function AnalyticsStatusBreakdown({
   rows,
 }: {
-  rows: WorkspaceAnalyticsStatusCount[];
+  rows: BusinessAnalyticsStatusCount[];
 }) {
   const maxCount = Math.max(...rows.map((row) => row.count), 1);
 

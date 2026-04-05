@@ -16,16 +16,16 @@ import {
   formatInquiryDate,
 } from "@/features/inquiries/utils";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
-import { getWorkspaceInquiryPath } from "@/features/workspaces/routes";
+import { getBusinessInquiryPath } from "@/features/businesses/routes";
 
 type InquiryListTableProps = {
   inquiries: DashboardInquiryListItem[];
-  workspaceSlug: string;
+  businessSlug: string;
 };
 
 export function InquiryListTable({
   inquiries,
-  workspaceSlug,
+  businessSlug,
 }: InquiryListTableProps) {
   return (
     <DashboardTableContainer>
@@ -48,7 +48,7 @@ export function InquiryListTable({
                 <div className="table-meta-stack max-w-full">
                   <Link
                     className="table-link"
-                    href={getWorkspaceInquiryPath(workspaceSlug, inquiry.id)}
+                    href={getBusinessInquiryPath(businessSlug, inquiry.id)}
                     prefetch={true}
                   >
                     {inquiry.customerName}

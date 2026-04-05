@@ -7,12 +7,12 @@ import { PublicInquiryForm } from "@/features/inquiries/components/public-inquir
 import { inquiryPageCardIconMeta } from "@/features/inquiries/page-config";
 import type {
   PublicInquiryFormState,
-  PublicInquiryWorkspace,
+  PublicInquiryBusiness,
 } from "@/features/inquiries/types";
 import { cn } from "@/lib/utils";
 
 type PublicInquiryPageRendererProps = {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
   action: (
     state: PublicInquiryFormState,
     formData: FormData,
@@ -23,13 +23,13 @@ type PublicInquiryPageRendererProps = {
 };
 
 export function PublicInquiryPageRenderer({
-  workspace,
+  business,
   action,
   headerAction,
   beforeHero,
   previewMode = false,
 }: PublicInquiryPageRendererProps) {
-  const config = workspace.inquiryPageConfig;
+  const config = business.inquiryPageConfig;
 
   return (
     <div className="public-page">
@@ -37,7 +37,7 @@ export function PublicInquiryPageRenderer({
         {beforeHero}
 
         <header className="public-page-header">
-          <WorkspaceInquiryBrand workspace={workspace} />
+          <BusinessInquiryBrand business={business} />
           {headerAction ? (
             <div className="flex w-full flex-col gap-3 [&>*]:w-full sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end sm:[&>*]:w-auto">
               {headerAction}
@@ -47,21 +47,21 @@ export function PublicInquiryPageRenderer({
 
         {config.template === "stacked" ? (
           <StackedInquiryTemplate
-            workspace={workspace}
+            business={business}
             action={action}
             previewMode={previewMode}
           />
         ) : null}
         {config.template === "showcase" ? (
           <ShowcaseInquiryTemplate
-            workspace={workspace}
+            business={business}
             action={action}
             previewMode={previewMode}
           />
         ) : null}
         {config.template === "split" ? (
           <SplitInquiryTemplate
-            workspace={workspace}
+            business={business}
             action={action}
             previewMode={previewMode}
           />
@@ -72,17 +72,17 @@ export function PublicInquiryPageRenderer({
 }
 
 function SplitInquiryTemplate({
-  workspace,
+  business,
   action,
   previewMode,
-}: Pick<PublicInquiryPageRendererProps, "workspace" | "action" | "previewMode">) {
-  const config = workspace.inquiryPageConfig;
+}: Pick<PublicInquiryPageRendererProps, "business" | "action" | "previewMode">) {
+  const config = business.inquiryPageConfig;
 
   return (
     <PublicHeroSurface className="lg:py-12">
       <div className="grid gap-10 xl:grid-cols-[minmax(0,0.92fr)_minmax(22rem,0.8fr)] xl:items-start">
         <div className="flex min-w-0 flex-col gap-6">
-          <InquiryIntro workspace={workspace} />
+          <InquiryIntro business={business} />
           <InquirySupportCards cards={config.cards} />
         </div>
 
@@ -91,7 +91,7 @@ function SplitInquiryTemplate({
           title={config.formTitle}
           description={config.formDescription}
           previewMode={previewMode}
-          workspace={workspace}
+          business={business}
           className="xl:sticky xl:top-6"
         />
       </div>
@@ -100,17 +100,17 @@ function SplitInquiryTemplate({
 }
 
 function StackedInquiryTemplate({
-  workspace,
+  business,
   action,
   previewMode,
-}: Pick<PublicInquiryPageRendererProps, "workspace" | "action" | "previewMode">) {
-  const config = workspace.inquiryPageConfig;
+}: Pick<PublicInquiryPageRendererProps, "business" | "action" | "previewMode">) {
+  const config = business.inquiryPageConfig;
 
   return (
     <PublicHeroSurface className="lg:py-12">
       <div className="flex flex-col gap-8">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center">
-          <InquiryIntro workspace={workspace} align="center" />
+          <InquiryIntro business={business} align="center" />
         </div>
 
         <InquirySupportCards cards={config.cards} variant="stacked" />
@@ -121,7 +121,7 @@ function StackedInquiryTemplate({
             title={config.formTitle}
             description={config.formDescription}
             previewMode={previewMode}
-            workspace={workspace}
+            business={business}
           />
         </div>
       </div>
@@ -130,11 +130,11 @@ function StackedInquiryTemplate({
 }
 
 function ShowcaseInquiryTemplate({
-  workspace,
+  business,
   action,
   previewMode,
-}: Pick<PublicInquiryPageRendererProps, "workspace" | "action" | "previewMode">) {
-  const config = workspace.inquiryPageConfig;
+}: Pick<PublicInquiryPageRendererProps, "business" | "action" | "previewMode">) {
+  const config = business.inquiryPageConfig;
 
   return (
     <PublicHeroSurface className="lg:py-12">
@@ -144,15 +144,15 @@ function ShowcaseInquiryTemplate({
           title={config.formTitle}
           description={config.formDescription}
           previewMode={previewMode}
-          workspace={workspace}
+          business={business}
           className="lg:sticky lg:top-6"
         />
 
         <div className="flex min-w-0 flex-col gap-6">
           <div className="hero-panel">
             <div className="grid gap-6 p-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:p-8">
-              <WorkspaceInquirySpotlight workspace={workspace} />
-              <InquiryIntro workspace={workspace} />
+              <BusinessInquirySpotlight business={business} />
+              <InquiryIntro business={business} />
             </div>
           </div>
 
@@ -163,15 +163,15 @@ function ShowcaseInquiryTemplate({
   );
 }
 
-function WorkspaceInquiryBrand({ workspace }: { workspace: PublicInquiryWorkspace }) {
-  const brandTagline = workspace.inquiryPageConfig.brandTagline;
+function BusinessInquiryBrand({ business }: { business: PublicInquiryBusiness }) {
+  const brandTagline = business.inquiryPageConfig.brandTagline;
 
   return (
     <div className="flex min-w-0 items-center gap-4">
-      <WorkspaceBrandBadge workspace={workspace} size="md" />
+      <BusinessBrandBadge business={business} size="md" />
       <div className="min-w-0">
         <p className="truncate font-heading text-lg font-semibold tracking-tight text-foreground">
-          {workspace.name}
+          {business.name}
         </p>
         {brandTagline ? (
           <p className="mt-1 truncate text-sm text-muted-foreground">
@@ -183,20 +183,20 @@ function WorkspaceInquiryBrand({ workspace }: { workspace: PublicInquiryWorkspac
   );
 }
 
-function WorkspaceInquirySpotlight({
-  workspace,
+function BusinessInquirySpotlight({
+  business,
 }: {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
 }) {
-  const brandTagline = workspace.inquiryPageConfig.brandTagline;
+  const brandTagline = business.inquiryPageConfig.brandTagline;
 
   return (
     <div className="soft-panel flex h-full flex-col justify-between gap-4 bg-secondary/70 p-5 shadow-none">
-      <WorkspaceBrandBadge workspace={workspace} size="lg" />
+      <BusinessBrandBadge business={business} size="lg" />
       <div className="space-y-2">
-        <p className="meta-label">Workspace</p>
+        <p className="meta-label">Business</p>
         <p className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-          {workspace.name}
+          {business.name}
         </p>
         {brandTagline ? (
           <p className="text-sm leading-7 text-muted-foreground">{brandTagline}</p>
@@ -206,11 +206,11 @@ function WorkspaceInquirySpotlight({
   );
 }
 
-function WorkspaceBrandBadge({
-  workspace,
+function BusinessBrandBadge({
+  business,
   size,
 }: {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
   size: "md" | "lg";
 }) {
   const sizeClassName = size === "lg" ? "size-20 rounded-2xl" : "size-14 rounded-2xl";
@@ -223,10 +223,10 @@ function WorkspaceBrandBadge({
         sizeClassName,
       )}
     >
-      {workspace.logoUrl ? (
+      {business.logoUrl ? (
         <Image
-          src={workspace.logoUrl}
-          alt={`${workspace.name} logo`}
+          src={business.logoUrl}
+          alt={`${business.name} logo`}
           width={imageSize}
           height={imageSize}
           className="max-h-[70%] w-auto object-contain"
@@ -234,7 +234,7 @@ function WorkspaceBrandBadge({
         />
       ) : (
         <span className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground">
-          {getWorkspaceInitials(workspace.name)}
+          {getBusinessInitials(business.name)}
         </span>
       )}
     </div>
@@ -242,13 +242,13 @@ function WorkspaceBrandBadge({
 }
 
 function InquiryIntro({
-  workspace,
+  business,
   align = "start",
 }: {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
   align?: "start" | "center";
 }) {
-  const config = workspace.inquiryPageConfig;
+  const config = business.inquiryPageConfig;
 
   return (
     <div
@@ -276,7 +276,7 @@ function InquirySupportCards({
   cards,
   variant = "split",
 }: {
-  cards: PublicInquiryWorkspace["inquiryPageConfig"]["cards"];
+  cards: PublicInquiryBusiness["inquiryPageConfig"]["cards"];
   variant?: "split" | "stacked" | "showcase";
 }) {
   if (!cards.length) {
@@ -316,14 +316,14 @@ function InquirySupportCards({
 }
 
 function InquiryFormCard({
-  workspace,
+  business,
   action,
   title,
   description,
   className,
   previewMode,
 }: {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
   action: PublicInquiryPageRendererProps["action"];
   title: string;
   description?: string;
@@ -340,7 +340,7 @@ function InquiryFormCard({
       </CardHeader>
       <CardContent className="pt-0">
         <PublicInquiryForm
-          workspace={workspace}
+          business={business}
           action={action}
           previewMode={previewMode}
         />
@@ -349,7 +349,7 @@ function InquiryFormCard({
   );
 }
 
-function getWorkspaceInitials(value: string) {
+function getBusinessInitials(value: string) {
   return value
     .split(" ")
     .filter(Boolean)

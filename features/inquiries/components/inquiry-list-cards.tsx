@@ -16,16 +16,16 @@ import {
   formatInquiryDate,
 } from "@/features/inquiries/utils";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
-import { getWorkspaceInquiryPath } from "@/features/workspaces/routes";
+import { getBusinessInquiryPath } from "@/features/businesses/routes";
 
 type InquiryListCardsProps = {
   inquiries: DashboardInquiryListItem[];
-  workspaceSlug: string;
+  businessSlug: string;
 };
 
 export function InquiryListCards({
   inquiries,
-  workspaceSlug,
+  businessSlug,
 }: InquiryListCardsProps) {
   return (
     <div className="data-list-mobile-grid">
@@ -37,7 +37,7 @@ export function InquiryListCards({
                 <CardTitle className="text-lg leading-tight">
                   <Link
                     className="block truncate underline-offset-4 transition-colors hover:text-primary hover:underline"
-                    href={getWorkspaceInquiryPath(workspaceSlug, inquiry.id)}
+                    href={getBusinessInquiryPath(businessSlug, inquiry.id)}
                     prefetch={true}
                   >
                     {inquiry.customerName}
@@ -90,7 +90,7 @@ export function InquiryListCards({
             </span>
             <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
               <Link
-                href={getWorkspaceInquiryPath(workspaceSlug, inquiry.id)}
+                href={getBusinessInquiryPath(businessSlug, inquiry.id)}
                 prefetch={true}
               >
                 Open inquiry

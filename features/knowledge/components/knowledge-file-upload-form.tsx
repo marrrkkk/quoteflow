@@ -61,7 +61,7 @@ export function KnowledgeFileUploadForm({
       ) : null}
 
       <FormSection
-        description="Add one reference document at a time so the workspace and AI assistant can use it later."
+        description="Add one reference document at a time so the business and AI assistant can use it later."
         title="File details"
       >
         <FieldGroup>

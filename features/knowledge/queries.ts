@@ -8,24 +8,24 @@ import { knowledgeFaqs, knowledgeFiles } from "@/lib/db/schema";
 import type {
   DashboardKnowledgeData,
   DashboardKnowledgeSummary,
-  WorkspaceKnowledgeContext,
+  BusinessKnowledgeContext,
 } from "@/features/knowledge/types";
 import {
-  getWorkspaceKnowledgeCacheTags,
-  settingsWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessKnowledgeCacheTags,
+  settingsBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import {
-  buildWorkspaceKnowledgeCombinedText,
+  buildBusinessKnowledgeCombinedText,
   normalizeExtractedKnowledgeText,
 } from "@/features/knowledge/utils";
 
 export async function getKnowledgeDashboardData(
-  workspaceId: string,
+  businessId: string,
 ): Promise<DashboardKnowledgeData> {
   "use cache";
 
-  cacheLife(settingsWorkspaceCacheLife);
-  cacheTag(...getWorkspaceKnowledgeCacheTags(workspaceId));
+  cacheLife(settingsBusinessCacheLife);
+  cacheTag(...getBusinessKnowledgeCacheTags(businessId));
 
   const [files, faqs] = await Promise.all([
     db
@@ -39,7 +39,7 @@ export async function getKnowledgeDashboardData(
         createdAt: knowledgeFiles.createdAt,
       })
       .from(knowledgeFiles)
-      .where(eq(knowledgeFiles.workspaceId, workspaceId))
+      .where(eq(knowledgeFiles.businessId, businessId))
       .orderBy(desc(knowledgeFiles.createdAt)),
     db
       .select({
@@ -51,7 +51,7 @@ export async function getKnowledgeDashboardData(
         updatedAt: knowledgeFaqs.updatedAt,
       })
       .from(knowledgeFaqs)
-      .where(eq(knowledgeFaqs.workspaceId, workspaceId))
+      .where(eq(knowledgeFaqs.businessId, businessId))
       .orderBy(asc(knowledgeFaqs.position), asc(knowledgeFaqs.createdAt)),
   ]);
 
@@ -61,13 +61,13 @@ export async function getKnowledgeDashboardData(
   };
 }
 
-export async function getKnowledgeSummaryForWorkspace(
-  workspaceId: string,
+export async function getKnowledgeSummaryForBusiness(
+  businessId: string,
 ): Promise<DashboardKnowledgeSummary> {
   "use cache";
 
-  cacheLife(settingsWorkspaceCacheLife);
-  cacheTag(...getWorkspaceKnowledgeCacheTags(workspaceId));
+  cacheLife(settingsBusinessCacheLife);
+  cacheTag(...getBusinessKnowledgeCacheTags(businessId));
 
   const [[fileSummary], [faqSummary]] = await Promise.all([
     db
@@ -76,13 +76,13 @@ export async function getKnowledgeSummaryForWorkspace(
         readyFileCount: sql<number>`count(case when ${knowledgeFiles.extractedText} is not null and length(trim(${knowledgeFiles.extractedText})) > 0 then 1 end)`,
       })
       .from(knowledgeFiles)
-      .where(eq(knowledgeFiles.workspaceId, workspaceId)),
+      .where(eq(knowledgeFiles.businessId, businessId)),
     db
       .select({
         faqCount: count(knowledgeFaqs.id),
       })
       .from(knowledgeFaqs)
-      .where(eq(knowledgeFaqs.workspaceId, workspaceId)),
+      .where(eq(knowledgeFaqs.businessId, businessId)),
   ]);
 
   return {
@@ -92,13 +92,13 @@ export async function getKnowledgeSummaryForWorkspace(
   };
 }
 
-export async function buildWorkspaceKnowledgeContext(
-  workspaceId: string,
-): Promise<WorkspaceKnowledgeContext> {
+export async function buildBusinessKnowledgeContext(
+  businessId: string,
+): Promise<BusinessKnowledgeContext> {
   "use cache";
 
-  cacheLife(settingsWorkspaceCacheLife);
-  cacheTag(...getWorkspaceKnowledgeCacheTags(workspaceId));
+  cacheLife(settingsBusinessCacheLife);
+  cacheTag(...getBusinessKnowledgeCacheTags(businessId));
 
   const [faqs, fileRows] = await Promise.all([
     db
@@ -109,7 +109,7 @@ export async function buildWorkspaceKnowledgeContext(
         position: knowledgeFaqs.position,
       })
       .from(knowledgeFaqs)
-      .where(eq(knowledgeFaqs.workspaceId, workspaceId))
+      .where(eq(knowledgeFaqs.businessId, businessId))
       .orderBy(asc(knowledgeFaqs.position), asc(knowledgeFaqs.createdAt)),
     db
       .select({
@@ -123,7 +123,7 @@ export async function buildWorkspaceKnowledgeContext(
       .from(knowledgeFiles)
       .where(
         and(
-          eq(knowledgeFiles.workspaceId, workspaceId),
+          eq(knowledgeFiles.businessId, businessId),
           isNotNull(knowledgeFiles.extractedText),
         ),
       )
@@ -140,6 +140,6 @@ export async function buildWorkspaceKnowledgeContext(
   return {
     faqs,
     files,
-    combinedText: buildWorkspaceKnowledgeCombinedText(faqs, files),
+    combinedText: buildBusinessKnowledgeCombinedText(faqs, files),
   };
 }

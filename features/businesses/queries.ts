@@ -15,13 +15,13 @@ import {
 } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
-import type { WorkspaceOverviewData } from "@/features/workspaces/types";
-import { syncExpiredQuotesForWorkspace } from "@/features/quotes/mutations";
+import type { BusinessOverviewData } from "@/features/businesses/types";
+import { syncExpiredQuotesForBusiness } from "@/features/quotes/mutations";
 import { getQuoteReminderKinds } from "@/features/quotes/utils";
 import {
-  getWorkspaceOverviewCacheTags,
-  hotWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessOverviewCacheTags,
+  hotBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import { db } from "@/lib/db/client";
 import { inquiries, quotes } from "@/lib/db/schema";
 
@@ -34,21 +34,21 @@ function getFutureUtcDateString(daysAhead: number) {
     .slice(0, 10);
 }
 
-export async function getWorkspaceOverviewData(
-  workspaceId: string,
-): Promise<WorkspaceOverviewData> {
-  await syncExpiredQuotesForWorkspace(workspaceId);
+export async function getBusinessOverviewData(
+  businessId: string,
+): Promise<BusinessOverviewData> {
+  await syncExpiredQuotesForBusiness(businessId);
 
-  return getCachedWorkspaceOverviewData(workspaceId);
+  return getCachedBusinessOverviewData(businessId);
 }
 
-async function getCachedWorkspaceOverviewData(
-  workspaceId: string,
-): Promise<WorkspaceOverviewData> {
+async function getCachedBusinessOverviewData(
+  businessId: string,
+): Promise<BusinessOverviewData> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceOverviewCacheTags(workspaceId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessOverviewCacheTags(businessId));
 
   const overdueCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
   const followUpDueCutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
@@ -82,12 +82,12 @@ async function getCachedWorkspaceOverviewData(
         quotes,
         and(
           eq(quotes.inquiryId, inquiries.id),
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
         ),
       )
       .where(
         and(
-          eq(inquiries.workspaceId, workspaceId),
+          eq(inquiries.businessId, businessId),
           inArray(inquiries.status, overdueReplyStatuses),
           lt(inquiries.submittedAt, overdueCutoff),
           isNull(quotes.id),
@@ -104,12 +104,12 @@ async function getCachedWorkspaceOverviewData(
         quotes,
         and(
           eq(quotes.inquiryId, inquiries.id),
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
         ),
       )
       .where(
         and(
-          eq(inquiries.workspaceId, workspaceId),
+          eq(inquiries.businessId, businessId),
           inArray(inquiries.status, overdueReplyStatuses),
           lt(inquiries.submittedAt, overdueCutoff),
           isNull(quotes.id),
@@ -136,7 +136,7 @@ async function getCachedWorkspaceOverviewData(
       .from(quotes)
       .where(
         and(
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
           eq(quotes.status, "sent"),
           isNull(quotes.customerRespondedAt),
           gte(quotes.validUntil, today),
@@ -152,7 +152,7 @@ async function getCachedWorkspaceOverviewData(
       .from(quotes)
       .where(
         and(
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
           eq(quotes.status, "sent"),
           isNull(quotes.customerRespondedAt),
           gte(quotes.validUntil, today),
@@ -173,12 +173,12 @@ async function getCachedWorkspaceOverviewData(
         quotes,
         and(
           eq(quotes.inquiryId, inquiries.id),
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
         ),
       )
       .where(
         and(
-          eq(inquiries.workspaceId, workspaceId),
+          eq(inquiries.businessId, businessId),
           inArray(inquiries.status, actionableInquiryStatuses),
           isNull(quotes.id),
         ),
@@ -194,12 +194,12 @@ async function getCachedWorkspaceOverviewData(
         quotes,
         and(
           eq(quotes.inquiryId, inquiries.id),
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
         ),
       )
       .where(
         and(
-          eq(inquiries.workspaceId, workspaceId),
+          eq(inquiries.businessId, businessId),
           inArray(inquiries.status, actionableInquiryStatuses),
           isNull(quotes.id),
         ),
@@ -225,7 +225,7 @@ async function getCachedWorkspaceOverviewData(
       .from(quotes)
       .where(
         and(
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
           eq(quotes.status, "sent"),
           isNull(quotes.customerRespondedAt),
           isNotNull(quotes.sentAt),
@@ -241,7 +241,7 @@ async function getCachedWorkspaceOverviewData(
       .from(quotes)
       .where(
         and(
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
           eq(quotes.status, "sent"),
           isNull(quotes.customerRespondedAt),
           isNotNull(quotes.sentAt),
@@ -269,7 +269,7 @@ async function getCachedWorkspaceOverviewData(
       .from(quotes)
       .where(
         and(
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
           eq(quotes.status, "accepted"),
           isNotNull(quotes.acceptedAt),
           gte(quotes.acceptedAt, recentAcceptedCutoff),
@@ -284,7 +284,7 @@ async function getCachedWorkspaceOverviewData(
       .from(quotes)
       .where(
         and(
-          eq(quotes.workspaceId, workspaceId),
+          eq(quotes.businessId, businessId),
           eq(quotes.status, "accepted"),
           isNotNull(quotes.acceptedAt),
           gte(quotes.acceptedAt, recentAcceptedCutoff),

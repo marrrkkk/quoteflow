@@ -28,10 +28,10 @@ import type {
   QuoteLibraryEntryKind,
 } from "@/features/quotes/types";
 import {
-  getWorkspaceDashboardSlugFromPathname,
-  getWorkspaceSettingsPath,
-  workspaceHubPath,
-} from "@/features/workspaces/routes";
+  getBusinessDashboardSlugFromPathname,
+  getBusinessSettingsPath,
+  businessesHubPath,
+} from "@/features/businesses/routes";
 import {
   formatQuoteMoney,
   getQuoteLibraryEntryKindLabel,
@@ -62,7 +62,7 @@ export function QuoteLibrarySheet({
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
-  const workspaceSlug = getWorkspaceDashboardSlugFromPathname(pathname);
+  const businessSlug = getBusinessDashboardSlugFromPathname(pathname);
   const shouldReplacePlaceholder =
     items.length === 1 && isQuoteEditorLineItemBlank(items[0]);
   const baseItemCount = shouldReplacePlaceholder ? 0 : items.length;
@@ -122,15 +122,15 @@ export function QuoteLibrarySheet({
                 <EmptyHeader>
                   <EmptyTitle>No pricing library yet</EmptyTitle>
                   <EmptyDescription>
-                    Save pricing blocks or service packages in Workspace settings first.
+                    Save pricing blocks or service packages in Business settings first.
                   </EmptyDescription>
                 </EmptyHeader>
               <Button asChild variant="outline">
                 <Link
                   href={
-                    workspaceSlug
-                      ? getWorkspaceSettingsPath(workspaceSlug, "pricing")
-                      : workspaceHubPath
+                    businessSlug
+                      ? getBusinessSettingsPath(businessSlug, "pricing")
+                      : businessesHubPath
                   }
                 >
                   Open pricing

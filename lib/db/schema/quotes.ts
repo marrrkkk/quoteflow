@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { inquiries } from "@/lib/db/schema/inquiries";
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 
 export const quoteStatusEnum = pgEnum("quote_status", [
   "draft",
@@ -31,9 +31,9 @@ export const quotes = pgTable(
   "quotes",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     inquiryId: text("inquiry_id").references(() => inquiries.id, {
       onDelete: "set null",
     }),
@@ -67,13 +67,13 @@ export const quotes = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("quotes_workspace_id_idx").on(table.workspaceId),
-    index("quotes_workspace_status_idx").on(table.workspaceId, table.status),
-    index("quotes_workspace_created_at_idx").on(table.workspaceId, table.createdAt),
+    index("quotes_business_id_idx").on(table.businessId),
+    index("quotes_business_status_idx").on(table.businessId, table.status),
+    index("quotes_business_created_at_idx").on(table.businessId, table.createdAt),
     index("quotes_inquiry_id_idx").on(table.inquiryId),
     uniqueIndex("quotes_public_token_unique").on(table.publicToken),
-    uniqueIndex("quotes_workspace_quote_number_unique").on(
-      table.workspaceId,
+    uniqueIndex("quotes_business_quote_number_unique").on(
+      table.businessId,
       table.quoteNumber,
     ),
     check(
@@ -87,9 +87,9 @@ export const quoteItems = pgTable(
   "quote_items",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     quoteId: text("quote_id")
       .notNull()
       .references(() => quotes.id, { onDelete: "cascade" }),
@@ -106,7 +106,7 @@ export const quoteItems = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("quote_items_workspace_id_idx").on(table.workspaceId),
+    index("quote_items_business_id_idx").on(table.businessId),
     index("quote_items_quote_id_idx").on(table.quoteId),
     uniqueIndex("quote_items_quote_position_unique").on(
       table.quoteId,

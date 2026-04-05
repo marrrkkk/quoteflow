@@ -13,8 +13,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "@/lib/db/schema/auth";
-import { workspaceInquiryForms } from "@/lib/db/schema/workspace-inquiry-forms";
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businessInquiryForms } from "@/lib/db/schema/business-inquiry-forms";
+import { businesses } from "@/lib/db/schema/businesses";
 import type { InquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
 
 export const inquiryStatusEnum = pgEnum("inquiry_status", [
@@ -30,12 +30,12 @@ export const inquiries = pgTable(
   "inquiries",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
-    workspaceInquiryFormId: text("workspace_inquiry_form_id")
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    businessInquiryFormId: text("business_inquiry_form_id")
       .notNull()
-      .references(() => workspaceInquiryForms.id, { onDelete: "restrict" }),
+      .references(() => businessInquiryForms.id, { onDelete: "restrict" }),
     status: inquiryStatusEnum("status").notNull().default("new"),
     subject: text("subject"),
     customerName: text("customer_name").notNull(),
@@ -62,17 +62,17 @@ export const inquiries = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("inquiries_workspace_id_idx").on(table.workspaceId),
-    index("inquiries_workspace_inquiry_form_id_idx").on(
-      table.workspaceInquiryFormId,
+    index("inquiries_business_id_idx").on(table.businessId),
+    index("inquiries_business_inquiry_form_id_idx").on(
+      table.businessInquiryFormId,
     ),
-    index("inquiries_workspace_status_idx").on(table.workspaceId, table.status),
-    index("inquiries_workspace_submitted_at_idx").on(
-      table.workspaceId,
+    index("inquiries_business_status_idx").on(table.businessId, table.status),
+    index("inquiries_business_submitted_at_idx").on(
+      table.businessId,
       table.submittedAt,
     ),
-    index("inquiries_workspace_service_category_idx").on(
-      table.workspaceId,
+    index("inquiries_business_service_category_idx").on(
+      table.businessId,
       table.serviceCategory,
     ),
   ],
@@ -82,9 +82,9 @@ export const inquiryAttachments = pgTable(
   "inquiry_attachments",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     inquiryId: text("inquiry_id")
       .notNull()
       .references(() => inquiries.id, { onDelete: "cascade" }),
@@ -100,10 +100,10 @@ export const inquiryAttachments = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("inquiry_attachments_workspace_id_idx").on(table.workspaceId),
+    index("inquiry_attachments_business_id_idx").on(table.businessId),
     index("inquiry_attachments_inquiry_id_idx").on(table.inquiryId),
-    index("inquiry_attachments_workspace_inquiry_idx").on(
-      table.workspaceId,
+    index("inquiry_attachments_business_inquiry_idx").on(
+      table.businessId,
       table.inquiryId,
     ),
     check(
@@ -117,9 +117,9 @@ export const inquiryNotes = pgTable(
   "inquiry_notes",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     inquiryId: text("inquiry_id")
       .notNull()
       .references(() => inquiries.id, { onDelete: "cascade" }),
@@ -135,10 +135,10 @@ export const inquiryNotes = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("inquiry_notes_workspace_id_idx").on(table.workspaceId),
+    index("inquiry_notes_business_id_idx").on(table.businessId),
     index("inquiry_notes_inquiry_id_idx").on(table.inquiryId),
-    index("inquiry_notes_workspace_inquiry_idx").on(
-      table.workspaceId,
+    index("inquiry_notes_business_inquiry_idx").on(
+      table.businessId,
       table.inquiryId,
     ),
     index("inquiry_notes_author_user_id_idx").on(table.authorUserId),

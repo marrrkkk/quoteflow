@@ -7,16 +7,16 @@ import {
   getValidationActionState,
 } from "@/lib/action-state";
 import {
-  getWorkspaceKnowledgeCacheTags,
+  getBusinessKnowledgeCacheTags,
   uniqueCacheTags,
-} from "@/lib/cache/workspace-tags";
-import { getOwnerWorkspaceActionContext } from "@/lib/db/workspace-access";
+} from "@/lib/cache/business-tags";
+import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
 import {
-  createKnowledgeFaqForWorkspace,
-  deleteKnowledgeFaqForWorkspace,
-  deleteKnowledgeFileForWorkspace,
-  updateKnowledgeFaqForWorkspace,
-  uploadKnowledgeFileForWorkspace,
+  createKnowledgeFaqForBusiness,
+  deleteKnowledgeFaqForBusiness,
+  deleteKnowledgeFileForBusiness,
+  updateKnowledgeFaqForBusiness,
+  uploadKnowledgeFileForBusiness,
 } from "@/features/knowledge/mutations";
 import {
   knowledgeFaqIdSchema,
@@ -48,7 +48,7 @@ export async function uploadKnowledgeFileAction(
 ): Promise<KnowledgeFileActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -56,7 +56,7 @@ export async function uploadKnowledgeFileAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = knowledgeFileUploadSchema.safeParse({
     title: formData.get("title"),
     file: formData.get("file"),
@@ -67,13 +67,13 @@ export async function uploadKnowledgeFileAction(
   }
 
   try {
-    await uploadKnowledgeFileForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    await uploadKnowledgeFileForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       knowledgeFile: validationResult.data,
     });
 
-    updateCacheTags(getWorkspaceKnowledgeCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessKnowledgeCacheTags(businessContext.business.id));
     return {
       success: "Knowledge file uploaded.",
     };
@@ -105,7 +105,7 @@ export async function deleteKnowledgeFileAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -113,11 +113,11 @@ export async function deleteKnowledgeFileAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const result = await deleteKnowledgeFileForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await deleteKnowledgeFileForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       knowledgeFileId: parsedId.data,
     });
@@ -128,7 +128,7 @@ export async function deleteKnowledgeFileAction(
       };
     }
 
-    updateCacheTags(getWorkspaceKnowledgeCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessKnowledgeCacheTags(businessContext.business.id));
     return {};
   } catch (error) {
     console.error("Failed to delete knowledge file.", error);
@@ -145,7 +145,7 @@ export async function createKnowledgeFaqAction(
 ): Promise<KnowledgeFaqActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -153,7 +153,7 @@ export async function createKnowledgeFaqAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = knowledgeFaqSchema.safeParse({
     question: formData.get("question"),
     answer: formData.get("answer"),
@@ -164,13 +164,13 @@ export async function createKnowledgeFaqAction(
   }
 
   try {
-    await createKnowledgeFaqForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    await createKnowledgeFaqForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       faq: validationResult.data,
     });
 
-    updateCacheTags(getWorkspaceKnowledgeCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessKnowledgeCacheTags(businessContext.business.id));
     return {
       success: "FAQ added.",
     };
@@ -198,7 +198,7 @@ export async function updateKnowledgeFaqAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -206,7 +206,7 @@ export async function updateKnowledgeFaqAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = knowledgeFaqSchema.safeParse({
     question: formData.get("question"),
     answer: formData.get("answer"),
@@ -217,8 +217,8 @@ export async function updateKnowledgeFaqAction(
   }
 
   try {
-    const result = await updateKnowledgeFaqForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateKnowledgeFaqForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       knowledgeFaqId: parsedId.data,
       faq: validationResult.data,
@@ -230,7 +230,7 @@ export async function updateKnowledgeFaqAction(
       };
     }
 
-    updateCacheTags(getWorkspaceKnowledgeCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessKnowledgeCacheTags(businessContext.business.id));
     return {
       success: "FAQ updated.",
     };
@@ -259,7 +259,7 @@ export async function deleteKnowledgeFaqAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -267,11 +267,11 @@ export async function deleteKnowledgeFaqAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const result = await deleteKnowledgeFaqForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await deleteKnowledgeFaqForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       knowledgeFaqId: parsedId.data,
     });
@@ -282,7 +282,7 @@ export async function deleteKnowledgeFaqAction(
       };
     }
 
-    updateCacheTags(getWorkspaceKnowledgeCacheTags(workspaceContext.workspace.id));
+    updateCacheTags(getBusinessKnowledgeCacheTags(businessContext.business.id));
     return {};
   } catch (error) {
     console.error("Failed to delete FAQ.", error);

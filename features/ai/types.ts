@@ -1,8 +1,8 @@
 import type { InquiryPageTemplate } from "@/features/inquiries/page-config";
 import type { InquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
-import type { WorkspaceKnowledgeContext } from "@/features/knowledge/types";
+import type { BusinessKnowledgeContext } from "@/features/knowledge/types";
 import type { InquiryStatus } from "@/features/inquiries/types";
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 
 export const aiAssistantIntents = [
   "draft-first-reply",
@@ -17,7 +17,7 @@ export const aiAssistantIntents = [
 export type AiAssistantIntent = (typeof aiAssistantIntents)[number];
 
 export type InquiryAssistantContext = {
-  workspace: {
+  business: {
     id: string;
     name: string;
     slug: string;
@@ -33,10 +33,10 @@ export type InquiryAssistantContext = {
   };
   inquiry: {
     id: string;
-    workspaceInquiryFormId: string;
+    businessInquiryFormId: string;
     inquiryFormName: string;
     inquiryFormSlug: string;
-    inquiryFormBusinessType: WorkspaceBusinessType;
+    inquiryFormBusinessType: BusinessType;
     customerName: string;
     customerEmail: string;
     customerPhone: string | null;
@@ -58,7 +58,7 @@ export type InquiryAssistantContext = {
     createdAt: Date;
     authorName: string | null;
   }>;
-  knowledge: WorkspaceKnowledgeContext;
+  knowledge: BusinessKnowledgeContext;
 };
 
 export type AiAssistantFieldErrors = Partial<

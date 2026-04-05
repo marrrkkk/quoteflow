@@ -4,14 +4,14 @@ import { updateTag } from "next/cache";
 
 import { getValidationActionState } from "@/lib/action-state";
 import {
-  getWorkspaceReplySnippetsCacheTags,
+  getBusinessReplySnippetsCacheTags,
   uniqueCacheTags,
-} from "@/lib/cache/workspace-tags";
-import { getOwnerWorkspaceActionContext } from "@/lib/db/workspace-access";
+} from "@/lib/cache/business-tags";
+import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
 import {
-  createReplySnippetForWorkspace,
-  deleteReplySnippetForWorkspace,
-  updateReplySnippetForWorkspace,
+  createReplySnippetForBusiness,
+  deleteReplySnippetForBusiness,
+  updateReplySnippetForBusiness,
 } from "@/features/inquiries/reply-snippet-mutations";
 import {
   replySnippetIdSchema,
@@ -37,7 +37,7 @@ export async function createReplySnippetAction(
 ): Promise<ReplySnippetActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -57,17 +57,17 @@ export async function createReplySnippetAction(
     );
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    await createReplySnippetForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    await createReplySnippetForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       snippet: validationResult.data,
     });
 
     updateCacheTags(
-      getWorkspaceReplySnippetsCacheTags(workspaceContext.workspace.id),
+      getBusinessReplySnippetsCacheTags(businessContext.business.id),
     );
 
     return {
@@ -97,7 +97,7 @@ export async function updateReplySnippetAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -117,11 +117,11 @@ export async function updateReplySnippetAction(
     );
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const result = await updateReplySnippetForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateReplySnippetForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       replySnippetId: parsedId.data,
       snippet: validationResult.data,
@@ -134,7 +134,7 @@ export async function updateReplySnippetAction(
     }
 
     updateCacheTags(
-      getWorkspaceReplySnippetsCacheTags(workspaceContext.workspace.id),
+      getBusinessReplySnippetsCacheTags(businessContext.business.id),
     );
 
     return {
@@ -165,7 +165,7 @@ export async function deleteReplySnippetAction(
     };
   }
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -173,11 +173,11 @@ export async function deleteReplySnippetAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const result = await deleteReplySnippetForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await deleteReplySnippetForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
       replySnippetId: parsedId.data,
     });
@@ -189,7 +189,7 @@ export async function deleteReplySnippetAction(
     }
 
     updateCacheTags(
-      getWorkspaceReplySnippetsCacheTags(workspaceContext.workspace.id),
+      getBusinessReplySnippetsCacheTags(businessContext.business.id),
     );
 
     return {};

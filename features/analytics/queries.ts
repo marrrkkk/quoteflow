@@ -4,15 +4,15 @@ import { and, count, eq, gte, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import type {
-  WorkspaceAnalyticsData,
-  WorkspaceAnalyticsStatusCount,
-  WorkspaceAnalyticsTrendPoint,
+  BusinessAnalyticsData,
+  BusinessAnalyticsStatusCount,
+  BusinessAnalyticsTrendPoint,
 } from "@/features/analytics/types";
 import { inquiryStatuses } from "@/features/inquiries/types";
 import {
-  getWorkspaceAnalyticsCacheTags,
-  hotWorkspaceCacheLife,
-} from "@/lib/cache/workspace-tags";
+  getBusinessAnalyticsCacheTags,
+  hotBusinessCacheLife,
+} from "@/lib/cache/business-tags";
 import { db } from "@/lib/db/client";
 import { inquiries, quotes } from "@/lib/db/schema";
 
@@ -58,13 +58,13 @@ function toCountMap(
   return map;
 }
 
-export async function getWorkspaceAnalyticsData(
-  workspaceId: string,
-): Promise<WorkspaceAnalyticsData> {
+export async function getBusinessAnalyticsData(
+  businessId: string,
+): Promise<BusinessAnalyticsData> {
   "use cache";
 
-  cacheLife(hotWorkspaceCacheLife);
-  cacheTag(...getWorkspaceAnalyticsCacheTags(workspaceId));
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessAnalyticsCacheTags(businessId));
 
   const now = new Date();
   const trendStart = addUtcWeeks(startOfUtcWeek(now), -5);
@@ -83,7 +83,7 @@ export async function getWorkspaceAnalyticsData(
           count: count(),
         })
         .from(inquiries)
-        .where(eq(inquiries.workspaceId, workspaceId))
+        .where(eq(inquiries.businessId, businessId))
         .groupBy(inquiries.status),
       db
         .select({
@@ -92,7 +92,7 @@ export async function getWorkspaceAnalyticsData(
         .from(inquiries)
         .where(
           and(
-            eq(inquiries.workspaceId, workspaceId),
+            eq(inquiries.businessId, businessId),
             gte(inquiries.submittedAt, thisWeekStart),
           ),
         ),
@@ -106,7 +106,7 @@ export async function getWorkspaceAnalyticsData(
           linkedInquiryCount: sql<number>`count(distinct ${quotes.inquiryId}) filter (where ${quotes.inquiryId} is not null)`,
         })
         .from(quotes)
-        .where(eq(quotes.workspaceId, workspaceId)),
+        .where(eq(quotes.businessId, businessId)),
       db
         .select({
           weekStart: sql<string>`to_char(date_trunc('week', ${inquiries.submittedAt}), 'YYYY-MM-DD')`,
@@ -117,7 +117,7 @@ export async function getWorkspaceAnalyticsData(
         .from(inquiries)
         .where(
           and(
-            eq(inquiries.workspaceId, workspaceId),
+            eq(inquiries.businessId, businessId),
             gte(inquiries.submittedAt, trendStart),
           ),
         )
@@ -131,7 +131,7 @@ export async function getWorkspaceAnalyticsData(
         .from(quotes)
         .where(
           and(
-            eq(quotes.workspaceId, workspaceId),
+            eq(quotes.businessId, businessId),
             sql`${quoteActivityTimestamp} >= ${trendStartIso}::timestamptz`,
           ),
         )
@@ -145,7 +145,7 @@ export async function getWorkspaceAnalyticsData(
       count: number | string;
     }>,
   );
-  const inquiryStatusCounts: WorkspaceAnalyticsStatusCount[] = inquiryStatuses.map(
+  const inquiryStatusCounts: BusinessAnalyticsStatusCount[] = inquiryStatuses.map(
     (status) => ({
       status,
       count: inquiryStatusCountsMap.get(status) ?? 0,
@@ -191,7 +191,7 @@ export async function getWorkspaceAnalyticsData(
     quoteTrendRows.map((row) => [row.weekStart, Number(row.acceptedQuotes)]),
   );
 
-  const recentTrend: WorkspaceAnalyticsTrendPoint[] = Array.from({ length: 6 }).map(
+  const recentTrend: BusinessAnalyticsTrendPoint[] = Array.from({ length: 6 }).map(
     (_, index) => {
       const weekStart = addUtcWeeks(startOfUtcWeek(trendStart), index);
       const isoDate = toIsoDate(weekStart);

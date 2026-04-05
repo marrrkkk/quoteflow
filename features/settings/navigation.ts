@@ -7,45 +7,45 @@ import {
   Tags,
 } from "lucide-react";
 
-import { getWorkspaceSettingsPath } from "@/features/workspaces/routes";
+import { getBusinessSettingsPath } from "@/features/businesses/routes";
 
-export type WorkspaceSectionNavigationItem = {
+export type BusinessSectionNavigationItem = {
   href: string;
   label: string;
   description: string;
   icon: LucideIcon;
 };
 
-export function getWorkspaceSectionNavigation(
+export function getBusinessSectionNavigation(
   slug: string,
-): WorkspaceSectionNavigationItem[] {
+): BusinessSectionNavigationItem[] {
   return [
     {
-      href: getWorkspaceSettingsPath(slug, "general"),
+      href: getBusinessSettingsPath(slug, "general"),
       label: "General",
       description: "Brand, contact, notifications",
       icon: Settings2,
     },
     {
-      href: getWorkspaceSettingsPath(slug, "inquiry"),
+      href: getBusinessSettingsPath(slug, "inquiry"),
       label: "Inquiry",
       description: "Forms, URLs, reply snippets",
       icon: FormInput,
     },
     {
-      href: getWorkspaceSettingsPath(slug, "quote"),
+      href: getBusinessSettingsPath(slug, "quote"),
       label: "Quote",
       description: "Defaults, template, validity",
       icon: FileText,
     },
     {
-      href: getWorkspaceSettingsPath(slug, "pricing"),
+      href: getBusinessSettingsPath(slug, "pricing"),
       label: "Pricing",
       description: "Saved blocks and packages",
       icon: Tags,
     },
     {
-      href: getWorkspaceSettingsPath(slug, "knowledge"),
+      href: getBusinessSettingsPath(slug, "knowledge"),
       label: "Knowledge",
       description: "Files and FAQs",
       icon: BookCopy,

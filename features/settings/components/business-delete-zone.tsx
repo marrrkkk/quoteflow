@@ -18,22 +18,22 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { WorkspaceDeleteActionState } from "@/features/settings/types";
+import type { BusinessDeleteActionState } from "@/features/settings/types";
 
-type WorkspaceDeleteZoneProps = {
+type BusinessDeleteZoneProps = {
   action: (
-    state: WorkspaceDeleteActionState,
+    state: BusinessDeleteActionState,
     formData: FormData,
-  ) => Promise<WorkspaceDeleteActionState>;
-  workspaceName: string;
+  ) => Promise<BusinessDeleteActionState>;
+  businessName: string;
 };
 
-const initialState: WorkspaceDeleteActionState = {};
+const initialState: BusinessDeleteActionState = {};
 
-export function WorkspaceDeleteZone({
+export function BusinessDeleteZone({
   action,
-  workspaceName,
-}: WorkspaceDeleteZoneProps) {
+  businessName,
+}: BusinessDeleteZoneProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   return (
@@ -44,16 +44,16 @@ export function WorkspaceDeleteZone({
       <CardContent className="flex flex-col gap-5 pt-0">
         <Alert variant="destructive">
           <AlertTriangle data-icon="inline-start" />
-          <AlertTitle>Delete workspace</AlertTitle>
+          <AlertTitle>Delete business</AlertTitle>
           <AlertDescription>
-            This permanently deletes the workspace, its inquiries, quotes, pricing,
+            This permanently deletes the business, its inquiries, quotes, pricing,
             files, and settings.
           </AlertDescription>
         </Alert>
 
         {state.error ? (
           <Alert variant="destructive">
-            <AlertTitle>We could not delete the workspace.</AlertTitle>
+            <AlertTitle>We could not delete the business.</AlertTitle>
             <AlertDescription>{state.error}</AlertDescription>
           </Alert>
         ) : null}
@@ -62,15 +62,15 @@ export function WorkspaceDeleteZone({
           <Field
             data-invalid={Boolean(state.fieldErrors?.confirmation) || undefined}
           >
-            <FieldLabel htmlFor="workspace-delete-confirmation">
-              Type <span className="font-semibold text-foreground">{workspaceName}</span> to confirm
+            <FieldLabel htmlFor="business-delete-confirmation">
+              Type <span className="font-semibold text-foreground">{businessName}</span> to confirm
             </FieldLabel>
             <FieldContent>
               <Input
                 aria-invalid={Boolean(state.fieldErrors?.confirmation) || undefined}
                 autoComplete="off"
                 disabled={isPending}
-                id="workspace-delete-confirmation"
+                id="business-delete-confirmation"
                 maxLength={120}
                 name="confirmation"
                 required
@@ -89,7 +89,7 @@ export function WorkspaceDeleteZone({
           <div className="dashboard-actions">
             <Button disabled={isPending} type="submit" variant="destructive">
               <Trash2 data-icon="inline-start" />
-              {isPending ? "Deleting..." : "Delete workspace"}
+              {isPending ? "Deleting..." : "Delete business"}
             </Button>
           </div>
         </form>

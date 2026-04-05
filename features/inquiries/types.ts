@@ -1,4 +1,4 @@
-import type { WorkspaceBusinessType } from "@/features/inquiries/business-types";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import type {
   InquiryFormConfig,
   InquirySubmittedFieldSnapshot,
@@ -20,7 +20,7 @@ export type InquiryStatusFilterValue = (typeof inquiryStatusFilterValues)[number
 
 export type DashboardInquiryListItem = {
   id: string;
-  workspaceInquiryFormId: string;
+  businessInquiryFormId: string;
   inquiryFormName: string;
   inquiryFormSlug: string;
   customerName: string;
@@ -68,11 +68,11 @@ export type DashboardInquiryRelatedQuote = {
 
 export type DashboardInquiryDetail = {
   id: string;
-  workspaceId: string;
-  workspaceInquiryFormId: string;
+  businessId: string;
+  businessInquiryFormId: string;
   inquiryFormName: string;
   inquiryFormSlug: string;
-  inquiryFormBusinessType: WorkspaceBusinessType;
+  inquiryFormBusinessType: BusinessType;
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
@@ -99,11 +99,11 @@ export type InquiryListFilters = {
   form: string;
 };
 
-export type WorkspaceInquiryFormSummary = {
+export type BusinessInquiryFormSummary = {
   id: string;
   name: string;
   slug: string;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   isDefault: boolean;
   publicInquiryEnabled: boolean;
   archivedAt: Date | null;
@@ -128,18 +128,18 @@ export type InquiryStatusActionState = {
   fieldErrors?: InquiryStatusFieldErrors;
 };
 
-export type PublicInquiryWorkspace = {
+export type PublicInquiryBusiness = {
   id: string;
   name: string;
   slug: string;
-  businessType: WorkspaceBusinessType;
+  businessType: BusinessType;
   shortDescription: string | null;
   logoUrl: string | null;
   form: {
     id: string;
     name: string;
     slug: string;
-    businessType: WorkspaceBusinessType;
+    businessType: BusinessType;
     isDefault: boolean;
     publicInquiryEnabled: boolean;
   };

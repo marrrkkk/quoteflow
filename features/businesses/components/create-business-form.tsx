@@ -22,26 +22,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  workspaceBusinessTypeMeta,
-  workspaceBusinessTypes,
-  type WorkspaceBusinessType,
+  businessTypeMeta,
+  businessTypes,
+  type BusinessType,
 } from "@/features/inquiries/business-types";
-import type { CreateWorkspaceActionState } from "@/features/workspaces/types";
+import type { CreateBusinessActionState } from "@/features/businesses/types";
 
-type CreateWorkspaceFormProps = {
+type CreateBusinessFormProps = {
   action: (
-    state: CreateWorkspaceActionState,
+    state: CreateBusinessActionState,
     formData: FormData,
-  ) => Promise<CreateWorkspaceActionState>;
+  ) => Promise<CreateBusinessActionState>;
 };
 
-const initialState: CreateWorkspaceActionState = {};
+const initialState: CreateBusinessActionState = {};
 
-export function CreateWorkspaceForm({
+export function CreateBusinessForm({
   action,
-}: CreateWorkspaceFormProps) {
+}: CreateBusinessFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
-  const [businessType, setBusinessType] = useState<WorkspaceBusinessType>(
+  const [businessType, setBusinessType] = useState<BusinessType>(
     "general_services",
   );
   const nameError = state.fieldErrors?.name?.[0];
@@ -51,20 +51,20 @@ export function CreateWorkspaceForm({
     <form action={formAction} className="form-stack">
       {state.error ? (
         <Alert variant="destructive">
-          <AlertTitle>We could not create the workspace.</AlertTitle>
+          <AlertTitle>We could not create the business.</AlertTitle>
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
       <input name="businessType" type="hidden" value={businessType} />
 
-      <FormSection title="New workspace">
+      <FormSection title="New business">
         <FieldGroup>
           <Field data-invalid={Boolean(nameError) || undefined}>
-            <FieldLabel htmlFor="workspace-name">Workspace name</FieldLabel>
+            <FieldLabel htmlFor="business-name">Business name</FieldLabel>
             <FieldContent>
               <Input
-                id="workspace-name"
+                id="business-name"
                 name="name"
                 maxLength={80}
                 minLength={2}
@@ -80,26 +80,26 @@ export function CreateWorkspaceForm({
           </Field>
 
           <Field data-invalid={Boolean(businessTypeError) || undefined}>
-            <FieldLabel htmlFor="workspace-business-type">
+            <FieldLabel htmlFor="business-type">
               Business type
             </FieldLabel>
             <FieldContent>
-              <Select onValueChange={(value) => setBusinessType(value as WorkspaceBusinessType)} value={businessType}>
-                <SelectTrigger className="w-full" id="workspace-business-type">
+              <Select onValueChange={(value) => setBusinessType(value as BusinessType)} value={businessType}>
+                <SelectTrigger className="w-full" id="business-type">
                   <SelectValue placeholder="Choose a business type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {workspaceBusinessTypes.map((option) => (
+                    {businessTypes.map((option) => (
                       <SelectItem key={option} value={option}>
-                        {workspaceBusinessTypeMeta[option].label}
+                        {businessTypeMeta[option].label}
                       </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                {workspaceBusinessTypeMeta[businessType].description}
+                {businessTypeMeta[businessType].description}
               </p>
               <FieldError
                 errors={
@@ -113,7 +113,7 @@ export function CreateWorkspaceForm({
 
       <FormActions align="start">
         <Button disabled={isPending} type="submit">
-          {isPending ? "Creating workspace..." : "Create workspace"}
+          {isPending ? "Creating business..." : "Create business"}
         </Button>
       </FormActions>
     </form>

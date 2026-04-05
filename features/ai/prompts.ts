@@ -41,7 +41,7 @@ function formatKnowledgeContext(context: InquiryAssistantContext["knowledge"]) {
     : "- No knowledge files uploaded yet.";
 
   return [
-    "Workspace FAQs",
+    "Business FAQs",
     faqLines,
     "",
     "Knowledge snippets",
@@ -57,7 +57,7 @@ function formatNotesContext(notes: InquiryAssistantContext["notes"]) {
   return notes
     .map(
       (note) =>
-        `- ${note.authorName ?? "Workspace owner"} on ${formatInquiryDateTime(
+        `- ${note.authorName ?? "Business owner"} on ${formatInquiryDateTime(
           note.createdAt,
         )}: ${truncateText(note.body, 320)}`,
     )
@@ -70,18 +70,18 @@ function buildContextBlock(context: InquiryAssistantContext) {
   );
 
   return [
-    "Workspace settings",
-    `- Business name: ${context.workspace.name}`,
-    `- Workspace slug: ${context.workspace.slug}`,
-    `- Business description: ${context.workspace.shortDescription ?? "Not set"}`,
-    `- Contact email: ${context.workspace.contactEmail ?? "Not set"}`,
-    `- Default currency: ${context.workspace.defaultCurrency}`,
-    `- Preferred AI tone: ${context.workspace.aiTonePreference}`,
-    `- Default email signature: ${context.workspace.defaultEmailSignature ?? "Not set"}`,
-    `- Default quote notes: ${context.workspace.defaultQuoteNotes ?? "Not set"}`,
-    `- Inquiry page headline: ${context.workspace.inquiryPageHeadline}`,
-    `- Inquiry page template: ${context.workspace.inquiryPageTemplate}`,
-    `- Public inquiry enabled: ${context.workspace.publicInquiryEnabled ? "Yes" : "No"}`,
+    "Business settings",
+    `- Business name: ${context.business.name}`,
+    `- Business slug: ${context.business.slug}`,
+    `- Business description: ${context.business.shortDescription ?? "Not set"}`,
+    `- Contact email: ${context.business.contactEmail ?? "Not set"}`,
+    `- Default currency: ${context.business.defaultCurrency}`,
+    `- Preferred AI tone: ${context.business.aiTonePreference}`,
+    `- Default email signature: ${context.business.defaultEmailSignature ?? "Not set"}`,
+    `- Default quote notes: ${context.business.defaultQuoteNotes ?? "Not set"}`,
+    `- Inquiry page headline: ${context.business.inquiryPageHeadline}`,
+    `- Inquiry page template: ${context.business.inquiryPageTemplate}`,
+    `- Public inquiry enabled: ${context.business.publicInquiryEnabled ? "Yes" : "No"}`,
     "",
     "Inquiry details",
     `- Inquiry ID: ${context.inquiry.id}`,
@@ -191,7 +191,7 @@ function getIntentInstructions(intent: AiAssistantIntent) {
 export function buildAiAssistantInstructions(intent: AiAssistantIntent) {
   return [
     "You are Relay's internal AI assistant for a small service business owner.",
-    "Use only the provided workspace, inquiry, notes, FAQ, and knowledge context.",
+    "Use only the provided business, inquiry, notes, FAQ, and knowledge context.",
     "Never fabricate exact pricing, turnaround times, policies, guarantees, or availability unless they are explicitly present in the provided context.",
     "If something needed for a good answer is missing, state the missing information clearly.",
     "Keep outputs concise, practical, and ready for real business use.",

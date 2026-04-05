@@ -33,25 +33,25 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type {
-  WorkspaceQuoteSettingsActionState,
-  WorkspaceSettingsView,
+  BusinessQuoteSettingsActionState,
+  BusinessSettingsView,
 } from "@/features/settings/types";
-import { workspaceCurrencyOptions } from "@/features/settings/utils";
+import { businessCurrencyOptions } from "@/features/settings/utils";
 
-type WorkspaceQuoteSettingsFormProps = {
+type BusinessQuoteSettingsFormProps = {
   action: (
-    state: WorkspaceQuoteSettingsActionState,
+    state: BusinessQuoteSettingsActionState,
     formData: FormData,
-  ) => Promise<WorkspaceQuoteSettingsActionState>;
-  settings: WorkspaceSettingsView;
+  ) => Promise<BusinessQuoteSettingsActionState>;
+  settings: BusinessSettingsView;
 };
 
-const initialState: WorkspaceQuoteSettingsActionState = {};
+const initialState: BusinessQuoteSettingsActionState = {};
 
-export function WorkspaceQuoteSettingsForm({
+export function BusinessQuoteSettingsForm({
   action,
   settings,
-}: WorkspaceQuoteSettingsFormProps) {
+}: BusinessQuoteSettingsFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [notifyOnQuoteSent, setNotifyOnQuoteSent] = useState(
     settings.notifyOnQuoteSent,
@@ -105,7 +105,7 @@ export function WorkspaceQuoteSettingsForm({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {workspaceCurrencyOptions.map((currency) => (
+                        {businessCurrencyOptions.map((currency) => (
                           <SelectItem key={currency} value={currency}>
                             {currency}
                           </SelectItem>

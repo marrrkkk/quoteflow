@@ -7,16 +7,16 @@ import {
   getValidationActionState,
 } from "@/lib/action-state";
 import {
-  getWorkspaceInquiryDetailCacheTags,
-  getWorkspaceQuoteDetailCacheTags,
-  getWorkspaceQuoteListCacheTags,
+  getBusinessInquiryDetailCacheTags,
+  getBusinessQuoteDetailCacheTags,
+  getBusinessQuoteListCacheTags,
   uniqueCacheTags,
-} from "@/lib/cache/workspace-tags";
+} from "@/lib/cache/business-tags";
 import {
-  getWorkspaceMessagingSettings,
-  getWorkspaceOwnerEmails,
-  getOwnerWorkspaceActionContext,
-} from "@/lib/db/workspace-access";
+  getBusinessMessagingSettings,
+  getBusinessOwnerEmails,
+  getOwnerBusinessActionContext,
+} from "@/lib/db/business-access";
 import { env, isResendConfigured } from "@/lib/env";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import {
@@ -26,14 +26,14 @@ import {
   sendQuoteSentOwnerNotificationEmail,
 } from "@/lib/resend/client";
 import {
-  changeQuoteStatusForWorkspace,
-  createQuoteForWorkspace,
-  markQuoteSentForWorkspace,
+  changeQuoteStatusForBusiness,
+  createQuoteForBusiness,
+  markQuoteSentForBusiness,
   respondToPublicQuoteByToken,
-  updateQuotePostAcceptanceStatusForWorkspace,
-  updateQuoteForWorkspace,
+  updateQuotePostAcceptanceStatusForBusiness,
+  updateQuoteForBusiness,
 } from "@/features/quotes/mutations";
-import { getQuoteDetailForWorkspace } from "@/features/quotes/queries";
+import { getQuoteDetailForBusiness } from "@/features/quotes/queries";
 import {
   publicQuoteResponseSchema,
   quoteEditorSchema,
@@ -41,8 +41,8 @@ import {
   quoteStatusChangeSchema,
 } from "@/features/quotes/schemas";
 import {
-  getWorkspaceQuotePath,
-} from "@/features/workspaces/routes";
+  getBusinessQuotePath,
+} from "@/features/businesses/routes";
 import type {
   PublicQuoteResponseActionState,
   QuoteEditorActionState,
@@ -75,15 +75,15 @@ function revalidateCacheTags(tags: string[]) {
 }
 
 function getQuoteMutationCacheTags(
-  workspaceId: string,
+  businessId: string,
   quoteId?: string | null,
   inquiryId?: string | null,
 ) {
   return uniqueCacheTags([
-    ...getWorkspaceQuoteListCacheTags(workspaceId),
-    ...(quoteId ? getWorkspaceQuoteDetailCacheTags(workspaceId, quoteId) : []),
+    ...getBusinessQuoteListCacheTags(businessId),
+    ...(quoteId ? getBusinessQuoteDetailCacheTags(businessId, quoteId) : []),
     ...(inquiryId
-      ? getWorkspaceInquiryDetailCacheTags(workspaceId, inquiryId)
+      ? getBusinessInquiryDetailCacheTags(businessId, inquiryId)
       : []),
   ]);
 }
@@ -107,7 +107,7 @@ export async function createQuoteAction(
 ): Promise<QuoteEditorActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -115,7 +115,7 @@ export async function createQuoteAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = quoteEditorSchema.safeParse({
     title: formData.get("title"),
     customerName: formData.get("customerName"),
@@ -137,10 +137,10 @@ export async function createQuoteAction(
   let quotePath: string | null = null;
 
   try {
-    const createdQuote = await createQuoteForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const createdQuote = await createQuoteForBusiness({
+      businessId: businessContext.business.id,
       actorUserId: user.id,
-      currency: workspaceContext.workspace.defaultCurrency,
+      currency: businessContext.business.defaultCurrency,
       inquiryId,
       quote: validationResult.data,
     });
@@ -153,14 +153,14 @@ export async function createQuoteAction(
 
     updateCacheTags(
       getQuoteMutationCacheTags(
-        workspaceContext.workspace.id,
+        businessContext.business.id,
         createdQuote.id,
         inquiryId,
       ),
     );
 
-    quotePath = getWorkspaceQuotePath(
-      workspaceContext.workspace.slug,
+    quotePath = getBusinessQuotePath(
+      businessContext.business.slug,
       createdQuote.id,
     );
   } catch (error) {
@@ -187,7 +187,7 @@ export async function updateQuoteAction(
 ): Promise<QuoteEditorActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -195,7 +195,7 @@ export async function updateQuoteAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = quoteEditorSchema.safeParse({
     title: formData.get("title"),
     customerName: formData.get("customerName"),
@@ -215,8 +215,8 @@ export async function updateQuoteAction(
   }
 
   try {
-    const result = await updateQuoteForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateQuoteForBusiness({
+      businessId: businessContext.business.id,
       quoteId,
       actorUserId: user.id,
       quote: validationResult.data,
@@ -235,7 +235,7 @@ export async function updateQuoteAction(
     }
 
     updateCacheTags(
-      getQuoteMutationCacheTags(workspaceContext.workspace.id, quoteId),
+      getQuoteMutationCacheTags(businessContext.business.id, quoteId),
     );
 
     return {
@@ -257,7 +257,7 @@ export async function changeQuoteStatusAction(
 ): Promise<QuoteStatusActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -265,7 +265,7 @@ export async function changeQuoteStatusAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = quoteStatusChangeSchema.safeParse({
     status: formData.get("status"),
   });
@@ -275,8 +275,8 @@ export async function changeQuoteStatusAction(
   }
 
   try {
-    const result = await changeQuoteStatusForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await changeQuoteStatusForBusiness({
+      businessId: businessContext.business.id,
       quoteId,
       actorUserId: user.id,
       nextStatus: validationResult.data.status,
@@ -290,7 +290,7 @@ export async function changeQuoteStatusAction(
 
     updateCacheTags(
       getQuoteMutationCacheTags(
-        workspaceContext.workspace.id,
+        businessContext.business.id,
         quoteId,
         result.inquiryId,
       ),
@@ -322,7 +322,7 @@ export async function sendQuoteAction(
   void prevState;
   void formData;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -330,11 +330,11 @@ export async function sendQuoteAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
 
   try {
-    const quote = await getQuoteDetailForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const quote = await getQuoteDetailForBusiness({
+      businessId: businessContext.business.id,
       quoteId,
     });
 
@@ -350,17 +350,17 @@ export async function sendQuoteAction(
       };
     }
 
-    const workspaceSettings = await getWorkspaceMessagingSettings(
-      workspaceContext.workspace.id,
+    const businessSettings = await getBusinessMessagingSettings(
+      businessContext.business.id,
     );
 
-    if (!workspaceSettings) {
+    if (!businessSettings) {
       return {
-        error: "This workspace could not be loaded.",
+        error: "This business could not be loaded.",
       };
     }
 
-    const ownerEmails = await getWorkspaceOwnerEmails(workspaceContext.workspace.id);
+    const ownerEmails = await getBusinessOwnerEmails(businessContext.business.id);
     const publicQuoteUrl = new URL(
       getPublicQuoteUrl(quote.publicToken),
       env.BETTER_AUTH_URL,
@@ -384,7 +384,7 @@ export async function sendQuoteAction(
     await sendQuoteEmail({
       quoteId: quote.id,
       updatedAt: quote.updatedAt,
-      workspaceName: workspaceContext.workspace.name,
+      businessName: businessContext.business.name,
       customerName: quote.customerName,
       customerEmail: quote.customerEmail,
       quoteNumber: quote.quoteNumber,
@@ -396,13 +396,13 @@ export async function sendQuoteAction(
       discountInCents: quote.discountInCents,
       totalInCents: quote.totalInCents,
       notes: quote.notes,
-      emailSignature: workspaceSettings.defaultEmailSignature,
+      emailSignature: businessSettings.defaultEmailSignature,
       items: quote.items,
-      replyToEmail: workspaceSettings.contactEmail ?? ownerEmails[0],
+      replyToEmail: businessSettings.contactEmail ?? ownerEmails[0],
     });
 
-    const result = await markQuoteSentForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await markQuoteSentForBusiness({
+      businessId: businessContext.business.id,
       quoteId,
       actorUserId: user.id,
     });
@@ -419,19 +419,19 @@ export async function sendQuoteAction(
       };
     }
 
-    if (workspaceSettings.notifyOnQuoteSent && ownerEmails.length) {
+    if (businessSettings.notifyOnQuoteSent && ownerEmails.length) {
       try {
         await sendQuoteSentOwnerNotificationEmail({
           quoteId: quote.id,
           updatedAt: quote.updatedAt,
           recipients: ownerEmails,
-          workspaceName: workspaceContext.workspace.name,
+          businessName: businessContext.business.name,
           customerName: quote.customerName,
           customerEmail: quote.customerEmail,
           quoteNumber: quote.quoteNumber,
           title: quote.title,
           dashboardUrl: new URL(
-            getWorkspaceQuotePath(workspaceContext.workspace.slug, quote.id),
+            getBusinessQuotePath(businessContext.business.slug, quote.id),
             env.BETTER_AUTH_URL,
           ).toString(),
           publicQuoteUrl,
@@ -446,7 +446,7 @@ export async function sendQuoteAction(
 
     updateCacheTags(
       getQuoteMutationCacheTags(
-        workspaceContext.workspace.id,
+        businessContext.business.id,
         quoteId,
         result.inquiryId,
       ),
@@ -473,7 +473,7 @@ export async function updateQuotePostAcceptanceStatusAction(
 ): Promise<QuotePostAcceptanceActionState> {
   void prevState;
 
-  const ownerAccess = await getOwnerWorkspaceActionContext();
+  const ownerAccess = await getOwnerBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -481,7 +481,7 @@ export async function updateQuotePostAcceptanceStatusAction(
     };
   }
 
-  const { user, workspaceContext } = ownerAccess;
+  const { user, businessContext } = ownerAccess;
   const validationResult = quotePostAcceptanceStatusChangeSchema.safeParse({
     postAcceptanceStatus: formData.get("postAcceptanceStatus"),
   });
@@ -494,8 +494,8 @@ export async function updateQuotePostAcceptanceStatusAction(
   }
 
   try {
-    const result = await updateQuotePostAcceptanceStatusForWorkspace({
-      workspaceId: workspaceContext.workspace.id,
+    const result = await updateQuotePostAcceptanceStatusForBusiness({
+      businessId: businessContext.business.id,
       quoteId,
       actorUserId: user.id,
       postAcceptanceStatus: validationResult.data.postAcceptanceStatus,
@@ -515,7 +515,7 @@ export async function updateQuotePostAcceptanceStatusAction(
 
     updateCacheTags(
       getQuoteMutationCacheTags(
-        workspaceContext.workspace.id,
+        businessContext.business.id,
         quoteId,
         result.inquiryId,
       ),
@@ -590,7 +590,7 @@ export async function respondToPublicQuoteAction(
 
     revalidateCacheTags(
       getQuoteMutationCacheTags(
-        result.workspaceId,
+        result.businessId,
         result.quoteId,
         result.inquiryId,
       ),

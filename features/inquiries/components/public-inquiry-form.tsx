@@ -38,12 +38,12 @@ import {
 import { publicInquiryAttachmentAccept } from "@/features/inquiries/schemas";
 import type {
   PublicInquiryFormState,
-  PublicInquiryWorkspace,
+  PublicInquiryBusiness,
 } from "@/features/inquiries/types";
 import { cn } from "@/lib/utils";
 
 type PublicInquiryFormProps = {
-  workspace: PublicInquiryWorkspace;
+  business: PublicInquiryBusiness;
   action: (
     state: PublicInquiryFormState,
     formData: FormData,
@@ -91,7 +91,7 @@ function getProjectFieldMaxLength(field: InquiryFormFieldDefinition) {
 }
 
 export function PublicInquiryForm({
-  workspace,
+  business,
   action,
   previewMode = false,
 }: PublicInquiryFormProps) {
@@ -102,30 +102,30 @@ export function PublicInquiryForm({
   const contactFields = useMemo(
     () =>
       inquiryContactFieldKeys.filter(
-        (key) => workspace.inquiryFormConfig.contactFields[key].enabled,
+        (key) => business.inquiryFormConfig.contactFields[key].enabled,
       ),
-    [workspace.inquiryFormConfig.contactFields],
+    [business.inquiryFormConfig.contactFields],
   );
   const attachmentField = useMemo<InquiryFormSystemFieldDefinition | null>(
     () =>
-      workspace.inquiryFormConfig.projectFields.find(
+      business.inquiryFormConfig.projectFields.find(
         (field): field is InquiryFormSystemFieldDefinition =>
           field.kind === "system" &&
           field.key === "attachment" &&
           field.enabled,
       ) ?? null,
-    [workspace.inquiryFormConfig.projectFields],
+    [business.inquiryFormConfig.projectFields],
   );
   const projectFields = useMemo(
     () =>
-      workspace.inquiryFormConfig.projectFields.filter(
+      business.inquiryFormConfig.projectFields.filter(
         (field) =>
           field.kind === "custom" ||
           (field.kind === "system" &&
             field.enabled &&
             field.key !== "attachment"),
       ),
-    [workspace.inquiryFormConfig.projectFields],
+    [business.inquiryFormConfig.projectFields],
   );
 
   function getFieldMessage(fieldName: string) {
@@ -153,7 +153,7 @@ export function PublicInquiryForm({
 
         <div className="flex flex-col gap-3 [&>*]:w-full sm:flex-row sm:flex-wrap sm:[&>*]:w-auto">
           <Button asChild>
-            <Link href={`/inquire/${workspace.slug}`}>
+            <Link href={`/inquire/${business.slug}`}>
               Submit another inquiry
               <ArrowRight data-icon="inline-end" />
             </Link>
@@ -193,7 +193,7 @@ export function PublicInquiryForm({
                   key={contactKey}
                   contactKey={contactKey}
                   error={getFieldMessage(contactKey)}
-                  fieldConfig={workspace.inquiryFormConfig.contactFields[contactKey]}
+                  fieldConfig={business.inquiryFormConfig.contactFields[contactKey]}
                   isPending={isPending}
                 />
               ))}
@@ -253,7 +253,7 @@ export function PublicInquiryForm({
               <span />
             ) : (
               <p className="text-sm leading-6 text-muted-foreground">
-                Sent to {workspace.name}.
+                Sent to {business.name}.
               </p>
             )}
             <Button
@@ -295,7 +295,7 @@ function ContactField({
 }: {
   contactKey: InquiryContactFieldKey;
   error?: string;
-  fieldConfig: PublicInquiryWorkspace["inquiryFormConfig"]["contactFields"][InquiryContactFieldKey];
+  fieldConfig: PublicInquiryBusiness["inquiryFormConfig"]["contactFields"][InquiryContactFieldKey];
   isPending: boolean;
 }) {
   const inputId = `inquiry-${contactKey}`;

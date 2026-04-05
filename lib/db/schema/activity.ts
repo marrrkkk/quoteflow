@@ -4,15 +4,15 @@ import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { user } from "@/lib/db/schema/auth";
 import { inquiries } from "@/lib/db/schema/inquiries";
 import { quotes } from "@/lib/db/schema/quotes";
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 
 export const activityLogs = pgTable(
   "activity_logs",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     inquiryId: text("inquiry_id").references(() => inquiries.id, {
       onDelete: "set null",
     }),
@@ -35,12 +35,12 @@ export const activityLogs = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("activity_logs_workspace_id_idx").on(table.workspaceId),
-    index("activity_logs_workspace_created_at_idx").on(
-      table.workspaceId,
+    index("activity_logs_business_id_idx").on(table.businessId),
+    index("activity_logs_business_created_at_idx").on(
+      table.businessId,
       table.createdAt,
     ),
-    index("activity_logs_workspace_type_idx").on(table.workspaceId, table.type),
+    index("activity_logs_business_type_idx").on(table.businessId, table.type),
     index("activity_logs_inquiry_id_idx").on(table.inquiryId),
     index("activity_logs_quote_id_idx").on(table.quoteId),
     index("activity_logs_actor_user_id_idx").on(table.actorUserId),
