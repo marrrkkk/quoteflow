@@ -1,73 +1,121 @@
-# Requo
+<p align="center">
+  <img src="./public/logo.svg" alt="Requo logo" width="72" />
+</p>
 
-Turn messy customer inquiries into organized quotes and bookings.
+<h1 align="center">Requo</h1>
 
-Requo is an owner-first SaaS app for small service businesses such as print shops, repair shops, tutors, event suppliers, and small agencies. This repository already contains a working product foundation with authentication, a public inquiry page, dashboard flows, quotes, knowledge, AI drafting, analytics, and settings.
+<p align="center">
+  Owner-first quoting software for small service businesses.
+</p>
 
-## Current Status
+<p align="center">
+  Requo helps service businesses capture customer inquiries, organize work in one dashboard,
+  build clear quotes, and draft faster replies with their own business knowledge.
+</p>
 
-- Next.js App Router, TypeScript, Tailwind CSS v4, and shadcn/ui are already wired.
-- Better Auth, Drizzle, Supabase storage helpers, Resend, and OpenRouter integrations already exist.
-- The repository currently passes `npm run check`, `npm run build`, and `npm run test:e2e`.
+<p align="center">
+  <img src="./docs/images/requo-homepage.png" alt="Requo marketing homepage" width="1200" />
+</p>
 
-## Documentation
+## Overview
 
-- [Local setup](docs/setup/local.md)
-- [Deployment setup](docs/setup/deployment.md)
-- [Architecture](docs/architecture/requo-architecture.md)
+Requo is a modern SaaS web app for small, owner-operated service businesses that need a calmer
+workflow between first inquiry and finished quote.
 
-## Quick Start
+The product is built around a simple operating model:
 
-### 1. Install dependencies
+- collect structured inquiries from a public form
+- keep customer context, files, notes, and pricing in one place
+- draft and send quotes without losing the thread
+- use AI to prepare practical reply drafts from business knowledge
+- stay inside an owner-first dashboard instead of juggling inboxes and spreadsheets
 
-```bash
-npm install
-```
+## Product Areas
 
-### 2. Create `.env`
+- Public inquiry intake with file uploads, budget, timing, and service details
+- Protected owner dashboard for inquiries, quotes, follow-up, and business settings
+- Quote workflow with draft, sent, accepted, rejected, expired, and follow-up states
+- Knowledge and FAQ management for business-specific reference material
+- AI-assisted response drafting through OpenRouter
+- Transactional email flows through Resend
+- Business branding, public inquiry page settings, and logo support
+- Analytics and notification foundations for operational visibility
 
-macOS / Linux:
+## Tech Stack
 
-```bash
-cp .env.example .env
-```
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui
+- Better Auth for authentication and sessions
+- Drizzle ORM with PostgreSQL
+- Supabase for storage and realtime-backed notification plumbing
+- Resend for transactional email
+- OpenRouter for AI features
 
-PowerShell:
+## Getting Started
 
-```powershell
-Copy-Item .env.example .env
-```
+### Prerequisites
 
-### 3. Run migrations
+- Node.js 22 or newer
+- npm
+- PostgreSQL
+- A `.env` file based on `.env.example`
 
-```bash
-npm run db:migrate
-```
+### Local Setup
 
-Drizzle migrations are the source of truth for this repo. They include the Requo schema, Better Auth tables, timestamp triggers, RLS helpers, and storage bucket setup SQL.
+1. Install dependencies.
 
-### 4. Seed demo data
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run db:seed-demo
-```
+2. Create a local env file.
 
-Default demo credentials:
+   macOS or Linux:
 
-- Email: `demo@requo.local`
-- Password: `ChangeMe123456!`
+   ```bash
+   cp .env.example .env
+   ```
 
-### 5. Start the app
+   PowerShell:
 
-```bash
-npm run dev
-```
+   ```powershell
+   Copy-Item .env.example .env
+   ```
 
-Open `http://localhost:3000`.
+3. Run database migrations.
+
+   ```bash
+   npm run db:migrate
+   ```
+
+4. Seed demo data.
+
+   ```bash
+   npm run db:seed-demo
+   ```
+
+5. Start the app.
+
+   ```bash
+   npm run dev
+   ```
+
+6. Open the app at the same origin configured in `BETTER_AUTH_URL`.
+
+### Demo Seed Defaults
+
+- Owner name: `Morgan Lee`
+- Owner email: `demo@requo.local`
+- Owner password: `ChangeMe123456!`
+- Business name: `BrightSide Print Studio`
+- Business slug: `brightside-print-studio`
 
 ## Environment Variables
 
-### Core required values
+### Core runtime
 
 - `DATABASE_URL`
 - `DATABASE_DIRECT_URL`
@@ -78,7 +126,7 @@ Open `http://localhost:3000`.
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_JWT_SECRET`
 
-### Feature-gated optional values
+### Optional providers
 
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
@@ -86,7 +134,7 @@ Open `http://localhost:3000`.
 - `OPENROUTER_API_KEY`
 - `OPENROUTER_DEFAULT_MODEL`
 
-### Other optional values
+### Optional app config
 
 - `NEXT_PUBLIC_BETTER_AUTH_URL`
 - `VERCEL_URL`
@@ -98,71 +146,75 @@ Open `http://localhost:3000`.
 - `DEMO_QUOTE_PUBLIC_TOKEN`
 - `DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN`
 
-Read [docs/setup/local.md](docs/setup/local.md) for local expectations and [docs/setup/deployment.md](docs/setup/deployment.md) for production wiring.
+For full setup expectations, read:
 
-## Architecture Snapshot
-
-- `app/` holds route groups for marketing, auth, dashboard, public routes, and API handlers.
-- `features/` holds product slices such as auth, inquiries, quotes, knowledge, AI, analytics, settings, and business overview.
-- `components/ui/` contains reusable shadcn-based primitives.
-- `components/shell/` and `components/shared/` hold shared app chrome and brand-level UI.
-- `lib/` contains cross-cutting helpers for auth, database access, Supabase, Resend, OpenRouter, env validation, and file utilities.
-- `emails/templates/` holds transactional email rendering.
-
-The detailed target structure and reuse guidance live in [docs/architecture/requo-architecture.md](docs/architecture/requo-architecture.md).
-
-## Integration Notes
-
-### Better Auth
-
-- Email/password auth, signup, login, logout, forgot password, and reset password are already wired.
-- Business bootstrap runs automatically after user creation.
-- Trusted origins are built from `BETTER_AUTH_URL`, optional `NEXT_PUBLIC_BETTER_AUTH_URL`, and optional `VERCEL_URL`.
-
-### Supabase
-
-- Supabase is used for private storage flows and browser/admin clients are already in place.
-- Upload-backed features need a real Supabase project and valid keys.
-- Realtime dashboard notifications require `SUPABASE_JWT_SECRET` so the app can mint short-lived Supabase JWTs for Better Auth users.
-- App-level business scoping is enforced in queries and server actions today.
-- SQL RLS helpers and policies exist in migrations, but the runtime does not currently inject `app.current_user_id` into the Postgres session, so DB-session RLS is not the primary enforcement path yet.
-
-### Resend
-
-- Password reset emails, public inquiry notifications, quote delivery, and owner quote notifications are implemented.
-- `RESEND_FROM_EMAIL` must use a domain verified in Resend. Personal mailbox domains like `gmail.com` belong in `RESEND_REPLY_TO_EMAIL`, not the sender field.
-- Password reset and inquiry notification email sending are best-effort when Resend is not configured.
-- Quote sending intentionally fails when Resend is not configured.
-
-### OpenRouter
-
-- Inquiry assistant generation is wired server-side.
-- The AI action returns a safe error if OpenRouter is not configured.
-- Automated checks do not currently exercise a live OpenRouter request.
+- [Local setup](./docs/setup/local.md)
+- [Deployment setup](./docs/setup/deployment.md)
 
 ## Scripts
 
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the local development server |
+| `npm run build` | Build the production app |
+| `npm run start` | Run the production build locally |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript checks |
+| `npm run check` | Run lint and typecheck together |
+| `npm run test:e2e` | Run the Playwright end-to-end suite |
+| `npm run db:generate` | Generate Drizzle artifacts |
+| `npm run db:migrate` | Apply Drizzle migrations |
+| `npm run db:push` | Push schema changes directly |
+| `npm run db:studio` | Open Drizzle Studio |
+| `npm run db:seed-demo` | Seed the demo workspace |
+
+## Repository Map
+
+- `app/` route groups, layouts, pages, and route handlers
+- `components/` shared UI primitives, shell UI, and marketing components
+- `features/` product slices such as auth, inquiries, quotes, knowledge, AI, analytics, and settings
+- `lib/` auth, database, provider clients, env validation, and shared utilities
+- `emails/templates/` transactional email rendering
+- `docs/` setup and architecture documentation
+- `tests/e2e/` Playwright coverage
+
+## Architecture Notes
+
+- Better Auth is the only authentication system in this app
+- Business ownership is enforced through business-aware server helpers and scoped queries
+- Supabase is used for storage and notification plumbing, not Supabase Auth
+- Private assets stay behind authenticated route handlers
+- AI drafting stays server-side and uses business context plus uploaded knowledge
+
+Detailed architecture guidance lives in [docs/architecture/requo-architecture.md](./docs/architecture/requo-architecture.md).
+
+## Verification
+
+The baseline health checks for this repository are:
+
 ```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run typecheck
 npm run check
+npm run build
 npm run test:e2e
-npm run db:generate
-npm run db:migrate
-npm run db:push
-npm run db:studio
-npm run db:seed-demo
 ```
 
-## Validation
+## Documentation
 
-The current baseline verification flow is:
+- [Local setup](./docs/setup/local.md)
+- [Deployment setup](./docs/setup/deployment.md)
+- [Architecture](./docs/architecture/requo-architecture.md)
 
-```bash
-npm run check
-npm run build
-npm run test:e2e
-```
+## Status
+
+This repository already contains a working product foundation for:
+
+- authentication and password flows
+- public inquiry intake
+- business creation and owner dashboard flows
+- quote drafting and public quote response
+- business knowledge management
+- AI reply drafting
+- notification and analytics groundwork
+
+Requo is intentionally scoped for small service businesses and owner-first workflows. It does not
+try to cover billing, marketplace behavior, advanced team collaboration, or mobile app concerns.
