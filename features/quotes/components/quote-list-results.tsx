@@ -1,14 +1,12 @@
-import { DataListPagination } from "@/components/shared/data-list-pagination";
-import { QuoteListCards } from "@/features/quotes/components/quote-list-cards";
-import { QuoteListTable } from "@/features/quotes/components/quote-list-table";
-import { getBusinessQuotesPath } from "@/features/businesses/routes";
+import { QuoteListResultsClient } from "@/features/quotes/components/quote-list-results-client";
 import type { DashboardQuoteListItem } from "@/features/quotes/types";
 
 type SearchParamsRecord = Record<string, string | string[] | undefined>;
 
 type QuoteListResultsData = {
+  cachedPages?: Record<number, DashboardQuoteListItem[]> | null;
   currentPage: number;
-  quotes: DashboardQuoteListItem[];
+  filterKey: string;
   totalItems: number;
   totalPages: number;
 };
@@ -26,27 +24,19 @@ export async function QuoteListResults({
   pageData,
   searchParams,
 }: QuoteListResultsProps) {
-  const { currentPage, quotes, totalItems, totalPages } = await pageData;
+  const { cachedPages, currentPage, filterKey, totalItems, totalPages } =
+    await pageData;
 
   return (
-    <>
-      <QuoteListTable
-        quotes={quotes}
-        currency={currency}
-        businessSlug={businessSlug}
-      />
-      <QuoteListCards
-        quotes={quotes}
-        currency={currency}
-        businessSlug={businessSlug}
-      />
-      <DataListPagination
-        currentPage={currentPage}
-        pathname={getBusinessQuotesPath(businessSlug)}
-        searchParams={searchParams}
-        totalItems={totalItems}
-        totalPages={totalPages}
-      />
-    </>
+    <QuoteListResultsClient
+      key={filterKey}
+      businessSlug={businessSlug}
+      cachedPages={cachedPages ?? {}}
+      currency={currency}
+      currentPage={currentPage}
+      searchParams={searchParams}
+      totalItems={totalItems}
+      totalPages={totalPages}
+    />
   );
 }
