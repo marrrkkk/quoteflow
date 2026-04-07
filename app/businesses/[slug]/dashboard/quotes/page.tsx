@@ -33,13 +33,16 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
     : {
         q: undefined,
         status: "all" as const,
+        sort: "newest" as const,
       };
   const quoteList = await getQuoteListForBusiness({
     businessId: businessContext.business.id,
     filters,
   });
   const businessSlug = businessContext.business.slug;
-  const hasFilters = Boolean(filters.q || filters.status !== "all");
+  const hasFilters = Boolean(
+    filters.q || filters.status !== "all" || filters.sort !== "newest",
+  );
 
   return (
     <DashboardPage>

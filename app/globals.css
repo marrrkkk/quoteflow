@@ -602,11 +602,13 @@
   }
 
   .data-list-toolbar-grid {
-    @apply grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_14rem_auto] xl:items-end;
+    @apply flex min-w-0 w-full flex-col gap-3;
+    @apply xl:flex-row xl:flex-nowrap xl:items-end xl:gap-3;
   }
 
   .data-list-toolbar-actions {
-    @apply flex flex-col gap-3 sm:flex-row xl:justify-end;
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center;
+    @apply xl:ml-auto xl:shrink-0 xl:justify-end;
   }
 
   .data-list-mobile-grid {

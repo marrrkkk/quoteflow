@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Inbox } from "lucide-react";
+import { Inbox } from "lucide-react";
 
 import {
   DashboardEmptyState,
@@ -37,6 +37,7 @@ export default async function InquiriesPage({
         q: undefined,
         status: "all" as const,
         form: "all",
+        sort: "newest" as const,
       };
 
   const [inquiryList, inquiryFormOptions] = await Promise.all([
@@ -48,7 +49,10 @@ export default async function InquiriesPage({
   ]);
   const businessSlug = businessContext.business.slug;
   const hasFilters = Boolean(
-    filters.q || filters.status !== "all" || filters.form !== "all",
+    filters.q ||
+      filters.status !== "all" ||
+      filters.form !== "all" ||
+      filters.sort !== "newest",
   );
   const publicInquiryUrl = getBusinessPublicInquiryUrl(businessSlug);
 
@@ -57,18 +61,10 @@ export default async function InquiriesPage({
       <PageHeader
         eyebrow="Requests"
         title="Customer requests"
-        actions={
-          <Button asChild variant="outline">
-            <Link href={publicInquiryUrl} prefetch={false}>
-              Open public page
-              <ArrowRight data-icon="inline-end" />
-            </Link>
-          </Button>
-        }
       />
 
       <InquiryListToolbar
-        key={`${filters.status}:${filters.form}:${filters.q ?? ""}`}
+        key={`${filters.status}:${filters.form}:${filters.q ?? ""}:${filters.sort}`}
         filters={filters}
         formOptions={[
           {

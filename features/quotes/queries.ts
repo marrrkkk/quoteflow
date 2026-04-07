@@ -76,6 +76,8 @@ async function getCachedQuoteListForBusiness({
     );
   }
 
+  const createdAtSort = filters.sort === "oldest" ? asc : desc;
+
   const rows = await db
     .select({
       id: quotes.id,
@@ -95,7 +97,7 @@ async function getCachedQuoteListForBusiness({
     })
     .from(quotes)
     .where(and(...conditions))
-    .orderBy(desc(quotes.createdAt));
+    .orderBy(createdAtSort(quotes.createdAt));
 
   return rows.map((row) => ({
     ...row,

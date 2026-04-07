@@ -1,12 +1,8 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -34,18 +30,18 @@ export function QuoteListCards({
   return (
     <div className="data-list-mobile-grid">
       {quotes.map((quote) => (
-        <Card key={quote.id} className="data-list-card">
+        <Link
+          className="block"
+          href={getBusinessQuotePath(businessSlug, quote.id)}
+          key={quote.id}
+          prefetch={true}
+        >
+          <Card className="data-list-card transition-colors hover:bg-accent/20">
           <CardHeader className="data-list-card-header">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex flex-col gap-1">
                 <CardTitle className="text-lg leading-tight">
-                  <Link
-                    className="block truncate underline-offset-4 transition-colors hover:text-primary hover:underline"
-                    href={getBusinessQuotePath(businessSlug, quote.id)}
-                    prefetch={true}
-                  >
-                    {quote.quoteNumber}
-                  </Link>
+                  <span className="block truncate">{quote.quoteNumber}</span>
                 </CardTitle>
                 <CardDescription className="truncate text-sm">
                   {quote.title}
@@ -97,23 +93,8 @@ export function QuoteListCards({
               </p>
             </div>
           </CardContent>
-          <CardFooter className="data-list-card-footer">
-            <span className="text-sm text-muted-foreground">
-              {quote.inquiryId
-                ? "Linked to the original inquiry"
-                : "Created manually from the business"}
-            </span>
-            <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
-              <Link
-                href={getBusinessQuotePath(businessSlug, quote.id)}
-                prefetch={true}
-              >
-                Open quote
-                <ArrowRight data-icon="inline-end" />
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
+          </Card>
+        </Link>
       ))}
     </div>
   );

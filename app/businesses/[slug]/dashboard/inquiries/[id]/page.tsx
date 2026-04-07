@@ -122,7 +122,7 @@ export default async function InquiryDetailPage({
           <DashboardSection
             contentClassName="flex flex-col gap-6"
             description="Submitted through the public form."
-            title="Overview"
+            title="Summary"
           >
             <DashboardStatsGrid className="xl:grid-cols-4">
               <InfoTile label="Category" value={inquiry.serviceCategory} />

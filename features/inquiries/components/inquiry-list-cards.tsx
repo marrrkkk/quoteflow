@@ -1,12 +1,8 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -30,18 +26,18 @@ export function InquiryListCards({
   return (
     <div className="data-list-mobile-grid">
       {inquiries.map((inquiry) => (
-        <Card key={inquiry.id} className="data-list-card">
+        <Link
+          className="block"
+          href={getBusinessInquiryPath(businessSlug, inquiry.id)}
+          key={inquiry.id}
+          prefetch={true}
+        >
+          <Card className="data-list-card transition-colors hover:bg-accent/20">
           <CardHeader className="data-list-card-header">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex flex-col gap-1">
                 <CardTitle className="text-lg leading-tight">
-                  <Link
-                    className="block truncate underline-offset-4 transition-colors hover:text-primary hover:underline"
-                    href={getBusinessInquiryPath(businessSlug, inquiry.id)}
-                    prefetch={true}
-                  >
-                    {inquiry.customerName}
-                  </Link>
+                  <span className="block truncate">{inquiry.customerName}</span>
                 </CardTitle>
                 <CardDescription className="truncate text-sm">
                   {inquiry.customerEmail}
@@ -84,21 +80,8 @@ export function InquiryListCards({
               </p>
             </div>
           </CardContent>
-          <CardFooter className="data-list-card-footer">
-            <span className="text-sm text-muted-foreground">
-              Customer inquiry ready for triage and follow-up.
-            </span>
-            <Button asChild className="w-full sm:w-auto" size="sm" variant="outline">
-              <Link
-                href={getBusinessInquiryPath(businessSlug, inquiry.id)}
-                prefetch={true}
-              >
-                Open inquiry
-                <ArrowRight data-icon="inline-end" />
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
+          </Card>
+        </Link>
       ))}
     </div>
   );

@@ -34,8 +34,8 @@ export function getDashboardNavigation(slug: string): DashboardNavigationItem[] 
   return [
     {
       href: getBusinessDashboardPath(slug),
-      label: "Overview",
-      description: "Action queues, momentum, and the next owner actions.",
+      label: "Dashboard",
+      description: "Your home base: queues, momentum, and the next actions to take.",
       icon: LayoutDashboard,
     },
     {
@@ -146,6 +146,19 @@ function formatRecordHint(value: string) {
   return formatBreadcrumbLabel(decodedValue);
 }
 
+function withDashboardHome(
+  slug: string,
+  items: DashboardBreadcrumbItem[],
+): DashboardBreadcrumbItem[] {
+  const dashboardPath = getBusinessDashboardPath(slug);
+
+  if (items[0]?.label === "Dashboard") {
+    return items;
+  }
+
+  return [{ label: "Dashboard", href: dashboardPath }, ...items];
+}
+
 export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[] {
   const slug = getBusinessDashboardSlugFromPathname(pathname);
 
@@ -165,33 +178,35 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
   }
 
   if (pathname === analyticsPath || pathname.startsWith(`${analyticsPath}/`)) {
-    return [{ label: "Analytics" }];
+    return withDashboardHome(slug, [{ label: "Analytics" }]);
   }
 
   if (pathname === inquiriesPath) {
-    return [{ label: "Requests" }];
+    return withDashboardHome(slug, [{ label: "Requests" }]);
   }
 
   if (pathname.startsWith(`${inquiriesPath}/`)) {
     const inquiryId = pathname.slice(`${inquiriesPath}/`.length).split("/")[0];
 
-    return [
+    return withDashboardHome(slug, [
       {
         label: "Requests",
         href: inquiriesPath,
       },
       {
-        label: inquiryId ? `Request ${formatRecordHint(inquiryId)}` : "Request",
+        label: inquiryId
+          ? `Request · ${formatRecordHint(inquiryId)}`
+          : "Request details",
       },
-    ];
+    ]);
   }
 
   if (pathname === quotesPath) {
-    return [{ label: "Quotes" }];
+    return withDashboardHome(slug, [{ label: "Quotes" }]);
   }
 
   if (pathname === `${quotesPath}/new`) {
-    return [
+    return withDashboardHome(slug, [
       {
         label: "Quotes",
         href: quotesPath,
@@ -199,43 +214,45 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
       {
         label: "New quote",
       },
-    ];
+    ]);
   }
 
   if (pathname.startsWith(`${quotesPath}/`)) {
     const quoteId = pathname.slice(`${quotesPath}/`.length).split("/")[0];
 
-    return [
+    return withDashboardHome(slug, [
       {
         label: "Quotes",
         href: quotesPath,
       },
       {
-        label: quoteId ? `Quote ${formatRecordHint(quoteId)}` : "Quote",
+        label: quoteId
+          ? `Quote · ${formatRecordHint(quoteId)}`
+          : "Quote details",
       },
-    ];
+    ]);
   }
 
   if (pathname === formsPath) {
-    return [{ label: "Forms" }];
+    return withDashboardHome(slug, [{ label: "Forms" }]);
   }
 
   if (pathname.startsWith(`${formsPath}/`)) {
     const formSlug = pathname.slice(`${formsPath}/`.length).split("/")[0];
 
-    return [
+    return withDashboardHome(slug, [
       {
         label: "Forms",
         href: formsPath,
       },
       {
-        label: formSlug ? formatBreadcrumbLabel(formSlug) : "Form",
+        label: formSlug ? formatBreadcrumbLabel(formSlug) : "Form details",
       },
-    ];
+    ]);
   }
 
   if (pathname === settingsPath) {
-    return [{ label: "Settings" }];
+    return withDashboardHome(slug, [{ label: "Settings" }]);
   }
 
   if (pathname.startsWith(`${settingsPath}/`)) {
@@ -254,7 +271,7 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
     const sectionLabel = sectionLabels[section] ?? formatBreadcrumbLabel(section);
 
     if (section === "inquiry" && segments[1]) {
-      return [
+      return withDashboardHome(slug, [
         {
           label: "Forms",
           href: formsPath,
@@ -262,10 +279,10 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
         {
           label: formatBreadcrumbLabel(segments[1]),
         },
-      ];
+      ]);
     }
 
-    return [
+    return withDashboardHome(slug, [
       {
         label: "Settings",
         href: settingsPath,
@@ -273,7 +290,7 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
       {
         label: sectionLabel,
       },
-    ];
+    ]);
   }
 
   return [{ label: "Dashboard" }];

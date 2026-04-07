@@ -24,6 +24,7 @@ export type QuoteLibraryEntryKind = (typeof quoteLibraryEntryKinds)[number];
 export type QuoteListFilters = {
   q?: string;
   status: QuoteStatusFilterValue;
+  sort: "newest" | "oldest";
 };
 
 export type DashboardQuoteListItem = {

@@ -43,11 +43,11 @@ export function InquiryListTable({
         </TableHeader>
         <TableBody>
           {inquiries.map((inquiry) => (
-            <TableRow key={inquiry.id}>
+            <TableRow className="group/row relative" key={inquiry.id}>
               <TableCell className="max-w-[20rem]">
                 <div className="table-meta-stack max-w-full">
                   <Link
-                    className="table-link"
+                    className="table-link after:absolute after:inset-0 after:content-['']"
                     href={getBusinessInquiryPath(businessSlug, inquiry.id)}
                     prefetch={true}
                   >

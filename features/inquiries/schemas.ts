@@ -591,6 +591,12 @@ export const inquiryListFiltersSchema = z.object({
       z.string().trim().max(120),
     )
     .catch("all"),
+  sort: z
+    .preprocess(
+      (value) => firstString(value) ?? "newest",
+      z.enum(["newest", "oldest"]),
+    )
+    .catch("newest"),
 });
 
 export const inquiryNoteSchema = z.object({

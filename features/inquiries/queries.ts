@@ -309,6 +309,9 @@ export async function getInquiryListForBusiness({
     conditions.push(eq(businessInquiryForms.slug, filters.form));
   }
 
+  const submittedAtSort = filters.sort === "oldest" ? asc : desc;
+  const createdAtSort = filters.sort === "oldest" ? asc : desc;
+
   return db
     .select({
       id: inquiries.id,
@@ -330,7 +333,7 @@ export async function getInquiryListForBusiness({
       eq(inquiries.businessInquiryFormId, businessInquiryForms.id),
     )
     .where(and(...conditions))
-    .orderBy(desc(inquiries.submittedAt), desc(inquiries.createdAt));
+    .orderBy(submittedAtSort(inquiries.submittedAt), createdAtSort(inquiries.createdAt));
 }
 
 type GetInquiryDetailForBusinessInput = {

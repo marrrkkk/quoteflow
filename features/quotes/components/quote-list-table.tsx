@@ -51,11 +51,11 @@ export function QuoteListTable({
         </TableHeader>
         <TableBody>
           {quotes.map((quote) => (
-            <TableRow key={quote.id}>
+            <TableRow className="group/row relative" key={quote.id}>
               <TableCell className="max-w-[18rem]">
                 <div className="table-meta-stack max-w-full">
                   <Link
-                    className="table-link"
+                    className="table-link after:absolute after:inset-0 after:content-['']"
                     href={getBusinessQuotePath(businessSlug, quote.id)}
                     prefetch={true}
                   >
@@ -95,7 +95,7 @@ export function QuoteListTable({
               <TableCell className="hidden 2xl:table-cell">
                 {quote.inquiryId ? (
                   <Link
-                    className="text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline group-hover/row:text-primary"
+                    className="relative z-10 text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline group-hover/row:text-primary"
                     href={getBusinessInquiryPath(businessSlug, quote.inquiryId)}
                     prefetch={true}
                   >
