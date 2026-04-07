@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   Plus,
@@ -11,12 +11,12 @@ import {
 } from "lucide-react";
 
 import {
-  FormActions,
   FormSection,
 } from "@/components/shared/form-layout";
 import { useProgressRouter } from "@/hooks/use-progress-router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -107,6 +107,8 @@ export function BusinessInquiryFormForm({
     settings.inquiryFormConfig.projectFields,
   );
   const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [formRevision, setFormRevision] = useState(0);
 
   useEffect(() => {
     if (!presetState.success) {
@@ -122,6 +124,20 @@ export function BusinessInquiryFormForm({
     contactFields,
     projectFields,
   } satisfies InquiryFormConfig);
+  const initialSerializedConfig = useMemo(
+    () =>
+      JSON.stringify({
+        version: 1,
+        businessType: settings.businessType,
+        contactFields: settings.inquiryFormConfig.contactFields,
+        projectFields: settings.inquiryFormConfig.projectFields,
+      } satisfies InquiryFormConfig),
+    [
+      settings.businessType,
+      settings.inquiryFormConfig.contactFields,
+      settings.inquiryFormConfig.projectFields,
+    ],
+  );
 
   const activeFieldCount = useMemo(
     () =>
@@ -131,6 +147,52 @@ export function BusinessInquiryFormForm({
       ).length,
     [contactFields, projectFields],
   );
+  const hasConfigChanges = serializedConfig !== initialSerializedConfig;
+  const hasTextInputChanges = useMemo(() => {
+    const form = formRef.current;
+    if (!form) {
+      return false;
+    }
+
+    const nameInput = form.elements.namedItem("name");
+    const slugInput = form.elements.namedItem("slug");
+
+    const nameValue =
+      nameInput instanceof HTMLInputElement ? nameInput.value : settings.formName;
+    const slugValue =
+      slugInput instanceof HTMLInputElement ? slugInput.value : settings.formSlug;
+
+    return nameValue !== settings.formName || slugValue !== settings.formSlug;
+  }, [formRevision, settings.formName, settings.formSlug]);
+  const hasUnsavedChanges = hasConfigChanges || hasTextInputChanges;
+  const [shouldRenderFloatingActions, setShouldRenderFloatingActions] = useState(false);
+  const [floatingActionsState, setFloatingActionsState] = useState<"open" | "closed">(
+    "closed",
+  );
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setPrefersReducedMotion(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      setShouldRenderFloatingActions(true);
+      setFloatingActionsState("open");
+      return;
+    }
+
+    setFloatingActionsState("closed");
+    const timeout = window.setTimeout(
+      () => setShouldRenderFloatingActions(false),
+      prefersReducedMotion ? 0 : 180,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [hasUnsavedChanges, prefersReducedMotion]);
 
   function updateContactField(
     key: InquiryContactFieldKey,
@@ -290,9 +352,22 @@ export function BusinessInquiryFormForm({
   const nameError = saveState.fieldErrors?.name?.[0];
   const slugError = saveState.fieldErrors?.slug?.[0];
 
+  function handleCancelChanges() {
+    formRef.current?.reset();
+    setBusinessType(settings.businessType);
+    setContactFields(settings.inquiryFormConfig.contactFields);
+    setProjectFields(settings.inquiryFormConfig.projectFields);
+    setFormRevision((current) => current + 1);
+  }
+
   return (
     <>
-      <form action={saveFormAction} className="form-stack">
+      <form
+        action={saveFormAction}
+        className="form-stack pb-28"
+        onInputCapture={() => setFormRevision((current) => current + 1)}
+        ref={formRef}
+      >
         {saveState.error ? (
           <Alert variant="destructive">
             <AlertTitle>We could not save the inquiry form.</AlertTitle>
@@ -527,14 +602,36 @@ export function BusinessInquiryFormForm({
           </CardContent>
         </Card>
 
-        <FormActions align="between">
-          <div className="text-sm text-muted-foreground">
-            Saved changes update the live and preview inquiry forms.
+        {shouldRenderFloatingActions ? (
+          <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+            <div
+              className="soft-panel motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-2 motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=open]:duration-200 motion-safe:data-[state=open]:ease-(--motion-ease-emphasized) motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-2 motion-safe:data-[state=closed]:zoom-out-95 motion-safe:data-[state=closed]:duration-150 motion-safe:data-[state=closed]:ease-(--motion-ease-standard) motion-reduce:animate-none flex w-full max-w-2xl items-center justify-between gap-3 border-border/80 bg-background/95 px-4 py-3 shadow-xl backdrop-blur"
+              data-state={floatingActionsState}
+            >
+              <p className="text-sm text-muted-foreground">You have unsaved changes.</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  disabled={isSavePending || !hasUnsavedChanges}
+                  onClick={handleCancelChanges}
+                  type="button"
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button disabled={isSavePending} type="submit">
+                  {isSavePending ? (
+                    <>
+                      <Spinner data-icon="inline-start" aria-hidden="true" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save changes"
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-          <Button disabled={isSavePending} type="submit">
-            {isSavePending ? "Saving..." : "Save inquiry form"}
-          </Button>
-        </FormActions>
+        ) : null}
       </form>
 
       <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
