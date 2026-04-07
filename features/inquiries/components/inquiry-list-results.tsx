@@ -1,14 +1,12 @@
-import { DataListPagination } from "@/components/shared/data-list-pagination";
-import { InquiryListCards } from "@/features/inquiries/components/inquiry-list-cards";
-import { InquiryListTable } from "@/features/inquiries/components/inquiry-list-table";
-import { getBusinessInquiriesPath } from "@/features/businesses/routes";
+import { InquiryListResultsClient } from "@/features/inquiries/components/inquiry-list-results-client";
 import type { DashboardInquiryListItem } from "@/features/inquiries/types";
 
 type SearchParamsRecord = Record<string, string | string[] | undefined>;
 
 type InquiryListResultsData = {
-  inquiries: DashboardInquiryListItem[];
+  cachedPages?: Record<number, DashboardInquiryListItem[]> | null;
   currentPage: number;
+  filterKey: string;
   totalItems: number;
   totalPages: number;
 };
@@ -24,19 +22,18 @@ export async function InquiryListResults({
   pageData,
   searchParams,
 }: InquiryListResultsProps) {
-  const { inquiries, currentPage, totalItems, totalPages } = await pageData;
+  const { cachedPages, currentPage, filterKey, totalItems, totalPages } =
+    await pageData;
 
   return (
-    <>
-      <InquiryListTable inquiries={inquiries} businessSlug={businessSlug} />
-      <InquiryListCards inquiries={inquiries} businessSlug={businessSlug} />
-      <DataListPagination
-        currentPage={currentPage}
-        pathname={getBusinessInquiriesPath(businessSlug)}
-        searchParams={searchParams}
-        totalItems={totalItems}
-        totalPages={totalPages}
-      />
-    </>
+    <InquiryListResultsClient
+      key={filterKey}
+      businessSlug={businessSlug}
+      cachedPages={cachedPages ?? {}}
+      currentPage={currentPage}
+      searchParams={searchParams}
+      totalItems={totalItems}
+      totalPages={totalPages}
+    />
   );
 }
