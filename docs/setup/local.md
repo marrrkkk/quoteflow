@@ -142,3 +142,22 @@ npm run test:e2e
 - The Playwright suite starts its own local server, sets `BETTER_AUTH_URL` to `127.0.0.1`, and disables live Resend and OpenRouter calls.
 - The E2E suite uses the seeded demo business and fixed public quote tokens.
 - The current automated suite does not cover live storage uploads, live Resend delivery, or live OpenRouter generation.
+
+### Canonical Dashboard Routes
+
+Use one canonical route set in docs and tests:
+
+- Dashboard home: `/businesses/<slug>/dashboard`
+- Requests: `/businesses/<slug>/dashboard/inquiries`
+- Quotes: `/businesses/<slug>/dashboard/quotes`
+- Forms: `/businesses/<slug>/dashboard/forms`
+- Settings hub: `/businesses/<slug>/dashboard/settings`
+- Settings sections:
+  - General: `/settings/general`
+  - Profile: `/settings/profile`
+  - Saved replies: `/settings/replies`
+  - Quote defaults: `/settings/quote`
+  - Pricing library: `/settings/pricing`
+  - Knowledge base: `/settings/knowledge`
+
+Legacy aliases under settings are kept only as redirects for backward compatibility. Do not use alias paths in new docs or tests.

@@ -117,7 +117,7 @@ test("owner can create, edit, insert, and delete a saved reply snippet", async (
 
   await signIn(page);
 
-  await openBusinessesPage(page, "/settings/inquiry");
+  await openBusinessesPage(page, "/settings/replies");
 
   await page.locator("#reply-snippet-create-title").fill(initialTitle);
   await page.locator("#reply-snippet-create-body").fill(initialBody);
@@ -163,7 +163,7 @@ test("owner can create, edit, insert, and delete a saved reply snippet", async (
     `${updatedBody}\n\n${existingSnippetBody}`,
   );
 
-  await openBusinessesPage(page, "/settings/inquiry");
+  await openBusinessesPage(page, "/settings/replies");
 
   const deletableSnippetCard = getSnippetCard(page, updatedTitle);
   await deletableSnippetCard.getByRole("button", { name: "Delete" }).click();
