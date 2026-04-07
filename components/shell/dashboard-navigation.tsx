@@ -57,7 +57,7 @@ export function getDashboardNavigation(slug: string): DashboardNavigationItem[] 
       icon: FormInput,
     },
     {
-      href: getBusinessSettingsPath(slug),
+      href: getBusinessSettingsPath(slug, "general"),
       label: "Settings",
       description: "Manage business setup, reusable responses, and quote defaults.",
       icon: Settings2,
@@ -285,7 +285,7 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
     return withDashboardHome(slug, [
       {
         label: "Settings",
-        href: settingsPath,
+        href: getBusinessSettingsPath(slug, "general"),
       },
       {
         label: sectionLabel,
