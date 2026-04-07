@@ -374,7 +374,7 @@ async function generateBulkInquiries(
     id: string;
     businessId: string;
     businessInquiryFormId: string;
-    status: string;
+    status: "new" | "waiting" | "quoted" | "won" | "lost" | "archived";
     subject: string;
     customerName: string;
     customerEmail: string;
@@ -518,7 +518,7 @@ async function generateBulkInquiries(
       id: `bulk_inquiry_${count}_${i}`,
       businessId,
       businessInquiryFormId: formId,
-      status,
+      status: status as "new" | "waiting" | "quoted" | "won" | "lost" | "archived",
       subject: `${category} request from ${company}`,
       customerName: `${firstName} ${lastName}`,
       customerEmail: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.toLowerCase().replace(/\s+/g, "")}.com`.slice(
@@ -564,11 +564,6 @@ async function generateBulkQuotes(
         inquiry.status === "lost") &&
       Math.random() > 0.2
     ) {
-      const statusMap: Record<string, string> = {
-        quoted: "draft",
-        won: "accepted",
-        lost: "rejected",
-      };
       const quoteStatus =
         inquiry.status === "quoted"
           ? "draft"
@@ -576,7 +571,6 @@ async function generateBulkQuotes(
             ? "accepted"
             : "rejected";
 
-      const now = new Date();
       const createdDaysAgo = Math.floor(Math.random() * 60);
       const createdDate = daysAgo(createdDaysAgo);
       const sentDaysAgo =
@@ -591,7 +585,7 @@ async function generateBulkQuotes(
         id: `bulk_quote_${inquiry.id}`,
         businessId,
         inquiryId: inquiry.id,
-        status: quoteStatus,
+        status: quoteStatus as "draft" | "sent" | "accepted" | "rejected" | "expired",
         quoteNumber: `Q-${quoteNumber}`,
         publicToken: `token_${quoteNumber}_${Date.now()}`,
         title: `Quote for ${inquiry.id}`,
@@ -607,11 +601,12 @@ async function generateBulkQuotes(
           quoteStatus === "accepted"
             ? daysAgo(Math.floor(Math.random() * createdDaysAgo))
             : null,
-        publicViewedAt: sentDate
-          ? daysAgo(
-              Math.max(0, sentDaysAgo - Math.floor(Math.random() * sentDaysAgo)),
-            )
-          : null,
+        publicViewedAt:
+          sentDate && sentDaysAgo !== null
+            ? daysAgo(
+                Math.max(0, sentDaysAgo - Math.floor(Math.random() * sentDaysAgo)),
+              )
+            : null,
         customerRespondedAt:
           quoteStatus !== "draft"
             ? daysAgo(Math.max(0, createdDaysAgo - Math.floor(Math.random() * 10)))
