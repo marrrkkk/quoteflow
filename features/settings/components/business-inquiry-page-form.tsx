@@ -104,10 +104,12 @@ export function BusinessInquiryPageForm({
     publicInquiryEnabled !== settings.publicInquiryEnabled ||
     template !== settings.inquiryPageConfig.template ||
     JSON.stringify(cards) !== initialCardsSerialized;
-  const hasTextInputChanges = useMemo(() => {
+  const [hasTextInputChanges, setHasTextInputChanges] = useState(false);
+
+  useEffect(() => {
     const form = formRef.current;
     if (!form) {
-      return false;
+      return;
     }
 
     const inputNames = [
@@ -128,14 +130,19 @@ export function BusinessInquiryPageForm({
       formDescription: settings.inquiryPageConfig.formDescription ?? "",
     };
 
-    return inputNames.some((name) => {
-      const field = form.elements.namedItem(name);
-      if (!(field instanceof HTMLInputElement) && !(field instanceof HTMLTextAreaElement)) {
-        return false;
-      }
+    setHasTextInputChanges(
+      inputNames.some((name) => {
+        const field = form.elements.namedItem(name);
+        if (
+          !(field instanceof HTMLInputElement) &&
+          !(field instanceof HTMLTextAreaElement)
+        ) {
+          return false;
+        }
 
-      return field.value !== initialValues[name];
-    });
+        return field.value !== initialValues[name];
+      }),
+    );
   }, [formRevision, settings.inquiryPageConfig]);
   const hasUnsavedChanges = hasControlledChanges || hasTextInputChanges;
   const [shouldRenderFloatingActions, setShouldRenderFloatingActions] = useState(false);
@@ -154,12 +161,16 @@ export function BusinessInquiryPageForm({
 
   useEffect(() => {
     if (hasUnsavedChanges) {
-      setShouldRenderFloatingActions(true);
-      setFloatingActionsState("open");
+      queueMicrotask(() => {
+        setShouldRenderFloatingActions(true);
+        setFloatingActionsState("open");
+      });
       return;
     }
 
-    setFloatingActionsState("closed");
+    queueMicrotask(() => {
+      setFloatingActionsState("closed");
+    });
     const timeout = window.setTimeout(
       () => setShouldRenderFloatingActions(false),
       prefersReducedMotion ? 0 : 180,
