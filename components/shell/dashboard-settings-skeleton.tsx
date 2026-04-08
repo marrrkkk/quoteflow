@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 
 import {
-  DashboardDetailLayout,
   DashboardPage,
-  DashboardSection,
-  DashboardSidebarStack,
 } from "@/components/shared/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -190,236 +187,101 @@ export function DashboardSettingsInquiryListSkeleton() {
 
 export function DashboardSettingsInquiryDetailSkeleton() {
   return (
-    <DashboardPage>
-      <div className="flex flex-col gap-4">
+    <DashboardPage className="dashboard-side-stack">
+      <div className="flex flex-col gap-3">
         <SettingsPageHeader descriptionWidth="w-[22rem]" titleWidth="max-w-lg" />
-        <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-7 w-32 rounded-full" />
-          <Skeleton className="h-7 w-28 rounded-full" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-          <Skeleton className="h-7 w-16 rounded-full" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
       </div>
 
-      <DashboardDetailLayout className="items-start xl:grid-cols-[minmax(0,1.06fr)_21rem]">
-        <DashboardSidebarStack>
-          <DashboardSection
-            description={<Skeleton className="h-4 w-56 rounded-md" />}
-            title={<Skeleton className="h-6 w-24 rounded-md" />}
-          >
-            <div className="grid gap-5">
-              <FieldSkeleton />
-              <FieldSkeleton />
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <FieldSkeleton />
-                <div className="soft-panel flex flex-col gap-3 px-4 py-4 shadow-none">
-                  <Skeleton className="h-5 w-32 rounded-md" />
-                  <Skeleton className="h-4 w-full rounded-md" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-7 w-20 rounded-full" />
-                    <Skeleton className="h-7 w-20 rounded-full" />
+      <div className="grid min-w-0 items-start gap-4 lg:gap-5 xl:grid-cols-[15rem_minmax(0,1fr)] xl:gap-4">
+        <FormEditorNavigationSkeleton />
+
+        <div className="min-w-0 w-full">
+          <div className="flex flex-wrap gap-2 xl:justify-end">
+            <Skeleton className="h-10 w-24 rounded-xl" />
+            <Skeleton className="h-10 w-28 rounded-xl" />
+          </div>
+
+          <div className="mt-4 space-y-5">
+            <section className="section-panel p-6">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_20rem] xl:gap-7">
+                <div className="rounded-3xl border border-border/75 bg-muted/20 px-5 py-5 sm:px-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-20 rounded-md" />
+                    <Skeleton className="h-7 w-40 rounded-lg" />
+                    <Skeleton className="h-4 w-56 rounded-md" />
+                  </div>
+
+                  <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                    <FieldSkeleton />
+                    <FieldSkeleton />
                   </div>
                 </div>
-              </div>
-            </div>
-            <div className="border-t border-border/70 pt-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="soft-panel px-4 py-4 shadow-none">
-                  <Skeleton className="h-4 w-64 rounded-md" />
-                </div>
-                <Skeleton className="h-10 w-full rounded-xl sm:w-48" />
-              </div>
-            </div>
-          </DashboardSection>
 
-          <DashboardSection
-            description={<Skeleton className="h-4 w-44 rounded-md" />}
-            title={<Skeleton className="h-6 w-28 rounded-md" />}
-          >
-            <div className="grid gap-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div className="soft-panel flex flex-col gap-5 px-4 py-4 shadow-none" key={index}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
+                <div className="rounded-3xl border border-border/75 bg-muted/20 px-5 py-5 sm:px-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                    <Skeleton className="h-7 w-44 rounded-lg" />
+                    <Skeleton className="h-4 w-52 rounded-md" />
+                  </div>
+
+                  <div className="mt-5 space-y-5">
+                    <FieldSkeleton />
+                    <div className="rounded-2xl border border-border/70 bg-background/88 p-4">
                       <Skeleton className="h-5 w-28 rounded-md" />
-                      <Skeleton className="h-4 w-36 rounded-md" />
-                    </div>
-                    <div className="flex gap-3">
-                      <Skeleton className="h-6 w-12 rounded-full" />
-                      <Skeleton className="h-6 w-16 rounded-full" />
-                    </div>
-                  </div>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <FieldSkeleton />
-                    <FieldSkeleton />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DashboardSection>
-
-          <DashboardSection
-            description={<Skeleton className="h-4 w-44 rounded-md" />}
-            title={<Skeleton className="h-6 w-28 rounded-md" />}
-          >
-            <div className="grid gap-4">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div className="soft-panel flex flex-col gap-5 px-4 py-4 shadow-none" key={index}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <Skeleton className="h-5 w-28 rounded-md" />
-                      <Skeleton className="h-4 w-24 rounded-md" />
-                    </div>
-                    <div className="flex gap-2">
-                      <Skeleton className="size-8 rounded-lg" />
-                      <Skeleton className="size-8 rounded-lg" />
-                      <Skeleton className="size-8 rounded-lg" />
-                    </div>
-                  </div>
-                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_14rem]">
-                    <FieldSkeleton />
-                    <div className="soft-panel flex items-center px-4 py-4 shadow-none">
-                      <Skeleton className="h-4 w-20 rounded-md" />
-                    </div>
-                  </div>
-                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
-                    <FieldSkeleton className="h-20 rounded-2xl" />
-                    <div className="soft-panel flex items-center gap-3 px-4 py-4 shadow-none">
-                      <Skeleton className="h-6 w-12 rounded-full" />
-                      <Skeleton className="h-4 w-10 rounded-md" />
-                    </div>
-                    <div className="soft-panel flex items-center gap-3 px-4 py-4 shadow-none">
-                      <Skeleton className="h-6 w-14 rounded-full" />
-                      <Skeleton className="h-4 w-16 rounded-md" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Skeleton className="h-10 w-36 rounded-xl" />
-          </DashboardSection>
-
-          <DashboardSection
-            description={<Skeleton className="h-4 w-56 rounded-md" />}
-            title={<Skeleton className="h-6 w-52 rounded-md" />}
-          >
-            <div className="grid gap-5">
-              <div className="soft-panel flex items-center justify-between gap-4 px-4 py-4 shadow-none">
-                <Skeleton className="h-6 w-44 rounded-full" />
-                <Skeleton className="h-4 w-28 rounded-md" />
-              </div>
-              <div className="grid gap-3 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <div className="soft-panel min-h-40 px-4 py-4 shadow-none" key={index}>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <Skeleton className="h-5 w-20 rounded-md" />
-                        <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="mt-2 h-4 w-full rounded-md" />
+                      <div className="mt-4 grid gap-3 border-t border-border/70 pt-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <Skeleton className="h-4 w-28 rounded-md" />
+                          <Skeleton className="h-4 w-10 rounded-md" />
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <Skeleton className="h-4 w-32 rounded-md" />
+                          <Skeleton className="h-4 w-10 rounded-md" />
+                        </div>
                       </div>
-                      <Skeleton className="h-20 w-full rounded-2xl" />
-                      <Skeleton className="h-4 w-full rounded-md" />
                     </div>
+
+                    <Skeleton className="h-10 w-full rounded-xl" />
                   </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="section-panel p-6">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-32 rounded-md" />
+                <Skeleton className="h-4 w-44 rounded-md" />
+              </div>
+
+              <div className="mt-5 space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <InquiryFieldCardSkeleton key={index} />
                 ))}
               </div>
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
-                <div className="soft-panel flex items-center gap-4 px-5 py-5 shadow-none">
-                  <Skeleton className="size-16 rounded-2xl" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32 rounded-md" />
-                    <Skeleton className="h-8 w-40 rounded-md" />
-                  </div>
-                </div>
-                <div className="info-tile bg-muted/20 shadow-none">
-                  <Skeleton className="h-3 w-24 rounded-md" />
-                  <Skeleton className="mt-3 h-4 w-full rounded-md" />
-                  <Skeleton className="mt-2 h-4 w-4/5 rounded-md" />
-                </div>
-              </div>
-            </div>
-          </DashboardSection>
+            </section>
 
-          <DashboardSection
-            description={<Skeleton className="h-4 w-28 rounded-md" />}
-            title={<Skeleton className="h-6 w-24 rounded-md" />}
-          >
-            <div className="grid gap-5">
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
-                <FieldSkeleton />
-                <FieldSkeleton />
-              </div>
-              <FieldSkeleton className="h-24 rounded-2xl" />
-              <FieldSkeleton className="h-28 rounded-2xl" />
-              <div className="grid gap-5 lg:grid-cols-2">
-                <FieldSkeleton />
-                <FieldSkeleton className="h-20 rounded-2xl" />
-              </div>
-            </div>
-          </DashboardSection>
-
-          <DashboardSection
-            description={<Skeleton className="h-4 w-20 rounded-md" />}
-            title={<Skeleton className="h-6 w-36 rounded-md" />}
-          >
-            <div className="flex justify-end">
-              <Skeleton className="h-10 w-full rounded-xl sm:w-32" />
-            </div>
-            <div className="grid gap-4">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div className="soft-panel p-4 shadow-none" key={index}>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-5 w-20 rounded-md" />
-                        <Skeleton className="h-4 w-48 rounded-md" />
-                      </div>
-                      <div className="flex gap-2">
-                        <Skeleton className="size-8 rounded-lg" />
-                        <Skeleton className="size-8 rounded-lg" />
-                        <Skeleton className="size-8 rounded-lg" />
-                      </div>
-                    </div>
-                    <div className="grid gap-5 lg:grid-cols-[12rem_minmax(0,1fr)]">
-                      <FieldSkeleton />
-                      <div className="grid gap-5">
-                        <FieldSkeleton />
-                        <FieldSkeleton className="h-20 rounded-2xl" />
-                      </div>
-                    </div>
-                  </div>
+            <section className="section-panel p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-36 rounded-md" />
+                  <Skeleton className="h-4 w-48 rounded-md" />
                 </div>
-              ))}
-            </div>
-          </DashboardSection>
+                <Skeleton className="h-10 w-20 rounded-xl" />
+              </div>
 
-          <div className="toolbar-panel">
-            <div className="flex items-center justify-between gap-4">
-              <Skeleton className="h-4 w-56 rounded-md" />
-              <Skeleton className="h-11 w-full rounded-xl sm:w-40" />
-            </div>
+              <div className="mt-5 space-y-4">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <InquiryFieldCardSkeleton hasMetaCard key={index} />
+                ))}
+              </div>
+
+              <div className="mt-5">
+                <Skeleton className="h-10 w-28 rounded-xl" />
+              </div>
+            </section>
           </div>
-        </DashboardSidebarStack>
-
-        <DashboardSidebarStack className="xl:sticky xl:top-[5.5rem]">
-          <DashboardSection
-            description={<Skeleton className="h-4 w-32 rounded-md" />}
-            title={<Skeleton className="h-6 w-20 rounded-md" />}
-          >
-            <Skeleton className="h-10 w-full rounded-xl" />
-            <Skeleton className="h-10 w-full rounded-xl" />
-          </DashboardSection>
-
-          <DashboardSection
-            description={<Skeleton className="h-4 w-36 rounded-md" />}
-            title={<Skeleton className="h-6 w-28 rounded-md" />}
-          >
-            <Skeleton className="h-20 w-full rounded-2xl" />
-            <Skeleton className="h-20 w-full rounded-2xl" />
-            <Skeleton className="h-10 w-full rounded-xl" />
-          </DashboardSection>
-        </DashboardSidebarStack>
-      </DashboardDetailLayout>
+        </div>
+      </div>
     </DashboardPage>
   );
 }
@@ -584,6 +446,60 @@ function FieldSkeleton({ className }: { className?: string }) {
     <div className="grid gap-3">
       <Skeleton className="h-4 w-24 rounded-md" />
       <Skeleton className={className ?? "h-12 rounded-xl"} />
+    </div>
+  );
+}
+
+function FormEditorNavigationSkeleton() {
+  return (
+    <div className="min-w-0 xl:sticky xl:top-[5.5rem] xl:self-start">
+      <div className="section-panel p-4 xl:hidden">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-24 rounded-md" />
+          <Skeleton className="h-10 w-full rounded-lg" />
+        </div>
+      </div>
+
+      <aside className="section-panel hidden overflow-hidden xl:block">
+        <div className="flex flex-col gap-1 p-3">
+          {["w-20", "w-16", "w-24"].map((width, index) => (
+            <div className="flex items-center gap-3 rounded-xl px-3 py-3" key={index}>
+              <Skeleton className="size-8 rounded-md" />
+              <Skeleton className={cn("h-4 rounded-md", width)} />
+            </div>
+          ))}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function InquiryFieldCardSkeleton({
+  hasMetaCard = false,
+}: {
+  hasMetaCard?: boolean;
+}) {
+  return (
+    <div className="soft-panel flex flex-col gap-5 px-4 py-4 shadow-none">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-28 rounded-md" />
+          <Skeleton className="h-4 w-24 rounded-md" />
+        </div>
+        <Skeleton className="size-8 rounded-full" />
+      </div>
+
+      <div className={cn("grid gap-4", hasMetaCard ? "xl:grid-cols-[minmax(0,1fr)_12rem]" : "md:grid-cols-2")}>
+        <FieldSkeleton />
+        {hasMetaCard ? (
+          <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
+            <Skeleton className="h-4 w-16 rounded-md" />
+            <Skeleton className="mt-2 h-4 w-24 rounded-md" />
+          </div>
+        ) : (
+          <FieldSkeleton />
+        )}
+      </div>
     </div>
   );
 }

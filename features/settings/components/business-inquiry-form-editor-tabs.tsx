@@ -2,13 +2,24 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Eye, FileText, FormInput, Settings2 } from "lucide-react";
-import { useMemo, useState } from "react";
-
 import {
-  DashboardSidebarStack,
-} from "@/components/shared/dashboard-layout";
+  usePathname,
+  useSearchParams,
+  type ReadonlyURLSearchParams,
+} from "next/navigation";
+
+import { DashboardSidebarStack } from "@/components/shared/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useProgressRouter } from "@/hooks/use-progress-router";
+import { cn } from "@/lib/utils";
 
 import type { BusinessInquiryFormEditorView } from "@/features/settings/types";
 import { BusinessInquiryFormDangerZone } from "@/features/settings/components/business-inquiry-form-danger-zone";
@@ -37,6 +48,51 @@ type BusinessInquiryFormEditorTabsProps = {
   deleteAction: Parameters<typeof BusinessInquiryFormDangerZone>[0]["deleteAction"];
 };
 
+type BusinessInquiryFormEditorSection = "fields" | "page" | "publishing";
+
+const editorSections: Array<{
+  id: BusinessInquiryFormEditorSection;
+  label: string;
+  icon: typeof FormInput;
+}> = [
+  {
+    id: "fields",
+    label: "Fields",
+    icon: FormInput,
+  },
+  {
+    id: "page",
+    label: "Page",
+    icon: FileText,
+  },
+  {
+    id: "publishing",
+    label: "Publishing",
+    icon: Settings2,
+  },
+];
+
+function isEditorSection(value: string | null): value is BusinessInquiryFormEditorSection {
+  return value === "fields" || value === "page" || value === "publishing";
+}
+
+function getEditorSectionValue(searchParams: ReadonlyURLSearchParams) {
+  const section = searchParams.get("section");
+  return isEditorSection(section) ? section : "fields";
+}
+
+function getEditorSectionHref(
+  pathname: string,
+  searchParams: ReadonlyURLSearchParams,
+  section: BusinessInquiryFormEditorSection,
+) {
+  const nextParams = new URLSearchParams(searchParams.toString());
+  nextParams.set("section", section);
+  const query = nextParams.toString();
+
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 export function BusinessInquiryFormEditorTabs({
   settings,
   logoPreviewUrl,
@@ -54,35 +110,99 @@ export function BusinessInquiryFormEditorTabs({
   archiveAction,
   deleteAction,
 }: BusinessInquiryFormEditorTabsProps) {
-  const [tab, setTab] = useState<"fields" | "page" | "publishing">(
-    "fields",
-  );
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useProgressRouter();
+  const activeSection = getEditorSectionValue(searchParams);
 
-  const tabsList = useMemo(
-    () => (
-      <TabsList className="w-full justify-start sm:w-fit">
-        <TabsTrigger value="fields">
-          <FormInput data-icon="inline-start" />
-          Fields
-        </TabsTrigger>
-        <TabsTrigger value="page">
-          <FileText data-icon="inline-start" />
-          Page
-        </TabsTrigger>
-        <TabsTrigger value="publishing">
-          <Settings2 data-icon="inline-start" />
-          Publishing
-        </TabsTrigger>
-      </TabsList>
-    ),
-    [],
-  );
+  function handleSectionChange(nextSection: BusinessInquiryFormEditorSection) {
+    if (nextSection === activeSection) {
+      return;
+    }
+
+    router.replace(getEditorSectionHref(pathname, searchParams, nextSection), {
+      scroll: false,
+    });
+  }
 
   return (
-    <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-        {tabsList}
-        <div className="flex flex-wrap gap-2">
+    <div className="grid min-w-0 items-start gap-4 lg:gap-5 xl:grid-cols-[15rem_minmax(0,1fr)] xl:gap-4">
+      <div className="min-w-0 xl:sticky xl:top-[5.5rem] xl:self-start">
+        <div className="section-panel p-4 xl:hidden">
+          <div className="flex flex-col gap-2">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Form section
+            </p>
+
+            <Select
+              onValueChange={(value) =>
+                handleSectionChange(value as BusinessInquiryFormEditorSection)
+              }
+              value={activeSection}
+            >
+              <SelectTrigger aria-label="Select a form editor section" className="w-full">
+                <SelectValue placeholder="Choose a form editor section" />
+              </SelectTrigger>
+              <SelectContent align="start" position="popper">
+                <SelectGroup>
+                  {editorSections.map((section) => {
+                    const Icon = section.icon;
+
+                    return (
+                      <SelectItem key={section.id} value={section.id}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="size-4 text-muted-foreground" />
+                          <span>{section.label}</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <aside className="section-panel hidden overflow-hidden xl:block">
+          <nav className="flex flex-col gap-1 p-3">
+            {editorSections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+
+              return (
+                <button
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl border px-3 py-3 text-left text-[0.94rem] font-medium tracking-tight transition-[border-color,background-color,color,box-shadow]",
+                    isActive
+                      ? "border-border/75 bg-accent/35 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                      : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-accent/16 hover:text-foreground",
+                  )}
+                  key={section.id}
+                  onClick={() => handleSectionChange(section.id)}
+                  type="button"
+                >
+                  <div
+                    className={cn(
+                      "flex size-8 shrink-0 items-center justify-center rounded-md text-current transition-colors",
+                      isActive
+                        ? "text-foreground"
+                        : "text-muted-foreground group-hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </div>
+
+                  <span className="min-w-0 truncate leading-tight">{section.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+      </div>
+
+      <div className="min-w-0 w-full">
+        <div className="flex flex-wrap gap-2 xl:justify-end">
           <Button asChild type="button" variant="outline">
             <Link href={previewHref} prefetch={false} rel="noreferrer" target="_blank">
               <Eye data-icon="inline-start" />
@@ -101,55 +221,60 @@ export function BusinessInquiryFormEditorTabs({
             </Link>
           </Button>
         </div>
-      </div>
 
-      <TabsContent value="fields" className="mt-2 pt-2">
-        <DashboardSidebarStack>
-          <BusinessInquiryFormForm
-            key={`${settings.updatedAt.getTime()}-${settings.formId}-form`}
-            applyPresetAction={applyPresetAction}
-            saveAction={saveFormAction}
-            settings={settings}
-          />
-        </DashboardSidebarStack>
-      </TabsContent>
-
-      <TabsContent value="page" className="mt-2 pt-2">
-        <DashboardSidebarStack>
-          <BusinessInquiryPageForm
-            action={updatePageAction}
-            settings={settings}
-            logoPreviewUrl={logoPreviewUrl}
-            generalSettingsHref={generalSettingsHref}
-          />
-        </DashboardSidebarStack>
-      </TabsContent>
-
-      <TabsContent value="publishing" className="mt-2 pt-2">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
-          <div className="min-w-0">
-            <BusinessInquiryFormManageCard
-              duplicateAction={duplicateAction}
-              formId={settings.formId}
-              isDefault={settings.isDefault}
-              isPublicInquiryEnabled={settings.publicInquiryEnabled}
-              setDefaultAction={setDefaultAction}
-              togglePublicAction={togglePublicAction}
-            />
+        <div className="mt-4 min-w-0">
+          <div aria-hidden={activeSection !== "fields"} className={activeSection === "fields" ? "block" : "hidden"}>
+            <DashboardSidebarStack>
+              <BusinessInquiryFormForm
+                key={`${settings.updatedAt.getTime()}-${settings.formId}-form`}
+                applyPresetAction={applyPresetAction}
+                saveAction={saveFormAction}
+                settings={settings}
+              />
+            </DashboardSidebarStack>
           </div>
-          <div className="min-w-0">
-            <BusinessInquiryFormDangerZone
-              activeFormCount={settings.activeFormCount}
-              archiveAction={archiveAction}
-              deleteAction={deleteAction}
-              formId={settings.formId}
-              inquiryListHref={inquiryListHref}
-              isDefault={settings.isDefault}
-              submittedInquiryCount={settings.submittedInquiryCount}
-            />
+
+          <div aria-hidden={activeSection !== "page"} className={activeSection === "page" ? "block" : "hidden"}>
+            <DashboardSidebarStack>
+              <BusinessInquiryPageForm
+                action={updatePageAction}
+                settings={settings}
+                logoPreviewUrl={logoPreviewUrl}
+                generalSettingsHref={generalSettingsHref}
+              />
+            </DashboardSidebarStack>
+          </div>
+
+          <div
+            aria-hidden={activeSection !== "publishing"}
+            className={activeSection === "publishing" ? "block" : "hidden"}
+          >
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
+              <div className="min-w-0">
+                <BusinessInquiryFormManageCard
+                  duplicateAction={duplicateAction}
+                  formId={settings.formId}
+                  isDefault={settings.isDefault}
+                  isPublicInquiryEnabled={settings.publicInquiryEnabled}
+                  setDefaultAction={setDefaultAction}
+                  togglePublicAction={togglePublicAction}
+                />
+              </div>
+              <div className="min-w-0">
+                <BusinessInquiryFormDangerZone
+                  activeFormCount={settings.activeFormCount}
+                  archiveAction={archiveAction}
+                  deleteAction={deleteAction}
+                  formId={settings.formId}
+                  inquiryListHref={inquiryListHref}
+                  isDefault={settings.isDefault}
+                  submittedInquiryCount={settings.submittedInquiryCount}
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </TabsContent>
-    </Tabs>
+      </div>
+    </div>
   );
 }

@@ -9,13 +9,14 @@ import {
   Tags,
   User,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 import type {
   BusinessSettingsNavigationIcon,
   BusinessSettingsNavigationGroup,
 } from "@/features/settings/navigation";
+import { useProgressRouter } from "@/hooks/use-progress-router";
 import {
   Select,
   SelectContent,
@@ -47,10 +48,15 @@ function isActiveSettingsItem(pathname: string, href: string) {
 
 export function BusinessSettingsNav({ groups }: BusinessSettingsNavProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const router = useProgressRouter();
   const flatItems = groups.flatMap((group) => group.items);
   const activeItem = flatItems.find((item) => isActiveSettingsItem(pathname, item.href));
+
+  useEffect(() => {
+    for (const item of flatItems) {
+      router.prefetch(item.href);
+    }
+  }, [flatItems, router]);
 
   if (!flatItems.length) {
     return null;
@@ -65,15 +71,12 @@ export function BusinessSettingsNav({ groups }: BusinessSettingsNavProps) {
           </p>
 
           <Select
-            disabled={isPending}
             onValueChange={(value) => {
               if (isActiveSettingsItem(pathname, value)) {
                 return;
               }
 
-              startTransition(() => {
-                router.push(value);
-              });
+              router.push(value);
             }}
             value={activeItem?.href}
           >

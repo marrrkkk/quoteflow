@@ -11,15 +11,13 @@ import {
 } from "react";
 import {
   CheckCircle2,
+  ChevronDown,
   MoreHorizontal,
   Plus,
   RefreshCcw,
   Trash2,
 } from "lucide-react";
 
-import {
-  FormSection,
-} from "@/components/shared/form-layout";
 import { useProgressRouter } from "@/hooks/use-progress-router";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -566,78 +564,93 @@ export function BusinessInquiryFormForm({
         <input name="inquiryFormConfig" type="hidden" value={serializedConfig} />
 
         <Card className="gap-0 border-border/75 bg-card/97">
-          <CardHeader className="flex flex-col gap-3 pb-5 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Preset</CardTitle>
-            <Button
-              onClick={() => setIsPresetDialogOpen(true)}
-              type="button"
-              variant="outline"
-            >
-              <RefreshCcw data-icon="inline-start" />
-              Apply defaults
-            </Button>
+          <CardHeader className="gap-2 pb-5">
+            <CardTitle>Form setup</CardTitle>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Name the form and choose the default starting preset.
+            </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-0">
-            <FormSection
-              title="Business type"
-            >
-              <div className="grid gap-5">
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <Field>
-                  <FieldLabel htmlFor="business-inquiry-form-name">
-                    Form name
-                  </FieldLabel>
-                  <FieldContent>
-                    <Input
-                      aria-invalid={Boolean(nameError) || undefined}
-                      defaultValue={settings.formName}
-                      disabled={isSavePending}
-                      id="business-inquiry-form-name"
-                      maxLength={80}
-                      minLength={2}
-                      name="name"
-                      onChange={(event) => {
-                        setNameDraft(event.currentTarget.value);
-                      }}
-                      required
-                    />
-                    <FieldError
-                      errors={nameError ? [{ message: nameError }] : undefined}
-                    />
-                  </FieldContent>
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_20rem] xl:gap-7">
+              <div className="rounded-3xl border border-border/75 bg-muted/20 px-5 py-5 sm:px-6">
+                <div className="space-y-2">
+                  <p className="meta-label">Form details</p>
+                  <p className="font-heading text-xl font-semibold tracking-tight text-foreground">
+                    Public form identity
+                  </p>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    Update the internal name and public URL slug.
+                  </p>
+                </div>
+
+                <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                  <Field data-invalid={Boolean(nameError) || undefined}>
+                    <FieldLabel htmlFor="business-inquiry-form-name">
+                      Form name
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        aria-invalid={Boolean(nameError) || undefined}
+                        defaultValue={settings.formName}
+                        disabled={isSavePending}
+                        id="business-inquiry-form-name"
+                        maxLength={80}
+                        minLength={2}
+                        name="name"
+                        onChange={(event) => {
+                          setNameDraft(event.currentTarget.value);
+                        }}
+                        required
+                      />
+                      <FieldError
+                        errors={nameError ? [{ message: nameError }] : undefined}
+                      />
+                    </FieldContent>
                   </Field>
 
                   <Field data-invalid={Boolean(slugError) || undefined}>
-                  <FieldLabel htmlFor="business-inquiry-form-slug">
-                    Form slug
-                  </FieldLabel>
-                  <FieldContent>
-                    <Input
-                      aria-invalid={Boolean(slugError) || undefined}
-                      defaultValue={settings.formSlug}
-                      disabled={isSavePending}
-                      id="business-inquiry-form-slug"
-                      maxLength={publicSlugMaxLength}
-                      minLength={2}
-                      name="slug"
-                      onChange={(event) => {
-                        setSlugDraft(event.currentTarget.value);
-                      }}
-                      pattern={publicSlugPattern}
-                      required
-                      spellCheck={false}
-                    />
-                    <FieldError
-                      errors={slugError ? [{ message: slugError }] : undefined}
-                    />
-                  </FieldContent>
+                    <FieldLabel htmlFor="business-inquiry-form-slug">
+                      Form slug
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        aria-invalid={Boolean(slugError) || undefined}
+                        defaultValue={settings.formSlug}
+                        disabled={isSavePending}
+                        id="business-inquiry-form-slug"
+                        maxLength={publicSlugMaxLength}
+                        minLength={2}
+                        name="slug"
+                        onChange={(event) => {
+                          setSlugDraft(event.currentTarget.value);
+                        }}
+                        pattern={publicSlugPattern}
+                        required
+                        spellCheck={false}
+                      />
+                      <FieldError
+                        errors={slugError ? [{ message: slugError }] : undefined}
+                      />
+                    </FieldContent>
                   </Field>
                 </div>
+              </div>
 
-                <div className="grid gap-5 lg:grid-cols-2">
+              <div className="rounded-3xl border border-border/75 bg-muted/20 px-5 py-5 sm:px-6">
+                <div className="space-y-2">
+                  <p className="meta-label">Preset defaults</p>
+                  <p className="font-heading text-xl font-semibold tracking-tight text-foreground">
+                    Apply {businessTypeMeta[businessType].label} defaults
+                  </p>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    This resets the inquiry form fields and page content.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-5">
                   <Field data-invalid={Boolean(businessTypeError) || undefined}>
                     <FieldLabel htmlFor="business-inquiry-business-type">
-                      Type
+                      Business type
                     </FieldLabel>
                     <FieldContent>
                       <Select
@@ -674,14 +687,38 @@ export function BusinessInquiryFormForm({
                     </FieldContent>
                   </Field>
 
-                  <div className="soft-panel flex items-center px-4 py-4 shadow-none">
+                  <div className="rounded-2xl border border-border/70 bg-background/88 p-4">
                     <p className="text-sm font-medium text-foreground">
                       {businessTypeMeta[businessType].label}
                     </p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {businessTypeMeta[businessType].description}
+                    </p>
+
+                    <div className="mt-4 grid gap-2 border-t border-border/70 pt-4 text-sm">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-foreground">Inquiry form fields</span>
+                        <span className="text-muted-foreground">Reset</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-foreground">Inquiry page content</span>
+                        <span className="text-muted-foreground">Reset</span>
+                      </div>
+                    </div>
                   </div>
+
+                  <Button
+                    className="w-full"
+                    disabled={isPresetPending}
+                    onClick={() => setIsPresetDialogOpen(true)}
+                    type="button"
+                  >
+                    <RefreshCcw data-icon="inline-start" />
+                    Apply defaults
+                  </Button>
                 </div>
               </div>
-            </FormSection>
+            </div>
 
             {configError ? (
               <FieldError errors={[{ message: configError }]} />
@@ -866,13 +903,44 @@ export function BusinessInquiryFormForm({
 
       <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Apply preset defaults?</DialogTitle>
+          <DialogHeader className="gap-2">
+            <DialogTitle>Apply preset defaults</DialogTitle>
             <DialogDescription>
-              This will replace the current inquiry form and inquiry page with the{" "}
-              {businessTypeMeta[businessType].label} preset.
+              Current field and page customization will be replaced with the{" "}
+              selected business type defaults.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Selected business type
+              </p>
+              <p className="mt-2 text-base font-semibold tracking-tight text-foreground">
+                {businessTypeMeta[businessType].label}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {businessTypeMeta[businessType].description}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+              <p className="text-sm font-medium text-foreground">This will replace</p>
+              <div className="mt-3 grid gap-2 text-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    Inquiry form fields and labels
+                  </span>
+                  <span className="text-foreground">Reset</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    Inquiry page copy and layout
+                  </span>
+                  <span className="text-foreground">Reset</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <DialogFooter>
             <Button
               onClick={() => setIsPresetDialogOpen(false)}
@@ -889,7 +957,7 @@ export function BusinessInquiryFormForm({
                 onClick={() => setIsPresetDialogOpen(false)}
                 type="submit"
               >
-                {isPresetPending ? "Applying..." : "Apply preset"}
+                {isPresetPending ? "Applying..." : "Apply defaults"}
               </Button>
             </form>
           </DialogFooter>
@@ -1100,12 +1168,17 @@ function ProjectFieldCard({
 }) {
   const fieldId = getFieldId(field);
   const isSystem = field.kind === "system";
+  const hasSelectableOptions =
+    field.kind === "custom" &&
+    (field.fieldType === "select" || field.fieldType === "multi_select");
   const isLockedRequired =
     isSystem && (field.key === "serviceCategory" || field.key === "details");
   const canToggleEnabled = isSystem && !isLockedRequired;
   const canToggleRequired =
     field.kind === "custom" ? true : field.key !== "attachment" && !isLockedRequired;
   const optionCount = field.kind === "custom" ? (field.options?.length ?? 0) : 0;
+  const [optionsOpenOverride, setOptionsOpenOverride] = useState<boolean | null>(null);
+  const isOptionsOpen = hasSelectableOptions && (optionsOpenOverride ?? true);
 
   return (
     <InquiryFieldCardShell
@@ -1181,19 +1254,35 @@ function ProjectFieldCard({
         </Field>
       </div>
 
-      {field.kind === "custom" &&
-      (field.fieldType === "select" || field.fieldType === "multi_select") ? (
+      {hasSelectableOptions ? (
         <div className="space-y-3 border-t border-border/70 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">Options</p>
-              <p className="text-xs text-muted-foreground">
-                {optionCount}/{maxOptions} options
-              </p>
-            </div>
+            <button
+              aria-controls={`${fieldId}-options-panel`}
+              aria-expanded={isOptionsOpen}
+              className="group flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
+              onClick={() => setOptionsOpenOverride((current) => !(current ?? true))}
+              type="button"
+            >
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">Options</p>
+                <p className="text-xs text-muted-foreground">
+                  {optionCount}/{maxOptions} options
+                </p>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "ml-auto size-4 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
+                  isOptionsOpen && "rotate-180",
+                )}
+              />
+            </button>
             <Button
               disabled={isPending || optionCount >= maxOptions}
-              onClick={() => onAddOption(fieldId)}
+              onClick={() => {
+                setOptionsOpenOverride(true);
+                onAddOption(fieldId);
+              }}
               type="button"
               variant="outline"
             >
@@ -1202,35 +1291,43 @@ function ProjectFieldCard({
             </Button>
           </div>
 
-          <div className="space-y-2">
-            {(field.options ?? []).map((option) => (
-              <div
-                className="grid gap-3 rounded-xl border border-border/70 bg-background/70 p-3 sm:grid-cols-[minmax(0,1fr)_auto]"
-                key={option.id}
-              >
-                <Input
-                  disabled={isPending}
-                  maxLength={80}
-                  onChange={(event) =>
-                    onUpdateOption(fieldId, option.id, {
-                      label: event.currentTarget.value,
-                      value: normalizeOptionValue(event.currentTarget.value),
-                    })
-                  }
-                  placeholder="Label"
-                  value={option.label}
-                />
-                <Button
-                  disabled={isPending || (field.options?.length ?? 0) === 1}
-                  onClick={() => onRemoveOption(fieldId, option.id)}
-                  size="icon"
-                  type="button"
-                  variant="ghost"
+          <div
+            className={cn(
+              "grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-(--motion-ease-standard) motion-reduce:transition-none",
+              isOptionsOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+            )}
+            id={`${fieldId}-options-panel`}
+          >
+            <div className="min-h-0 space-y-2 overflow-hidden">
+              {(field.options ?? []).map((option) => (
+                <div
+                  className="grid gap-3 rounded-xl border border-border/70 bg-background/70 p-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  key={option.id}
                 >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            ))}
+                  <Input
+                    disabled={isPending}
+                    maxLength={80}
+                    onChange={(event) =>
+                      onUpdateOption(fieldId, option.id, {
+                        label: event.currentTarget.value,
+                        value: normalizeOptionValue(event.currentTarget.value),
+                      })
+                    }
+                    placeholder="Label"
+                    value={option.label}
+                  />
+                  <Button
+                    disabled={isPending || (field.options?.length ?? 0) === 1}
+                    onClick={() => onRemoveOption(fieldId, option.id)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}
