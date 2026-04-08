@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
+import type { BusinessType } from "../features/inquiries/business-types";
 import { createInquiryFormPreset } from "../features/inquiries/inquiry-forms";
 import { auth } from "../lib/auth/config";
 import { bootstrapBusinessForUser } from "../lib/auth/business-bootstrap";
@@ -29,10 +30,134 @@ type DemoUser = {
 };
 
 type DemoBusiness = {
+  key: string;
   id: string;
+  kind: "primary" | "managed";
   name: string;
   slug: string;
   defaultInquiryFormId: string;
+  quoteNumberStart: number;
+  forms: Record<
+    string,
+    {
+      id: string;
+      name: string;
+      slug: string;
+      businessType: BusinessType;
+    }
+  >;
+};
+
+type DemoInquiryStatus =
+  | "new"
+  | "waiting"
+  | "quoted"
+  | "won"
+  | "lost"
+  | "archived";
+
+type DemoQuoteStatus =
+  | "draft"
+  | "sent"
+  | "accepted"
+  | "rejected"
+  | "expired";
+
+type DemoFormDefinition = {
+  key: string;
+  name: string;
+  slug: string;
+  businessType: BusinessType;
+  isDefault: boolean;
+  distributionWeight: number;
+  serviceCategories: string[];
+  subjectTemplates: string[];
+  detailTemplates: string[];
+  budgetOptions: Array<string | null>;
+};
+
+type DemoBusinessDefinition = {
+  key: string;
+  kind: "primary" | "managed";
+  name: string;
+  slug: string;
+  businessType: BusinessType;
+  shortDescription: string;
+  inquiryHeadline: string;
+  emailSignatureLines: string[];
+  defaultQuoteNotes: string;
+  aiTonePreference: "balanced" | "warm" | "direct" | "formal";
+  defaultCurrency: string;
+  inquiryCount: number;
+  quoteNumberStart: number;
+  forms: DemoFormDefinition[];
+};
+
+type GeneratedInquiryRow = {
+  id: string;
+  businessId: string;
+  businessInquiryFormId: string;
+  status: DemoInquiryStatus;
+  subject: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  serviceCategory: string;
+  requestedDeadline: string | null;
+  budgetText: string | null;
+  companyName: string | null;
+  details: string;
+  source: string;
+  quoteRequested: boolean;
+  submittedAt: Date;
+  lastRespondedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type GeneratedQuoteRow = {
+  id: string;
+  businessId: string;
+  inquiryId: string | null;
+  status: DemoQuoteStatus;
+  quoteNumber: string;
+  publicToken: string;
+  title: string;
+  customerName: string;
+  customerEmail: string;
+  currency: string;
+  notes: string | null;
+  subtotalInCents: number;
+  discountInCents: number;
+  totalInCents: number;
+  sentAt: Date | null;
+  acceptedAt: Date | null;
+  publicViewedAt: Date | null;
+  customerRespondedAt: Date | null;
+  customerResponseMessage: string | null;
+  postAcceptanceStatus: "none" | "booked" | "scheduled";
+  validUntil: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type GeneratedQuoteItemRow = {
+  id: string;
+  businessId: string;
+  quoteId: string;
+  description: string;
+  quantity: number;
+  unitPriceInCents: number;
+  lineTotalInCents: number;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type BusinessSeedCounts = {
+  inquiries: number;
+  quotes: number;
+  quoteItems: number;
 };
 
 const demoConfig = {
@@ -45,6 +170,319 @@ const demoConfig = {
     "brightside-print-studio",
   ),
 };
+
+const demoBusinessDefinitions: DemoBusinessDefinition[] = [
+  {
+    key: "primary",
+    kind: "primary",
+    name: demoConfig.businessName,
+    slug: demoConfig.businessSlug,
+    businessType: "print_signage",
+    shortDescription:
+      "Neighborhood print production for storefront graphics, menus, flyers, and event materials.",
+    inquiryHeadline:
+      "Tell us what you need printed and we will turn it into a clean quote.",
+    emailSignatureLines: [
+      demoConfig.ownerName,
+      demoConfig.businessName,
+      demoConfig.ownerEmail,
+      "Same-week rush windows available when files are ready.",
+    ],
+    defaultQuoteNotes:
+      "Prices include standard production. Installation, delivery, and rush changes are quoted separately when needed.",
+    aiTonePreference: "warm",
+    defaultCurrency: "USD",
+    inquiryCount: 220,
+    quoteNumberStart: 2001,
+    forms: [
+      {
+        key: "project",
+        name: "Project request",
+        slug: "project-request",
+        businessType: "print_signage",
+        isDefault: true,
+        distributionWeight: 50,
+        serviceCategories: [
+          "Window graphics",
+          "Event signage",
+          "Menu boards",
+          "Trade show kits",
+          "Lobby graphics",
+        ],
+        subjectTemplates: [
+          "{category} request for {company}",
+          "Need pricing on {category}",
+          "{company} needs {category}",
+        ],
+        detailTemplates: [
+          "We need {category} for an upcoming launch and want pricing, material guidance, and timing.",
+          "Please scope {category} for {company}. Files are partly ready and we want help confirming print specs.",
+          "Looking for a quote on {category} with practical recommendations on finishes, install, and lead time.",
+        ],
+        budgetOptions: ["$750-$1,500", "$1,500-$3,000", "$3,000+", null],
+      },
+      {
+        key: "reorders",
+        name: "Reorder request",
+        slug: "reorder-request",
+        businessType: "print_signage",
+        isDefault: false,
+        distributionWeight: 30,
+        serviceCategories: [
+          "Flyers",
+          "Brochures",
+          "Business cards",
+          "Labels & stickers",
+          "Postcards",
+        ],
+        subjectTemplates: [
+          "Reorder quote for {category}",
+          "{company} reorder for {category}",
+          "Need a repeat run of {category}",
+        ],
+        detailTemplates: [
+          "This is a repeat order for {category}. Please match the last run and confirm current turnaround.",
+          "We need a fresh quote for {category} with updated quantities and the same finish as our previous order.",
+          "Please price a fast reorder of {category} and flag any file or minimum-order changes we should know about.",
+        ],
+        budgetOptions: ["$250-$500", "$500-$1,000", "$1,000-$2,500", null],
+      },
+      {
+        key: "install",
+        name: "Install request",
+        slug: "install-request",
+        businessType: "print_signage",
+        isDefault: false,
+        distributionWeight: 20,
+        serviceCategories: [
+          "Window vinyl install",
+          "Wayfinding signs",
+          "Wall graphics",
+          "Door decals",
+          "Exterior banner install",
+        ],
+        subjectTemplates: [
+          "Need a quote for {category}",
+          "{company} install scope for {category}",
+          "Help with {category} production and install",
+        ],
+        detailTemplates: [
+          "Need help quoting {category} with site install and a realistic scheduling window.",
+          "Please estimate {category}. We already have measurements but need production and install coordinated.",
+          "Looking for a quote on {category} with hardware, labor, and cleanup included.",
+        ],
+        budgetOptions: ["$1,000-$2,500", "$2,500-$5,000", "$5,000+", null],
+      },
+    ],
+  },
+  {
+    key: "northline",
+    kind: "managed",
+    name: "Northline Home Services",
+    slug: "northline-home-services",
+    businessType: "home_services",
+    shortDescription:
+      "Reliable repair, install, and recurring maintenance work for homes and small property portfolios.",
+    inquiryHeadline:
+      "Describe the work, urgency, and site details and we will scope the right next step.",
+    emailSignatureLines: [
+      demoConfig.ownerName,
+      "Northline Home Services",
+      demoConfig.ownerEmail,
+      "Licensed field support with clear windows and practical estimates.",
+    ],
+    defaultQuoteNotes:
+      "Estimates cover listed labor and standard materials. Permit work, haul-away, and after-hours service are quoted separately when required.",
+    aiTonePreference: "direct",
+    defaultCurrency: "USD",
+    inquiryCount: 190,
+    quoteNumberStart: 3001,
+    forms: [
+      {
+        key: "service",
+        name: "Service request",
+        slug: "service-request",
+        businessType: "home_services",
+        isDefault: true,
+        distributionWeight: 50,
+        serviceCategories: [
+          "Water heater replacement",
+          "HVAC tune-up",
+          "Electrical troubleshooting",
+          "Drywall repair",
+          "Fixture install",
+        ],
+        subjectTemplates: [
+          "{category} request for {company}",
+          "Need help with {category}",
+          "{company} needs a quote for {category}",
+        ],
+        detailTemplates: [
+          "We need help with {category} and want a practical scope, timing, and rough cost range.",
+          "Please quote {category} for {company}. Access is straightforward and we can share photos before scheduling.",
+          "Looking for a clear estimate on {category}, including labor, materials, and the soonest available visit.",
+        ],
+        budgetOptions: ["$250-$750", "$750-$1,500", "$1,500-$3,500", null],
+      },
+      {
+        key: "maintenance",
+        name: "Maintenance plan request",
+        slug: "maintenance-plan-request",
+        businessType: "home_services",
+        isDefault: false,
+        distributionWeight: 25,
+        serviceCategories: [
+          "Seasonal inspection",
+          "Preventive maintenance",
+          "Rental turnover checklist",
+          "Recurring handyman visits",
+        ],
+        subjectTemplates: [
+          "{company} recurring support request",
+          "Looking for a quote on {category}",
+          "Maintenance pricing for {category}",
+        ],
+        detailTemplates: [
+          "We are evaluating ongoing support and need pricing for {category} with a reliable response window.",
+          "Please quote {category} for a property that needs recurring visits and simple reporting after each visit.",
+          "Looking for a maintenance option around {category} with practical scheduling and clear inclusions.",
+        ],
+        budgetOptions: ["$300-$900", "$900-$1,800", "$1,800+", null],
+      },
+      {
+        key: "emergency",
+        name: "After-hours repair",
+        slug: "after-hours-repair",
+        businessType: "home_services",
+        isDefault: false,
+        distributionWeight: 25,
+        serviceCategories: [
+          "Leak investigation",
+          "Breaker issue",
+          "No-heat call",
+          "Urgent lock repair",
+        ],
+        subjectTemplates: [
+          "Urgent help needed for {category}",
+          "{company} after-hours request",
+          "Need a rapid quote for {category}",
+        ],
+        detailTemplates: [
+          "This is time-sensitive. We need help with {category} and want to confirm response time and emergency pricing.",
+          "Please quote {category}. We can share photos now and arrange access immediately if needed.",
+          "Looking for urgent support on {category} with a realistic arrival window and next-step guidance.",
+        ],
+        budgetOptions: ["$250-$500", "$500-$1,000", "$1,000+", null],
+      },
+    ],
+  },
+  {
+    key: "summit",
+    kind: "managed",
+    name: "Summit Creative Studio",
+    slug: "summit-creative-studio",
+    businessType: "creative_studio_agency",
+    shortDescription:
+      "Brand, design, and launch support for small teams that need calm project delivery and practical creative ops.",
+    inquiryHeadline:
+      "Share the brief, goals, and timeline and we will shape the right creative scope.",
+    emailSignatureLines: [
+      demoConfig.ownerName,
+      "Summit Creative Studio",
+      demoConfig.ownerEmail,
+      "Brand systems, launch design, and retained creative support.",
+    ],
+    defaultQuoteNotes:
+      "Quotes include listed concepting, production, and revision rounds. Strategy workshops, extra revision cycles, and out-of-scope requests are quoted separately.",
+    aiTonePreference: "balanced",
+    defaultCurrency: "USD",
+    inquiryCount: 170,
+    quoteNumberStart: 4001,
+    forms: [
+      {
+        key: "brief",
+        name: "Project brief",
+        slug: "project-brief",
+        businessType: "creative_studio_agency",
+        isDefault: true,
+        distributionWeight: 45,
+        serviceCategories: [
+          "Brand identity refresh",
+          "Launch campaign",
+          "Sales deck design",
+          "Packaging concept",
+          "Website copy and layout",
+        ],
+        subjectTemplates: [
+          "{company} brief for {category}",
+          "Need a proposal for {category}",
+          "{category} support request",
+        ],
+        detailTemplates: [
+          "We need support on {category} and want a scoped proposal with timeline, deliverables, and revision expectations.",
+          "Please quote {category} for {company}. We have a rough brief and need help tightening the approach.",
+          "Looking for a calm, production-ready quote on {category} with clear phases and handoff expectations.",
+        ],
+        budgetOptions: ["$1,000-$3,000", "$3,000-$7,500", "$7,500+", null],
+      },
+      {
+        key: "retainer",
+        name: "Retainer inquiry",
+        slug: "retainer-inquiry",
+        businessType: "creative_studio_agency",
+        isDefault: false,
+        distributionWeight: 30,
+        serviceCategories: [
+          "Monthly design support",
+          "Campaign iteration",
+          "Creative operations help",
+          "Content production support",
+        ],
+        subjectTemplates: [
+          "{company} retainer request",
+          "Ongoing support for {category}",
+          "Need monthly help with {category}",
+        ],
+        detailTemplates: [
+          "We are looking for ongoing support around {category} and want pricing that reflects a steady monthly cadence.",
+          "Please quote {category} with a retainer structure, expected turnaround, and communication rhythm.",
+          "Looking for continuous help on {category} with a realistic scope and priority SLA.",
+        ],
+        budgetOptions: ["$1,500-$3,500", "$3,500-$6,000", "$6,000+", null],
+      },
+      {
+        key: "web",
+        name: "Website refresh",
+        slug: "website-refresh",
+        businessType: "creative_studio_agency",
+        isDefault: false,
+        distributionWeight: 25,
+        serviceCategories: [
+          "Marketing site refresh",
+          "Landing page sprint",
+          "Conversion copy update",
+          "Design system cleanup",
+        ],
+        subjectTemplates: [
+          "{company} website refresh request",
+          "Need a quote for {category}",
+          "{category} project inquiry",
+        ],
+        detailTemplates: [
+          "We need help with {category} and want a quote that covers design, copy, and implementation guidance.",
+          "Please scope {category} for {company}. We want a practical update that lifts clarity and conversion.",
+          "Looking for pricing on {category} with fast feedback loops and a clean handoff into build.",
+        ],
+        budgetOptions: ["$2,000-$5,000", "$5,000-$10,000", "$10,000+", null],
+      },
+    ],
+  },
+];
+
+const primaryBusinessDefinition = demoBusinessDefinitions[0];
+const managedBusinessDefinitions = demoBusinessDefinitions.filter(
+  (definition) => definition.kind === "managed",
+);
 
 const demoInquiryIds = [
   "demo_inquiry_new_storefront",
@@ -128,6 +566,113 @@ const demoActivityIds = [
   "demo_activity_business_seeded",
 ] as const;
 
+const inquiryStatusWeights: Array<{
+  status: DemoInquiryStatus;
+  weight: number;
+}> = [
+  { status: "new", weight: 20 },
+  { status: "waiting", weight: 18 },
+  { status: "quoted", weight: 22 },
+  { status: "won", weight: 17 },
+  { status: "lost", weight: 13 },
+  { status: "archived", weight: 10 },
+];
+
+const customerFirstNames = [
+  "James",
+  "Maya",
+  "Daniel",
+  "Olivia",
+  "Priya",
+  "Carlos",
+  "Harper",
+  "Noah",
+  "Amelia",
+  "Marcus",
+  "Ava",
+  "Elena",
+  "Jordan",
+  "Sofia",
+  "Adrian",
+  "Natalie",
+  "Leo",
+  "Riley",
+  "Mina",
+  "Theo",
+];
+
+const customerLastNames = [
+  "Smith",
+  "Johnson",
+  "Kim",
+  "Patel",
+  "Garcia",
+  "Martinez",
+  "Nguyen",
+  "Anderson",
+  "Thomas",
+  "Bennett",
+  "Park",
+  "Shah",
+  "Rivera",
+  "Hughes",
+  "Carter",
+  "Sullivan",
+  "Lopez",
+  "Wilson",
+  "O'Brien",
+  "Davis",
+];
+
+const companyPrefixes = [
+  "North Fork",
+  "Harbor",
+  "Summit",
+  "Brightleaf",
+  "Cedar",
+  "Atlas",
+  "Riverview",
+  "Maple",
+  "Bluebird",
+  "Foundry",
+  "Parkside",
+  "Oakline",
+  "Copper",
+  "Mainline",
+  "Willow",
+];
+
+const companySuffixes = [
+  "Studio",
+  "Collective",
+  "Kitchen",
+  "Builders",
+  "Partners",
+  "Labs",
+  "Supply",
+  "Market",
+  "Wellness",
+  "Media",
+  "Works",
+  "Advisors",
+  "Group",
+  "Company",
+  "Clinic",
+];
+
+const generatedQuoteResponseMessages = {
+  accepted: [
+    "This works for us. Please move ahead and send the next steps.",
+    "Approved. We are ready to schedule the work.",
+    "Looks good. Please confirm timing so we can lock it in.",
+  ],
+  rejected: [
+    "Thanks for the quote. We decided to go a different direction for now.",
+    "We are pausing this scope and will revisit later.",
+    "Appreciate the proposal, but we moved ahead with another vendor.",
+  ],
+};
+
 function getSeedValue(name: string, fallback: string) {
   const value = process.env[name]?.trim();
   return value ? value : fallback;
@@ -150,6 +695,19 @@ function toIsoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function addMinutes(date: Date, minutes: number) {
+  return new Date(date.getTime() + minutes * 60_000);
+}
+
+function addDays(date: Date, days: number) {
+  return addMinutes(date, days * 24 * 60);
+}
+
+function clampToNow(date: Date) {
+  const now = new Date();
+  return date.getTime() > now.getTime() ? now : date;
+}
+
 function slugify(value: string) {
   const normalized = value
     .toLowerCase()
@@ -158,6 +716,81 @@ function slugify(value: string) {
     .slice(0, 48);
 
   return normalized || "business";
+}
+
+function createSeededId(prefix: string, ...parts: string[]) {
+  return [prefix, ...parts.map((part) => slugify(part).replace(/-/g, "_"))].join(
+    "_",
+  );
+}
+
+function createSeededRandom(seed: string) {
+  let hash = 2166136261;
+
+  for (const character of seed) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return () => {
+    hash += 0x6d2b79f5;
+    let next = Math.imul(hash ^ (hash >>> 15), 1 | hash);
+    next ^= next + Math.imul(next ^ (next >>> 7), 61 | next);
+
+    return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function randomInt(random: () => number, minInclusive: number, maxExclusive: number) {
+  return Math.floor(random() * (maxExclusive - minInclusive)) + minInclusive;
+}
+
+function chance(random: () => number, probability: number) {
+  return random() < probability;
+}
+
+function pickOne<T>(values: T[], random: () => number) {
+  return values[randomInt(random, 0, values.length)];
+}
+
+function pickWeighted<T>(
+  values: Array<{
+    item: T;
+    weight: number;
+  }>,
+  random: () => number,
+) {
+  const totalWeight = values.reduce((sum, value) => sum + value.weight, 0);
+  let threshold = random() * totalWeight;
+
+  for (const value of values) {
+    threshold -= value.weight;
+
+    if (threshold <= 0) {
+      return value.item;
+    }
+  }
+
+  return values[values.length - 1]?.item ?? null;
+}
+
+function sanitizeEmailPart(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function formatPhoneNumber(random: () => number) {
+  const areaCode = randomInt(random, 200, 1000);
+  const exchange = randomInt(random, 200, 1000);
+  const line = String(randomInt(random, 0, 10_000)).padStart(4, "0");
+
+  return `(${areaCode}) ${exchange}-${line}`;
+}
+
+function fillTemplate(
+  template: string,
+  values: Record<string, string>,
+) {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }
 
 async function getAvailableSlug(baseSlug: string, currentBusinessId?: string) {
@@ -262,13 +895,117 @@ async function ensureDemoUser(): Promise<DemoUser> {
   };
 }
 
+function getDefaultFormDefinition(definition: DemoBusinessDefinition) {
+  const defaultForm = definition.forms.find((form) => form.isDefault);
+
+  if (!defaultForm) {
+    throw new Error(`Business "${definition.key}" is missing a default form.`);
+  }
+
+  return defaultForm;
+}
+
+async function syncBusinessForms(
+  definition: DemoBusinessDefinition,
+  businessId: string,
+  currentDefaultFormId?: string,
+) {
+  const now = new Date();
+  const syncedForms: DemoBusiness["forms"] = {};
+
+  for (const formDefinition of definition.forms) {
+    const formPreset = createInquiryFormPreset({
+      businessType: formDefinition.businessType,
+      businessName: definition.name,
+      businessShortDescription: definition.shortDescription,
+      legacyInquiryHeadline: definition.inquiryHeadline,
+    });
+    const [existingForm] = await db
+      .select({ id: businessInquiryForms.id })
+      .from(businessInquiryForms)
+      .where(
+        and(
+          eq(businessInquiryForms.businessId, businessId),
+          eq(businessInquiryForms.slug, formDefinition.slug),
+        ),
+      )
+      .limit(1);
+    const formId =
+      formDefinition.isDefault && currentDefaultFormId
+        ? currentDefaultFormId
+        : existingForm?.id ??
+          createSeededId("seed_ifm", definition.key, formDefinition.key);
+
+    if (formDefinition.isDefault && currentDefaultFormId) {
+      await db
+        .update(businessInquiryForms)
+        .set({
+          name: formDefinition.name,
+          slug: formDefinition.slug,
+          businessType: formDefinition.businessType,
+          isDefault: true,
+          publicInquiryEnabled: true,
+          inquiryFormConfig: formPreset.inquiryFormConfig,
+          inquiryPageConfig: formPreset.inquiryPageConfig,
+          archivedAt: null,
+          updatedAt: now,
+        })
+        .where(eq(businessInquiryForms.id, formId));
+    } else {
+      await db
+        .insert(businessInquiryForms)
+        .values({
+          id: formId,
+          businessId,
+          name: formDefinition.name,
+          slug: formDefinition.slug,
+          businessType: formDefinition.businessType,
+          isDefault: formDefinition.isDefault,
+          publicInquiryEnabled: true,
+          inquiryFormConfig: formPreset.inquiryFormConfig,
+          inquiryPageConfig: formPreset.inquiryPageConfig,
+          archivedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: businessInquiryForms.id,
+          set: {
+            name: formDefinition.name,
+            slug: formDefinition.slug,
+            businessType: formDefinition.businessType,
+            isDefault: formDefinition.isDefault,
+            publicInquiryEnabled: true,
+            inquiryFormConfig: formPreset.inquiryFormConfig,
+            inquiryPageConfig: formPreset.inquiryPageConfig,
+            archivedAt: null,
+            updatedAt: now,
+          },
+        });
+    }
+
+    syncedForms[formDefinition.key] = {
+      id: formId,
+      name: formDefinition.name,
+      slug: formDefinition.slug,
+      businessType: formDefinition.businessType,
+    };
+  }
+
+  const defaultForm = getDefaultFormDefinition(definition);
+
+  return {
+    defaultInquiryFormId:
+      currentDefaultFormId ?? syncedForms[defaultForm.key]?.id ?? "",
+    forms: syncedForms,
+  };
+}
+
 async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
   const [membership] = await db
     .select({
       businessId: businessMembers.businessId,
       role: businessMembers.role,
-      businessName: businesses.name,
-      businessSlug: businesses.slug,
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
@@ -285,43 +1022,37 @@ async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
     throw new Error("The demo owner does not have an owner business.");
   }
 
+  const definition = primaryBusinessDefinition;
   const now = new Date();
-  const slug = await getAvailableSlug(
-    demoConfig.businessSlug,
-    membership.businessId,
-  );
+  const slug = await getAvailableSlug(definition.slug, membership.businessId);
   const inquiryPreset = createInquiryFormPreset({
-    businessType: "print_signage",
-    businessName: demoConfig.businessName,
+    businessType: definition.businessType,
+    businessName: definition.name,
+    businessShortDescription: definition.shortDescription,
+    legacyInquiryHeadline: definition.inquiryHeadline,
   });
 
   await db
     .update(businesses)
     .set({
-      name: demoConfig.businessName,
+      name: definition.name,
       slug,
-      businessType: "print_signage",
-      shortDescription:
-        "Neighborhood print production for storefront graphics, menus, flyers, and event materials.",
+      businessType: definition.businessType,
+      shortDescription: definition.shortDescription,
       contactEmail: demoUser.email,
       publicInquiryEnabled: true,
-      inquiryHeadline:
-        "Tell us what you need printed and we will turn it into a clean quote.",
-      defaultEmailSignature: [
-        demoConfig.ownerName,
-        demoConfig.businessName,
-        demoUser.email,
-        "Same-week rush windows available when files are ready.",
-      ].join("\n"),
-      defaultQuoteNotes:
-        "Prices include standard production. Installation, delivery, and rush changes are quoted separately when needed.",
-      aiTonePreference: "warm",
+      inquiryHeadline: definition.inquiryHeadline,
+      inquiryFormConfig: inquiryPreset.inquiryFormConfig,
+      inquiryPageConfig: inquiryPreset.inquiryPageConfig,
+      defaultEmailSignature: definition.emailSignatureLines.join("\n"),
+      defaultQuoteNotes: definition.defaultQuoteNotes,
+      aiTonePreference: definition.aiTonePreference,
       notifyOnNewInquiry: true,
       notifyOnQuoteSent: true,
       notifyOnQuoteResponse: true,
       notifyInAppOnNewInquiry: true,
       notifyInAppOnQuoteResponse: true,
-      defaultCurrency: "USD",
+      defaultCurrency: definition.defaultCurrency,
       updatedAt: now,
     })
     .where(eq(businesses.id, membership.businessId));
@@ -343,343 +1074,513 @@ async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
     throw new Error("The demo business does not have a default inquiry form.");
   }
 
-  await db
-    .update(businessInquiryForms)
-    .set({
-      name: inquiryPreset.name,
-      slug: inquiryPreset.slug,
-      businessType: inquiryPreset.businessType,
-      publicInquiryEnabled: true,
-      inquiryFormConfig: inquiryPreset.inquiryFormConfig,
-      inquiryPageConfig: inquiryPreset.inquiryPageConfig,
-      updatedAt: now,
-    })
-    .where(eq(businessInquiryForms.id, defaultForm.id));
+  const syncedForms = await syncBusinessForms(
+    definition,
+    membership.businessId,
+    defaultForm.id,
+  );
 
   return {
+    key: definition.key,
     id: membership.businessId,
-    name: demoConfig.businessName,
+    kind: definition.kind,
+    name: definition.name,
     slug,
-    defaultInquiryFormId: defaultForm.id,
+    defaultInquiryFormId: syncedForms.defaultInquiryFormId,
+    quoteNumberStart: definition.quoteNumberStart,
+    forms: syncedForms.forms,
   };
 }
 
-async function generateBulkInquiries(
-  businessId: string,
-  formId: string,
-  demoUserId: string,
-  count: number,
-): Promise<
-  Array<{
-    id: string;
-    businessId: string;
-    businessInquiryFormId: string;
-    status: "new" | "waiting" | "quoted" | "won" | "lost" | "archived";
-    subject: string;
-    customerName: string;
-    customerEmail: string;
-    customerPhone: string | null;
-    serviceCategory: string;
-    requestedDeadline: string | null;
-    budgetText: string | null;
-    companyName: string | null;
-    details: string;
-    source: string;
-    quoteRequested: boolean;
-    submittedAt: Date;
-    lastRespondedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }>
-> {
-  const serviceCategories = [
-    "Window graphics",
-    "Business cards",
-    "Flyers",
-    "Event signage",
-    "Menus",
-    "Labels & stickers",
-    "Branded merchandise",
-    "Banners & signage",
-    "Postcards",
-    "Brochures",
-    "Packaging",
-    "Promotional items",
-  ];
+async function ensureManagedBusiness(
+  demoUser: DemoUser,
+  definition: DemoBusinessDefinition,
+): Promise<DemoBusiness> {
+  const businessId = createSeededId("seed_biz", definition.key);
+  const [existingBusiness] = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
+    .limit(1);
+  const slug = await getAvailableSlug(definition.slug, existingBusiness?.id);
+  const now = new Date();
+  const inquiryPreset = createInquiryFormPreset({
+    businessType: definition.businessType,
+    businessName: definition.name,
+    businessShortDescription: definition.shortDescription,
+    legacyInquiryHeadline: definition.inquiryHeadline,
+  });
 
-  const statuses = ["new", "waiting", "quoted", "won", "lost", "archived"];
-  const firstNames = [
-    "James",
-    "Mary",
-    "Robert",
-    "Patricia",
-    "Michael",
-    "Jennifer",
-    "William",
-    "Linda",
-    "David",
-    "Barbara",
-    "Richard",
-    "Elizabeth",
-    "Sarah",
-    "Priya",
-    "Carlos",
-    "Amelia",
-    "Zhang",
-    "Fatima",
-    "Kowalski",
-    "O'Brien",
-  ];
-  const lastNames = [
-    "Smith",
-    "Johnson",
-    "Williams",
-    "Brown",
-    "Jones",
-    "Garcia",
-    "Miller",
-    "Davis",
-    "Rodriguez",
-    "Martinez",
-    "Hernandez",
-    "Lopez",
-    "Gonzalez",
-    "Wilson",
-    "Anderson",
-    "Thomas",
-    "Taylor",
-    "Moore",
-    "Jackson",
-    "Martin",
-  ];
-  const companyNames = [
-    "Studio Co",
-    "Creative Works",
-    "Brand Lab",
-    "Design House",
-    "The Workshop",
-    "Print Pro",
-    "Sign Masters",
-    "Graphics Plus",
-    "Label Art",
-    "Promo Hub",
-    "Merchandise Co",
-    "Banner Works",
-    "Branding Studio",
-    "Marketing Plus",
-    "Media Group",
-    "Visual Arts",
-    "Creative Hub",
-    "Design Studio",
-    "Print Services",
-    "Graphic Arts",
-  ];
+  await db.transaction(async (tx) => {
+    if (existingBusiness) {
+      await tx
+        .update(businesses)
+        .set({
+          name: definition.name,
+          slug,
+          businessType: definition.businessType,
+          shortDescription: definition.shortDescription,
+          contactEmail: demoUser.email,
+          publicInquiryEnabled: true,
+          inquiryHeadline: definition.inquiryHeadline,
+          inquiryFormConfig: inquiryPreset.inquiryFormConfig,
+          inquiryPageConfig: inquiryPreset.inquiryPageConfig,
+          defaultEmailSignature: definition.emailSignatureLines.join("\n"),
+          defaultQuoteNotes: definition.defaultQuoteNotes,
+          aiTonePreference: definition.aiTonePreference,
+          notifyOnNewInquiry: true,
+          notifyOnQuoteSent: true,
+          notifyOnQuoteResponse: true,
+          notifyInAppOnNewInquiry: true,
+          notifyInAppOnQuoteResponse: true,
+          defaultCurrency: definition.defaultCurrency,
+          updatedAt: now,
+        })
+        .where(eq(businesses.id, businessId));
+    } else {
+      await tx.insert(businesses).values({
+        id: businessId,
+        name: definition.name,
+        slug,
+        businessType: definition.businessType,
+        shortDescription: definition.shortDescription,
+        contactEmail: demoUser.email,
+        publicInquiryEnabled: true,
+        inquiryHeadline: definition.inquiryHeadline,
+        inquiryFormConfig: inquiryPreset.inquiryFormConfig,
+        inquiryPageConfig: inquiryPreset.inquiryPageConfig,
+        defaultEmailSignature: definition.emailSignatureLines.join("\n"),
+        defaultQuoteNotes: definition.defaultQuoteNotes,
+        aiTonePreference: definition.aiTonePreference,
+        notifyOnNewInquiry: true,
+        notifyOnQuoteSent: true,
+        notifyOnQuoteResponse: true,
+        notifyInAppOnNewInquiry: true,
+        notifyInAppOnQuoteResponse: true,
+        defaultCurrency: definition.defaultCurrency,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
-  const details = [
-    "We need this as soon as possible. Can you provide a quick turnaround estimate?",
-    "Looking for high-quality production and good pricing. Please provide your best quote.",
-    "This is a recurring project for us, so we're looking to establish a long-term partnership.",
-    "Our current vendor is overbooked. Can you help us meet our deadline?",
-    "We want to refresh our branding materials. What options do you recommend?",
-    "Budget is flexible if the quality matches our brand standards.",
-    "We're flexible on timeline but need the best quality possible.",
-    "First-time order, but we have a good sense of what we need.",
-    "This is urgent. Our event is in two weeks.",
-    "We've heard great things about your work. Looking forward to collaborating.",
-  ];
+    const [existingMembership] = await tx
+      .select({ id: businessMembers.id, role: businessMembers.role })
+      .from(businessMembers)
+      .where(
+        and(
+          eq(businessMembers.businessId, businessId),
+          eq(businessMembers.userId, demoUser.id),
+        ),
+      )
+      .limit(1);
 
-  const budgets = [
-    "$100-$250",
-    "$250-$500",
-    "$500-$1000",
-    "$1000-$2500",
-    "$2500-$5000",
-    "$5000+",
-    null,
-  ];
+    if (!existingMembership) {
+      await tx.insert(businessMembers).values({
+        id: createSeededId("seed_bm", definition.key),
+        businessId,
+        userId: demoUser.id,
+        role: "owner",
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else if (existingMembership.role !== "owner") {
+      await tx
+        .update(businessMembers)
+        .set({
+          role: "owner",
+          updatedAt: now,
+        })
+        .where(eq(businessMembers.id, existingMembership.id));
+    }
 
-  const inquiries = [];
+    await tx
+      .insert(activityLogs)
+      .values({
+        id: createSeededId("seed_act", definition.key, "created"),
+        businessId,
+        actorUserId: demoUser.id,
+        type: "business.created",
+        summary: `Seed business ${definition.name} is ready for demo data.`,
+        metadata: {
+          source: "demo-seed",
+        },
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
+  });
 
-  for (let i = 0; i < count; i++) {
-    const firstName =
-      firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const company =
-      companyNames[Math.floor(Math.random() * companyNames.length)];
-    const category =
-      serviceCategories[Math.floor(Math.random() * serviceCategories.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const budget = budgets[Math.floor(Math.random() * budgets.length)];
-    const detail = details[Math.floor(Math.random() * details.length)];
-    const daysAgoValue = Math.floor(Math.random() * 90);
-    const submittedDate = daysAgo(daysAgoValue, 9 + Math.floor(Math.random() * 8));
+  const syncedForms = await syncBusinessForms(definition, businessId);
+
+  return {
+    key: definition.key,
+    id: businessId,
+    kind: definition.kind,
+    name: definition.name,
+    slug,
+    defaultInquiryFormId: syncedForms.defaultInquiryFormId,
+    quoteNumberStart: definition.quoteNumberStart,
+    forms: syncedForms.forms,
+  };
+}
+
+function generateBulkInquiries(
+  definition: DemoBusinessDefinition,
+  business: DemoBusiness,
+  count = definition.inquiryCount,
+) {
+  const random = createSeededRandom(`${definition.key}:inquiries`);
+  const forms = definition.forms.map((formDefinition) => {
+    const seededForm = business.forms[formDefinition.key];
+
+    if (!seededForm) {
+      throw new Error(
+        `Business "${definition.key}" is missing the "${formDefinition.key}" form.`,
+      );
+    }
+
+    return {
+      ...formDefinition,
+      id: seededForm.id,
+    };
+  });
+  const inquiries: GeneratedInquiryRow[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const form =
+      pickWeighted(
+        forms.map((formDefinition) => ({
+          item: formDefinition,
+          weight: formDefinition.distributionWeight,
+        })),
+        random,
+      ) ?? forms[0];
+    const firstName = pickOne(customerFirstNames, random);
+    const lastName = pickOne(customerLastNames, random);
+    const company = `${pickOne(companyPrefixes, random)} ${pickOne(
+      companySuffixes,
+      random,
+    )}`;
+    const serviceCategory = pickOne(form.serviceCategories, random);
+    const status =
+      pickWeighted(
+        inquiryStatusWeights.map((value) => ({
+          item: value.status,
+          weight: value.weight,
+        })),
+        random,
+      ) ?? "new";
+    const submittedAt = daysAgo(
+      randomInt(random, 0, 150),
+      randomInt(random, 8, 18),
+      randomInt(random, 0, 60),
+    );
+    const lastRespondedAt =
+      status === "new"
+        ? null
+        : clampToNow(addMinutes(submittedAt, randomInt(random, 90, 8 * 24 * 60)));
+    const requestedDeadline = chance(random, 0.72)
+      ? toIsoDate(addDays(submittedAt, randomInt(random, 5, 45)))
+      : null;
+    const customerEmail = `${sanitizeEmailPart(firstName)}.${sanitizeEmailPart(
+      lastName,
+    )}@${sanitizeEmailPart(company) || "client"}.co`.slice(0, 254);
+    const companyName = chance(random, 0.12) ? null : company;
+    const companyLabel = companyName ?? `${firstName} ${lastName}`;
+    const quoteRequested =
+      status === "quoted" || status === "won" || status === "lost"
+        ? true
+        : !chance(random, 0.08);
 
     inquiries.push({
-      id: `bulk_inquiry_${count}_${i}`,
-      businessId,
-      businessInquiryFormId: formId,
-      status: status as "new" | "waiting" | "quoted" | "won" | "lost" | "archived",
-      subject: `${category} request from ${company}`,
-      customerName: `${firstName} ${lastName}`,
-      customerEmail: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.toLowerCase().replace(/\s+/g, "")}.com`.slice(
-        0,
-        254,
+      id: createSeededId(
+        "seed_inquiry",
+        definition.key,
+        String(index + 1).padStart(4, "0"),
       ),
-      customerPhone:
-        Math.random() > 0.3 ? `(${Math.floor(Math.random() * 900) + 100}) 555-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}` : null,
-      serviceCategory: category,
-      requestedDeadline:
-        Math.random() > 0.4
-          ? toIsoDate(daysFromNow(Math.floor(Math.random() * 30) + 3))
-          : null,
-      budgetText: budget,
-      companyName: company,
-      details: detail,
-      source: "demo-seed-bulk",
-      quoteRequested: true,
-      submittedAt: submittedDate,
-      lastRespondedAt:
-        status === "new"
-          ? null
-          : daysAgo(Math.max(0, daysAgoValue - Math.floor(Math.random() * daysAgoValue))),
-      createdAt: submittedDate,
-      updatedAt: submittedDate,
+      businessId: business.id,
+      businessInquiryFormId: form.id,
+      status,
+      subject: fillTemplate(pickOne(form.subjectTemplates, random), {
+        category: serviceCategory,
+        company: companyLabel,
+      }),
+      customerName: `${firstName} ${lastName}`,
+      customerEmail,
+      customerPhone: chance(random, 0.72) ? formatPhoneNumber(random) : null,
+      serviceCategory,
+      requestedDeadline,
+      budgetText: pickOne(form.budgetOptions, random),
+      companyName,
+      details: fillTemplate(pickOne(form.detailTemplates, random), {
+        category: serviceCategory,
+        company: companyLabel,
+      }),
+      source: `demo-seed-generated:${definition.key}`,
+      quoteRequested,
+      submittedAt,
+      lastRespondedAt,
+      createdAt: submittedAt,
+      updatedAt: lastRespondedAt ?? submittedAt,
     });
   }
 
   return inquiries;
 }
 
-async function generateBulkQuotes(
-  businessId: string,
-  inquiries: Array<{ id: string; status: string }>,
-) {
-  const quotes = [];
-  let quoteNumber = 2001;
-
-  for (const inquiry of inquiries) {
-    if (
-      (inquiry.status === "quoted" ||
-        inquiry.status === "won" ||
-        inquiry.status === "lost") &&
-      Math.random() > 0.2
-    ) {
-      const quoteStatus =
-        inquiry.status === "quoted"
-          ? "draft"
-          : inquiry.status === "won"
-            ? "accepted"
-            : "rejected";
-
-      const createdDaysAgo = Math.floor(Math.random() * 60);
-      const createdDate = daysAgo(createdDaysAgo);
-      const sentDaysAgo =
-        quoteStatus === "draft" ? null : createdDaysAgo - Math.floor(Math.random() * 7);
-      const sentDate = sentDaysAgo ? daysAgo(sentDaysAgo) : null;
-
-      const subtotal = Math.floor(Math.random() * 450000) + 5000;
-      const discount = Math.floor(subtotal * (Math.random() * 0.15));
-      const total = subtotal - discount;
-
-      quotes.push({
-        id: `bulk_quote_${inquiry.id}`,
-        businessId,
-        inquiryId: inquiry.id,
-        status: quoteStatus as "draft" | "sent" | "accepted" | "rejected" | "expired",
-        quoteNumber: `Q-${quoteNumber}`,
-        publicToken: `token_${quoteNumber}_${Date.now()}`,
-        title: `Quote for ${inquiry.id}`,
-        customerName: "Bulk Customer",
-        customerEmail: "customer@example.com",
-        currency: "USD",
-        notes: "Bulk generated quote for demo purposes.",
-        subtotalInCents: subtotal,
-        discountInCents: discount,
-        totalInCents: total,
-        sentAt: sentDate,
-        acceptedAt:
-          quoteStatus === "accepted"
-            ? daysAgo(Math.floor(Math.random() * createdDaysAgo))
-            : null,
-        publicViewedAt:
-          sentDate && sentDaysAgo !== null
-            ? daysAgo(
-                Math.max(0, sentDaysAgo - Math.floor(Math.random() * sentDaysAgo)),
-              )
-            : null,
-        customerRespondedAt:
-          quoteStatus !== "draft"
-            ? daysAgo(Math.max(0, createdDaysAgo - Math.floor(Math.random() * 10)))
-            : null,
-        customerResponseMessage:
-          quoteStatus === "accepted"
-            ? "Approved. Please proceed."
-            : quoteStatus === "rejected"
-              ? "Thanks but we chose another vendor."
-              : null,
-        postAcceptanceStatus: "none" as const,
-        validUntil: toIsoDate(daysFromNow(30)),
-        createdAt: createdDate,
-        updatedAt: sentDate || createdDate,
-      });
-
-      quoteNumber++;
-    }
+function shouldGenerateQuote(status: DemoInquiryStatus, random: () => number) {
+  switch (status) {
+    case "quoted":
+    case "won":
+    case "lost":
+      return true;
+    case "waiting":
+      return chance(random, 0.35);
+    case "archived":
+      return chance(random, 0.2);
+    case "new":
+    default:
+      return false;
   }
-
-  return quotes;
 }
 
-async function generateBulkQuoteItems(
-  businessId: string,
-  quotes: Array<{ id: string }>,
-) {
-  const items = [];
-  const descriptions = [
-    "Production and printing",
-    "Design and setup",
-    "Finishing and binding",
-    "Quality assurance",
-    "Packaging and shipping",
-    "Rush surcharge",
-    "Material upgrade",
-    "Special finishing",
-  ];
-
-  for (const quote of quotes) {
-    const itemCount = Math.floor(Math.random() * 4) + 1;
-    for (let i = 0; i < itemCount; i++) {
-      items.push({
-        id: `bulk_item_${quote.id}_${i}`,
-        businessId,
-        quoteId: quote.id,
-        description: descriptions[Math.floor(Math.random() * descriptions.length)],
-        quantity: Math.floor(Math.random() * 100) + 1,
-        unitPriceInCents: Math.floor(Math.random() * 50000) + 1000,
-        lineTotalInCents: 0,
-        position: i,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
+function getGeneratedQuoteStatus(
+  status: DemoInquiryStatus,
+  random: () => number,
+): DemoQuoteStatus | null {
+  switch (status) {
+    case "quoted":
+      return chance(random, 0.45) ? "draft" : "sent";
+    case "waiting":
+      return "draft";
+    case "won":
+      return "accepted";
+    case "lost":
+      return chance(random, 0.2) ? "expired" : "rejected";
+    case "archived":
+      return "expired";
+    case "new":
+    default:
+      return null;
   }
-
-  return items;
 }
 
-async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
+function generateBulkQuoteData(
+  definition: DemoBusinessDefinition,
+  business: DemoBusiness,
+  inquiryRows: GeneratedInquiryRow[],
+) {
+  const random = createSeededRandom(`${definition.key}:quotes`);
+  const quoteRows: GeneratedQuoteRow[] = [];
+  const quoteItemRows: GeneratedQuoteItemRow[] = [];
+  let quoteNumber = definition.quoteNumberStart;
+  let quoteIndex = 1;
+
+  for (const inquiry of inquiryRows) {
+    if (!inquiry.quoteRequested || !shouldGenerateQuote(inquiry.status, random)) {
+      continue;
+    }
+
+    const quoteStatus = getGeneratedQuoteStatus(inquiry.status, random);
+
+    if (!quoteStatus) {
+      continue;
+    }
+
+    const quoteId = createSeededId(
+      "seed_quote",
+      definition.key,
+      String(quoteIndex).padStart(4, "0"),
+    );
+    const createdAt = clampToNow(
+      addMinutes(inquiry.submittedAt, randomInt(random, 45, 4 * 24 * 60)),
+    );
+    const sentAt =
+      quoteStatus === "draft"
+        ? null
+        : clampToNow(addMinutes(createdAt, randomInt(random, 30, 18 * 60)));
+    const publicViewedAt =
+      sentAt && chance(random, quoteStatus === "expired" ? 0.55 : 0.88)
+        ? clampToNow(addMinutes(sentAt, randomInt(random, 30, 3 * 24 * 60)))
+        : null;
+    const customerRespondedAt =
+      quoteStatus === "accepted" || quoteStatus === "rejected"
+        ? clampToNow(
+            addMinutes(
+              publicViewedAt ?? sentAt ?? createdAt,
+              randomInt(random, 30, 5 * 24 * 60),
+            ),
+          )
+        : null;
+    const acceptedAt = quoteStatus === "accepted" ? customerRespondedAt : null;
+    const postAcceptanceStatus =
+      quoteStatus === "accepted"
+        ? pickWeighted(
+            [
+              { item: "scheduled" as const, weight: 55 },
+              { item: "booked" as const, weight: 30 },
+              { item: "none" as const, weight: 15 },
+            ],
+            random,
+          ) ?? "none"
+        : "none";
+    const itemCount = randomInt(random, 2, 5);
+    const lineItemDescriptions = [
+      `${inquiry.serviceCategory} scope`,
+      "Planning and coordination",
+      definition.businessType === "creative_studio_agency"
+        ? "Creative production"
+        : definition.businessType === "home_services"
+          ? "Labor and materials"
+          : "Production and execution",
+      definition.businessType === "creative_studio_agency"
+        ? "Revision and handoff"
+        : "Delivery and quality assurance",
+    ].slice(0, itemCount);
+    const lineItems = lineItemDescriptions.map((description, position) => {
+      const quantity = position === 0 ? randomInt(random, 1, 5) : 1;
+      const unitPriceInCents =
+        position === 0
+          ? randomInt(random, 18_000, 95_000)
+          : randomInt(random, 4_500, 35_000);
+
+      return {
+        id: createSeededId(
+          "seed_quote_item",
+          definition.key,
+          String(quoteIndex).padStart(4, "0"),
+          String(position + 1),
+        ),
+        businessId: business.id,
+        quoteId,
+        description,
+        quantity,
+        unitPriceInCents,
+        lineTotalInCents: quantity * unitPriceInCents,
+        position,
+        createdAt: addMinutes(createdAt, position),
+        updatedAt: addMinutes(createdAt, position),
+      };
+    });
+    const subtotalInCents = lineItems.reduce(
+      (sum, item) => sum + item.lineTotalInCents,
+      0,
+    );
+    const maxDiscount = Math.max(1_500, Math.floor(subtotalInCents * 0.12));
+    const discountInCents = chance(random, 0.32)
+      ? randomInt(random, 500, maxDiscount + 1)
+      : 0;
+    const totalInCents = subtotalInCents - discountInCents;
+    const defaultValidUntil = addDays(
+      sentAt ?? createdAt,
+      randomInt(random, 7, 21),
+    );
+    const validUntilDate =
+      quoteStatus === "expired"
+        ? (() => {
+            const expiredDate = addDays(createdAt, randomInt(random, 5, 12));
+            return expiredDate.getTime() > Date.now()
+              ? daysAgo(randomInt(random, 2, 30), 12, 0)
+              : expiredDate;
+          })()
+        : defaultValidUntil;
+    const customerResponseMessage =
+      quoteStatus === "accepted"
+        ? pickOne(generatedQuoteResponseMessages.accepted, random)
+        : quoteStatus === "rejected"
+          ? pickOne(generatedQuoteResponseMessages.rejected, random)
+          : null;
+    const updatedAt =
+      customerRespondedAt ?? publicViewedAt ?? sentAt ?? createdAt;
+
+    quoteRows.push({
+      id: quoteId,
+      businessId: business.id,
+      inquiryId: inquiry.id,
+      status: quoteStatus,
+      quoteNumber: `Q-${quoteNumber}`,
+      publicToken: createSeededId("seed_token", definition.key, String(quoteNumber)),
+      title: fillTemplate(
+        pickOne(
+          [
+            "{category} quote",
+            "Estimate for {company}",
+            "{company} {category} proposal",
+          ],
+          random,
+        ),
+        {
+          category: inquiry.serviceCategory,
+          company: inquiry.companyName ?? inquiry.customerName,
+        },
+      ),
+      customerName: inquiry.customerName,
+      customerEmail: inquiry.customerEmail,
+      currency: definition.defaultCurrency,
+      notes: `Generated sample quote for ${inquiry.serviceCategory.toLowerCase()}.`,
+      subtotalInCents,
+      discountInCents,
+      totalInCents,
+      sentAt,
+      acceptedAt,
+      publicViewedAt,
+      customerRespondedAt,
+      customerResponseMessage,
+      postAcceptanceStatus,
+      validUntil: toIsoDate(validUntilDate),
+      createdAt,
+      updatedAt,
+    });
+    quoteItemRows.push(...lineItems);
+
+    quoteNumber += 1;
+    quoteIndex += 1;
+  }
+
+  return {
+    quotes: quoteRows,
+    quoteItems: quoteItemRows,
+  };
+}
+
+function createGeneratedDataset(
+  definition: DemoBusinessDefinition,
+  business: DemoBusiness,
+) {
+  const inquiries = generateBulkInquiries(definition, business);
+  const { quotes, quoteItems } = generateBulkQuoteData(
+    definition,
+    business,
+    inquiries,
+  );
+
+  return {
+    inquiries,
+    quotes,
+    quoteItems,
+  };
+}
+
+async function seedBusinessData(
+  demoUser: DemoUser,
+  business: DemoBusiness,
+): Promise<BusinessSeedCounts> {
   const noteTimestamps = {
     storefront: daysAgo(1, 14, 20),
     flyers: daysAgo(3, 11, 40),
     boothKit: daysAgo(6, 16, 15),
     menuBundle: daysAgo(10, 13, 5),
   };
+  const projectFormId = business.forms.project?.id ?? business.defaultInquiryFormId;
+  const reorderFormId =
+    business.forms.reorders?.id ?? business.defaultInquiryFormId;
+  const installFormId = business.forms.install?.id ?? business.defaultInquiryFormId;
 
   const inquiryRows = [
     {
       id: demoInquiryIds[0],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: installFormId,
       status: "new" as const,
       subject: "New storefront window vinyl",
       customerName: "Olivia Park",
@@ -701,7 +1602,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     {
       id: demoInquiryIds[1],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: reorderFormId,
       status: "waiting" as const,
       subject: "Restaurant flyer drop",
       customerName: "Daniel Kim",
@@ -723,7 +1624,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     {
       id: demoInquiryIds[2],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: projectFormId,
       status: "quoted" as const,
       subject: "Trade show booth kit",
       customerName: "Priya Shah",
@@ -745,7 +1646,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     {
       id: demoInquiryIds[3],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: projectFormId,
       status: "won" as const,
       subject: "Cafe menu board refresh",
       customerName: "Maya Chen",
@@ -767,7 +1668,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     {
       id: demoInquiryIds[4],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: reorderFormId,
       status: "lost" as const,
       subject: "Team merch reorder",
       customerName: "Noah Bennett",
@@ -789,7 +1690,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     {
       id: demoInquiryIds[5],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: reorderFormId,
       status: "archived" as const,
       subject: "Old menu reprint request",
       customerName: "Hector Ruiz",
@@ -811,7 +1712,7 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     {
       id: demoInquiryIds[6],
       businessId: business.id,
-      businessInquiryFormId: business.defaultInquiryFormId,
+      businessInquiryFormId: installFormId,
       status: "won" as const,
       subject: "Foundry Labs rebrand signage",
       customerName: "Priya Shah",
@@ -1451,33 +2352,19 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     },
   ];
 
-  // Generate bulk inquiry and quote data
-  const bulkInquiries = await generateBulkInquiries(
-    business.id,
-    business.defaultInquiryFormId,
-    demoUser.id,
-    200,
-  );
-  const bulkQuotes = await generateBulkQuotes(
-    business.id,
-    bulkInquiries.map((i) => ({ id: i.id, status: i.status })),
-  );
-  const bulkQuoteItems = await generateBulkQuoteItems(
-    business.id,
-    bulkQuotes,
-  );
-
-  // Calculate lineTotals for bulk items
-  bulkQuoteItems.forEach((item) => {
-    item.lineTotalInCents = item.quantity * item.unitPriceInCents;
-  });
+  const generatedData = createGeneratedDataset(primaryBusinessDefinition, business);
+  const bulkInquiries = generatedData.inquiries;
+  const bulkQuotes = generatedData.quotes;
+  const bulkQuoteItems = generatedData.quoteItems;
 
   // Combine bulk data with demo data
   const allInquiries = [...inquiryRows, ...bulkInquiries];
   const allQuotes = [...quoteRows, ...bulkQuotes];
   const allQuoteItems = [...quoteItemRows, ...bulkQuoteItems];
 
-  console.log(`Preparing to seed ${allInquiries.length} inquiries, ${allQuotes.length} quotes, and ${allQuoteItems.length} quote items...`);
+  console.log(
+    `Seeding ${business.name}: ${allInquiries.length} inquiries, ${allQuotes.length} quotes, ${allQuoteItems.length} quote items.`,
+  );
 
   await db.transaction(async (tx) => {
     // Clean up all demo/bulk data
@@ -1506,13 +2393,106 @@ async function seedBusinessData(demoUser: DemoUser, business: DemoBusiness) {
     await tx.insert(replySnippets).values(replySnippetRows);
     await tx.insert(activityLogs).values(activityRows);
   });
+
+  return {
+    inquiries: allInquiries.length,
+    quotes: allQuotes.length,
+    quoteItems: allQuoteItems.length,
+  };
+}
+
+async function seedManagedBusinessData(
+  demoUser: DemoUser,
+  definition: DemoBusinessDefinition,
+  business: DemoBusiness,
+): Promise<BusinessSeedCounts> {
+  const generatedData = createGeneratedDataset(definition, business);
+  const seedActivityId = createSeededId("seed_act", definition.key, "seeded");
+
+  console.log(
+    `Seeding ${business.name}: ${generatedData.inquiries.length} inquiries, ${generatedData.quotes.length} quotes, ${generatedData.quoteItems.length} quote items.`,
+  );
+
+  await db.transaction(async (tx) => {
+    await tx.delete(activityLogs).where(eq(activityLogs.id, seedActivityId));
+    await tx
+      .delete(quoteItems)
+      .where(eq(quoteItems.businessId, business.id));
+    await tx
+      .delete(quotes)
+      .where(eq(quotes.businessId, business.id));
+    await tx
+      .delete(inquiries)
+      .where(eq(inquiries.businessId, business.id));
+
+    await tx.insert(inquiries).values(generatedData.inquiries);
+    await tx.insert(quotes).values(generatedData.quotes);
+    await tx.insert(quoteItems).values(generatedData.quoteItems);
+    await tx.insert(activityLogs).values({
+      id: seedActivityId,
+      businessId: business.id,
+      inquiryId: null,
+      quoteId: null,
+      actorUserId: demoUser.id,
+      type: "business.demo_seeded",
+      summary: `Sample data refreshed for ${business.name}.`,
+      metadata: {
+        source: "demo-seed",
+        businessKey: definition.key,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  });
+
+  return {
+    inquiries: generatedData.inquiries.length,
+    quotes: generatedData.quotes.length,
+    quoteItems: generatedData.quoteItems.length,
+  };
 }
 
 async function main() {
   const demoUser = await ensureDemoUser();
   const business = await ensureDemoBusiness(demoUser);
+  const seededBusinesses: Array<{
+    business: DemoBusiness;
+    counts: BusinessSeedCounts;
+  }> = [
+    {
+      business,
+      counts: await seedBusinessData(demoUser, business),
+    },
+  ];
 
-  await seedBusinessData(demoUser, business);
+  for (const definition of managedBusinessDefinitions) {
+    const managedBusiness = await ensureManagedBusiness(demoUser, definition);
+    const counts = await seedManagedBusinessData(
+      demoUser,
+      definition,
+      managedBusiness,
+    );
+
+    seededBusinesses.push({
+      business: managedBusiness,
+      counts,
+    });
+  }
+
+  const totals = seededBusinesses.reduce(
+    (aggregate, entry) => ({
+      inquiries: aggregate.inquiries + entry.counts.inquiries,
+      quotes: aggregate.quotes + entry.counts.quotes,
+      quoteItems: aggregate.quoteItems + entry.counts.quoteItems,
+      forms: aggregate.forms + Object.keys(entry.business.forms).length,
+    }),
+    {
+      inquiries: 0,
+      quotes: 0,
+      quoteItems: 0,
+      forms: 0,
+    },
+  );
 
   const dashboardUrl = new URL(
     `/businesses/${business.slug}/dashboard`,
@@ -1525,15 +2505,27 @@ async function main() {
 
   console.log("");
   console.log("Requo demo data seeded.");
-  console.log(`Business: ${business.name}`);
-  console.log(`Business slug: ${business.slug}`);
+  console.log(`Businesses seeded: ${seededBusinesses.length}`);
+  console.log(`Forms seeded: ${totals.forms}`);
+  console.log(`Total inquiries: ${totals.inquiries}`);
+  console.log(`Total quotes: ${totals.quotes}`);
+  console.log(`Total quote items: ${totals.quoteItems}`);
+  console.log("");
+  for (const entry of seededBusinesses) {
+    console.log(
+      `- ${entry.business.name} (${entry.business.slug}) with ${Object.keys(entry.business.forms).length} forms`,
+    );
+  }
+  console.log("");
+  console.log(`Primary business: ${business.name}`);
+  console.log(`Primary business slug: ${business.slug}`);
   console.log(`Demo owner email: ${demoUser.email}`);
   console.log(`Demo owner password: ${demoConfig.ownerPassword}`);
   console.log(`Dashboard URL: ${dashboardUrl}`);
   console.log(`Public inquiry URL: ${inquiryUrl}`);
   console.log("");
   console.log(
-    "The script refreshes the fixed demo records for the demo business without touching other businesses.",
+    "The script refreshes the fixed demo workspace and adds extra seed-managed businesses without touching unrelated businesses.",
   );
 }
 
