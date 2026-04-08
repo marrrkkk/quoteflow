@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   CheckCircle2,
   Plus,
@@ -51,6 +51,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   inquiryCustomFieldTypeMeta,
+  inquiryContactFieldKeys,
   type InquiryContactFieldConfig,
   type InquiryContactFieldKey,
   type InquiryFormCustomFieldDefinition,
@@ -59,6 +60,7 @@ import {
   type InquiryFormConfig,
   type InquiryFormFieldDefinition,
   type InquiryFormSystemFieldDefinition,
+  getNormalizedInquiryFormConfig,
 } from "@/features/inquiries/form-config";
 import {
   businessTypeMeta,
@@ -70,6 +72,9 @@ import type {
 } from "@/features/settings/types";
 import { publicSlugMaxLength, publicSlugPattern } from "@/lib/slugs";
 import { cn } from "@/lib/utils";
+
+const MAX_CUSTOM_PROJECT_FIELDS = 12;
+const MAX_CUSTOM_FIELD_OPTIONS = 12;
 
 type BusinessInquiryFormFormProps = {
   applyPresetAction: (
@@ -90,6 +95,13 @@ export function BusinessInquiryFormForm({
   saveAction,
   settings,
 }: BusinessInquiryFormFormProps) {
+  const normalizedSettingsConfig = useMemo(
+    () =>
+      getNormalizedInquiryFormConfig(settings.inquiryFormConfig, {
+        businessType: settings.businessType,
+      }),
+    [settings.businessType, settings.inquiryFormConfig],
+  );
   const router = useProgressRouter();
   const [saveState, saveFormAction, isSavePending] = useActionState(
     saveAction,
@@ -101,14 +113,30 @@ export function BusinessInquiryFormForm({
   );
   const [businessType, setBusinessType] = useState(settings.businessType);
   const [contactFields, setContactFields] = useState(
-    settings.inquiryFormConfig.contactFields,
+    normalizedSettingsConfig.contactFields,
   );
   const [projectFields, setProjectFields] = useState(
-    settings.inquiryFormConfig.projectFields,
+    normalizedSettingsConfig.projectFields,
   );
+  const [groupLabels, setGroupLabels] = useState(normalizedSettingsConfig.groupLabels);
   const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
+  const [selectedContactKey, setSelectedContactKey] =
+    useState<InquiryContactFieldKey>("customerName");
+  const [selectedProjectFieldId, setSelectedProjectFieldId] = useState<string>(() => {
+    const first = normalizedSettingsConfig.projectFields[0];
+    return first ? getFieldId(first) : "serviceCategory";
+  });
+  const [isAddFieldDialogOpen, setIsAddFieldDialogOpen] = useState(false);
+  const [isEditingProjectGroupLabel, setIsEditingProjectGroupLabel] = useState(false);
+  const [projectGroupLabelDraft, setProjectGroupLabelDraft] = useState(() => {
+    return normalizedSettingsConfig.groupLabels.project;
+  });
+  const [newFieldType, setNewFieldType] = useState<InquiryCustomFieldType>("short_text");
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldPlaceholder, setNewFieldPlaceholder] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
-  const [formRevision, setFormRevision] = useState(0);
+  const [nameDraft, setNameDraft] = useState(settings.formName);
+  const [slugDraft, setSlugDraft] = useState(settings.formSlug);
 
   useEffect(() => {
     if (!presetState.success) {
@@ -118,9 +146,20 @@ export function BusinessInquiryFormForm({
     router.refresh();
   }, [presetState.success, router]);
 
+  useEffect(() => {
+    if (!saveState.success) {
+      return;
+    }
+
+    // Refresh to pull normalized config from the server, so
+    // "unsaved changes" clears and public form previews update.
+    router.refresh();
+  }, [router, saveState.success]);
+
   const serializedConfig = JSON.stringify({
     version: 1,
     businessType,
+    groupLabels,
     contactFields,
     projectFields,
   } satisfies InquiryFormConfig);
@@ -129,47 +168,48 @@ export function BusinessInquiryFormForm({
       JSON.stringify({
         version: 1,
         businessType: settings.businessType,
-        contactFields: settings.inquiryFormConfig.contactFields,
-        projectFields: settings.inquiryFormConfig.projectFields,
+        groupLabels: normalizedSettingsConfig.groupLabels,
+        contactFields: normalizedSettingsConfig.contactFields,
+        projectFields: normalizedSettingsConfig.projectFields,
       } satisfies InquiryFormConfig),
     [
       settings.businessType,
-      settings.inquiryFormConfig.contactFields,
-      settings.inquiryFormConfig.projectFields,
+      normalizedSettingsConfig.contactFields,
+      normalizedSettingsConfig.groupLabels,
+      normalizedSettingsConfig.projectFields,
     ],
   );
 
-  const activeFieldCount = useMemo(
-    () =>
-      Object.values(contactFields).filter((field) => field.enabled).length +
-      projectFields.filter(
-        (field) => field.kind === "custom" || field.enabled,
-      ).length,
-    [contactFields, projectFields],
-  );
   const hasConfigChanges = serializedConfig !== initialSerializedConfig;
-  const hasTextInputChanges = useMemo(() => {
-    const form = formRef.current;
-    if (!form) {
-      return false;
-    }
-
-    const nameInput = form.elements.namedItem("name");
-    const slugInput = form.elements.namedItem("slug");
-
-    const nameValue =
-      nameInput instanceof HTMLInputElement ? nameInput.value : settings.formName;
-    const slugValue =
-      slugInput instanceof HTMLInputElement ? slugInput.value : settings.formSlug;
-
-    return nameValue !== settings.formName || slugValue !== settings.formSlug;
-  }, [formRevision, settings.formName, settings.formSlug]);
+  const hasTextInputChanges =
+    nameDraft !== settings.formName || slugDraft !== settings.formSlug;
   const hasUnsavedChanges = hasConfigChanges || hasTextInputChanges;
   const [shouldRenderFloatingActions, setShouldRenderFloatingActions] = useState(false);
   const [floatingActionsState, setFloatingActionsState] = useState<"open" | "closed">(
     "closed",
   );
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setBusinessType(settings.businessType);
+      setContactFields(normalizedSettingsConfig.contactFields);
+      setProjectFields(normalizedSettingsConfig.projectFields);
+      setGroupLabels(normalizedSettingsConfig.groupLabels);
+      setProjectGroupLabelDraft(normalizedSettingsConfig.groupLabels.project);
+      setIsEditingProjectGroupLabel(false);
+      setNameDraft(settings.formName);
+      setSlugDraft(settings.formSlug);
+    });
+  }, [
+    normalizedSettingsConfig.contactFields,
+    normalizedSettingsConfig.groupLabels,
+    normalizedSettingsConfig.projectFields,
+    settings.businessType,
+    settings.formId,
+    settings.formName,
+    settings.formSlug,
+  ]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -181,18 +221,35 @@ export function BusinessInquiryFormForm({
 
   useEffect(() => {
     if (hasUnsavedChanges) {
-      setShouldRenderFloatingActions(true);
-      setFloatingActionsState("open");
+      queueMicrotask(() => {
+        setShouldRenderFloatingActions(true);
+        setFloatingActionsState("open");
+      });
       return;
     }
 
-    setFloatingActionsState("closed");
+    queueMicrotask(() => {
+      setFloatingActionsState("closed");
+    });
     const timeout = window.setTimeout(
       () => setShouldRenderFloatingActions(false),
       prefersReducedMotion ? 0 : 180,
     );
     return () => window.clearTimeout(timeout);
   }, [hasUnsavedChanges, prefersReducedMotion]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setSelectedProjectFieldId((currentId) => {
+        if (projectFields.some((field) => getFieldId(field) === currentId)) {
+          return currentId;
+        }
+
+        const next = projectFields[0];
+        return next ? getFieldId(next) : "serviceCategory";
+      });
+    });
+  }, [projectFields]);
 
   function updateContactField(
     key: InquiryContactFieldKey,
@@ -246,11 +303,26 @@ export function BusinessInquiryFormForm({
     );
   }
 
-  function addCustomField() {
-    setProjectFields((currentFields) => [
-      ...currentFields,
-      createCustomFieldDraft(),
-    ]);
+  function addCustomFieldFromDialog() {
+    const trimmedLabel = newFieldLabel.trim();
+    const placeholder = newFieldPlaceholder.trim();
+
+    if (!trimmedLabel) {
+      return;
+    }
+
+    const draft = createCustomFieldDraft({
+      fieldType: newFieldType,
+      label: trimmedLabel,
+      placeholder: placeholder ? placeholder : undefined,
+    });
+
+    setProjectFields((currentFields) => [...currentFields, draft]);
+    setSelectedProjectFieldId(getFieldId(draft));
+    setIsAddFieldDialogOpen(false);
+    setNewFieldType("short_text");
+    setNewFieldLabel("");
+    setNewFieldPlaceholder("");
   }
 
   function changeCustomFieldType(
@@ -355,17 +427,51 @@ export function BusinessInquiryFormForm({
   function handleCancelChanges() {
     formRef.current?.reset();
     setBusinessType(settings.businessType);
-    setContactFields(settings.inquiryFormConfig.contactFields);
-    setProjectFields(settings.inquiryFormConfig.projectFields);
-    setFormRevision((current) => current + 1);
+    setGroupLabels(normalizedSettingsConfig.groupLabels);
+    setContactFields(normalizedSettingsConfig.contactFields);
+    setProjectFields(normalizedSettingsConfig.projectFields);
+    setIsEditingProjectGroupLabel(false);
+    setNameDraft(settings.formName);
+    setSlugDraft(settings.formSlug);
   }
+
+  function startEditingProjectGroupLabel() {
+    setProjectGroupLabelDraft(groupLabels.project);
+    setIsEditingProjectGroupLabel(true);
+  }
+
+  function saveProjectGroupLabel() {
+    const trimmed = projectGroupLabelDraft.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    setGroupLabels((current) => ({ ...current, project: trimmed }));
+    setProjectGroupLabelDraft(trimmed);
+    setIsEditingProjectGroupLabel(false);
+  }
+
+  function cancelProjectGroupLabelEdit() {
+    setProjectGroupLabelDraft(groupLabels.project);
+    setIsEditingProjectGroupLabel(false);
+  }
+
+  const customProjectFieldCount = useMemo(
+    () => projectFields.filter((field) => field.kind === "custom").length,
+    [projectFields],
+  );
+  const hasReachedCustomFieldLimit = customProjectFieldCount >= MAX_CUSTOM_PROJECT_FIELDS;
+
+  const selectedProjectField = useMemo(() => {
+    return projectFields.find((field) => getFieldId(field) === selectedProjectFieldId) ?? null;
+  }, [projectFields, selectedProjectFieldId]);
 
   return (
     <>
       <form
         action={saveFormAction}
         className="form-stack pb-28"
-        onInputCapture={() => setFormRevision((current) => current + 1)}
         ref={formRef}
       >
         {saveState.error ? (
@@ -403,15 +509,24 @@ export function BusinessInquiryFormForm({
         <input name="inquiryFormConfig" type="hidden" value={serializedConfig} />
 
         <Card className="gap-0 border-border/75 bg-card/97">
-          <CardHeader className="gap-3 pb-5">
+          <CardHeader className="flex flex-col gap-3 pb-5 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Preset</CardTitle>
+            <Button
+              onClick={() => setIsPresetDialogOpen(true)}
+              type="button"
+              variant="outline"
+            >
+              <RefreshCcw data-icon="inline-start" />
+              Apply defaults
+            </Button>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 pt-0">
             <FormSection
               title="Business type"
             >
               <div className="grid gap-5">
-                <Field>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Field>
                   <FieldLabel htmlFor="business-inquiry-form-name">
                     Form name
                   </FieldLabel>
@@ -424,15 +539,18 @@ export function BusinessInquiryFormForm({
                       maxLength={80}
                       minLength={2}
                       name="name"
+                      onChange={(event) => {
+                        setNameDraft(event.currentTarget.value);
+                      }}
                       required
                     />
                     <FieldError
                       errors={nameError ? [{ message: nameError }] : undefined}
                     />
                   </FieldContent>
-                </Field>
+                  </Field>
 
-                <Field data-invalid={Boolean(slugError) || undefined}>
+                  <Field data-invalid={Boolean(slugError) || undefined}>
                   <FieldLabel htmlFor="business-inquiry-form-slug">
                     Form slug
                   </FieldLabel>
@@ -445,6 +563,9 @@ export function BusinessInquiryFormForm({
                       maxLength={publicSlugMaxLength}
                       minLength={2}
                       name="slug"
+                      onChange={(event) => {
+                        setSlugDraft(event.currentTarget.value);
+                      }}
                       pattern={publicSlugPattern}
                       required
                       spellCheck={false}
@@ -453,9 +574,10 @@ export function BusinessInquiryFormForm({
                       errors={slugError ? [{ message: slugError }] : undefined}
                     />
                   </FieldContent>
-                </Field>
+                  </Field>
+                </div>
 
-                <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="grid gap-5 lg:grid-cols-2">
                   <Field data-invalid={Boolean(businessTypeError) || undefined}>
                     <FieldLabel htmlFor="business-inquiry-business-type">
                       Type
@@ -495,45 +617,12 @@ export function BusinessInquiryFormForm({
                     </FieldContent>
                   </Field>
 
-                  <div className="soft-panel flex flex-col justify-between gap-3 px-4 py-4 shadow-none">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {businessTypeMeta[businessType].label}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {businessTypeMeta[businessType].description}
-                      </p>
-                    </div>
-                    <div className="dashboard-meta-row">
-                      <span className="dashboard-meta-pill">{activeFieldCount} fields</span>
-                      <span className="dashboard-meta-pill">
-                        {projectFields.filter((field) => field.kind === "custom").length} custom
-                      </span>
-                    </div>
+                  <div className="soft-panel flex items-center px-4 py-4 shadow-none">
+                    <p className="text-sm font-medium text-foreground">
+                      {businessTypeMeta[businessType].label}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </FormSection>
-
-            <Separator />
-
-            <FormSection
-              action={
-                <Button
-                  onClick={() => setIsPresetDialogOpen(true)}
-                  type="button"
-                  variant="outline"
-                >
-                  <RefreshCcw data-icon="inline-start" />
-                  Apply preset defaults
-                </Button>
-              }
-              title="Reset"
-            >
-              <div className="soft-panel px-4 py-4 shadow-none">
-                <p className="text-sm leading-6 text-muted-foreground">
-                  This resets the inquiry form and inquiry page to the selected preset.
-                </p>
               </div>
             </FormSection>
 
@@ -544,61 +633,184 @@ export function BusinessInquiryFormForm({
         </Card>
 
         <Card className="gap-0 border-border/75 bg-card/97">
-          <CardHeader className="gap-3 pb-5">
-            <CardTitle>Contact fields</CardTitle>
+          <CardHeader className="gap-2 pb-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <CardTitle className="text-xl">
+                      {groupLabels.contact}
+                    </CardTitle>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Edit contact labels and placeholders inline.
+              </p>
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid gap-4">
-              {(
-                Object.entries(contactFields) as Array<
-                  [InquiryContactFieldKey, InquiryContactFieldConfig]
-                >
-              ).map(([key, field]) => (
-                <ContactFieldCard
-                  field={field}
-                  fieldKey={key}
-                  isPending={isSavePending}
-                  onChange={updateContactField}
-                  key={key}
-                />
-              ))}
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+              <div className="min-w-0">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-foreground">Contact fields</p>
+                    <span className="text-xs text-muted-foreground">
+                      {inquiryContactFieldKeys.length} total
+                    </span>
+                  </div>
+
+                  <FieldList>
+                    {inquiryContactFieldKeys.map((key) => (
+                      <ContactFieldListItem
+                        contactKey={key}
+                        field={contactFields[key]}
+                        isPending={isSavePending}
+                        isSelected={selectedContactKey === key}
+                        key={key}
+                        onSelect={() => setSelectedContactKey(key)}
+                      />
+                    ))}
+                  </FieldList>
+
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    Name and email always stay shown and required.
+                  </p>
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="soft-panel flex flex-col gap-4 px-4 py-4 shadow-none">
+                  <ContactFieldDetails
+                    contactKey={selectedContactKey}
+                    field={contactFields[selectedContactKey]}
+                    isPending={isSavePending}
+                    onChange={updateContactField}
+                  />
+                </div>
+
+                {!contactFields.customerPhone.enabled &&
+                !contactFields.companyName.enabled ? (
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    Only name and email will be shown in Contact.
+                  </p>
+                ) : null}
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="gap-0 border-border/75 bg-card/97">
-          <CardHeader className="gap-3 pb-5">
-            <CardTitle>Project fields</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5 pt-0">
-            <div className="grid gap-4">
-              {projectFields.map((field, index) => (
-                <ProjectFieldCard
-                  field={field}
-                  index={index}
-                  isPending={isSavePending}
-                  key={getFieldId(field)}
-                  onAddOption={addCustomFieldOption}
-                  onChangeCustomType={changeCustomFieldType}
-                  onMove={moveProjectField}
-                  onRemove={removeProjectField}
-                  onRemoveOption={removeCustomFieldOption}
-                  onUpdate={updateProjectField}
-                  onUpdateOption={updateCustomFieldOption}
-                  totalFields={projectFields.length}
-                />
-              ))}
-            </div>
+          <CardHeader className="gap-2 pb-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                {isEditingProjectGroupLabel ? (
+                  <>
+                    <Input
+                      className="h-9 w-64"
+                      autoFocus
+                      maxLength={40}
+                      onChange={(event) => setProjectGroupLabelDraft(event.currentTarget.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          saveProjectGroupLabel();
+                        }
 
-            <Button
-              disabled={isSavePending}
-              onClick={addCustomField}
-              type="button"
-              variant="outline"
-            >
-              <Plus data-icon="inline-start" />
-              Add custom field
-            </Button>
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          cancelProjectGroupLabelEdit();
+                        }
+                      }}
+                      value={projectGroupLabelDraft}
+                    />
+                    <Button onClick={saveProjectGroupLabel} type="button" variant="outline">
+                      Save
+                    </Button>
+                    <Button onClick={cancelProjectGroupLabelEdit} type="button" variant="ghost">
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <CardTitle className="text-xl">
+                      {groupLabels.project}
+                    </CardTitle>
+                    <Button onClick={startEditingProjectGroupLabel} type="button" variant="outline">
+                      Edit
+                    </Button>
+                  </>
+                )}
+              </div>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Add, reorder, and edit project fields inline.
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+              <div className="min-w-0 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Project fields</p>
+                    <p className="text-xs text-muted-foreground">
+                      {customProjectFieldCount}/{MAX_CUSTOM_PROJECT_FIELDS} custom fields
+                    </p>
+                  </div>
+
+                  <Button
+                    disabled={isSavePending || hasReachedCustomFieldLimit}
+                    onClick={() => setIsAddFieldDialogOpen(true)}
+                    type="button"
+                    variant="outline"
+                  >
+                    <Plus data-icon="inline-start" />
+                    Add field
+                  </Button>
+                </div>
+
+                <FieldList>
+                  {projectFields.map((field, index) => (
+                    <ProjectFieldListItem
+                      field={field}
+                      index={index}
+                      isPending={isSavePending}
+                      isSelected={getFieldId(field) === selectedProjectFieldId}
+                      key={getFieldId(field)}
+                      onMove={moveProjectField}
+                      onRemove={removeProjectField}
+                      onSelect={() => setSelectedProjectFieldId(getFieldId(field))}
+                      totalFields={projectFields.length}
+                    />
+                  ))}
+                </FieldList>
+
+                {hasReachedCustomFieldLimit ? (
+                  <Alert>
+                    <AlertTitle>Custom field limit reached</AlertTitle>
+                    <AlertDescription>
+                      You can add up to {MAX_CUSTOM_PROJECT_FIELDS} custom project fields.
+                      Remove one to add another.
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+              </div>
+
+              <div className="min-w-0">
+                <div className="soft-panel flex flex-col gap-4 px-4 py-4 shadow-none">
+                  <ProjectFieldDetails
+                    field={selectedProjectField}
+                    isPending={isSavePending}
+                    maxOptions={MAX_CUSTOM_FIELD_OPTIONS}
+                    onAddOption={addCustomFieldOption}
+                    onChangeCustomType={changeCustomFieldType}
+                    onRemoveOption={removeCustomFieldOption}
+                    onUpdate={updateProjectField}
+                    onUpdateOption={updateCustomFieldOption}
+                  />
+                </div>
+
+                {projectFields.length <= 2 ? (
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    Tip: Use Add field to collect details like location, quantity, or preferences.
+                  </p>
+                ) : null}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -633,6 +845,93 @@ export function BusinessInquiryFormForm({
           </div>
         ) : null}
       </form>
+
+      <Dialog open={isAddFieldDialogOpen} onOpenChange={setIsAddFieldDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add a project field</DialogTitle>
+            <DialogDescription>
+              Create a new custom question for the Project group. You can add up to{" "}
+              {MAX_CUSTOM_PROJECT_FIELDS} custom fields.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <Field>
+              <FieldLabel htmlFor="new-project-field-type">Field type</FieldLabel>
+              <FieldContent>
+                <Select
+                  onValueChange={(value) => setNewFieldType(value as InquiryCustomFieldType)}
+                  value={newFieldType}
+                >
+                  <SelectTrigger className="w-full" id="new-project-field-type">
+                    <SelectValue placeholder="Choose a field type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {Object.entries(inquiryCustomFieldTypeMeta).map(([value, meta]) => (
+                        <SelectItem key={value} value={value}>
+                          {meta.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="new-project-field-label">Label</FieldLabel>
+                <FieldContent>
+                  <Input
+                    disabled={isSavePending}
+                    id="new-project-field-label"
+                    maxLength={80}
+                    minLength={1}
+                    onChange={(event) => setNewFieldLabel(event.currentTarget.value)}
+                    placeholder="e.g. Location"
+                    required
+                    value={newFieldLabel}
+                  />
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-project-field-placeholder">Placeholder</FieldLabel>
+                <FieldContent>
+                  <Input
+                    disabled={isSavePending}
+                    id="new-project-field-placeholder"
+                    maxLength={160}
+                    onChange={(event) => setNewFieldPlaceholder(event.currentTarget.value)}
+                    placeholder="Optional"
+                    value={newFieldPlaceholder}
+                  />
+                </FieldContent>
+              </Field>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => setIsAddFieldDialogOpen(false)}
+              type="button"
+              variant="ghost"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                isSavePending || hasReachedCustomFieldLimit || !newFieldLabel.trim()
+              }
+              onClick={addCustomFieldFromDialog}
+              type="button"
+            >
+              Add field
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -669,183 +968,393 @@ export function BusinessInquiryFormForm({
   );
 }
 
-function ContactFieldCard({
-  field,
-  fieldKey,
-  isPending,
-  onChange,
+function FieldList({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/70 bg-background/50 p-2">
+      <div className="grid gap-2">{children}</div>
+    </div>
+  );
+}
+
+function FieldListItemShell({
+  children,
+  isSelected,
+  onSelect,
 }: {
-  field: InquiryContactFieldConfig;
-  fieldKey: InquiryContactFieldKey;
-  isPending: boolean;
-  onChange: (
-    key: InquiryContactFieldKey,
-    patch: Partial<InquiryContactFieldConfig>,
-  ) => void;
+  children: ReactNode;
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
-  const locked = fieldKey === "customerName" || fieldKey === "customerEmail";
-  const canBeRequired = !locked;
+  return (
+    <div
+      className={cn(
+        "soft-panel group flex w-full cursor-pointer items-start justify-between gap-3 px-3 py-3 text-left shadow-none transition-colors",
+        isSelected
+          ? "border border-border/90 bg-background/85"
+          : "border border-transparent hover:border-border/70 hover:bg-background/70",
+      )}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Pill({
+  tone,
+  children,
+}: {
+  tone: "muted" | "success" | "warning";
+  children: ReactNode;
+}) {
+  const className =
+    tone === "success"
+      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+      : tone === "warning"
+        ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+        : "bg-muted text-muted-foreground";
 
   return (
-    <div className="soft-panel flex flex-col gap-5 px-4 py-4 shadow-none">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold tracking-tight text-foreground">
-            {field.label}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {locked ? "Always shown" : "Optional contact field"}
-          </p>
+    <span className={cn("rounded-md px-2 py-1 text-[0.72rem] font-medium", className)}>
+      {children}
+    </span>
+  );
+}
+
+function ContactFieldListItem({
+  field,
+  contactKey,
+  isPending,
+  isSelected,
+  onSelect,
+}: {
+  field: InquiryContactFieldConfig;
+  contactKey: InquiryContactFieldKey;
+  isPending: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const locked = contactKey === "customerName" || contactKey === "customerEmail";
+
+  return (
+    <FieldListItemShell isSelected={isSelected} onSelect={onSelect}>
+      <div className="min-w-0 space-y-1">
+        <p className="truncate text-sm font-medium text-foreground">
+          {field.label || "Untitled"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="muted">Contact</Pill>
+          {locked ? <Pill tone="warning">Locked</Pill> : null}
+          {field.enabled ? <Pill tone="success">Shown</Pill> : <Pill tone="muted">Hidden</Pill>}
+          {field.required ? (
+            <Pill tone="success">Required</Pill>
+          ) : (
+            <Pill tone="muted">Optional</Pill>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <Switch
-              checked={field.enabled}
-              disabled={locked || isPending}
-              onCheckedChange={(checked) =>
-                onChange(fieldKey, { enabled: checked, required: checked ? field.required : false })
-              }
-            />
-            Show
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <Switch
-              checked={field.required}
-              disabled={!canBeRequired || !field.enabled || isPending}
-              onCheckedChange={(checked) =>
-                onChange(fieldKey, { required: checked })
-              }
-            />
-            Required
-          </label>
+      </div>
+      <span className={cn("text-xs text-muted-foreground", isPending && "opacity-70")}>
+        {contactKey === "customerName"
+          ? "Name"
+          : contactKey === "customerEmail"
+            ? "Email"
+            : contactKey === "customerPhone"
+              ? "Phone"
+              : "Company"}
+      </span>
+    </FieldListItemShell>
+  );
+}
+
+function ProjectFieldListItem({
+  field,
+  index,
+  isPending,
+  onMove,
+  onRemove,
+  totalFields,
+  isSelected,
+  onSelect,
+}: {
+  field: InquiryFormFieldDefinition;
+  index: number;
+  isPending: boolean;
+  onMove: (fieldId: string, direction: "up" | "down") => void;
+  onRemove: (fieldId: string) => void;
+  totalFields: number;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const fieldId = getFieldId(field);
+  const isSystem = field.kind === "system";
+  const title = isSystem ? getSystemFieldTitle(field) : field.label || "New field";
+  const kindLabel = isSystem ? "System" : "Custom";
+  const typeLabel = isSystem
+    ? getSystemFieldInputKindLabel(field)
+    : inquiryCustomFieldTypeMeta[field.fieldType].label;
+
+  return (
+    <FieldListItemShell isSelected={isSelected} onSelect={onSelect}>
+      <div className="min-w-0 space-y-1">
+        <p className="truncate text-sm font-medium text-foreground">{title}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="muted">{kindLabel}</Pill>
+          <Pill tone="muted">{typeLabel}</Pill>
+          {field.kind === "system" ? (
+            field.enabled ? (
+              <Pill tone="success">Shown</Pill>
+            ) : (
+              <Pill tone="muted">Hidden</Pill>
+            )
+          ) : null}
+          {field.required ? (
+            <Pill tone="success">Required</Pill>
+          ) : (
+            <Pill tone="muted">Optional</Pill>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="flex shrink-0 items-center gap-1">
+        <Button
+          className="h-8 w-8"
+          disabled={isPending || index === 0}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onMove(fieldId, "up");
+          }}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <ChevronUp className="size-4" />
+        </Button>
+        <Button
+          className="h-8 w-8"
+          disabled={isPending || index === totalFields - 1}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onMove(fieldId, "down");
+          }}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <ChevronDown className="size-4" />
+        </Button>
+        {!isSystem ? (
+          <Button
+            className="h-8 w-8"
+            disabled={isPending}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRemove(fieldId);
+            }}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        ) : null}
+      </div>
+    </FieldListItemShell>
+  );
+}
+
+function ContactFieldDetails({
+  contactKey,
+  field,
+  isPending,
+  onChange,
+}: {
+  contactKey: InquiryContactFieldKey;
+  field: InquiryContactFieldConfig;
+  isPending: boolean;
+  onChange: (key: InquiryContactFieldKey, patch: Partial<InquiryContactFieldConfig>) => void;
+}) {
+  const locked = contactKey === "customerName" || contactKey === "customerEmail";
+  const canBeRequired = !locked;
+
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-semibold tracking-tight text-foreground">Contact field</p>
+        <p className="text-sm text-muted-foreground">
+          Edit the label and placeholder, and choose whether to show it.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label
+          className={cn(
+            "flex items-center gap-3 px-1 py-1",
+            locked && "opacity-70",
+          )}
+        >
+          <Switch
+            checked={field.enabled}
+            disabled={locked || isPending}
+            onCheckedChange={(checked) =>
+              onChange(contactKey, {
+                enabled: checked,
+                required: checked ? field.required : false,
+              })
+            }
+          />
+          <span className="text-sm font-medium text-foreground">Show</span>
+        </label>
+
+        <label
+          className={cn(
+            "flex items-center gap-3 px-1 py-1",
+            !canBeRequired && "opacity-70",
+          )}
+        >
+          <Switch
+            checked={field.required}
+            disabled={!canBeRequired || !field.enabled || isPending}
+            onCheckedChange={(checked) => onChange(contactKey, { required: checked })}
+          />
+          <span className="text-sm font-medium text-foreground">Required</span>
+        </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor={`contact-${fieldKey}-label`}>Label</FieldLabel>
+          <FieldLabel htmlFor={`contact-${contactKey}-label`}>Label</FieldLabel>
           <FieldContent>
             <Input
               disabled={isPending}
-              id={`contact-${fieldKey}-label`}
+              id={`contact-${contactKey}-label`}
               maxLength={80}
               minLength={1}
               onChange={(event) =>
-                onChange(fieldKey, { label: event.currentTarget.value })
+                onChange(contactKey, { label: event.currentTarget.value })
               }
               required
               value={field.label}
             />
           </FieldContent>
         </Field>
+
         <Field>
-          <FieldLabel htmlFor={`contact-${fieldKey}-placeholder`}>
-            Placeholder
-          </FieldLabel>
+          <FieldLabel htmlFor={`contact-${contactKey}-placeholder`}>Placeholder</FieldLabel>
           <FieldContent>
             <Input
               disabled={isPending}
-              id={`contact-${fieldKey}-placeholder`}
+              id={`contact-${contactKey}-placeholder`}
               maxLength={160}
               onChange={(event) =>
-                onChange(fieldKey, { placeholder: event.currentTarget.value })
+                onChange(contactKey, { placeholder: event.currentTarget.value })
               }
               value={field.placeholder ?? ""}
             />
           </FieldContent>
         </Field>
       </div>
-    </div>
+    </>
   );
 }
 
-function ProjectFieldCard({
+function ProjectFieldDetails({
   field,
-  index,
   isPending,
+  maxOptions,
   onAddOption,
   onChangeCustomType,
-  onMove,
-  onRemove,
   onRemoveOption,
   onUpdate,
   onUpdateOption,
-  totalFields,
 }: {
-  field: InquiryFormFieldDefinition;
-  index: number;
+  field: InquiryFormFieldDefinition | null;
   isPending: boolean;
+  maxOptions: number;
   onAddOption: (fieldId: string) => void;
   onChangeCustomType: (fieldId: string, fieldType: InquiryCustomFieldType) => void;
-  onMove: (fieldId: string, direction: "up" | "down") => void;
-  onRemove: (fieldId: string) => void;
   onRemoveOption: (fieldId: string, optionId: string) => void;
-  onUpdate: (
-    fieldId: string,
-    patch: Partial<InquiryFormFieldDefinition>,
-  ) => void;
-  onUpdateOption: (
-    fieldId: string,
-    optionId: string,
-    patch: Partial<InquiryFieldOption>,
-  ) => void;
-  totalFields: number;
+  onUpdate: (fieldId: string, patch: Partial<InquiryFormFieldDefinition>) => void;
+  onUpdateOption: (fieldId: string, optionId: string, patch: Partial<InquiryFieldOption>) => void;
 }) {
+  if (!field) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-semibold tracking-tight text-foreground">Project field</p>
+        <p className="text-sm text-muted-foreground">Select a field to edit.</p>
+      </div>
+    );
+  }
+
   const fieldId = getFieldId(field);
   const isSystem = field.kind === "system";
   const isLockedRequired =
     isSystem && (field.key === "serviceCategory" || field.key === "details");
   const canToggleEnabled = isSystem && !isLockedRequired;
   const canToggleRequired =
-    field.kind === "custom"
-      ? true
-      : field.key !== "attachment" && !isLockedRequired;
+    field.kind === "custom" ? true : field.key !== "attachment" && !isLockedRequired;
+  const optionCount = field.kind === "custom" ? (field.options?.length ?? 0) : 0;
 
   return (
-    <div className="soft-panel flex flex-col gap-5 px-4 py-4 shadow-none">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold tracking-tight text-foreground">
-            {isSystem ? getSystemFieldTitle(field) : field.label || "New custom field"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isSystem ? "System field" : "Custom field"}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={isPending || index === 0}
-            onClick={() => onMove(fieldId, "up")}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <ChevronUp className="size-4" />
-          </Button>
-          <Button
-            disabled={isPending || index === totalFields - 1}
-            onClick={() => onMove(fieldId, "down")}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <ChevronDown className="size-4" />
-          </Button>
-          {!isSystem ? (
-            <Button
-              disabled={isPending}
-              onClick={() => onRemove(fieldId)}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          ) : null}
-        </div>
+    <>
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-semibold tracking-tight text-foreground">Project field</p>
+        <p className="text-sm text-muted-foreground">
+          {isSystem ? "System field" : "Custom field"} — edits affect the public form.
+        </p>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_14rem]">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label
+          className={cn(
+            "flex items-center gap-3 px-1 py-1",
+            (field.kind === "system" ? !canToggleEnabled : false) && "opacity-70",
+          )}
+        >
+          <Switch
+            checked={field.kind === "system" ? field.enabled : true}
+            disabled={field.kind === "system" ? !canToggleEnabled || isPending : true}
+            onCheckedChange={(checked) => {
+              if (field.kind !== "system") {
+                return;
+              }
+
+              onUpdate(fieldId, {
+                enabled: checked,
+                required:
+                  field.key === "attachment" ? false : checked ? field.required : false,
+              });
+            }}
+          />
+          <span className="text-sm font-medium text-foreground">Show</span>
+        </label>
+
+        <label
+          className={cn(
+            "flex items-center gap-3 px-1 py-1",
+            !canToggleRequired && "opacity-70",
+          )}
+        >
+          <Switch
+            checked={field.required}
+            disabled={!canToggleRequired || (isSystem && !field.enabled) || isPending}
+            onCheckedChange={(checked) => onUpdate(fieldId, { required: checked })}
+          />
+          <span className="text-sm font-medium text-foreground">Required</span>
+        </label>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
         <Field>
           <FieldLabel htmlFor={`${fieldId}-label`}>Label</FieldLabel>
           <FieldContent>
@@ -889,15 +1398,16 @@ function ProjectFieldCard({
             </FieldContent>
           </Field>
         ) : (
-          <div className="soft-panel flex items-center gap-3 px-4 py-4 shadow-none">
-            <span className="text-sm font-medium text-foreground">
-              {getSystemFieldInputKindLabel(field)}
-            </span>
-          </div>
+          <Field>
+            <FieldLabel>Field type</FieldLabel>
+            <FieldContent>
+              <Input disabled value={getSystemFieldInputKindLabel(field)} />
+            </FieldContent>
+          </Field>
         )}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
+      <div className="grid gap-4">
         <Field>
           <FieldLabel htmlFor={`${fieldId}-placeholder`}>Placeholder</FieldLabel>
           <FieldContent>
@@ -925,48 +1435,6 @@ function ProjectFieldCard({
             )}
           </FieldContent>
         </Field>
-
-        {field.kind === "system" ? (
-          <label
-            className={cn(
-              "soft-panel flex items-center gap-3 px-4 py-4 shadow-none",
-              !canToggleEnabled && "opacity-70",
-            )}
-          >
-            <Switch
-              checked={field.enabled}
-              disabled={!canToggleEnabled || isPending}
-              onCheckedChange={(checked) =>
-                onUpdate(fieldId, {
-                  enabled: checked,
-                  required:
-                    field.key === "attachment" ? false : checked ? field.required : false,
-                })
-              }
-            />
-            <span className="text-sm text-foreground">Show</span>
-          </label>
-        ) : (
-          <div className="soft-panel flex items-center px-4 py-4 text-sm text-muted-foreground shadow-none">
-            Remove the field to hide it.
-          </div>
-        )}
-
-        <label
-          className={cn(
-            "soft-panel flex items-center gap-3 px-4 py-4 shadow-none",
-            !canToggleRequired && "opacity-70",
-          )}
-        >
-          <Switch
-            checked={field.required}
-            disabled={!canToggleRequired || (isSystem && !field.enabled) || isPending}
-            onCheckedChange={(checked) =>
-              onUpdate(fieldId, { required: checked })
-            }
-          />
-          <span className="text-sm text-foreground">Required</span>
-        </label>
       </div>
 
       {field.kind === "custom" &&
@@ -976,7 +1444,7 @@ function ProjectFieldCard({
           <FormSection
             action={
               <Button
-                disabled={isPending}
+                disabled={isPending || optionCount >= maxOptions}
                 onClick={() => onAddOption(fieldId)}
                 type="button"
                 variant="outline"
@@ -990,7 +1458,7 @@ function ProjectFieldCard({
             <div className="grid gap-3">
               {(field.options ?? []).map((option) => (
                 <div
-                  className="grid gap-3 rounded-xl border border-border/70 bg-background/70 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                  className="grid gap-3 rounded-xl border border-border/70 bg-background/70 p-3 md:grid-cols-[minmax(0,1fr)_auto]"
                   key={option.id}
                 >
                   <Input
@@ -999,21 +1467,11 @@ function ProjectFieldCard({
                     onChange={(event) =>
                       onUpdateOption(fieldId, option.id, {
                         label: event.currentTarget.value,
+                        value: normalizeOptionValue(event.currentTarget.value),
                       })
                     }
                     placeholder="Label"
                     value={option.label}
-                  />
-                  <Input
-                    disabled={isPending}
-                    maxLength={80}
-                    onChange={(event) =>
-                      onUpdateOption(fieldId, option.id, {
-                        value: event.currentTarget.value,
-                      })
-                    }
-                    placeholder="Value"
-                    value={option.value}
                   />
                   <Button
                     disabled={isPending || (field.options?.length ?? 0) === 1}
@@ -1026,11 +1484,14 @@ function ProjectFieldCard({
                   </Button>
                 </div>
               ))}
+              <p className="text-xs text-muted-foreground">
+                {optionCount}/{maxOptions} options
+              </p>
             </div>
           </FormSection>
         </>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -1073,14 +1534,28 @@ function getSystemFieldInputKindLabel(field: InquiryFormSystemFieldDefinition) {
   }
 }
 
-function createCustomFieldDraft(): InquiryFormCustomFieldDefinition {
+function normalizeOptionValue(label: string) {
+  return label.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function createCustomFieldDraft(
+  overrides: Partial<
+    Pick<InquiryFormCustomFieldDefinition, "label" | "placeholder" | "fieldType">
+  > = {},
+): InquiryFormCustomFieldDefinition {
+  const fieldType = overrides.fieldType ?? "short_text";
+
   return {
     kind: "custom",
     id: `custom_${crypto.randomUUID().replace(/-/g, "")}`,
-    fieldType: "short_text",
-    label: "",
-    placeholder: "",
+    fieldType,
+    label: overrides.label ?? "",
+    placeholder: overrides.placeholder ?? "",
     required: false,
+    options:
+      fieldType === "select" || fieldType === "multi_select"
+        ? [createFieldOptionDraft()]
+        : undefined,
   };
 }
 
