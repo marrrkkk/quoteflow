@@ -32,6 +32,7 @@ type KnowledgeFaqFormProps = {
   submitPendingLabel: string;
   onSuccess?: () => void;
   idPrefix?: string;
+  showSectionHeader?: boolean;
 };
 
 const initialState: KnowledgeFaqActionState = {};
@@ -43,6 +44,7 @@ export function KnowledgeFaqForm({
   submitPendingLabel,
   onSuccess,
   idPrefix = "knowledge-faq",
+  showSectionHeader = true,
 }: KnowledgeFaqFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -75,7 +77,7 @@ export function KnowledgeFaqForm({
         </Alert>
       ) : null}
 
-      <FormSection title={initialValues ? "FAQ content" : "New FAQ"}>
+      <FormSection title={showSectionHeader ? (initialValues ? "FAQ content" : "New FAQ") : undefined}>
         <FieldGroup>
           <Field data-invalid={Boolean(state.fieldErrors?.question) || undefined}>
             <FieldLabel htmlFor={`${idPrefix}-question`}>Question</FieldLabel>
