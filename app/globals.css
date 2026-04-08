@@ -464,6 +464,11 @@
       linear-gradient(180deg, #ffffff 0%, #f8faf8 42%, #f3f6f4 100%);
   }
 
+  /* Prevent layout shift when sheet/dialog opens by locking body scroll */
+  body:has([data-slot="sheet-content"][data-state="open"]) {
+    overflow: hidden;
+  }
+
   .dark body {
     background-image:
       radial-gradient(circle at 50% -28%, rgb(255 255 255 / 0.035), transparent 20rem),
