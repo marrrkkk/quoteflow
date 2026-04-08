@@ -105,9 +105,15 @@ export type InquiryFormFieldDefinition =
   | InquiryFormSystemFieldDefinition
   | InquiryFormCustomFieldDefinition;
 
+export type InquiryFormGroupLabels = {
+  contact: string;
+  project: string;
+};
+
 export type InquiryFormConfig = {
   version: 1;
   businessType: BusinessType;
+  groupLabels: InquiryFormGroupLabels;
   contactFields: Record<InquiryContactFieldKey, InquiryContactFieldConfig>;
   projectFields: InquiryFormFieldDefinition[];
 };
@@ -137,6 +143,13 @@ const inquiryContactFieldConfigSchema = z.object({
   enabled: z.boolean(),
   required: z.boolean(),
 });
+
+const inquiryFormGroupLabelsSchema = z
+  .object({
+    contact: z.string().trim().min(1).max(40),
+    project: z.string().trim().min(1).max(40),
+  })
+  .partial();
 
 export const inquiryFormSystemFieldSchema = z.object({
   kind: z.literal("system"),
@@ -195,6 +208,7 @@ export const inquiryFormConfigSchema = z
   .object({
     version: z.literal(1),
     businessType: z.enum(businessTypes),
+    groupLabels: inquiryFormGroupLabelsSchema.optional(),
     contactFields: z.object({
       customerName: inquiryContactFieldConfigSchema,
       customerEmail: inquiryContactFieldConfigSchema,
@@ -280,6 +294,36 @@ export const inquiryFormConfigSchema = z
 type CreateInquiryFormConfigDefaultsInput = {
   businessType?: BusinessType;
 };
+
+function getDefaultInquiryFormGroupLabels(
+  businessType: BusinessType,
+): InquiryFormGroupLabels {
+  const contact = "Contact";
+
+  switch (businessType) {
+    case "repair_services":
+      return { contact, project: "Repair details" };
+    case "home_services":
+      return { contact, project: "Job details" };
+    case "cleaning_services":
+      return { contact, project: "Cleaning details" };
+    case "print_signage":
+      return { contact, project: "Order details" };
+    case "landscaping_outdoor":
+      return { contact, project: "Service details" };
+    case "it_web_services":
+      return { contact, project: "Request details" };
+    case "photo_video_events":
+      return { contact, project: "Event details" };
+    case "coaching_consulting":
+      return { contact, project: "Consultation details" };
+    case "creative_studio_agency":
+      return { contact, project: "Project details" };
+    case "general_services":
+    default:
+      return { contact, project: "Project details" };
+  }
+}
 
 type ContactFieldOverrides = Partial<
   Record<
@@ -856,6 +900,7 @@ export function createInquiryFormConfigDefaults({
   return {
     version: 1,
     businessType,
+    groupLabels: getDefaultInquiryFormGroupLabels(businessType),
     contactFields: createContactFieldConfig(contactFieldOverrides),
     projectFields,
   };
@@ -872,7 +917,13 @@ export function getNormalizedInquiryFormConfig(
     return fallback;
   }
 
-  return parsed.data;
+  return {
+    ...parsed.data,
+    groupLabels: {
+      ...fallback.groupLabels,
+      ...(parsed.data.groupLabels ?? {}),
+    },
+  } satisfies InquiryFormConfig;
 }
 
 export function getNormalizedInquirySubmittedFieldSnapshot(value: unknown) {
