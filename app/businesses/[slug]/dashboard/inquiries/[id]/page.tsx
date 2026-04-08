@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Mail, Phone, ReceiptText } from "lucide-react";
+import { Building2, FileText, Mail, Phone, ReceiptText } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import {
@@ -134,12 +134,6 @@ export default async function InquiryDetailPage({
               <InfoTile
                 label="Deadline"
                 value={inquiry.requestedDeadline ?? "Not provided"}
-              />
-              <InfoTile
-                label="Source"
-                value={
-                  inquiry.source ? inquiry.source.replace(/[-_]/g, " ") : "Unknown"
-                }
               />
               {inquiry.subject ? (
                 <InfoTile
@@ -317,7 +311,11 @@ export default async function InquiryDetailPage({
                 }
               />
               {inquiry.companyName ? (
-                <InfoTile label="Company" value={inquiry.companyName} />
+                <InfoTile
+                  icon={Building2}
+                  label="Company"
+                  value={inquiry.companyName}
+                />
               ) : null}
           </DashboardSection>
 
