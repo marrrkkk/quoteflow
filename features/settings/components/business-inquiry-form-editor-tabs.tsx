@@ -1,12 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowUpRight, Eye, FileText, FormInput, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
   DashboardSidebarStack,
 } from "@/components/shared/dashboard-layout";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -58,18 +58,6 @@ export function BusinessInquiryFormEditorTabs({
     "fields",
   );
 
-  function openInBrowserTab(href: string) {
-    const nextTab = window.open("about:blank", "_blank");
-
-    if (!nextTab) {
-      window.location.href = href;
-      return;
-    }
-
-    nextTab.opener = null;
-    nextTab.location.href = href;
-  }
-
   const tabsList = useMemo(
     () => (
       <TabsList className="w-full justify-start sm:w-fit">
@@ -95,20 +83,22 @@ export function BusinessInquiryFormEditorTabs({
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         {tabsList}
         <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => openInBrowserTab(previewHref)}
-            type="button"
-            variant="outline"
-          >
-            <Eye data-icon="inline-start" />
-            Preview
+          <Button asChild type="button" variant="outline">
+            <Link href={previewHref} prefetch={false} rel="noreferrer" target="_blank">
+              <Eye data-icon="inline-start" />
+              Preview
+            </Link>
           </Button>
-          <Button
-            onClick={() => openInBrowserTab(isPublicLive ? publicInquiryHref : previewHref)}
-            type="button"
-          >
-            Open form
-            <ArrowUpRight data-icon="inline-end" />
+          <Button asChild type="button">
+            <Link
+              href={isPublicLive ? publicInquiryHref : previewHref}
+              prefetch={false}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Open form
+              <ArrowUpRight data-icon="inline-end" />
+            </Link>
           </Button>
         </div>
       </div>
