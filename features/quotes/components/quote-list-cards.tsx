@@ -37,62 +37,64 @@ export function QuoteListCards({
           prefetch={true}
         >
           <Card className="data-list-card transition-colors hover:bg-accent/20">
-          <CardHeader className="data-list-card-header">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex flex-col gap-1">
-                <CardTitle className="text-lg leading-tight">
-                  <span className="block truncate">{quote.quoteNumber}</span>
-                </CardTitle>
-                <CardDescription className="truncate text-sm">
-                  {quote.title}
-                </CardDescription>
-                {quote.reminders.length || quote.postAcceptanceStatus !== "none" ? (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {quote.reminders.map((reminder) => (
-                      <QuoteReminderBadge key={reminder} kind={reminder} />
-                    ))}
-                    {quote.postAcceptanceStatus !== "none" ? (
-                      <QuotePostAcceptanceStatusBadge
-                        status={quote.postAcceptanceStatus}
-                      />
-                    ) : null}
-                  </div>
-                ) : null}
+            <CardHeader className="data-list-card-header">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0 flex flex-1 flex-col gap-1">
+                  <CardTitle className="min-w-0 text-lg leading-tight">
+                    <span className="block truncate">{quote.quoteNumber}</span>
+                  </CardTitle>
+                  <CardDescription className="truncate text-sm">
+                    {quote.title}
+                  </CardDescription>
+                  {quote.reminders.length || quote.postAcceptanceStatus !== "none" ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {quote.reminders.map((reminder) => (
+                        <QuoteReminderBadge key={reminder} kind={reminder} />
+                      ))}
+                      {quote.postAcceptanceStatus !== "none" ? (
+                        <QuotePostAcceptanceStatusBadge
+                          status={quote.postAcceptanceStatus}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="shrink-0">
+                  <QuoteStatusBadge status={quote.status} />
+                </div>
               </div>
-              <QuoteStatusBadge status={quote.status} />
-            </div>
-          </CardHeader>
-          <CardContent className="data-list-card-meta pt-0">
-            <div className="info-tile h-full px-3.5 py-3 shadow-none">
-              <span className="meta-label">
-                Customer
-              </span>
-              <div className="mt-2 flex flex-col gap-1">
-                <p className="text-sm font-medium text-foreground">
-                  {quote.customerName}
-                </p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {quote.customerEmail}
+            </CardHeader>
+            <CardContent className="data-list-card-meta pt-0">
+              <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
+                <span className="meta-label">
+                  Customer
+                </span>
+                <div className="mt-2 min-w-0 flex flex-col gap-1">
+                  <p className="truncate text-sm font-medium text-foreground" title={quote.customerName}>
+                    {quote.customerName}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {quote.customerEmail}
+                  </p>
+                </div>
+              </div>
+              <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
+                <span className="meta-label">
+                  Valid until
+                </span>
+                <p className="mt-2 truncate text-sm text-foreground">
+                  {formatQuoteDate(quote.validUntil)}
                 </p>
               </div>
-            </div>
-            <div className="info-tile h-full px-3.5 py-3 shadow-none">
-              <span className="meta-label">
-                Valid until
-              </span>
-              <p className="mt-2 text-sm text-foreground">
-                {formatQuoteDate(quote.validUntil)}
-              </p>
-            </div>
-            <div className="info-tile h-full px-3.5 py-3 shadow-none">
-              <span className="meta-label">
-                Total
-              </span>
-              <p className="mt-2 text-sm font-semibold text-foreground">
-                {formatQuoteMoney(quote.totalInCents, currency)}
-              </p>
-            </div>
-          </CardContent>
+              <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
+                <span className="meta-label">
+                  Total
+                </span>
+                <p className="mt-2 truncate text-sm font-semibold text-foreground">
+                  {formatQuoteMoney(quote.totalInCents, currency)}
+                </p>
+              </div>
+            </CardContent>
           </Card>
         </Link>
       ))}
