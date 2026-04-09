@@ -10,6 +10,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { QuoteListFilters } from "@/features/quotes/components/quote-list-filters";
+import { QuoteExportCsvPopover } from "@/features/quotes/components/quote-export-csv-popover";
 import { QuoteListResults } from "@/features/quotes/components/quote-list-results";
 import {
   getQuoteListCountForBusiness,
@@ -119,12 +120,19 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
         eyebrow="Quotes"
         title="Quotes"
         actions={
-          <Button asChild>
-            <Link href={getBusinessNewQuotePath(businessSlug)} prefetch={true}>
-              Create quote
-              <ArrowRight data-icon="inline-end" />
-            </Link>
-          </Button>
+          <div className="dashboard-actions">
+            <QuoteExportCsvPopover
+              businessSlug={businessSlug}
+              filters={filters}
+              resultCount={totalItems}
+            />
+            <Button asChild>
+              <Link href={getBusinessNewQuotePath(businessSlug)} prefetch={true}>
+                <ReceiptText data-icon="inline-start" />
+                Create quote
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -149,6 +157,7 @@ export default async function QuotesPage({ searchParams }: QuotesPageProps) {
             ) : (
               <Button asChild>
                 <Link href={getBusinessNewQuotePath(businessSlug)} prefetch={true}>
+                  <ReceiptText data-icon="inline-start" />
                   Create first quote
                 </Link>
               </Button>
