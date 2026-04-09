@@ -2,13 +2,16 @@
 
 import { useActionState, useState } from "react";
 
+import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions } from "@/components/shared/form-layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Field,
   FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -16,18 +19,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  businessTypeMeta,
-  businessTypes,
+  businessTypeOptions,
   type BusinessType,
 } from "@/features/inquiries/business-types";
+import { getBusinessCountryOption } from "@/features/businesses/locale";
 import {
   onboardingProfileSchema,
   onboardingWorkspaceSchema,
@@ -49,7 +44,7 @@ type OnboardingVisibleField =
   | "businessName"
   | "businessType"
   | "fullName"
-  | "jobTitle";
+  | "countryCode";
 
 const onboardingSteps = [
   {
@@ -68,9 +63,9 @@ const onboardingSteps = [
     prompt: "What should we call you?",
   },
   {
-    field: "jobTitle",
-    label: "Role",
-    prompt: "What is your role?",
+    field: "countryCode",
+    label: "Country",
+    prompt: "Where is your business based?",
   },
 ] as const;
 
@@ -89,9 +84,10 @@ export function OnboardingForm({
   const [values, setValues] = useState({
     businessName: "",
     businessType: "" as BusinessType | "",
+    countryCode: "",
     fullName: initialValues.fullName,
-    jobTitle: initialValues.jobTitle,
   });
+  const defaultJobTitle = initialValues.jobTitle.trim() || "Owner";
 
   function updateField<FieldName extends OnboardingVisibleField>(
     field: FieldName,
@@ -144,9 +140,9 @@ export function OnboardingForm({
           ? undefined
           : validationResult.error.issues[0]?.message;
       }
-      case "jobTitle": {
-        const validationResult = onboardingProfileSchema.shape.jobTitle.safeParse(
-          values.jobTitle,
+      case "countryCode": {
+        const validationResult = onboardingWorkspaceSchema.shape.countryCode.safeParse(
+          values.countryCode,
         );
 
         return validationResult.success
@@ -215,8 +211,9 @@ export function OnboardingForm({
   const progressValue = ((currentStep + 1) / onboardingSteps.length) * 100;
   const businessNameError = getFieldError("businessName");
   const businessTypeError = getFieldError("businessType");
+  const countryCodeError = getFieldError("countryCode");
   const fullNameError = getFieldError("fullName");
-  const jobTitleError = getFieldError("jobTitle");
+  const selectedCountry = getBusinessCountryOption(values.countryCode);
 
   return (
     <form
@@ -239,9 +236,10 @@ export function OnboardingForm({
     >
       <input name="businessName" type="hidden" value={values.businessName} />
       <input name="businessType" type="hidden" value={values.businessType} />
+      <input name="countryCode" type="hidden" value={values.countryCode} />
       <input name="shortDescription" type="hidden" value="" />
       <input name="fullName" type="hidden" value={values.fullName} />
-      <input name="jobTitle" type="hidden" value={values.jobTitle} />
+      <input name="jobTitle" type="hidden" value={defaultJobTitle} />
       <input name="phone" type="hidden" value="" />
 
       <div className="flex flex-col gap-3">
@@ -302,29 +300,28 @@ export function OnboardingForm({
                 Industry
               </FieldLabel>
               <FieldContent>
-                <Select
+                <Combobox
+                  aria-invalid={Boolean(businessTypeError) || undefined}
+                  autoFocus
+                  buttonClassName="h-12 text-base"
+                  contentClassName="max-h-80"
+                  id="onboarding-business-type"
                   onValueChange={(value) =>
                     updateField("businessType", value as BusinessType)
                   }
-                  value={values.businessType || undefined}
-                >
-                  <SelectTrigger
-                    aria-invalid={Boolean(businessTypeError) || undefined}
-                    className="h-12 w-full text-base"
-                    id="onboarding-business-type"
-                  >
-                    <SelectValue placeholder="Select your industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {businessTypes.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {businessTypeMeta[option].label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                  options={businessTypeOptions}
+                  placeholder="Select your industry"
+                  renderOption={(option) => (
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{option.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </div>
+                  )}
+                  searchPlaceholder="Search industry"
+                  value={values.businessType}
+                />
                 <FieldError
                   errors={
                     businessTypeError ? [{ message: businessTypeError }] : undefined
@@ -361,28 +358,31 @@ export function OnboardingForm({
             </Field>
           ) : null}
 
-          {currentStepMeta.field === "jobTitle" ? (
-            <Field data-invalid={Boolean(jobTitleError) || undefined}>
-              <FieldLabel className="sr-only" htmlFor="onboarding-job-title">
-                Role or title
+          {currentStepMeta.field === "countryCode" ? (
+            <Field data-invalid={Boolean(countryCodeError) || undefined}>
+              <FieldLabel className="sr-only" htmlFor="onboarding-country-code">
+                Country
               </FieldLabel>
               <FieldContent>
-                <Input
-                  aria-invalid={Boolean(jobTitleError) || undefined}
+                <CountryCombobox
+                  aria-invalid={Boolean(countryCodeError) || undefined}
                   autoFocus
-                  className="h-12 text-base"
-                  id="onboarding-job-title"
-                  maxLength={80}
-                  minLength={2}
-                  onChange={(event) =>
-                    updateField("jobTitle", event.currentTarget.value)
-                  }
-                  placeholder="Owner"
-                  required
-                  value={values.jobTitle}
+                  disabled={isPending}
+                  id="onboarding-country-code"
+                  onValueChange={(value) => updateField("countryCode", value)}
+                  placeholder="Choose your country"
+                  searchPlaceholder="Search country"
+                  value={values.countryCode}
                 />
+                <FieldDescription>
+                  {selectedCountry
+                    ? `Default currency: ${selectedCountry.currencyCode}`
+                    : "We use this to pick the starting quote currency."}
+                </FieldDescription>
                 <FieldError
-                  errors={jobTitleError ? [{ message: jobTitleError }] : undefined}
+                  errors={
+                    countryCodeError ? [{ message: countryCodeError }] : undefined
+                  }
                 />
               </FieldContent>
             </Field>
