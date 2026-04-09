@@ -16,6 +16,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import type { KnowledgeFaqActionState } from "@/features/knowledge/types";
 
@@ -132,7 +133,14 @@ export function KnowledgeFaqForm({
 
       <FormActions>
         <Button disabled={isPending} type="submit">
-          {isPending ? submitPendingLabel : submitLabel}
+          {isPending ? (
+            <>
+              <Spinner data-icon="inline-start" aria-hidden="true" />
+              {submitPendingLabel}
+            </>
+          ) : (
+            submitLabel
+          )}
         </Button>
       </FormActions>
     </form>
