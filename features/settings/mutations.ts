@@ -2,9 +2,15 @@ import "server-only";
 
 import { and, eq, isNull, ne } from "drizzle-orm";
 
-import { type BusinessType } from "@/features/inquiries/business-types";
+import {
+  normalizeBusinessType,
+  type BusinessType,
+} from "@/features/inquiries/business-types";
 import { normalizeInquiryFormSlug } from "@/features/inquiries/inquiry-forms";
-import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
+import {
+  createInquiryFormConfigDefaults,
+  getNormalizedInquiryFormConfig,
+} from "@/features/inquiries/form-config";
 import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
 import type {
   BusinessDeleteInput,
@@ -714,6 +720,12 @@ export async function updateBusinessInquiryFormSettings({
   }
 
   const now = new Date();
+  const inquiryFormConfig = getNormalizedInquiryFormConfig(
+    values.inquiryFormConfig,
+    {
+      businessType: values.businessType,
+    },
+  );
 
   await db.transaction(async (tx) => {
     await tx
@@ -722,10 +734,7 @@ export async function updateBusinessInquiryFormSettings({
         name: values.name,
         slug: values.slug,
         businessType: values.businessType,
-        inquiryFormConfig: {
-          ...values.inquiryFormConfig,
-          businessType: values.businessType,
-        },
+        inquiryFormConfig,
         updatedAt: now,
       })
       .where(
@@ -741,13 +750,13 @@ export async function updateBusinessInquiryFormSettings({
       actorUserId,
       type: "business.inquiry_form_updated",
       summary: `Inquiry form updated for ${form.slug}.`,
-      metadata: {
-        inquiryFormId: values.formId,
-        inquiryFormSlug: values.slug,
-        previousInquiryFormSlug: form.slug,
-        businessType: values.businessType,
-        projectFieldCount: values.inquiryFormConfig.projectFields.length,
-      },
+        metadata: {
+          inquiryFormId: values.formId,
+          inquiryFormSlug: values.slug,
+          previousInquiryFormSlug: form.slug,
+          businessType: values.businessType,
+          projectFieldCount: inquiryFormConfig.projectFields.length,
+        },
       createdAt: now,
       updatedAt: now,
     });
@@ -980,6 +989,13 @@ export async function duplicateBusinessInquiryForm({
   const now = new Date();
   const nextName = createDuplicateInquiryFormName(sourceForm.name);
   const formId = createId("ifm");
+  const sourceFormBusinessType = normalizeBusinessType(sourceForm.businessType);
+  const sourceInquiryFormConfig = getNormalizedInquiryFormConfig(
+    sourceForm.inquiryFormConfig,
+    {
+      businessType: sourceFormBusinessType,
+    },
+  );
   const formSlug = await getAvailableBusinessInquiryFormSlug({
     businessId,
     baseSlug: nextName,
@@ -991,10 +1007,10 @@ export async function duplicateBusinessInquiryForm({
       businessId,
       name: nextName,
       slug: formSlug,
-      businessType: sourceForm.businessType,
+      businessType: sourceFormBusinessType,
       isDefault: false,
       publicInquiryEnabled: sourceForm.publicInquiryEnabled,
-      inquiryFormConfig: sourceForm.inquiryFormConfig,
+      inquiryFormConfig: sourceInquiryFormConfig,
       inquiryPageConfig: {
         ...sourceForm.inquiryPageConfig,
         formTitle: nextName,

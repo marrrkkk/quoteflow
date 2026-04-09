@@ -8,6 +8,7 @@ import {
   getNormalizedInquirySubmittedFieldSnapshot,
 } from "@/features/inquiries/form-config";
 import { getNormalizedInquiryPageConfig } from "@/features/inquiries/page-config";
+import { normalizeBusinessType } from "@/features/inquiries/business-types";
 import {
   getBusinessInquiryDetailCacheTags,
   getBusinessInquiryFormCacheTags,
@@ -72,11 +73,13 @@ export async function getPublicInquiryBusinessBySlug(
     return null;
   }
 
+  const formBusinessType = normalizeBusinessType(business.formBusinessType);
+
   return {
     id: business.id,
     name: business.name,
     slug: business.slug,
-    businessType: business.formBusinessType,
+    businessType: formBusinessType,
     shortDescription: business.shortDescription,
     logoUrl: business.logoStoragePath
       ? `/api/public/businesses/${business.slug}/logo?v=${business.updatedAt.getTime()}`
@@ -85,18 +88,18 @@ export async function getPublicInquiryBusinessBySlug(
       id: business.formId,
       name: business.formName,
       slug: business.formSlug,
-      businessType: business.formBusinessType,
+      businessType: formBusinessType,
       isDefault: business.formIsDefault,
       publicInquiryEnabled: business.publicInquiryEnabled,
     },
     inquiryFormConfig: getNormalizedInquiryFormConfig(business.inquiryFormConfig, {
-      businessType: business.formBusinessType,
+      businessType: formBusinessType,
     }),
     inquiryPageConfig: getNormalizedInquiryPageConfig(business.inquiryPageConfig, {
       businessName: business.name,
       businessShortDescription: business.shortDescription,
       legacyInquiryHeadline: business.inquiryHeadline,
-      businessType: business.formBusinessType,
+      businessType: formBusinessType,
     }),
   };
 }
@@ -196,11 +199,13 @@ async function getInquiryBusinessByFormSlug({
     return null;
   }
 
+  const formBusinessType = normalizeBusinessType(business.formBusinessType);
+
   return {
     id: business.id,
     name: business.name,
     slug: business.slug,
-    businessType: business.formBusinessType,
+    businessType: formBusinessType,
     shortDescription: business.shortDescription,
     logoUrl: business.logoStoragePath
       ? `/api/public/businesses/${business.slug}/logo?v=${business.updatedAt.getTime()}`
@@ -209,18 +214,18 @@ async function getInquiryBusinessByFormSlug({
       id: business.formId,
       name: business.formName,
       slug: business.formSlug,
-      businessType: business.formBusinessType,
+      businessType: formBusinessType,
       isDefault: business.formIsDefault,
       publicInquiryEnabled: business.publicInquiryEnabled,
     },
     inquiryFormConfig: getNormalizedInquiryFormConfig(business.inquiryFormConfig, {
-      businessType: business.formBusinessType,
+      businessType: formBusinessType,
     }),
     inquiryPageConfig: getNormalizedInquiryPageConfig(business.inquiryPageConfig, {
       businessName: business.name,
       businessShortDescription: business.shortDescription,
       legacyInquiryHeadline: business.inquiryHeadline,
-      businessType: business.formBusinessType,
+      businessType: formBusinessType,
     }),
   };
 }
@@ -435,6 +440,10 @@ export async function getInquiryDetailForBusiness({
     return null;
   }
 
+  const inquiryFormBusinessType = normalizeBusinessType(
+    inquiry.inquiryFormBusinessType,
+  );
+
   const [attachments, notes, activities, relatedQuoteRows, quoteCountRows] =
     await Promise.all([
       db
@@ -516,6 +525,7 @@ export async function getInquiryDetailForBusiness({
 
   return {
     ...inquiry,
+    inquiryFormBusinessType,
     submittedFieldSnapshot: getNormalizedInquirySubmittedFieldSnapshot(
       inquiry.submittedFieldSnapshot,
     ),
