@@ -45,9 +45,23 @@ export function TruncatedTextWithTooltip({
     updateTruncation();
 
     const frame = window.requestAnimationFrame(updateTruncation);
+    const fontSet = document.fonts;
+
+    const handleFontLoadingDone = () => {
+      updateTruncation();
+    };
+
+    void fontSet.ready.then(() => {
+      updateTruncation();
+    });
+
+    fontSet.addEventListener("loadingdone", handleFontLoadingDone);
 
     if (typeof ResizeObserver === "undefined") {
-      return () => window.cancelAnimationFrame(frame);
+      return () => {
+        window.cancelAnimationFrame(frame);
+        fontSet.removeEventListener("loadingdone", handleFontLoadingDone);
+      };
     }
 
     const observer = new ResizeObserver(updateTruncation);
@@ -55,6 +69,7 @@ export function TruncatedTextWithTooltip({
 
     return () => {
       window.cancelAnimationFrame(frame);
+      fontSet.removeEventListener("loadingdone", handleFontLoadingDone);
       observer.disconnect();
     };
   }, [mounted, text]);

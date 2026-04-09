@@ -8,16 +8,9 @@ import {
   DashboardToolbar,
 } from "@/components/shared/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Sheet,
@@ -113,25 +106,16 @@ export function DataListToolbar({
             {filterLabel}
           </FieldLabel>
           <FieldContent>
-            <Select
+            <Combobox
+              id={filterId}
               value={filterValue}
               onValueChange={(value) => {
                 onFilterChange(value);
               }}
-            >
-              <SelectTrigger id={filterId} className="w-full">
-                <SelectValue placeholder={filterLabel} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {filterOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              options={filterOptions}
+              placeholder={filterLabel}
+              searchPlaceholder={`Search ${filterLabel.toLowerCase()}`}
+            />
           </FieldContent>
         </Field>
 
@@ -141,25 +125,16 @@ export function DataListToolbar({
               {secondaryFilterLabel}
             </FieldLabel>
             <FieldContent>
-              <Select
-                value={secondaryFilterValue}
+              <Combobox
+                id={secondaryFilterId!}
+                value={secondaryFilterValue!}
                 onValueChange={(value) => {
                   onSecondaryFilterChange!(value);
                 }}
-              >
-                <SelectTrigger id={secondaryFilterId} className="w-full">
-                  <SelectValue placeholder={secondaryFilterLabel} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {secondaryFilterOptions!.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                options={secondaryFilterOptions!}
+                placeholder={secondaryFilterLabel!}
+                searchPlaceholder={`Search ${secondaryFilterLabel!.toLowerCase()}`}
+              />
             </FieldContent>
           </Field>
         ) : null}
@@ -170,25 +145,16 @@ export function DataListToolbar({
               {sortLabel}
             </FieldLabel>
             <FieldContent>
-              <Select
-                value={sortValue}
+              <Combobox
+                id={sortId!}
+                value={sortValue!}
                 onValueChange={(value) => {
                   onSortChange!(value);
                 }}
-              >
-                <SelectTrigger id={sortId} className="w-full">
-                  <SelectValue placeholder={sortLabel} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {sortOptions!.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                options={sortOptions!}
+                placeholder={sortLabel!}
+                searchPlaceholder={`Search ${sortLabel!.toLowerCase()}`}
+              />
             </FieldContent>
           </Field>
         ) : null}
