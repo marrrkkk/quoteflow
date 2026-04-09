@@ -280,7 +280,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
     kind: "managed",
     name: "Northline Home Services",
     slug: "northline-home-services",
-    businessType: "home_services",
+    businessType: "contractor_home_improvement",
     shortDescription:
       "Reliable repair, install, and recurring maintenance work for homes and small property portfolios.",
     inquiryHeadline:
@@ -302,7 +302,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
         key: "service",
         name: "Service request",
         slug: "service-request",
-        businessType: "home_services",
+        businessType: "contractor_home_improvement",
         isDefault: true,
         distributionWeight: 50,
         serviceCategories: [
@@ -328,7 +328,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
         key: "maintenance",
         name: "Maintenance plan request",
         slug: "maintenance-plan-request",
-        businessType: "home_services",
+        businessType: "contractor_home_improvement",
         isDefault: false,
         distributionWeight: 25,
         serviceCategories: [
@@ -353,7 +353,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
         key: "emergency",
         name: "After-hours repair",
         slug: "after-hours-repair",
-        businessType: "home_services",
+        businessType: "contractor_home_improvement",
         isDefault: false,
         distributionWeight: 25,
         serviceCategories: [
@@ -381,7 +381,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
     kind: "managed",
     name: "Summit Creative Studio",
     slug: "summit-creative-studio",
-    businessType: "creative_studio_agency",
+    businessType: "creative_marketing_services",
     shortDescription:
       "Brand, design, and launch support for small teams that need calm project delivery and practical creative ops.",
     inquiryHeadline:
@@ -403,7 +403,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
         key: "brief",
         name: "Project brief",
         slug: "project-brief",
-        businessType: "creative_studio_agency",
+        businessType: "creative_marketing_services",
         isDefault: true,
         distributionWeight: 45,
         serviceCategories: [
@@ -429,7 +429,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
         key: "retainer",
         name: "Retainer inquiry",
         slug: "retainer-inquiry",
-        businessType: "creative_studio_agency",
+        businessType: "creative_marketing_services",
         isDefault: false,
         distributionWeight: 30,
         serviceCategories: [
@@ -454,7 +454,7 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
         key: "web",
         name: "Website refresh",
         slug: "website-refresh",
-        businessType: "creative_studio_agency",
+        businessType: "creative_marketing_services",
         isDefault: false,
         distributionWeight: 25,
         serviceCategories: [
@@ -474,6 +474,208 @@ const demoBusinessDefinitions: DemoBusinessDefinition[] = [
           "Looking for pricing on {category} with fast feedback loops and a clean handoff into build.",
         ],
         budgetOptions: ["$2,000-$5,000", "$5,000-$10,000", "$10,000+", null],
+      },
+    ],
+  },
+  {
+    key: "ironwood",
+    kind: "managed",
+    name: "Ironwood Custom Fabrication",
+    slug: "ironwood-custom-fabrication",
+    businessType: "fabrication_custom_build",
+    shortDescription:
+      "Custom fabrication, millwork, and built-to-spec production for branded spaces, fixtures, and install-ready components.",
+    inquiryHeadline:
+      "Share the specs, material needs, and drawings and we will turn it into a practical quote.",
+    emailSignatureLines: [
+      demoConfig.ownerName,
+      "Ironwood Custom Fabrication",
+      demoConfig.ownerEmail,
+      "Custom builds, fabrication support, and install-ready production.",
+    ],
+    defaultQuoteNotes:
+      "Quotes cover listed fabrication, standard finishing, and shop handling. Site install, engineering review, freight, and specialty materials are scoped separately when needed.",
+    aiTonePreference: "direct",
+    defaultCurrency: "USD",
+    inquiryCount: 155,
+    quoteNumberStart: 5001,
+    forms: [
+      {
+        key: "quote",
+        name: "Quote request",
+        slug: "quote-request",
+        businessType: "fabrication_custom_build",
+        isDefault: true,
+        distributionWeight: 55,
+        serviceCategories: [
+          "Retail display fabrication",
+          "Custom millwork package",
+          "Metal sign frame build",
+          "Fixture production",
+          "Reception desk build",
+        ],
+        subjectTemplates: [
+          "{company} quote request for {category}",
+          "Need pricing on {category}",
+          "{category} fabrication scope for {company}",
+        ],
+        detailTemplates: [
+          "We need a quote for {category} and want help confirming material, finish, and production timing.",
+          "Please scope {category} for {company}. We can share sketches and dimensions but need practical pricing guidance.",
+          "Looking for a fabrication quote on {category} with clear assumptions around materials, finishing, and install coordination.",
+        ],
+        budgetOptions: ["$2,500-$6,000", "$6,000-$12,000", "$12,000+", null],
+      },
+      {
+        key: "prototype",
+        name: "Prototype request",
+        slug: "prototype-request",
+        businessType: "fabrication_custom_build",
+        isDefault: false,
+        distributionWeight: 25,
+        serviceCategories: [
+          "Prototype enclosure",
+          "Sample display unit",
+          "Custom bracket prototype",
+          "One-off product mockup",
+        ],
+        subjectTemplates: [
+          "{company} prototype inquiry",
+          "Need a quote for {category}",
+          "Prototype support for {category}",
+        ],
+        detailTemplates: [
+          "We want to prototype {category} before moving into a larger run and need pricing plus realistic shop timing.",
+          "Please quote {category} for {company}. This is an early prototype and we may need feedback on the best material path.",
+          "Looking for a practical estimate on {category} with notes on what should change before production.",
+        ],
+        budgetOptions: ["$1,000-$2,500", "$2,500-$5,000", "$5,000+", null],
+      },
+      {
+        key: "install",
+        name: "Install coordination",
+        slug: "install-coordination",
+        businessType: "fabrication_custom_build",
+        isDefault: false,
+        distributionWeight: 20,
+        serviceCategories: [
+          "Fixture install",
+          "Display install",
+          "Site measurement and install",
+          "Final fit-out support",
+        ],
+        subjectTemplates: [
+          "{company} install support for {category}",
+          "Need pricing on {category}",
+          "{category} fabrication and install request",
+        ],
+        detailTemplates: [
+          "Need help pricing {category} with site install and a realistic coordination window.",
+          "Please scope {category}. Production is only part of the job, and we need install handling included.",
+          "Looking for a quote on {category} with site access, install timing, and closeout covered clearly.",
+        ],
+        budgetOptions: ["$3,000-$7,500", "$7,500-$15,000", "$15,000+", null],
+      },
+    ],
+  },
+  {
+    key: "northstar",
+    kind: "managed",
+    name: "Northstar Event Rentals",
+    slug: "northstar-event-rentals",
+    businessType: "event_services_rentals",
+    shortDescription:
+      "Event rentals, setup, and production coordination for brand activations, weddings, and corporate gatherings.",
+    inquiryHeadline:
+      "Tell us the date, venue, and service needs and we will shape a clear event quote.",
+    emailSignatureLines: [
+      demoConfig.ownerName,
+      "Northstar Event Rentals",
+      demoConfig.ownerEmail,
+      "Event rentals, staffing, setup, and calm on-site coordination.",
+    ],
+    defaultQuoteNotes:
+      "Quotes include listed rentals, setup windows, and standard breakdown. Delivery zones, venue restrictions, overtime, and custom sourcing are scoped separately when needed.",
+    aiTonePreference: "warm",
+    defaultCurrency: "USD",
+    inquiryCount: 145,
+    quoteNumberStart: 6001,
+    forms: [
+      {
+        key: "event",
+        name: "Event request",
+        slug: "event-request",
+        businessType: "event_services_rentals",
+        isDefault: true,
+        distributionWeight: 50,
+        serviceCategories: [
+          "Corporate event setup",
+          "Wedding rentals",
+          "Brand activation support",
+          "Private dinner production",
+          "Conference lounge package",
+        ],
+        subjectTemplates: [
+          "{company} event request for {category}",
+          "Need pricing on {category}",
+          "{category} quote request",
+        ],
+        detailTemplates: [
+          "We need help with {category} and want pricing for rentals, setup, and timing in one clean quote.",
+          "Please scope {category} for {company}. We have a venue and rough guest count but need help locking the service mix.",
+          "Looking for a clear estimate on {category} with practical notes on delivery, setup, and breakdown.",
+        ],
+        budgetOptions: ["$2,000-$5,000", "$5,000-$10,000", "$10,000+", null],
+      },
+      {
+        key: "wedding",
+        name: "Wedding rentals",
+        slug: "wedding-rentals",
+        businessType: "event_services_rentals",
+        isDefault: false,
+        distributionWeight: 30,
+        serviceCategories: [
+          "Ceremony seating",
+          "Reception table package",
+          "Lounge furniture rental",
+          "Decor and styling support",
+        ],
+        subjectTemplates: [
+          "Wedding quote for {category}",
+          "{company} needs {category}",
+          "Need pricing on {category} for an upcoming wedding",
+        ],
+        detailTemplates: [
+          "Please quote {category} with delivery, setup, and pickup included where possible.",
+          "We are planning a wedding and need practical pricing for {category} with guest count and venue timing in mind.",
+          "Looking for a clean quote on {category}, including what works best for a fast venue turnaround.",
+        ],
+        budgetOptions: ["$1,500-$4,000", "$4,000-$8,000", "$8,000+", null],
+      },
+      {
+        key: "activation",
+        name: "Activation support",
+        slug: "activation-support",
+        businessType: "event_services_rentals",
+        isDefault: false,
+        distributionWeight: 20,
+        serviceCategories: [
+          "Popup launch setup",
+          "Sampling booth package",
+          "Stage and AV support",
+          "Experiential event staffing",
+        ],
+        subjectTemplates: [
+          "{company} activation request",
+          "Need a quote for {category}",
+          "{category} support request",
+        ],
+        detailTemplates: [
+          "We need support for {category} and want a quote that covers setup, staff coordination, and breakdown.",
+          "Please scope {category} for {company}. Timing is tight and we want practical recommendations, not just a rental list.",
+          "Looking for a quote on {category} with a realistic delivery schedule and on-site support plan.",
+        ],
+        budgetOptions: ["$3,000-$7,500", "$7,500-$15,000", "$15,000+", null],
       },
     ],
   },
@@ -1428,13 +1630,21 @@ function generateBulkQuoteData(
     const lineItemDescriptions = [
       `${inquiry.serviceCategory} scope`,
       "Planning and coordination",
-      definition.businessType === "creative_studio_agency"
+      definition.businessType === "creative_marketing_services"
         ? "Creative production"
-        : definition.businessType === "home_services"
+        : definition.businessType === "contractor_home_improvement"
           ? "Labor and materials"
+          : definition.businessType === "fabrication_custom_build"
+            ? "Fabrication and finishing"
+            : definition.businessType === "event_services_rentals"
+              ? "Setup and event operations"
           : "Production and execution",
-      definition.businessType === "creative_studio_agency"
+      definition.businessType === "creative_marketing_services"
         ? "Revision and handoff"
+        : definition.businessType === "fabrication_custom_build"
+          ? "Installation and fit check"
+          : definition.businessType === "event_services_rentals"
+            ? "Breakdown and post-event support"
         : "Delivery and quality assurance",
     ].slice(0, itemCount);
     const lineItems = lineItemDescriptions.map((description, position) => {
