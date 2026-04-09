@@ -12,6 +12,7 @@ import {
 } from "react";
 import { CheckCircle2 } from "lucide-react";
 
+import { CountryCombobox } from "@/components/shared/country-combobox";
 import {
   FloatingFormActions,
   useFloatingUnsavedChanges,
@@ -49,6 +50,12 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useProgressRouter } from "@/hooks/use-progress-router";
+import {
+  businessCurrencyOptions,
+  getBusinessCountryOption,
+  getBusinessCurrencyOption,
+  resolveCurrencyForCountry,
+} from "@/features/businesses/locale";
 import type {
   BusinessAiTonePreference,
   BusinessDeleteActionState,
@@ -121,21 +128,29 @@ export function BusinessSettingsForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [formRevision, setFormRevision] = useState(0);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [countryCode, setCountryCode] = useState(settings.countryCode ?? "");
+  const [defaultCurrency, setDefaultCurrency] = useState(settings.defaultCurrency);
   const [aiTonePreference, setAiTonePreference] = useState<BusinessAiTonePreference>(
     settings.aiTonePreference,
   );
   const [hasPendingLogo, setHasPendingLogo] = useState(false);
   const [logoResetSignal, setLogoResetSignal] = useState(0);
   const [hasTextInputChanges, setHasTextInputChanges] = useState(false);
+  const countryCodeError = getFieldError(state.fieldErrors, "countryCode");
+  const defaultCurrencyError = getFieldError(state.fieldErrors, "defaultCurrency");
   const aiToneError = getFieldError(state.fieldErrors, "aiTonePreference");
   const publicInquiryUrl = useMemo(
     () => getBusinessPublicInquiryUrl(settings.slug),
     [settings.slug],
   );
+  const selectedCountry = getBusinessCountryOption(countryCode);
+  const selectedCurrency = getBusinessCurrencyOption(defaultCurrency);
   const primaryContactEmail = settings.contactEmail ?? fallbackContactEmail;
   const hasControlledChanges =
     removeLogo ||
     hasPendingLogo ||
+    countryCode !== (settings.countryCode ?? "") ||
+    defaultCurrency !== settings.defaultCurrency ||
     aiTonePreference !== settings.aiTonePreference;
   const hasUnsavedChanges = hasControlledChanges || hasTextInputChanges;
   const { shouldRenderFloatingActions, floatingActionsState } =
@@ -198,6 +213,8 @@ export function BusinessSettingsForm({
     formRef.current?.reset();
     setRemoveLogo(false);
     setHasPendingLogo(false);
+    setCountryCode(settings.countryCode ?? "");
+    setDefaultCurrency(settings.defaultCurrency);
     setAiTonePreference(settings.aiTonePreference);
     setLogoResetSignal((current) => current + 1);
     setFormRevision((current) => current + 1);
@@ -227,158 +244,237 @@ export function BusinessSettingsForm({
         ) : null}
 
         <input name="removeLogo" type="hidden" value={String(removeLogo)} />
+        <input name="countryCode" type="hidden" value={countryCode} />
+        <input name="defaultCurrency" type="hidden" value={defaultCurrency} />
         <input name="aiTonePreference" type="hidden" value={aiTonePreference} />
 
         <Card className="gap-0 border-border/75 bg-card/97">
           <CardHeader className="gap-2.5 pb-6">
             <CardTitle>Business profile</CardTitle>
-            <CardDescription>Update your business details.</CardDescription>
+            <CardDescription>
+              Update your business details, branding, and defaults.
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid gap-6 xl:grid-cols-[19rem_minmax(0,1fr)] xl:gap-7">
-              <BusinessLogoField
-                businessName={settings.name}
-                contactEmail={primaryContactEmail}
-                disabled={isPending}
-                fieldError={state.fieldErrors?.logo?.[0]}
-                initialPreviewUrl={logoPreviewUrl}
-                onPendingChange={setHasPendingLogo}
-                onRemoveLogoChange={setRemoveLogo}
-                publicInquiryUrl={publicInquiryUrl}
-                removeLogo={removeLogo}
-                resetSignal={logoResetSignal}
-                showRemoveToggle={Boolean(settings.logoStoragePath)}
-              />
-              <div className="flex min-w-0 flex-col gap-5">
-                <FormSection
-                  className="soft-panel px-5 py-5 shadow-none sm:px-6"
-                  description="Shown to customers."
-                  title="Identity & public details"
-                >
-                  <FieldGroup>
-                    <Field data-invalid={Boolean(state.fieldErrors?.name) || undefined}>
-                      <FieldLabel htmlFor="settings-name">Business name</FieldLabel>
+            <div className="flex flex-col gap-6">
+              <div className="grid gap-6 xl:grid-cols-[19rem_minmax(0,1fr)] xl:gap-7">
+                <BusinessLogoField
+                  businessName={settings.name}
+                  disabled={isPending}
+                  fieldError={state.fieldErrors?.logo?.[0]}
+                  initialPreviewUrl={logoPreviewUrl}
+                  onPendingChange={setHasPendingLogo}
+                  onRemoveLogoChange={setRemoveLogo}
+                  removeLogo={removeLogo}
+                  resetSignal={logoResetSignal}
+                  showRemoveToggle={Boolean(settings.logoStoragePath)}
+                />
+                <div className="flex min-w-0 flex-col gap-5">
+                  <FormSection
+                    className="soft-panel px-5 py-5 shadow-none sm:px-6"
+                    description="Shown to customers."
+                    title="Identity & public details"
+                  >
+                    <FieldGroup>
+                      <Field data-invalid={Boolean(state.fieldErrors?.name) || undefined}>
+                        <FieldLabel htmlFor="settings-name">Business name</FieldLabel>
+                        <FieldContent>
+                          <Input
+                            defaultValue={settings.name}
+                            disabled={isPending}
+                            id="settings-name"
+                            maxLength={120}
+                            minLength={2}
+                            name="name"
+                            placeholder="Northline Print Studio"
+                            required
+                          />
+                          <FieldError
+                            errors={
+                              state.fieldErrors?.name?.[0]
+                                ? [{ message: state.fieldErrors.name[0] }]
+                                : undefined
+                            }
+                          />
+                        </FieldContent>
+                      </Field>
+
+                      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                        <Field data-invalid={Boolean(state.fieldErrors?.slug) || undefined}>
+                          <FieldLabel htmlFor="settings-slug">Public slug</FieldLabel>
+                          <FieldContent>
+                            <Input
+                              defaultValue={settings.slug}
+                              disabled={isPending}
+                              id="settings-slug"
+                              maxLength={businessSlugMaxLength}
+                              minLength={2}
+                              name="slug"
+                              pattern={businessSlugPattern}
+                              placeholder="northline-print"
+                              required
+                              spellCheck={false}
+                            />
+                            <FieldDescription>
+                              Public URL:{" "}
+                              <Link
+                                className="underline underline-offset-4"
+                                href={publicInquiryUrl}
+                                prefetch={false}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                {publicInquiryUrl}
+                              </Link>
+                            </FieldDescription>
+                            <FieldError
+                              errors={
+                                state.fieldErrors?.slug?.[0]
+                                  ? [{ message: state.fieldErrors.slug[0] }]
+                                  : undefined
+                              }
+                            />
+                          </FieldContent>
+                        </Field>
+
+                        <Field
+                          data-invalid={Boolean(state.fieldErrors?.contactEmail) || undefined}
+                        >
+                          <FieldLabel htmlFor="settings-contact-email">
+                            Contact email
+                          </FieldLabel>
+                          <FieldContent>
+                            <Input
+                              defaultValue={primaryContactEmail}
+                              disabled={isPending}
+                              id="settings-contact-email"
+                              maxLength={320}
+                              name="contactEmail"
+                              placeholder="hello@example.com"
+                              type="email"
+                            />
+                            <FieldDescription>Shown to customers.</FieldDescription>
+                            <FieldError
+                              errors={
+                                state.fieldErrors?.contactEmail?.[0]
+                                  ? [{ message: state.fieldErrors.contactEmail[0] }]
+                                  : undefined
+                              }
+                            />
+                          </FieldContent>
+                        </Field>
+                      </div>
+                    </FieldGroup>
+                  </FormSection>
+
+                  <FormSection
+                    className="soft-panel px-5 py-5 shadow-none sm:px-6"
+                    description="Used in forms and quotes."
+                    title="Short description"
+                  >
+                    <Field
+                      data-invalid={Boolean(state.fieldErrors?.shortDescription) || undefined}
+                    >
+                      <FieldLabel htmlFor="settings-short-description">
+                        Business summary
+                      </FieldLabel>
                       <FieldContent>
-                        <Input
-                          defaultValue={settings.name}
+                        <Textarea
+                          defaultValue={settings.shortDescription ?? ""}
                           disabled={isPending}
-                          id="settings-name"
-                          maxLength={120}
-                          minLength={2}
-                          name="name"
-                          placeholder="Northline Print Studio"
-                          required
+                          id="settings-short-description"
+                          maxLength={280}
+                          name="shortDescription"
+                          placeholder="Reliable repair, install, and recurring maintenance work for homes and small property portfolios."
+                          rows={5}
                         />
                         <FieldError
                           errors={
-                            state.fieldErrors?.name?.[0]
-                              ? [{ message: state.fieldErrors.name[0] }]
+                            state.fieldErrors?.shortDescription?.[0]
+                              ? [{ message: state.fieldErrors.shortDescription[0] }]
                               : undefined
                           }
                         />
                       </FieldContent>
                     </Field>
+                  </FormSection>
+                </div>
+              </div>
 
-                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                      <Field data-invalid={Boolean(state.fieldErrors?.slug) || undefined}>
-                        <FieldLabel htmlFor="settings-slug">Public slug</FieldLabel>
-                        <FieldContent>
-                          <Input
-                            defaultValue={settings.slug}
-                            disabled={isPending}
-                            id="settings-slug"
-                            maxLength={businessSlugMaxLength}
-                            minLength={2}
-                            name="slug"
-                            pattern={businessSlugPattern}
-                            placeholder="northline-print"
-                            required
-                            spellCheck={false}
-                          />
-                          <FieldDescription>
-                            Public URL:{" "}
-                            <Link
-                              className="underline underline-offset-4"
-                              href={publicInquiryUrl}
-                              prefetch={false}
-                              rel="noreferrer"
-                              target="_blank"
-                            >
-                              {publicInquiryUrl}
-                            </Link>
-                          </FieldDescription>
-                          <FieldError
-                            errors={
-                              state.fieldErrors?.slug?.[0]
-                                ? [{ message: state.fieldErrors.slug[0] }]
-                                : undefined
-                            }
-                          />
-                        </FieldContent>
-                      </Field>
-
-                      <Field
-                        data-invalid={Boolean(state.fieldErrors?.contactEmail) || undefined}
-                      >
-                        <FieldLabel htmlFor="settings-contact-email">
-                          Contact email
-                        </FieldLabel>
-                        <FieldContent>
-                          <Input
-                            defaultValue={primaryContactEmail}
-                            disabled={isPending}
-                            id="settings-contact-email"
-                            maxLength={320}
-                            name="contactEmail"
-                            placeholder="hello@example.com"
-                            type="email"
-                          />
-                          <FieldDescription>Shown to customers.</FieldDescription>
-                          <FieldError
-                            errors={
-                              state.fieldErrors?.contactEmail?.[0]
-                                ? [{ message: state.fieldErrors.contactEmail[0] }]
-                                : undefined
-                            }
-                          />
-                        </FieldContent>
-                      </Field>
-                    </div>
-                  </FieldGroup>
-                </FormSection>
-
-                <FormSection
-                  className="soft-panel px-5 py-5 shadow-none sm:px-6"
-                  description="Used in forms and quotes."
-                  title="Short description"
-                >
-                  <Field
-                    data-invalid={Boolean(state.fieldErrors?.shortDescription) || undefined}
-                  >
-                    <FieldLabel htmlFor="settings-short-description">
-                      Business summary
-                    </FieldLabel>
+              <FormSection
+                className="soft-panel px-5 py-5 shadow-none sm:px-6"
+                description="Used for regional defaults and new quotes."
+                title="Location & currency"
+              >
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                  <Field data-invalid={Boolean(countryCodeError) || undefined}>
+                    <FieldLabel htmlFor="settings-country-code">Country</FieldLabel>
                     <FieldContent>
-                      <Textarea
-                        defaultValue={settings.shortDescription ?? ""}
+                      <CountryCombobox
+                        aria-invalid={Boolean(countryCodeError) || undefined}
                         disabled={isPending}
-                        id="settings-short-description"
-                        maxLength={280}
-                        name="shortDescription"
-                        placeholder="Reliable repair, install, and recurring maintenance work for homes and small property portfolios."
-                        rows={5}
+                        id="settings-country-code"
+                        onValueChange={(value) => {
+                          setCountryCode(value);
+
+                          const nextCurrency = resolveCurrencyForCountry(value);
+
+                          if (nextCurrency) {
+                            setDefaultCurrency(nextCurrency);
+                          }
+                        }}
+                        placeholder="Choose a country"
+                        searchPlaceholder="Search country"
+                        showFlags={false}
+                        value={countryCode}
                       />
+                      <FieldDescription>
+                        {selectedCountry
+                          ? `Selecting ${selectedCountry.label} starts with ${selectedCountry.currencyCode}. You can still set a different default currency.`
+                          : "Optional for older businesses. New businesses set this during onboarding."}
+                      </FieldDescription>
                       <FieldError
                         errors={
-                          state.fieldErrors?.shortDescription?.[0]
-                            ? [{ message: state.fieldErrors.shortDescription[0] }]
+                          countryCodeError ? [{ message: countryCodeError }] : undefined
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+
+                  <Field data-invalid={Boolean(defaultCurrencyError) || undefined}>
+                    <FieldLabel htmlFor="settings-default-currency">
+                      Default currency
+                    </FieldLabel>
+                    <FieldContent>
+                      <Combobox
+                        aria-invalid={Boolean(defaultCurrencyError) || undefined}
+                        disabled={isPending}
+                        id="settings-default-currency"
+                        onValueChange={setDefaultCurrency}
+                        options={businessCurrencyOptions.map((currencyOption) => ({
+                          label: currencyOption.label,
+                          searchText: `${currencyOption.code} ${currencyOption.name}`,
+                          value: currencyOption.code,
+                        }))}
+                        placeholder="Choose a currency"
+                        searchPlaceholder="Search currency"
+                        value={defaultCurrency}
+                      />
+                      <FieldDescription>
+                        New quotes and pricing entries start with{" "}
+                        {selectedCurrency?.code ?? defaultCurrency}.
+                      </FieldDescription>
+                      <FieldError
+                        errors={
+                          defaultCurrencyError
+                            ? [{ message: defaultCurrencyError }]
                             : undefined
                         }
                       />
                     </FieldContent>
                   </Field>
-                </FormSection>
-              </div>
+                </div>
+              </FormSection>
             </div>
           </CardContent>
         </Card>
@@ -473,24 +569,20 @@ export function BusinessSettingsForm({
 
 function BusinessLogoField({
   businessName,
-  contactEmail,
   disabled,
   fieldError,
   initialPreviewUrl,
   onPendingChange,
-  publicInquiryUrl,
   removeLogo,
   resetSignal,
   showRemoveToggle,
   onRemoveLogoChange,
 }: {
   businessName: string;
-  contactEmail: string;
   disabled: boolean;
   fieldError?: string;
   initialPreviewUrl: string | null;
   onPendingChange: (hasPendingChange: boolean) => void;
-  publicInquiryUrl: string;
   removeLogo: boolean;
   resetSignal: number;
   showRemoveToggle: boolean;
@@ -718,18 +810,6 @@ function BusinessLogoField({
                   <p className="text-base font-semibold tracking-tight text-foreground">
                     {businessName}
                   </p>
-                  <p className="break-words text-sm text-muted-foreground">
-                    {contactEmail}
-                  </p>
-                  <Link
-                    className="break-all text-sm text-muted-foreground underline underline-offset-4"
-                    href={publicInquiryUrl}
-                    prefetch={false}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {publicInquiryUrl}
-                  </Link>
                 </div>
 
                 {logoStatusLabel ? (

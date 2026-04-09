@@ -105,8 +105,10 @@ export async function updateBusinessSettingsAction(
   const validationResult = businessGeneralSettingsSchema.safeParse({
     name: formData.get("name"),
     slug: formData.get("slug"),
+    countryCode: formData.get("countryCode"),
     shortDescription: formData.get("shortDescription"),
     contactEmail: formData.get("contactEmail"),
+    defaultCurrency: formData.get("defaultCurrency"),
     defaultEmailSignature: formData.get("defaultEmailSignature"),
     aiTonePreference: formData.get("aiTonePreference"),
     logo: formData.get("logo"),
@@ -268,10 +270,8 @@ export async function updateBusinessQuoteSettingsAction(
 
   const { user, businessContext } = ownerAccess;
   const validationResult = businessQuoteSettingsSchema.safeParse({
-    countryCode: formData.get("countryCode"),
     defaultQuoteNotes: formData.get("defaultQuoteNotes"),
     defaultQuoteValidityDays: formData.get("defaultQuoteValidityDays"),
-    defaultCurrency: formData.get("defaultCurrency"),
   });
 
   if (!validationResult.success) {

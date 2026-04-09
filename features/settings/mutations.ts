@@ -312,6 +312,7 @@ export async function updateBusinessSettings({
         .set({
           name: values.name,
           slug: values.slug,
+          countryCode: values.countryCode ?? null,
           shortDescription: values.shortDescription ?? null,
           contactEmail: values.contactEmail ?? null,
           logoStoragePath: values.removeLogo
@@ -320,6 +321,7 @@ export async function updateBusinessSettings({
           logoContentType: values.removeLogo
             ? nextLogoContentType
             : nextLogoContentType ?? currentBusiness.logoContentType ?? null,
+          defaultCurrency: values.defaultCurrency,
           defaultEmailSignature: values.defaultEmailSignature ?? null,
           aiTonePreference: values.aiTonePreference,
           updatedAt: now,
@@ -334,6 +336,8 @@ export async function updateBusinessSettings({
         summary: "Business settings updated.",
         metadata: {
           slug: values.slug,
+          countryCode: values.countryCode ?? null,
+          defaultCurrency: values.defaultCurrency,
           hasLogo: Boolean(logoFile || previousLogoStoragePath) && !values.removeLogo,
           aiTonePreference: values.aiTonePreference,
         },
@@ -408,10 +412,8 @@ export async function updateBusinessQuoteSettings({
     await tx
       .update(businesses)
       .set({
-        countryCode: values.countryCode ?? null,
         defaultQuoteNotes: values.defaultQuoteNotes ?? null,
         defaultQuoteValidityDays: values.defaultQuoteValidityDays,
-        defaultCurrency: values.defaultCurrency,
         updatedAt: now,
       })
       .where(eq(businesses.id, businessId));
@@ -423,8 +425,6 @@ export async function updateBusinessQuoteSettings({
       type: "business.quote_settings_updated",
       summary: "Quote settings updated.",
       metadata: {
-        countryCode: values.countryCode ?? null,
-        defaultCurrency: values.defaultCurrency,
         defaultQuoteValidityDays: values.defaultQuoteValidityDays,
         hasDefaultQuoteNotes: Boolean(values.defaultQuoteNotes?.trim()),
       },

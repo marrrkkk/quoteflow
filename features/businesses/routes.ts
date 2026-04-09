@@ -56,6 +56,30 @@ export function getBusinessQuotePath(slug: string, quoteId: string) {
   return `${getBusinessQuotesPath(slug)}/${quoteId}`;
 }
 
+export function getBusinessQuotePrintPath(slug: string, quoteId: string) {
+  return `${getBusinessPath(slug)}/print/quotes/${quoteId}`;
+}
+
+export function getBusinessInquiryPrintPath(slug: string, inquiryId: string) {
+  return `${getBusinessPath(slug)}/print/inquiries/${inquiryId}`;
+}
+
+export function getBusinessQuotesExportPath(slug: string) {
+  return `/api/business/${slug}/quotes/export`;
+}
+
+export function getBusinessQuotePdfExportPath(slug: string, quoteId: string) {
+  return `/api/business/${slug}/quotes/${quoteId}/export`;
+}
+
+export function getBusinessInquiriesExportPath(slug: string) {
+  return `/api/business/${slug}/inquiries/export`;
+}
+
+export function getBusinessInquiryPdfExportPath(slug: string, inquiryId: string) {
+  return `/api/business/${slug}/inquiries/${inquiryId}/export`;
+}
+
 export function getBusinessSettingsPath(
   slug: string,
   section?: BusinessSettingsSection,

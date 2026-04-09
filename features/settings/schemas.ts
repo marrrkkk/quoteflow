@@ -144,8 +144,10 @@ export const businessGeneralSettingsSchema = z.object({
       (value) => publicSlugRegex.test(value),
       "Use lowercase letters, numbers, and hyphens only.",
   ),
+  countryCode: optionalCountryCode(),
   shortDescription: optionalText(280),
   contactEmail: optionalEmail(),
+  defaultCurrency: supportedCurrencyCode(),
   defaultEmailSignature: optionalText(1200),
   aiTonePreference: z.enum(businessAiTonePreferences),
   logo: businessLogoSchema,
@@ -169,7 +171,6 @@ export type BusinessNotificationSettingsInput = z.infer<
 >;
 
 export const businessQuoteSettingsSchema = z.object({
-  countryCode: optionalCountryCode(),
   defaultQuoteNotes: optionalText(1600),
   defaultQuoteValidityDays: z.preprocess(
     (value) => {
@@ -191,7 +192,6 @@ export const businessQuoteSettingsSchema = z.object({
     },
     z.number().int().min(1).max(365),
   ),
-  defaultCurrency: supportedCurrencyCode(),
 });
 
 export type BusinessQuoteSettingsInput = z.infer<

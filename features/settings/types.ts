@@ -41,8 +41,10 @@ export type BusinessSettingsView = {
 export type BusinessGeneralSettingsFieldName =
   | "name"
   | "slug"
+  | "countryCode"
   | "shortDescription"
   | "contactEmail"
+  | "defaultCurrency"
   | "defaultEmailSignature"
   | "aiTonePreference"
   | "logo";
@@ -75,10 +77,8 @@ export type BusinessNotificationSettingsActionState = {
 };
 
 export type BusinessQuoteSettingsFieldName =
-  | "countryCode"
   | "defaultQuoteNotes"
-  | "defaultQuoteValidityDays"
-  | "defaultCurrency";
+  | "defaultQuoteValidityDays";
 
 export type BusinessQuoteSettingsFieldErrors = Partial<
   Record<BusinessQuoteSettingsFieldName, string[] | undefined>
