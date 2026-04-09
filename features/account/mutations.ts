@@ -1,16 +1,25 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import type { AccountProfileInput } from "@/features/account/schemas";
+import { publicInquiryAttachmentBucket } from "@/features/inquiries/schemas";
+import { knowledgeFilesBucket } from "@/features/knowledge/schemas";
 import {
   profileAvatarBucket,
   profileAvatarExtensionToMimeType,
   sanitizeProfileAvatarFileName,
 } from "@/features/account/utils";
+import { businessLogoBucket } from "@/features/settings/utils";
 import { ensureProfileForUser } from "@/lib/auth/business-bootstrap";
 import { db } from "@/lib/db/client";
-import { profiles } from "@/lib/db/schema";
+import {
+  businesses,
+  businessMembers,
+  inquiryAttachments,
+  knowledgeFiles,
+  profiles,
+} from "@/lib/db/schema";
 import { resolveSafeContentType } from "@/lib/files";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -26,6 +35,103 @@ type UpdateAccountProfileInput = {
 
 function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
+}
+
+function chunkPaths(paths: string[], size = 100) {
+  const chunks: string[][] = [];
+
+  for (let index = 0; index < paths.length; index += size) {
+    chunks.push(paths.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function removeStoragePaths(
+  bucket: string,
+  paths: Array<string | null | undefined>,
+) {
+  const sanitizedPaths = paths.filter((path): path is string => Boolean(path));
+
+  if (!sanitizedPaths.length) {
+    return;
+  }
+
+  const storageClient = createSupabaseAdminClient();
+
+  for (const chunk of chunkPaths(sanitizedPaths)) {
+    const { error } = await storageClient.storage.from(bucket).remove(chunk);
+
+    if (error) {
+      console.error(`Failed to remove storage objects from ${bucket}.`, error);
+    }
+  }
+}
+
+export async function cleanupAccountOwnedAssets(userId: string) {
+  const [profileRows, ownedBusinessRows] = await Promise.all([
+    db
+      .select({
+        avatarStoragePath: profiles.avatarStoragePath,
+      })
+      .from(profiles)
+      .where(eq(profiles.userId, userId))
+      .limit(1),
+    db
+      .select({
+        id: businesses.id,
+        logoStoragePath: businesses.logoStoragePath,
+      })
+      .from(businessMembers)
+      .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+      .where(
+        and(
+          eq(businessMembers.userId, userId),
+          eq(businessMembers.role, "owner"),
+        ),
+      ),
+  ]);
+
+  const ownedBusinessIds = ownedBusinessRows.map((row) => row.id);
+  const [knowledgeFileRows, inquiryAttachmentRows] = ownedBusinessIds.length
+    ? await Promise.all([
+        db
+          .select({
+            storagePath: knowledgeFiles.storagePath,
+          })
+          .from(knowledgeFiles)
+          .where(inArray(knowledgeFiles.businessId, ownedBusinessIds)),
+        db
+          .select({
+            storagePath: inquiryAttachments.storagePath,
+          })
+          .from(inquiryAttachments)
+          .where(inArray(inquiryAttachments.businessId, ownedBusinessIds)),
+      ])
+    : [[], []];
+
+  if (ownedBusinessIds.length) {
+    await db.delete(businesses).where(inArray(businesses.id, ownedBusinessIds));
+  }
+
+  await Promise.all([
+    removeStoragePaths(
+      profileAvatarBucket,
+      [profileRows[0]?.avatarStoragePath ?? null],
+    ),
+    removeStoragePaths(
+      businessLogoBucket,
+      ownedBusinessRows.map((row) => row.logoStoragePath),
+    ),
+    removeStoragePaths(
+      knowledgeFilesBucket,
+      knowledgeFileRows.map((row) => row.storagePath),
+    ),
+    removeStoragePaths(
+      publicInquiryAttachmentBucket,
+      inquiryAttachmentRows.map((row) => row.storagePath),
+    ),
+  ]);
 }
 
 export async function updateAccountProfile({

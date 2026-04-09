@@ -14,6 +14,14 @@ export type AccountProfileView = AccountProfileRecord & {
   oauthAvatarSrc: string | null;
 };
 
+export type AccountSecurityView = {
+  email: string;
+  hasPassword: boolean;
+  connectedProviders: string[];
+  ownedBusinessCount: number;
+  activeSessionCount: number;
+};
+
 export type AccountProfileActionState = {
   error?: string;
   success?: string;
@@ -23,4 +31,29 @@ export type AccountProfileActionState = {
     phone?: string[] | undefined;
     avatar?: string[] | undefined;
   };
+};
+
+export type AccountPasswordFieldErrors = Partial<
+  Record<"currentPassword" | "newPassword" | "confirmPassword", string[] | undefined>
+>;
+
+export type AccountPasswordActionState = {
+  error?: string;
+  success?: string;
+  fieldErrors?: AccountPasswordFieldErrors;
+};
+
+export type AccountSessionActionState = {
+  error?: string;
+  success?: string;
+};
+
+export type AccountDeleteFieldErrors = Partial<
+  Record<"email" | "password", string[] | undefined>
+>;
+
+export type AccountDeleteActionState = {
+  error?: string;
+  success?: string;
+  fieldErrors?: AccountDeleteFieldErrors;
 };
