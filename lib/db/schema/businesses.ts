@@ -65,7 +65,7 @@ export const businesses = pgTable(
     businessType: text("business_type")
       .$type<BusinessType>()
       .notNull()
-      .default("general_services"),
+      .default("general_project_services"),
     shortDescription: text("short_description"),
     contactEmail: text("contact_email"),
     logoStoragePath: text("logo_storage_path"),
