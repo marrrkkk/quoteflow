@@ -72,6 +72,7 @@ import {
   getNormalizedInquiryFormConfig,
 } from "@/features/inquiries/form-config";
 import {
+  businessTypes,
   businessTypeMeta,
   type BusinessType,
 } from "@/features/inquiries/business-types";
@@ -663,13 +664,11 @@ export function BusinessInquiryFormForm({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          {Object.entries(businessTypeMeta).map(
-                            ([value, meta]) => (
-                              <SelectItem key={value} value={value}>
-                                {meta.label}
-                              </SelectItem>
-                            ),
-                          )}
+                          {businessTypes.map((value) => (
+                            <SelectItem key={value} value={value}>
+                              {businessTypeMeta[value].label}
+                            </SelectItem>
+                          ))}
                         </SelectGroup>
                       </SelectContent>
                     </Select>

@@ -43,7 +43,7 @@ export function CreateBusinessForm({
 }: CreateBusinessFormProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [businessType, setBusinessType] = useState<BusinessType>(
-    "general_services",
+    "general_project_services",
   );
   const nameError = state.fieldErrors?.name?.[0];
   const businessTypeError = state.fieldErrors?.businessType?.[0];
