@@ -10,6 +10,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { InquiryListFilters as InquiryListToolbar } from "@/features/inquiries/components/inquiry-list-filters";
+import { InquiryExportCsvPopover } from "@/features/inquiries/components/inquiry-export-csv-popover";
 import { InquiryListResults } from "@/features/inquiries/components/inquiry-list-results";
 import { inquiryListFiltersSchema } from "@/features/inquiries/schemas";
 import {
@@ -18,7 +19,9 @@ import {
   getInquiryListPageForBusiness,
 } from "@/features/inquiries/queries";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
-import { getBusinessInquiriesPath } from "@/features/businesses/routes";
+import {
+  getBusinessInquiriesPath,
+} from "@/features/businesses/routes";
 import { requireCurrentBusinessContext } from "@/lib/db/business-access";
 
 type InquiriesPageProps = {
@@ -129,6 +132,23 @@ export default async function InquiriesPage({
       <PageHeader
         eyebrow="Requests"
         title="Customer requests"
+        actions={
+          <InquiryExportCsvPopover
+            businessSlug={businessSlug}
+            filters={filters}
+            formOptions={[
+              {
+                value: "all",
+                label: "All forms",
+              },
+              ...inquiryFormOptions.map((form) => ({
+                value: form.slug,
+                label: form.isDefault ? `${form.name} (Default)` : form.name,
+              })),
+            ]}
+            resultCount={totalItems}
+          />
+        }
       />
 
       <InquiryListToolbar
