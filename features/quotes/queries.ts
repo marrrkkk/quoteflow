@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { db } from "@/lib/db/client";
@@ -154,6 +154,68 @@ export async function getQuoteListPageForBusiness({
       validUntil: row.validUntil,
     }),
   }));
+}
+
+type QuoteExportRow = {
+  id: string;
+  inquiryId: string | null;
+  quoteNumber: string;
+  title: string;
+  customerName: string;
+  customerEmail: string;
+  totalInCents: number;
+  currency: string;
+  validUntil: string;
+  status: string;
+  postAcceptanceStatus: string;
+  createdAt: Date;
+  sentAt: Date | null;
+  customerRespondedAt: Date | null;
+};
+
+export async function getQuoteExportRowsForBusiness({
+  businessId,
+  filters,
+  from,
+  to,
+}: GetQuoteListForBusinessInput & {
+  from?: string;
+  to?: string;
+}): Promise<QuoteExportRow[]> {
+  await syncExpiredQuotesForBusiness(businessId);
+
+  const conditions = getQuoteListConditions({
+    businessId,
+    filters,
+  });
+  if (from) {
+    conditions.push(gte(quotes.createdAt, new Date(`${from}T00:00:00.000Z`)));
+  }
+  if (to) {
+    conditions.push(lte(quotes.createdAt, new Date(`${to}T23:59:59.999Z`)));
+  }
+  const createdAtSort = filters.sort === "oldest" ? asc : desc;
+
+  return db
+    .select({
+      id: quotes.id,
+      inquiryId: quotes.inquiryId,
+      quoteNumber: quotes.quoteNumber,
+      title: quotes.title,
+      customerName: quotes.customerName,
+      customerEmail: quotes.customerEmail,
+      totalInCents: quotes.totalInCents,
+      currency: quotes.currency,
+      validUntil: quotes.validUntil,
+      status: quotes.status,
+      postAcceptanceStatus: quotes.postAcceptanceStatus,
+      createdAt: quotes.createdAt,
+      sentAt: quotes.sentAt,
+      customerRespondedAt: quotes.customerRespondedAt,
+    })
+    .from(quotes)
+    .where(and(...conditions))
+    .orderBy(createdAtSort(quotes.createdAt));
 }
 
 type GetQuoteDetailForBusinessInput = {

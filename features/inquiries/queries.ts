@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, ilike, isNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, isNull, lte, or } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import {
@@ -389,6 +389,69 @@ export async function getInquiryListPageForBusiness({
     .orderBy(submittedAtSort(inquiries.submittedAt), createdAtSort(inquiries.createdAt))
     .limit(pageSize)
     .offset(offset);
+}
+
+type InquiryExportRow = {
+  id: string;
+  inquiryFormName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  companyName: string | null;
+  serviceCategory: string;
+  requestedDeadline: string | null;
+  budgetText: string | null;
+  subject: string | null;
+  details: string;
+  status: string;
+  submittedAt: Date;
+};
+
+export async function getInquiryExportRowsForBusiness({
+  businessId,
+  filters,
+  from,
+  to,
+}: GetInquiryListForBusinessInput & {
+  from?: string;
+  to?: string;
+}): Promise<InquiryExportRow[]> {
+  const conditions = getInquiryListConditions({
+    businessId,
+    filters,
+  });
+  if (from) {
+    conditions.push(gte(inquiries.submittedAt, new Date(`${from}T00:00:00.000Z`)));
+  }
+  if (to) {
+    conditions.push(lte(inquiries.submittedAt, new Date(`${to}T23:59:59.999Z`)));
+  }
+  const submittedAtSort = filters.sort === "oldest" ? asc : desc;
+  const createdAtSort = filters.sort === "oldest" ? asc : desc;
+
+  return db
+    .select({
+      id: inquiries.id,
+      inquiryFormName: businessInquiryForms.name,
+      customerName: inquiries.customerName,
+      customerEmail: inquiries.customerEmail,
+      customerPhone: inquiries.customerPhone,
+      companyName: inquiries.companyName,
+      serviceCategory: inquiries.serviceCategory,
+      requestedDeadline: inquiries.requestedDeadline,
+      budgetText: inquiries.budgetText,
+      subject: inquiries.subject,
+      details: inquiries.details,
+      status: inquiries.status,
+      submittedAt: inquiries.submittedAt,
+    })
+    .from(inquiries)
+    .innerJoin(
+      businessInquiryForms,
+      eq(inquiries.businessInquiryFormId, businessInquiryForms.id),
+    )
+    .where(and(...conditions))
+    .orderBy(submittedAtSort(inquiries.submittedAt), createdAtSort(inquiries.createdAt));
 }
 
 type GetInquiryDetailForBusinessInput = {

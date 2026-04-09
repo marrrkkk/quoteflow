@@ -238,6 +238,28 @@ export async function getCurrentBusinessRequestContext() {
   };
 }
 
+export async function getBusinessRequestContextForSlug(slug: string) {
+  const session = await getSession();
+
+  if (!session) {
+    return null;
+  }
+
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    slug,
+  );
+
+  if (!businessContext) {
+    return null;
+  }
+
+  return {
+    user: session.user,
+    businessContext,
+  };
+}
+
 export async function getOwnerBusinessActionContext(): Promise<OwnerBusinessActionContext> {
   const user = await requireUser();
   const businessContext = await getBusinessContextForUser(user.id);
