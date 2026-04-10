@@ -23,12 +23,10 @@ import {
   DashboardStatsGrid,
 } from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
-import { generateInquiryAssistantAction } from "@/features/ai/actions";
 import { InquiryAiPanel } from "@/features/ai/components/inquiry-ai-panel";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
-import { getReplySnippetsForBusiness } from "@/features/inquiries/reply-snippet-queries";
 import {
   addInquiryNoteAction,
   changeInquiryStatusAction,
@@ -62,7 +60,7 @@ type InquiryDetailPageProps = {
 export default async function InquiryDetailPage({
   params,
 }: InquiryDetailPageProps) {
-  const [resolvedParams, { businessContext }] = await Promise.all([
+  const [resolvedParams, { businessContext, user }] = await Promise.all([
     params,
     requireCurrentBusinessContext(),
   ]);
@@ -83,21 +81,17 @@ export default async function InquiryDetailPage({
 
   const noteAction = addInquiryNoteAction.bind(null, inquiry.id);
   const statusAction = changeInquiryStatusAction.bind(null, inquiry.id);
-  const aiAction = generateInquiryAssistantAction.bind(null, inquiry.id);
   const additionalFields = getAdditionalInquirySubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
-  const [customerHistory, replySnippets] = await Promise.all([
-    getCustomerHistoryForBusiness({
-      businessId: businessContext.business.id,
-      customerEmail: inquiry.customerEmail,
-      excludeInquiryId: inquiry.id,
-    }),
-    getReplySnippetsForBusiness(businessContext.business.id),
-  ]);
+  const customerHistory = await getCustomerHistoryForBusiness({
+    businessId: businessContext.business.id,
+    customerEmail: inquiry.customerEmail,
+    excludeInquiryId: inquiry.id,
+  });
 
   return (
-    <DashboardPage>
+    <DashboardPage className="pb-24">
       <DashboardDetailHeader
         eyebrow="Inquiry detail"
         title={inquiry.customerName}
@@ -383,11 +377,8 @@ export default async function InquiryDetailPage({
                   <DashboardMetaPill className="text-foreground">
                     {inquiry.relatedQuote.quoteNumber ?? inquiry.relatedQuote.id}
                   </DashboardMetaPill>
-                  <DashboardMetaPill className="capitalize">
-                    {inquiry.relatedQuote.status}
-                  </DashboardMetaPill>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="!grid !grid-cols-2 gap-3">
                   <InfoTile
                     label="Total"
                     value={formatQuoteMoney(
@@ -402,6 +393,10 @@ export default async function InquiryDetailPage({
                   <InfoTile
                     label="Quotes from inquiry"
                     value={`${inquiry.relatedQuote.quoteCount}`}
+                  />
+                  <InfoTile
+                    label="Status"
+                    value={inquiry.relatedQuote.status.charAt(0).toUpperCase() + inquiry.relatedQuote.status.slice(1)}
                   />
                 </div>
               </div>
@@ -424,16 +419,15 @@ export default async function InquiryDetailPage({
             description="Move the inquiry forward."
             title="Status"
           >
-              <InquiryStatusForm
-                key={inquiry.status}
-                action={statusAction}
-                currentStatus={inquiry.status}
-              />
+            <InquiryStatusForm
+              key={inquiry.status}
+              action={statusAction}
+              currentStatus={inquiry.status}
+            />
           </DashboardSection>
-
-          <InquiryAiPanel action={aiAction} replySnippets={replySnippets} />
         </DashboardSidebarStack>
       </DashboardDetailLayout>
+      <InquiryAiPanel inquiryId={inquiry.id} userName={user.name || "You"} />
     </DashboardPage>
   );
 }
