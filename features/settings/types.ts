@@ -175,6 +175,18 @@ export type BusinessInquiryFormEditorView = BusinessInquiryFormSettingsView & {
   submittedInquiryCount: number;
 };
 
+export type BusinessInquiryFormPreviewDraft = {
+  businessType: BusinessType;
+  formName: string;
+  formSlug: string;
+  inquiryFormConfig: InquiryFormConfig;
+};
+
+export type BusinessInquiryPagePreviewDraft = {
+  publicInquiryEnabled: boolean;
+  inquiryPageConfig: InquiryPageConfig;
+};
+
 export type BusinessInquiryFormFieldName =
   | "name"
   | "slug"

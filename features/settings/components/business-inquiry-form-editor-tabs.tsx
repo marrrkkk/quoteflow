@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Eye, FileText, FormInput, Settings2 } from "lucide-react";
 import {
   usePathname,
@@ -11,10 +12,19 @@ import {
 import { DashboardSidebarStack } from "@/components/shared/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import {
+  getInquiryPreviewTabName,
+  type InquiryPreviewDraftSnapshot,
+} from "@/features/inquiries/preview-draft";
+import { writeInquiryPreviewDraft } from "@/features/inquiries/preview-draft-client";
 import { useProgressRouter } from "@/hooks/use-progress-router";
 import { cn } from "@/lib/utils";
 
-import type { BusinessInquiryFormEditorView } from "@/features/settings/types";
+import type {
+  BusinessInquiryFormEditorView,
+  BusinessInquiryFormPreviewDraft,
+  BusinessInquiryPagePreviewDraft,
+} from "@/features/settings/types";
 import { BusinessInquiryFormDangerZone } from "@/features/settings/components/business-inquiry-form-danger-zone";
 import { BusinessInquiryFormForm } from "@/features/settings/components/business-inquiry-form-form";
 import { BusinessInquiryFormManageCard } from "@/features/settings/components/business-inquiry-form-manage-card";
@@ -107,6 +117,89 @@ export function BusinessInquiryFormEditorTabs({
   const searchParams = useSearchParams();
   const router = useProgressRouter();
   const activeSection = getEditorSectionValue(searchParams);
+  const [previewSessionId] = useState(() => crypto.randomUUID());
+  const [formDraft, setFormDraft] = useState(() =>
+    createFormPreviewDraft(settings),
+  );
+  const [pageDraft, setPageDraft] = useState(() =>
+    createPagePreviewDraft(settings),
+  );
+  const [fieldsHasUnsavedChanges, setFieldsHasUnsavedChanges] = useState(false);
+  const [pageHasUnsavedChanges, setPageHasUnsavedChanges] = useState(false);
+  const previewTabName = useMemo(
+    () => getInquiryPreviewTabName(settings.formId),
+    [settings.formId],
+  );
+  const previewLogoUrl = useMemo(
+    () =>
+      settings.logoStoragePath
+        ? `/api/public/businesses/${settings.slug}/logo?v=${settings.updatedAt.getTime()}`
+        : null,
+    [settings.logoStoragePath, settings.slug, settings.updatedAt],
+  );
+  const previewSnapshot = useMemo(
+    () =>
+      createPreviewSnapshot({
+        formDraft,
+        pageDraft,
+        previewLogoUrl,
+        settings,
+      }),
+    [formDraft, pageDraft, previewLogoUrl, settings],
+  );
+  const hasAnyUnsavedChanges = fieldsHasUnsavedChanges || pageHasUnsavedChanges;
+  const activeSectionHasUnsavedChanges =
+    activeSection === "fields"
+      ? fieldsHasUnsavedChanges
+      : activeSection === "page"
+        ? pageHasUnsavedChanges
+        : false;
+
+  useEffect(() => {
+    writeInquiryPreviewDraft(previewSessionId, previewSnapshot);
+  }, [previewSessionId, previewSnapshot]);
+
+  const handleFormDraftChange = useCallback(
+    (nextDraft: BusinessInquiryFormPreviewDraft) => {
+      setFormDraft(nextDraft);
+    },
+    [],
+  );
+  const handlePageDraftChange = useCallback(
+    (nextDraft: BusinessInquiryPagePreviewDraft) => {
+      setPageDraft(nextDraft);
+    },
+    [],
+  );
+  const handleFieldsUnsavedChangesChange = useCallback(
+    (hasUnsavedChanges: boolean) => {
+      setFieldsHasUnsavedChanges(hasUnsavedChanges);
+    },
+    [],
+  );
+  const handlePageUnsavedChangesChange = useCallback(
+    (hasUnsavedChanges: boolean) => {
+      setPageHasUnsavedChanges(hasUnsavedChanges);
+    },
+    [],
+  );
+
+  const handleOpenPreview = useCallback(() => {
+    writeInquiryPreviewDraft(previewSessionId, previewSnapshot);
+
+    const livePreviewHref = hasAnyUnsavedChanges
+      ? `${previewHref}?draft=${encodeURIComponent(previewSessionId)}`
+      : previewHref;
+    const previewWindow = window.open(livePreviewHref, previewTabName);
+
+    previewWindow?.focus();
+  }, [
+    hasAnyUnsavedChanges,
+    previewHref,
+    previewSessionId,
+    previewSnapshot,
+    previewTabName,
+  ]);
 
   function handleSectionChange(nextSection: BusinessInquiryFormEditorSection) {
     if (nextSection === activeSection) {
@@ -205,12 +298,17 @@ export function BusinessInquiryFormEditorTabs({
 
       <div className="min-w-0 w-full">
         <div className="flex flex-col gap-2 sm:flex-row xl:justify-end">
-          <Button asChild className="w-full sm:w-auto" type="button" variant="outline">
-            <Link href={previewHref} prefetch={false} rel="noreferrer" target="_blank">
+          {!activeSectionHasUnsavedChanges ? (
+            <Button
+              className="w-full sm:w-auto"
+              onClick={handleOpenPreview}
+              type="button"
+              variant="outline"
+            >
               <Eye data-icon="inline-start" />
-              Preview
-            </Link>
-          </Button>
+              {hasAnyUnsavedChanges ? "Live preview" : "Preview"}
+            </Button>
+          ) : null}
           <Button asChild className="w-full sm:w-auto" type="button">
             <Link
               href={isPublicLive ? publicInquiryHref : previewHref}
@@ -230,6 +328,9 @@ export function BusinessInquiryFormEditorTabs({
               <BusinessInquiryFormForm
                 key={`${settings.updatedAt.getTime()}-${settings.formId}-form`}
                 applyPresetAction={applyPresetAction}
+                onDraftChange={handleFormDraftChange}
+                onPreview={handleOpenPreview}
+                onUnsavedChangesChange={handleFieldsUnsavedChangesChange}
                 saveAction={saveFormAction}
                 settings={settings}
               />
@@ -239,10 +340,14 @@ export function BusinessInquiryFormEditorTabs({
           <div aria-hidden={activeSection !== "page"} className={activeSection === "page" ? "block" : "hidden"}>
             <DashboardSidebarStack>
               <BusinessInquiryPageForm
+                key={`${settings.updatedAt.getTime()}-${settings.formId}-page`}
                 action={updatePageAction}
-                settings={settings}
-                logoPreviewUrl={logoPreviewUrl}
                 generalSettingsHref={generalSettingsHref}
+                logoPreviewUrl={logoPreviewUrl}
+                onDraftChange={handlePageDraftChange}
+                onPreview={handleOpenPreview}
+                onUnsavedChangesChange={handlePageUnsavedChangesChange}
+                settings={settings}
               />
             </DashboardSidebarStack>
           </div>
@@ -279,4 +384,55 @@ export function BusinessInquiryFormEditorTabs({
       </div>
     </div>
   );
+}
+
+function createFormPreviewDraft(
+  settings: BusinessInquiryFormEditorView,
+): BusinessInquiryFormPreviewDraft {
+  return {
+    businessType: settings.businessType,
+    formName: settings.formName,
+    formSlug: settings.formSlug,
+    inquiryFormConfig: settings.inquiryFormConfig,
+  };
+}
+
+function createPagePreviewDraft(
+  settings: BusinessInquiryFormEditorView,
+): BusinessInquiryPagePreviewDraft {
+  return {
+    publicInquiryEnabled: settings.publicInquiryEnabled,
+    inquiryPageConfig: settings.inquiryPageConfig,
+  };
+}
+
+function createPreviewSnapshot({
+  formDraft,
+  pageDraft,
+  previewLogoUrl,
+  settings,
+}: {
+  formDraft: BusinessInquiryFormPreviewDraft;
+  pageDraft: BusinessInquiryPagePreviewDraft;
+  previewLogoUrl: string | null;
+  settings: BusinessInquiryFormEditorView;
+}): InquiryPreviewDraftSnapshot {
+  return {
+    id: settings.id,
+    name: settings.name,
+    slug: settings.slug,
+    businessType: formDraft.businessType,
+    shortDescription: settings.shortDescription,
+    logoUrl: previewLogoUrl,
+    form: {
+      id: settings.formId,
+      name: formDraft.formName,
+      slug: formDraft.formSlug,
+      businessType: formDraft.businessType,
+      isDefault: settings.isDefault,
+      publicInquiryEnabled: pageDraft.publicInquiryEnabled,
+    },
+    inquiryFormConfig: formDraft.inquiryFormConfig,
+    inquiryPageConfig: pageDraft.inquiryPageConfig,
+  };
 }

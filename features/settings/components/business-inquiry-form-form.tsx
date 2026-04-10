@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   ChevronDown,
+  Eye,
   MoreHorizontal,
   PencilLine,
   Plus,
@@ -18,14 +19,16 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { FloatingFormActions } from "@/components/shared/floating-form-actions";
 import { useProgressRouter } from "@/hooks/use-progress-router";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -72,6 +75,7 @@ import {
 } from "@/features/inquiries/business-types";
 import type {
   BusinessInquiryFormActionState,
+  BusinessInquiryFormPreviewDraft,
   BusinessInquiryFormSettingsView,
 } from "@/features/settings/types";
 import { publicSlugMaxLength, publicSlugPattern } from "@/lib/slugs";
@@ -89,6 +93,9 @@ type BusinessInquiryFormFormProps = {
     state: BusinessInquiryFormActionState,
     formData: FormData,
   ) => Promise<BusinessInquiryFormActionState>;
+  onDraftChange: (draft: BusinessInquiryFormPreviewDraft) => void;
+  onPreview: () => void;
+  onUnsavedChangesChange: (hasUnsavedChanges: boolean) => void;
   settings: BusinessInquiryFormSettingsView;
 };
 
@@ -97,6 +104,9 @@ const initialState: BusinessInquiryFormActionState = {};
 export function BusinessInquiryFormForm({
   applyPresetAction,
   saveAction,
+  onDraftChange,
+  onPreview,
+  onUnsavedChangesChange,
   settings,
 }: BusinessInquiryFormFormProps) {
   const normalizedSettingsConfig = useMemo(
@@ -108,9 +118,9 @@ export function BusinessInquiryFormForm({
   );
   const router = useProgressRouter();
   const [saveState, saveFormAction, isSavePending] =
-    useActionStateWithSuccessToast(saveAction, initialState);
+    useActionStateWithSonner(saveAction, initialState);
   const [presetState, presetFormAction, isPresetPending] =
-    useActionStateWithSuccessToast(applyPresetAction, initialState);
+    useActionStateWithSonner(applyPresetAction, initialState);
   const [businessType, setBusinessType] = useState(settings.businessType);
   const [contactFields, setContactFields] = useState(
     normalizedSettingsConfig.contactFields,
@@ -193,11 +203,41 @@ export function BusinessInquiryFormForm({
   const hasTextInputChanges =
     nameDraft !== settings.formName || slugDraft !== settings.formSlug;
   const hasUnsavedChanges = hasConfigChanges || hasTextInputChanges;
+  const previewDraft = useMemo(
+    () => ({
+      businessType,
+      formName: nameDraft,
+      formSlug: slugDraft,
+      inquiryFormConfig: {
+        version: 1,
+        businessType,
+        groupLabels,
+        contactFields,
+        projectFields: activeProjectFields,
+      } satisfies InquiryFormConfig,
+    }),
+    [
+      activeProjectFields,
+      businessType,
+      contactFields,
+      groupLabels,
+      nameDraft,
+      slugDraft,
+    ],
+  );
   const [shouldRenderFloatingActions, setShouldRenderFloatingActions] = useState(false);
   const [floatingActionsState, setFloatingActionsState] = useState<"open" | "closed">(
     "closed",
   );
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    onDraftChange(previewDraft);
+  }, [onDraftChange, previewDraft]);
+
+  useEffect(() => {
+    onUnsavedChangesChange(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -582,24 +622,6 @@ export function BusinessInquiryFormForm({
         className="form-stack pb-28"
         ref={formRef}
       >
-        {saveState.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>We could not save the inquiry form.</AlertTitle>
-            <AlertDescription>{saveState.error}</AlertDescription>
-          </Alert>
-        ) : null}
-
-
-
-        {presetState.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>We could not apply the preset.</AlertTitle>
-            <AlertDescription>{presetState.error}</AlertDescription>
-          </Alert>
-        ) : null}
-
-
-
         <input name="formId" type="hidden" value={settings.formId} />
         <input name="businessType" type="hidden" value={businessType} />
         <input name="inquiryFormConfig" type="hidden" value={serializedConfig} />
@@ -888,53 +910,40 @@ export function BusinessInquiryFormForm({
           </section>
         </div>
 
-        {shouldRenderFloatingActions ? (
-          <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-            <div
-              className="soft-panel motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-2 motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=open]:duration-200 motion-safe:data-[state=open]:ease-(--motion-ease-emphasized) motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-2 motion-safe:data-[state=closed]:zoom-out-95 motion-safe:data-[state=closed]:duration-150 motion-safe:data-[state=closed]:ease-(--motion-ease-standard) motion-reduce:animate-none flex w-full max-w-2xl flex-col items-stretch gap-3 border-border/80 bg-background/95 px-4 py-3 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between"
-              data-state={floatingActionsState}
+        <FloatingFormActions
+          className="max-w-3xl"
+          disableSubmit={exitingProjectFieldIds.length > 0}
+          extraAction={
+            <Button
+              className="w-full sm:w-auto"
+              disabled={isSavePending}
+              onClick={onPreview}
+              type="button"
+              variant="outline"
             >
-              <p className="text-sm text-muted-foreground">You have unsaved changes.</p>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button
-                  className="w-full sm:w-auto"
-                  disabled={isSavePending || !hasUnsavedChanges}
-                  onClick={handleCancelChanges}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  disabled={isSavePending || exitingProjectFieldIds.length > 0}
-                  type="submit"
-                >
-                  {isSavePending ? (
-                    <>
-                      <Spinner data-icon="inline-start" aria-hidden="true" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save changes"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+              <Eye data-icon="inline-start" />
+              Live preview
+            </Button>
+          }
+          isPending={isSavePending}
+          onCancel={handleCancelChanges}
+          stackActionsOnMobile
+          state={floatingActionsState}
+          visible={shouldRenderFloatingActions}
+        />
       </form>
 
       <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader className="gap-2">
+          <DialogHeader>
             <DialogTitle>Apply preset defaults</DialogTitle>
             <DialogDescription>
               Current field and page customization will be replaced with the{" "}
               selected business type defaults.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+
+          <DialogBody>
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Selected business type
@@ -949,7 +958,7 @@ export function BusinessInquiryFormForm({
 
             <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
               <p className="text-sm font-medium text-foreground">This will replace</p>
-              <div className="mt-3 grid gap-2 text-sm">
+              <div className="grid gap-2 pt-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">
                     Inquiry form fields and labels
@@ -964,7 +973,7 @@ export function BusinessInquiryFormForm({
                 </div>
               </div>
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button
               onClick={() => setIsPresetDialogOpen(false)}

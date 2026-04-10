@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  Eye,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -13,11 +14,10 @@ import {
 import {
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { FloatingFormActions } from "@/components/shared/floating-form-actions";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -45,6 +45,7 @@ import {
 } from "@/features/inquiries/page-config";
 import type {
   BusinessInquiryPageActionState,
+  BusinessInquiryPagePreviewDraft,
   BusinessInquiryPageSettingsView,
 } from "@/features/settings/types";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,9 @@ type BusinessInquiryPageFormProps = {
   settings: BusinessInquiryPageSettingsView;
   logoPreviewUrl: string | null;
   generalSettingsHref: string;
+  onDraftChange: (draft: BusinessInquiryPagePreviewDraft) => void;
+  onPreview: () => void;
+  onUnsavedChangesChange: (hasUnsavedChanges: boolean) => void;
 };
 
 const initialState: BusinessInquiryPageActionState = {};
@@ -66,8 +70,11 @@ export function BusinessInquiryPageForm({
   settings,
   logoPreviewUrl,
   generalSettingsHref,
+  onDraftChange,
+  onPreview,
+  onUnsavedChangesChange,
 }: BusinessInquiryPageFormProps) {
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -174,6 +181,31 @@ export function BusinessInquiryPageForm({
     return () => window.clearTimeout(timeout);
   }, [hasUnsavedChanges, prefersReducedMotion]);
 
+  useEffect(() => {
+    const inquiryPageConfig = getDraftInquiryPageConfig({
+      cards,
+      fallbackConfig: settings.inquiryPageConfig,
+      form: formRef.current,
+      template,
+    });
+
+    onDraftChange({
+      publicInquiryEnabled,
+      inquiryPageConfig,
+    });
+  }, [
+    cards,
+    formRevision,
+    onDraftChange,
+    publicInquiryEnabled,
+    settings.inquiryPageConfig,
+    template,
+  ]);
+
+  useEffect(() => {
+    onUnsavedChangesChange(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChangesChange]);
+
   function updateCard(
     cardId: string,
     key: keyof InquiryPageCard,
@@ -239,12 +271,6 @@ export function BusinessInquiryPageForm({
       onInputCapture={() => setFormRevision((current) => current + 1)}
       ref={formRef}
     >
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save the inquiry page.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
       <input name="formId" type="hidden" value={settings.formId} />
       <input
         name="publicInquiryEnabled"
@@ -367,9 +393,10 @@ export function BusinessInquiryPageForm({
               </div>
 
               <div className="info-tile bg-muted/20">
-                <p className="meta-label">Saved preview mode</p>
+                <p className="meta-label">Live preview</p>
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                  Preview shows the last saved version.
+                  Open preview from the unsaved changes bar to review page edits
+                  instantly before you save them.
                 </p>
               </div>
             </div>
@@ -703,38 +730,105 @@ export function BusinessInquiryPageForm({
         </CardContent>
       </Card>
 
-      {shouldRenderFloatingActions ? (
-        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-          <div
-            className="soft-panel motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-2 motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=open]:duration-200 motion-safe:data-[state=open]:ease-(--motion-ease-emphasized) motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-2 motion-safe:data-[state=closed]:zoom-out-95 motion-safe:data-[state=closed]:duration-150 motion-safe:data-[state=closed]:ease-(--motion-ease-standard) motion-reduce:animate-none flex w-full max-w-2xl items-center justify-between gap-3 border-border/80 bg-background/95 px-4 py-3 shadow-xl backdrop-blur"
-            data-state={floatingActionsState}
-          >
-            <p className="text-sm text-muted-foreground">You have unsaved changes.</p>
-            <div className="flex items-center gap-2">
-              <Button
-                disabled={isPending || !hasUnsavedChanges}
-                onClick={handleCancelChanges}
-                type="button"
-                variant="outline"
-              >
-                Cancel
-              </Button>
-              <Button disabled={isPending} size="lg" type="submit">
-                {isPending ? (
-                  <>
-                    <Spinner data-icon="inline-start" aria-hidden="true" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save changes"
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <FloatingFormActions
+        extraAction={
+          <Button disabled={isPending} onClick={onPreview} type="button" variant="outline">
+            <Eye data-icon="inline-start" />
+            Live preview
+          </Button>
+        }
+        isPending={isPending}
+        onCancel={handleCancelChanges}
+        stackActionsOnMobile
+        state={floatingActionsState}
+        visible={shouldRenderFloatingActions}
+      />
     </form>
   );
+}
+
+function getNamedFormFieldValue(
+  form: HTMLFormElement | null,
+  name: string,
+): string | undefined {
+  if (!form) {
+    return undefined;
+  }
+
+  const field = form.elements.namedItem(name);
+
+  if (
+    !(field instanceof HTMLInputElement) &&
+    !(field instanceof HTMLTextAreaElement)
+  ) {
+    return undefined;
+  }
+
+  return field.value;
+}
+
+function getOptionalDraftValue(
+  form: HTMLFormElement | null,
+  name: string,
+  fallbackValue?: string,
+) {
+  const value = getNamedFormFieldValue(form, name);
+
+  if (value == null) {
+    return fallbackValue;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue ? trimmedValue : undefined;
+}
+
+function getRequiredDraftValue(
+  form: HTMLFormElement | null,
+  name: string,
+  fallbackValue: string,
+) {
+  const value = getNamedFormFieldValue(form, name);
+
+  if (value == null) {
+    return fallbackValue;
+  }
+
+  return value.trim();
+}
+
+function getDraftInquiryPageConfig({
+  cards,
+  fallbackConfig,
+  form,
+  template,
+}: {
+  cards: InquiryPageCard[];
+  fallbackConfig: BusinessInquiryPageSettingsView["inquiryPageConfig"];
+  form: HTMLFormElement | null;
+  template: InquiryPageTemplate;
+}) {
+  return {
+    template,
+    cards,
+    eyebrow: getOptionalDraftValue(form, "eyebrow", fallbackConfig.eyebrow),
+    brandTagline: getOptionalDraftValue(
+      form,
+      "brandTagline",
+      fallbackConfig.brandTagline,
+    ),
+    headline: getRequiredDraftValue(form, "headline", fallbackConfig.headline),
+    description: getOptionalDraftValue(
+      form,
+      "description",
+      fallbackConfig.description,
+    ),
+    formTitle: getRequiredDraftValue(form, "formTitle", fallbackConfig.formTitle),
+    formDescription: getOptionalDraftValue(
+      form,
+      "formDescription",
+      fallbackConfig.formDescription,
+    ),
+  } satisfies BusinessInquiryPageSettingsView["inquiryPageConfig"];
 }
 
 function TemplateMiniPreview({
