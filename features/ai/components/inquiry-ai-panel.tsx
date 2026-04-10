@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -804,10 +805,10 @@ export function InquiryAiPanel({ inquiryId, userName }: InquiryAiPanelProps) {
 
       <Dialog onOpenChange={setIsOpen} open={isOpen}>
         <DialogContent
-          className="max-w-5xl gap-0 p-0 sm:w-[min(calc(100vw-2rem),78rem)]"
+          className="max-w-5xl sm:w-[min(calc(100vw-2rem),78rem)]"
           data-testid="inquiry-ai-dialog"
         >
-          <DialogHeader className="gap-4 border-b border-border/70 pb-6 pr-14">
+          <DialogHeader className="gap-4">
             <div className="flex items-start gap-4">
               <div className="flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
                 <Sparkles />
@@ -823,109 +824,111 @@ export function InquiryAiPanel({ inquiryId, userName }: InquiryAiPanelProps) {
             </div>
           </DialogHeader>
 
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
-              <div className="flex min-h-full flex-col gap-4">
-                {messages.length ? (
-                  messages.map((message) => (
-                    <TranscriptMessage
-                      copyState={copyState}
-                      key={message.id}
-                      message={message}
-                      onCopy={(targetMessage) =>
-                        copyText(targetMessage.content, targetMessage.id, setCopyState)
-                      }
-                    />
-                  ))
-                ) : (
-                  <div className="flex min-h-[20rem] items-end">
-                    <div className="section-panel max-w-2xl rounded-2xl p-5 shadow-none">
-                      <div className="flex flex-col gap-3">
-                        <span className="meta-label">AI assistant</span>
-                        <h3 className="font-heading text-lg font-semibold text-foreground">
-                          Start with a quick ask
-                        </h3>
-                        <p className="text-sm leading-7 text-muted-foreground">
-                          Use the preset buttons below to draft the first reply,
-                          summarize the inquiry, suggest follow-up questions, or
-                          outline quote line items. For a custom ask, type your
-                          request and send it like a chat.
-                        </p>
+          <DialogBody className="min-h-0 flex-1 gap-0 px-0 py-0 sm:px-0 sm:py-0">
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+                <div className="flex min-h-full flex-col gap-4">
+                  {messages.length ? (
+                    messages.map((message) => (
+                      <TranscriptMessage
+                        copyState={copyState}
+                        key={message.id}
+                        message={message}
+                        onCopy={(targetMessage) =>
+                          copyText(targetMessage.content, targetMessage.id, setCopyState)
+                        }
+                      />
+                    ))
+                  ) : (
+                    <div className="flex min-h-[20rem] items-end">
+                      <div className="section-panel max-w-2xl rounded-2xl p-5 shadow-none">
+                        <div className="flex flex-col gap-3">
+                          <span className="meta-label">AI assistant</span>
+                          <h3 className="font-heading text-lg font-semibold text-foreground">
+                            Start with a quick ask
+                          </h3>
+                          <p className="text-sm leading-7 text-muted-foreground">
+                            Use the preset buttons below to draft the first reply,
+                            summarize the inquiry, suggest follow-up questions, or
+                            outline quote line items. For a custom ask, type your
+                            request and send it like a chat.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div ref={transcriptEndRef} />
-              </div>
-            </div>
-
-            <div className="border-t border-border/70 px-5 py-5 sm:px-6">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap gap-2">
-                  {presetActions.map((preset) => {
-                    const Icon = preset.icon;
-
-                    return (
-                      <Button
-                        disabled={isPending}
-                        key={preset.intent}
-                        onClick={() => {
-                          void runIntent(preset.intent);
-                        }}
-                        size="sm"
-                        title={preset.description}
-                        type="button"
-                        variant="outline"
-                      >
-                        <Icon data-icon="inline-start" />
-                        {preset.label}
-                      </Button>
-                    );
-                  })}
+                  <div ref={transcriptEndRef} />
                 </div>
+              </div>
 
-                <form className="flex flex-col gap-3" onSubmit={handleCustomSubmit}>
-                  <Textarea
-                    className="max-h-56 min-h-28"
-                    disabled={isPending}
-                    maxLength={6000}
-                    onChange={(event) => setComposerValue(event.currentTarget.value)}
-                    onKeyDown={handleComposerKeyDown}
-                    placeholder="Ask anything about this inquiry, or paste rough text and use Rewrite draft."
-                    rows={4}
-                    value={composerValue}
-                  />
+              <div className="border-t border-border/70 px-5 py-5 sm:px-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap gap-2">
+                    {presetActions.map((preset) => {
+                      const Icon = preset.icon;
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <p className="text-xs leading-5 text-muted-foreground">
-                      Press Ctrl/Cmd + Enter to send. Rewrite draft uses the text
-                      currently in the message box.
-                    </p>
-
-                    <Button
-                      disabled={isPending || !composerValue.trim()}
-                      type="submit"
-                    >
-                      {isPending ? (
-                        <>
-                          <Spinner aria-hidden="true" data-icon="inline-start" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <SendHorizontal data-icon="inline-start" />
-                          Send
-                        </>
-                      )}
-                    </Button>
+                      return (
+                        <Button
+                          disabled={isPending}
+                          key={preset.intent}
+                          onClick={() => {
+                            void runIntent(preset.intent);
+                          }}
+                          size="sm"
+                          title={preset.description}
+                          type="button"
+                          variant="outline"
+                        >
+                          <Icon data-icon="inline-start" />
+                          {preset.label}
+                        </Button>
+                      );
+                    })}
                   </div>
-                </form>
+
+                  <form className="flex flex-col gap-3" onSubmit={handleCustomSubmit}>
+                    <Textarea
+                      className="max-h-56 min-h-28"
+                      disabled={isPending}
+                      maxLength={6000}
+                      onChange={(event) => setComposerValue(event.currentTarget.value)}
+                      onKeyDown={handleComposerKeyDown}
+                      placeholder="Ask anything about this inquiry, or paste rough text and use Rewrite draft."
+                      rows={4}
+                      value={composerValue}
+                    />
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        Press Ctrl/Cmd + Enter to send. Rewrite draft uses the text
+                        currently in the message box.
+                      </p>
+
+                      <Button
+                        disabled={isPending || !composerValue.trim()}
+                        type="submit"
+                      >
+                        {isPending ? (
+                          <>
+                            <Spinner aria-hidden="true" data-icon="inline-start" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <SendHorizontal data-icon="inline-start" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="border-t border-border/70 px-5 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <DialogFooter className="text-xs text-muted-foreground sm:items-center sm:justify-between sm:gap-4">
             <span>Internal assistant only</span>
             <span>No customer-facing chat or automatic sending</span>
           </DialogFooter>
