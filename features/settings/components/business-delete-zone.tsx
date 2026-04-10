@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { AlertTriangle, Trash2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -35,7 +35,10 @@ export function BusinessDeleteZone({
   action,
   businessName,
 }: BusinessDeleteZoneProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useActionStateWithSonner(
+    action,
+    initialState,
+  );
 
   return (
     <Card className="gap-0 border-destructive/25 bg-card/97">
@@ -51,13 +54,6 @@ export function BusinessDeleteZone({
             files, and settings.
           </AlertDescription>
         </Alert>
-
-        {state.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>We could not delete the business.</AlertTitle>
-            <AlertDescription>{state.error}</AlertDescription>
-          </Alert>
-        ) : null}
 
         <form action={formAction} className="form-stack">
           <Field

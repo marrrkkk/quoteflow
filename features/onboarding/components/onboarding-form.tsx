@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 
 import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions } from "@/components/shared/form-layout";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
@@ -26,6 +25,7 @@ import {
   onboardingWorkspaceSchema,
 } from "@/features/onboarding/schemas";
 import type { OnboardingActionState } from "@/features/onboarding/types";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 
 type OnboardingFormProps = {
   action: (
@@ -78,7 +78,10 @@ export function OnboardingForm({
   action,
   initialValues,
 }: OnboardingFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useActionStateWithSonner(
+    action,
+    initialState,
+  );
   const [currentStep, setCurrentStep] = useState(0);
   const [clientFieldErrors, setClientFieldErrors] = useState<
     Partial<Record<OnboardingVisibleField, string>>
@@ -267,13 +270,6 @@ export function OnboardingForm({
         </div>
         <Progress value={progressValue} />
       </div>
-
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not finish setup.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
 
       <div className="flex min-h-[19rem] flex-col justify-center gap-8">
         <h1 className="font-heading text-[2rem] font-semibold tracking-tight text-foreground sm:text-[2.4rem]">

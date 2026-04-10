@@ -15,8 +15,7 @@ import {
 import {
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +27,7 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -76,7 +76,7 @@ export function ProfileSettingsForm({
   profile,
 }: ProfileSettingsFormProps) {
   const router = useProgressRouter();
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -147,14 +147,6 @@ export function ProfileSettingsForm({
       onInputCapture={() => setFormRevision((current) => current + 1)}
       ref={formRef}
     >
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save your profile.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-
       <input name="removeAvatar" type="hidden" value={String(removeAvatar)} />
 
       <Card className="gap-0 border-border/75 bg-card/97">
@@ -613,13 +605,13 @@ function ProfileAvatarField({
           }
         }}
       >
-        <DialogContent className="gap-0 p-0 sm:max-w-4xl">
-          <DialogHeader className="gap-3 border-b border-border/70 pb-4">
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
             <DialogTitle>Crop profile photo</DialogTitle>
             <DialogDescription>Adjust the crop.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <DialogBody className="grid min-h-0 flex-1 gap-6 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="flex flex-col gap-4">
               <div className="soft-panel relative min-h-[24rem] overflow-hidden bg-muted/25">
                 {draftAsset ? (
@@ -669,9 +661,9 @@ function ProfileAvatarField({
                 </div>
               ) : null}
             </div>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="border-t border-border/70">
+          <DialogFooter>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
               <Button onClick={closeCropper} type="button" variant="outline">
                 Cancel

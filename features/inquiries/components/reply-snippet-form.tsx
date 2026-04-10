@@ -3,8 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { FormActions, FormSection } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -46,7 +45,7 @@ export function ReplySnippetForm({
   showSectionHeader = true,
 }: ReplySnippetFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -65,14 +64,6 @@ export function ReplySnippetForm({
 
   return (
     <form action={formAction} className="form-stack" ref={formRef}>
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save the snippet.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-
       <FormSection title={showSectionHeader ? (initialValues ? "Snippet content" : "New reply snippet") : undefined}>
         <FieldGroup>
           <Field data-invalid={Boolean(state.fieldErrors?.title) || undefined}>

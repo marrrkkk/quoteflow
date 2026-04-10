@@ -6,8 +6,7 @@ import {
   FormActions,
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -35,7 +34,7 @@ export function InquiryNoteForm({
   embedded = false,
 }: InquiryNoteFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -48,14 +47,6 @@ export function InquiryNoteForm({
 
   return (
     <form action={formAction} className="form-stack" ref={formRef}>
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save the note.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-
       {embedded ? (
         <FieldGroup>
           <Field data-invalid={Boolean(state.fieldErrors?.body) || undefined}>

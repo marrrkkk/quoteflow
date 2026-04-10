@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { KeyRound, LogOut, Shield, Trash2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import {
   Field,
   FieldContent,
@@ -58,15 +58,15 @@ export function SecuritySettingsForm({
 }: SecuritySettingsFormProps) {
   const [revokeAfterPasswordChange, setRevokeAfterPasswordChange] = useState(true);
   const [setPasswordState, setPasswordFormAction, isSetPasswordPending] =
-    useActionStateWithSuccessToast(setPasswordAction, initialPasswordState);
+    useActionStateWithSonner(setPasswordAction, initialPasswordState);
   const [changePasswordState, changePasswordFormAction, isChangePasswordPending] =
-    useActionStateWithSuccessToast(changePasswordAction, initialPasswordState);
+    useActionStateWithSonner(changePasswordAction, initialPasswordState);
   const [sessionState, sessionFormAction, isSessionPending] =
-    useActionStateWithSuccessToast(
+    useActionStateWithSonner(
       revokeOtherSessionsAction,
       initialSessionState,
     );
-  const [deleteState, deleteFormAction, isDeletePending] = useActionState(
+  const [deleteState, deleteFormAction, isDeletePending] = useActionStateWithSonner(
     deleteAccountAction,
     initialDeleteState,
   );
@@ -95,14 +95,6 @@ export function SecuritySettingsForm({
 
             {hasPassword ? (
               <form action={changePasswordFormAction} className="form-stack">
-                {changePasswordState.error ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>We could not update your password.</AlertTitle>
-                    <AlertDescription>{changePasswordState.error}</AlertDescription>
-                  </Alert>
-                ) : null}
-
-
                 <FieldGroup>
                   <Field
                     data-invalid={
@@ -251,14 +243,6 @@ export function SecuritySettingsForm({
               </form>
             ) : (
               <form action={setPasswordFormAction} className="form-stack">
-                {setPasswordState.error ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>We could not set your password.</AlertTitle>
-                    <AlertDescription>{setPasswordState.error}</AlertDescription>
-                  </Alert>
-                ) : null}
-
-
                 <FieldGroup>
                   <Field
                     data-invalid={
@@ -360,14 +344,6 @@ export function SecuritySettingsForm({
               </p>
             </div>
 
-            {sessionState.error ? (
-              <Alert variant="destructive">
-                <AlertTitle>We could not update your sessions.</AlertTitle>
-                <AlertDescription>{sessionState.error}</AlertDescription>
-              </Alert>
-            ) : null}
-
-
             <div className="rounded-2xl border border-border/70 bg-muted/15 px-4 py-4">
               <p className="text-sm font-medium text-foreground">
                 {hasOtherSessions
@@ -427,13 +403,6 @@ export function SecuritySettingsForm({
                   This account does not currently use a password. If deletion fails,
                   sign in again and retry from a fresh session.
                 </AlertDescription>
-              </Alert>
-            ) : null}
-
-            {deleteState.error ? (
-              <Alert variant="destructive">
-                <AlertTitle>We could not delete your account.</AlertTitle>
-                <AlertDescription>{deleteState.error}</AlertDescription>
               </Alert>
             ) : null}
 
