@@ -174,10 +174,8 @@ function FieldSeparator({
 }
 
 function FieldError({
-  className,
   children,
   errors,
-  ...props
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>
 }) {
@@ -212,16 +210,9 @@ function FieldError({
     return null
   }
 
-  return (
-    <div
-      role="alert"
-      data-slot="field-error"
-      className={cn("text-[0.82rem] leading-5 font-medium text-destructive", className)}
-      {...props}
-    >
-      {content}
-    </div>
-  )
+  // Error copy is standardized via Sonner toasts.
+  // Keep this component as a no-op to avoid inline field error text.
+  return null
 }
 
 export {
