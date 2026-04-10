@@ -1,3 +1,9 @@
+import { TruncatedTextWithTooltip } from "@/components/shared/truncated-text-with-tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatQuoteDate, formatQuoteMoney } from "@/features/quotes/utils";
 
@@ -66,13 +72,30 @@ export function QuotePreview({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="info-tile h-full shadow-none">
+            <div className="info-tile min-w-0 h-full shadow-none">
               <p className="meta-label">Prepared for</p>
-              <p className="mt-2 font-medium text-foreground">{customerName}</p>
-              <p className="text-sm text-muted-foreground">{customerEmail}</p>
+              <TruncatedTextWithTooltip
+                className="mt-2 font-medium text-foreground"
+                text={customerName}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {customerEmail}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent
+                  align="start"
+                  className="max-w-sm break-words"
+                  side="top"
+                  sideOffset={6}
+                >
+                  {customerEmail}
+                </TooltipContent>
+              </Tooltip>
             </div>
 
-            <div className="info-tile h-full shadow-none">
+            <div className="info-tile min-w-0 h-full shadow-none">
               <p className="meta-label">Summary</p>
               <p className="mt-2 font-medium text-foreground">
                 {items.length} {items.length === 1 ? "line item" : "line items"}
