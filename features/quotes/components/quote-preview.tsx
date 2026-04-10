@@ -1,9 +1,4 @@
 import { TruncatedTextWithTooltip } from "@/components/shared/truncated-text-with-tooltip";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatQuoteDate, formatQuoteMoney } from "@/features/quotes/utils";
 
@@ -78,21 +73,10 @@ export function QuotePreview({
                 className="mt-2 font-medium text-foreground"
                 text={customerName}
               />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {customerEmail}
-                  </p>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="max-w-sm break-words"
-                  side="top"
-                  sideOffset={6}
-                >
-                  {customerEmail}
-                </TooltipContent>
-              </Tooltip>
+              <TruncatedTextWithTooltip
+                className="mt-1 text-sm text-muted-foreground"
+                text={customerEmail}
+              />
             </div>
 
             <div className="info-tile min-w-0 h-full shadow-none">
