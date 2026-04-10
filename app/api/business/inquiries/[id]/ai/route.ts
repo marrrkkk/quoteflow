@@ -1,7 +1,4 @@
-import {
-  createInquiryAssistantStream,
-  isInquiryAssistantStreamTruncated,
-} from "@/features/ai/service";
+import { createInquiryAssistantStream } from "@/features/ai/service";
 import { aiAssistantRequestSchema } from "@/features/ai/schemas";
 import type { AiAssistantStreamEvent } from "@/features/ai/types";
 import { getInquiryAssistantContextForBusiness } from "@/features/ai/queries";
@@ -9,9 +6,14 @@ import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
 import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
 
 const encoder = new TextEncoder();
+const ssePaddingComment = `:${" ".repeat(2048)}\n\n`;
 
 function encodeStreamEvent(event: AiAssistantStreamEvent) {
-  return encoder.encode(`${JSON.stringify(event)}\n`);
+  return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function encodeSseComment(comment: string) {
+  return encoder.encode(comment);
 }
 
 function getValidationMessage(error: {
@@ -78,41 +80,15 @@ export async function POST(
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      controller.enqueue(encodeSseComment(ssePaddingComment));
+
       try {
-        const { model, title, result } = createInquiryAssistantStream({
+        for await (const event of createInquiryAssistantStream({
           context: assistantContext,
           request: validationResult.data,
-        });
-
-        controller.enqueue(
-          encodeStreamEvent({
-            type: "meta",
-            title,
-            model,
-          }),
-        );
-
-        for await (const delta of result.getTextStream()) {
-          if (!delta) {
-            continue;
-          }
-
-          controller.enqueue(
-            encodeStreamEvent({
-              type: "delta",
-              value: delta,
-            }),
-          );
+        })) {
+          controller.enqueue(encodeStreamEvent(event));
         }
-
-        const response = await result.getResponse();
-
-        controller.enqueue(
-          encodeStreamEvent({
-            type: "done",
-            truncated: isInquiryAssistantStreamTruncated(response),
-          }),
-        );
       } catch (error) {
         console.error("Failed to stream inquiry AI output.", error);
 
@@ -131,9 +107,10 @@ export async function POST(
 
   return new Response(stream, {
     headers: {
-      "cache-control": "private, no-store",
-      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "private, no-cache, no-transform",
+      "content-type": "text/event-stream; charset=utf-8",
       "x-content-type-options": "nosniff",
+      "x-accel-buffering": "no",
     },
   });
 }
