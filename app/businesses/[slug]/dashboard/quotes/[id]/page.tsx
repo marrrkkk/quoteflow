@@ -350,31 +350,21 @@ export default async function QuoteDetailPage({
 
           <DashboardSidebarStack>
             <DashboardSection
-              contentClassName="grid gap-3 sm:grid-cols-2"
+              contentClassName="!grid !grid-cols-2 gap-3"
               description="Key totals and lifecycle dates."
-              title="Commercial summary"
+              title="Summary"
             >
               <InfoTile
-                label="Subtotal"
-                value={formatQuoteMoney(quote.subtotalInCents, quote.currency)}
+                label="Total"
+                value={formatQuoteMoney(quote.totalInCents, quote.currency)}
               />
               <InfoTile
                 label="Discount"
                 value={formatQuoteMoney(quote.discountInCents, quote.currency)}
               />
               <InfoTile
-                label="Total"
-                value={formatQuoteMoney(quote.totalInCents, quote.currency)}
-              />
-              <InfoTile
                 label="Valid until"
                 value={formatQuoteDate(quote.validUntil)}
-              />
-              <InfoTile
-                label="Sent"
-                value={
-                  quote.sentAt ? formatQuoteDateTime(quote.sentAt) : "Not sent"
-                }
               />
               <InfoTile
                 label="Accepted"
