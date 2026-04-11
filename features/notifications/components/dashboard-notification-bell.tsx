@@ -321,6 +321,20 @@ export function DashboardNotificationBell({
 
     if (item.unread) {
       markSingleNotificationRead(item.id);
+
+      startTransition(async () => {
+        const result = await markBusinessNotificationsReadAction(
+          businessSlug,
+          item.createdAt,
+        );
+
+        if (!result.ok) {
+          console.error(result.error);
+          return;
+        }
+
+        applyReadWatermark(result.lastReadAt);
+      });
     }
 
     router.push(item.href);
