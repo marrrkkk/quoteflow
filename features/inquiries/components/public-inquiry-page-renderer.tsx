@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { PublicHeroSurface } from "@/components/shared/public-page-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PublicInquiryForm } from "@/features/inquiries/components/public-inquiry-form";
+import { InquiryShowcaseImageSurface } from "@/features/inquiries/components/inquiry-showcase-image-surface";
 import { inquiryPageCardIconMeta } from "@/features/inquiries/page-config";
 import type {
   PublicInquiryFormState,
@@ -85,6 +86,7 @@ function SplitInquiryTemplate({
       <div className="flex flex-col gap-6 xl:hidden">
         <InquiryIntro business={business} />
         <InquirySupportCards cards={config.cards} />
+        <InquiryShowcaseImage business={business} />
         <InquiryFormCard
           action={action}
           title={config.formTitle}
@@ -98,6 +100,7 @@ function SplitInquiryTemplate({
         <div className="flex min-w-0 flex-col gap-7">
           <InquiryIntro business={business} />
           <InquirySupportCards cards={config.cards} />
+          <InquiryShowcaseImage business={business} />
         </div>
 
         <InquiryFormCard
@@ -126,6 +129,8 @@ function NoSupportingCardsInquiryTemplate({
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center">
           <InquiryIntro business={business} align="center" />
         </div>
+
+        <InquiryShowcaseImage business={business} />
 
         <div className="mx-auto w-full max-w-4xl">
           <InquiryFormCard
@@ -169,6 +174,7 @@ function ShowcaseInquiryTemplate({
           </div>
 
           <InquirySupportCards cards={config.cards} />
+          <InquiryShowcaseImage business={business} />
         </div>
       </div>
     </PublicHeroSurface>
@@ -176,7 +182,7 @@ function ShowcaseInquiryTemplate({
 }
 
 function BusinessInquiryBrand({ business }: { business: PublicInquiryBusiness }) {
-  const brandTagline = business.inquiryPageConfig.brandTagline;
+  const brandTagline = getResolvedBrandTagline(business);
 
   return (
     <div className="flex min-w-0 items-center gap-4">
@@ -200,7 +206,7 @@ function BusinessInquirySpotlight({
 }: {
   business: PublicInquiryBusiness;
 }) {
-  const brandTagline = business.inquiryPageConfig.brandTagline;
+  const brandTagline = getResolvedBrandTagline(business);
 
   return (
     <div className="soft-panel flex h-full flex-col justify-between gap-5 bg-secondary/70 p-6 shadow-none">
@@ -250,6 +256,14 @@ function BusinessBrandBadge({
         </span>
       )}
     </div>
+  );
+}
+
+function getResolvedBrandTagline(business: PublicInquiryBusiness) {
+  return (
+    business.inquiryPageConfig.brandTagline?.trim() ||
+    business.shortDescription?.trim() ||
+    undefined
   );
 }
 
@@ -330,6 +344,30 @@ function InquirySupportCards({
   );
 }
 
+function InquiryShowcaseImage({
+  business,
+}: {
+  business: PublicInquiryBusiness;
+}) {
+  const showcaseImage = business.inquiryPageConfig.showcaseImage;
+
+  if (!showcaseImage?.url) {
+    return null;
+  }
+
+  return (
+    <div className="flex w-full justify-center">
+      <InquiryShowcaseImageSurface
+        alt={`Showcase image for ${business.name}`}
+        className={getShowcaseImageSizeClass(showcaseImage.size)}
+        crop={showcaseImage.crop}
+        frame={showcaseImage.frame}
+        url={showcaseImage.url}
+      />
+    </div>
+  );
+}
+
 function InquiryFormCard({
   business,
   action,
@@ -371,4 +409,18 @@ function getBusinessInitials(value: string) {
     .slice(0, 2)
     .map((segment) => segment[0]?.toUpperCase())
     .join("");
+}
+
+function getShowcaseImageSizeClass(
+  size: NonNullable<PublicInquiryBusiness["inquiryPageConfig"]["showcaseImage"]>["size"],
+) {
+  switch (size) {
+    case "compact":
+      return "w-full max-w-md";
+    case "large":
+      return "w-full max-w-5xl";
+    case "standard":
+    default:
+      return "w-full max-w-3xl";
+  }
 }
