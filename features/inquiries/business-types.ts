@@ -72,51 +72,51 @@ export const businessTypeMeta: Record<
 > = {
   contractor_home_improvement: {
     label: "Contractor / home improvement",
-    description: "Remodeling, installs, upgrades, and on-site project work.",
+    description: "Starting template for remodeling, installs, upgrades, and on-site project work.",
   },
   print_signage: {
     label: "Print / signage",
-    description: "Printing, signage, installs, and branded production work.",
+    description: "Starting template for printing, signage, installs, and branded production work.",
   },
   fabrication_custom_build: {
     label: "Fabrication / custom build",
-    description: "Custom fabrication, millwork, metalwork, and made-to-order builds.",
+    description: "Starting template for custom fabrication, millwork, metalwork, and made-to-order builds.",
   },
   creative_marketing_services: {
     label: "Creative / marketing services",
-    description: "Brand, design, marketing, and content production projects.",
+    description: "Starting template for brand, design, marketing, and content production projects.",
   },
   web_it_services: {
     label: "Web / IT services",
-    description: "Web builds, technical support, systems setup, and automation work.",
+    description: "Starting template for web builds, technical support, systems setup, and automation work.",
   },
   photo_video_production: {
     label: "Photo / video production",
-    description: "Photo shoots, video production, editing, and coverage work.",
+    description: "Starting template for photo shoots, video production, editing, and coverage work.",
   },
   event_services_rentals: {
     label: "Event services / rentals",
-    description: "Event staffing, rentals, setup, and production coordination.",
+    description: "Starting template for event staffing, rentals, setup, and production coordination.",
   },
   landscaping_outdoor_services: {
     label: "Landscaping / outdoor services",
-    description: "Outdoor upgrades, site work, and recurring grounds service.",
+    description: "Starting template for outdoor upgrades, site work, and recurring grounds service.",
   },
   repair_services: {
     label: "Repair services",
-    description: "Device, equipment, and technical repair requests.",
+    description: "Starting template for device, equipment, and technical repair inquiries.",
   },
   consulting_professional_services: {
     label: "Consulting / advisory services",
-    description: "Consulting, advisory, audits, and professional service engagements.",
+    description: "Starting template for consulting, advisory, audits, and professional service engagements.",
   },
   cleaning_services: {
     label: "Cleaning services",
-    description: "Residential or commercial cleaning requests and schedules.",
+    description: "Starting template for residential or commercial cleaning inquiries and schedules.",
   },
   general_project_services: {
     label: "General project services",
-    description: "A flexible setup for custom service businesses with mixed requests.",
+    description: "Flexible starting template for owner-led service businesses with mixed inquiry types.",
   },
 };
 
