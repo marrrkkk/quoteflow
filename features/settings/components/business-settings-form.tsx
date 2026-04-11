@@ -926,18 +926,17 @@ function BusinessLogoField({
           }
         }}
       >
-        <DialogContent className="sm:max-w-5xl">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Crop brand asset</DialogTitle>
             <DialogDescription>Adjust the crop.</DialogDescription>
           </DialogHeader>
 
-          <DialogBody className="grid min-h-0 flex-1 gap-6 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <div className="flex flex-col gap-4">
-              <div className="soft-panel relative min-h-[26rem] overflow-hidden bg-muted/25">
-                {draftAsset ? (
-                  <Cropper
-                    aspect={1}
+          <DialogBody className="flex flex-col gap-4 overflow-y-auto">
+            <div className="soft-panel relative aspect-square overflow-hidden bg-muted/25">
+              {draftAsset ? (
+                <Cropper
+                  aspect={1}
                     crop={crop}
                     cropShape="rect"
                     image={draftAsset.url}
@@ -954,9 +953,7 @@ function BusinessLogoField({
               </div>
 
               <p className="text-sm text-muted-foreground">Drag and zoom to fit.</p>
-            </div>
 
-            <div className="flex flex-col gap-5">
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor="logo-crop-zoom">Zoom</FieldLabel>
@@ -983,8 +980,7 @@ function BusinessLogoField({
                   </div>
                 </div>
               ) : null}
-            </div>
-          </DialogBody>
+            </DialogBody>
 
           <DialogFooter>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
