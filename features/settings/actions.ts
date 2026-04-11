@@ -463,6 +463,8 @@ export async function updateBusinessInquiryFormAction(
     name: formData.get("name"),
     slug: formData.get("slug"),
     businessType: formData.get("businessType"),
+    formTitle: formData.get("formTitle"),
+    formDescription: formData.get("formDescription"),
     inquiryFormConfig: formData.get("inquiryFormConfig"),
   });
 

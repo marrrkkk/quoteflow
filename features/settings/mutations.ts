@@ -11,7 +11,10 @@ import {
   createInquiryFormConfigDefaults,
   getNormalizedInquiryFormConfig,
 } from "@/features/inquiries/form-config";
-import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
+import {
+  createInquiryPageConfigDefaults,
+  getNormalizedInquiryPageConfig,
+} from "@/features/inquiries/page-config";
 import type {
   BusinessDeleteInput,
   BusinessGeneralSettingsInput,
@@ -248,6 +251,7 @@ export async function updateBusinessSettings({
     .select({
       id: businesses.id,
       slug: businesses.slug,
+      shortDescription: businesses.shortDescription,
       logoStoragePath: businesses.logoStoragePath,
       logoContentType: businesses.logoContentType,
     })
@@ -307,6 +311,9 @@ export async function updateBusinessSettings({
 
   try {
     await db.transaction(async (tx) => {
+      const previousShortDescription = currentBusiness.shortDescription?.trim() || undefined;
+      const nextShortDescription = values.shortDescription?.trim() || undefined;
+
       await tx
         .update(businesses)
         .set({
@@ -327,6 +334,42 @@ export async function updateBusinessSettings({
           updatedAt: now,
         })
         .where(eq(businesses.id, businessId));
+
+      const inquiryForms = await tx
+        .select({
+          id: businessInquiryForms.id,
+          inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
+        })
+        .from(businessInquiryForms)
+        .where(
+          and(
+            eq(businessInquiryForms.businessId, businessId),
+            isNull(businessInquiryForms.archivedAt),
+          ),
+        );
+
+      for (const form of inquiryForms) {
+        const currentBrandTagline =
+          form.inquiryPageConfig?.brandTagline?.trim() || undefined;
+        const shouldSyncBrandTagline =
+          currentBrandTagline === previousShortDescription ||
+          currentBrandTagline === undefined;
+
+        if (!shouldSyncBrandTagline || currentBrandTagline === nextShortDescription) {
+          continue;
+        }
+
+        await tx
+          .update(businessInquiryForms)
+          .set({
+            inquiryPageConfig: {
+              ...form.inquiryPageConfig,
+              brandTagline: nextShortDescription,
+            },
+            updatedAt: now,
+          })
+          .where(eq(businessInquiryForms.id, form.id));
+      }
 
       await tx.insert(activityLogs).values({
         id: createId("act"),
@@ -670,6 +713,8 @@ export async function updateBusinessInquiryFormSettings({
       .select({
         id: businesses.id,
         slug: businesses.slug,
+        name: businesses.name,
+        shortDescription: businesses.shortDescription,
       })
       .from(businesses)
       .where(eq(businesses.id, businessId))
@@ -678,6 +723,7 @@ export async function updateBusinessInquiryFormSettings({
       .select({
         id: businessInquiryForms.id,
         slug: businessInquiryForms.slug,
+        inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
       })
       .from(businessInquiryForms)
       .where(
@@ -728,6 +774,11 @@ export async function updateBusinessInquiryFormSettings({
       businessType: values.businessType,
     },
   );
+  const inquiryPageConfig = getNormalizedInquiryPageConfig(form.inquiryPageConfig, {
+    businessName: business.name,
+    businessShortDescription: business.shortDescription,
+    businessType: values.businessType,
+  });
 
   await db.transaction(async (tx) => {
     await tx
@@ -737,6 +788,11 @@ export async function updateBusinessInquiryFormSettings({
         slug: values.slug,
         businessType: values.businessType,
         inquiryFormConfig,
+        inquiryPageConfig: {
+          ...inquiryPageConfig,
+          formTitle: values.formTitle,
+          formDescription: values.formDescription,
+        },
         updatedAt: now,
       })
       .where(
