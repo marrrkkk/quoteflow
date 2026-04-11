@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions, FormSection } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Field,
@@ -15,12 +16,9 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { StarterTemplateChoiceGrid } from "@/features/businesses/components/starter-template-choice-grid";
 import { getBusinessCountryOption } from "@/features/businesses/locale";
 import {
-  starterTemplateDefaultsSummary,
-  getStarterTemplateDefinition,
-  starterTemplateSelectionDescription,
+  starterTemplateOptions,
 } from "@/features/businesses/starter-templates";
 import type { BusinessType } from "@/features/inquiries/business-types";
 import type { CreateBusinessActionState } from "@/features/businesses/types";
@@ -105,21 +103,28 @@ export function CreateBusinessForm({
           </Field>
 
           <Field data-invalid={Boolean(businessTypeError) || undefined}>
-            <FieldLabel>Starter template</FieldLabel>
+            <FieldLabel htmlFor="business-starter-template">
+              Starter template
+            </FieldLabel>
             <FieldContent>
-              <StarterTemplateChoiceGrid
-                ariaLabel="Starter template"
+              <Combobox
+                aria-invalid={Boolean(businessTypeError) || undefined}
                 disabled={isPending}
-                inputName="business-starter-template"
-                onChange={setBusinessType}
+                id="business-starter-template"
+                onValueChange={(value) => setBusinessType(value as BusinessType)}
+                options={starterTemplateOptions}
+                placeholder="Choose a starter template"
+                renderOption={(option) => (
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{option.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {option.description}
+                    </p>
+                  </div>
+                )}
+                searchPlaceholder="Search starter template"
                 value={businessType}
               />
-              <FieldDescription>
-                {getStarterTemplateDefinition(businessType).helperText}{" "}
-                {starterTemplateDefaultsSummary}
-                {" "}
-                {starterTemplateSelectionDescription}
-              </FieldDescription>
               <FieldError
                 errors={
                   businessTypeError ? [{ message: businessTypeError }] : undefined
