@@ -432,7 +432,7 @@ export function DashboardNotificationBell({
                   </EmptyMedia>
                   <EmptyTitle>No notifications yet</EmptyTitle>
                   <EmptyDescription>
-                    New inquiries and customer quote responses will appear here.
+                    New inquiries, quote responses, and follow-up activity will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>

@@ -5,21 +5,23 @@ import { useState } from "react";
 import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Field,
   FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { StarterTemplateChoiceGrid } from "@/features/businesses/components/starter-template-choice-grid";
 import {
-  businessTypeOptions,
-  type BusinessType,
-} from "@/features/inquiries/business-types";
+  starterTemplateDefaultsSummary,
+  starterTemplateSelectionDescription,
+} from "@/features/businesses/starter-templates";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import {
   onboardingProfileSchema,
   onboardingWorkspaceSchema,
@@ -52,8 +54,8 @@ const onboardingSteps = [
   },
   {
     field: "businessType",
-    label: "Industry",
-    prompt: "What kind of business do you run?",
+    label: "Starter template",
+    prompt: "Which starter template fits your business best?",
   },
   {
     field: "fullName",
@@ -308,32 +310,21 @@ export function OnboardingForm({
 
           {currentStepMeta.field === "businessType" ? (
             <Field data-invalid={Boolean(businessTypeError) || undefined}>
-              <FieldLabel className="sr-only" htmlFor="onboarding-business-type">
-                Industry
+              <FieldLabel className="sr-only">
+                Starter template
               </FieldLabel>
               <FieldContent>
-                <Combobox
-                  aria-invalid={Boolean(businessTypeError) || undefined}
-                  autoFocus
-                  buttonClassName={onboardingComboboxButtonClassName}
-                  contentClassName="max-h-80"
-                  id="onboarding-business-type"
-                  onValueChange={(value) =>
-                    updateField("businessType", value as BusinessType)
-                  }
-                  options={businessTypeOptions}
-                  placeholder="Select your industry"
-                  renderOption={(option) => (
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{option.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {option.description}
-                      </p>
-                    </div>
-                  )}
-                  searchPlaceholder="Search industry"
+                <StarterTemplateChoiceGrid
+                  ariaLabel="Starter template"
+                  inputName="onboarding-starter-template"
+                  onChange={(value) => updateField("businessType", value)}
+                  showHelperText
                   value={values.businessType}
                 />
+                <FieldDescription>
+                  {starterTemplateDefaultsSummary}{" "}
+                  {starterTemplateSelectionDescription}
+                </FieldDescription>
                 <FieldError
                   errors={
                     businessTypeError ? [{ message: businessTypeError }] : undefined
@@ -419,7 +410,7 @@ export function OnboardingForm({
             {isPending ? (
               <>
                 <Spinner data-icon="inline-start" aria-hidden="true" />
-                Creating workspace...
+                Creating business workspace...
               </>
             ) : (
               "Create workspace"

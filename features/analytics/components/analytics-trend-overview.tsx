@@ -20,8 +20,8 @@ export function AnalyticsTrendOverview({
   return (
     <Card className="gap-0">
       <CardHeader className="gap-2">
-        <CardTitle>Recent trend overview</CardTitle>
-        <CardDescription>Last six weeks.</CardDescription>
+        <CardTitle>Recent inquiry trend</CardTitle>
+        <CardDescription>Rolling six-week view.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

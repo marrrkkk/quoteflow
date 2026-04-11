@@ -23,8 +23,8 @@ export function AnalyticsQuoteSummary({
   return (
     <Card className="gap-0 bg-background/72">
       <CardHeader className="gap-2">
-        <CardTitle>Quote conversion summary</CardTitle>
-        <CardDescription>Draft to accepted.</CardDescription>
+        <CardTitle>Quote workflow summary</CardTitle>
+        <CardDescription>From draft to accepted.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="grid gap-3 sm:grid-cols-2">

@@ -94,7 +94,7 @@ export function QuoteLibrarySheet({
         <SheetHeader>
           <SheetTitle>Insert saved pricing</SheetTitle>
           <SheetDescription>
-            Choose a pricing block or service package to copy into this draft quote.
+            Choose a saved pricing block or service package to copy into this draft quote.
           </SheetDescription>
         </SheetHeader>
 

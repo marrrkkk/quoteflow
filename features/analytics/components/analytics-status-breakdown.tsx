@@ -20,8 +20,8 @@ export function AnalyticsStatusBreakdown({
   return (
     <Card className="gap-0 bg-background/72">
       <CardHeader className="gap-2">
-        <CardTitle>Status breakdown</CardTitle>
-        <CardDescription>Current inquiry volume by status.</CardDescription>
+        <CardTitle>Inquiry status breakdown</CardTitle>
+        <CardDescription>Current inquiry workload by status.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {rows.map((row) => (
@@ -55,7 +55,7 @@ export function AnalyticsStatusBreakdown({
           <div className="soft-panel border-dashed bg-muted/15 p-4 text-sm text-muted-foreground shadow-none">
             <div className="flex items-center gap-2">
               <BarChart3 />
-              <span>Status counts will appear once inquiries arrive.</span>
+              <span>Status counts will appear once inquiries start coming in.</span>
             </div>
           </div>
         ) : null}
