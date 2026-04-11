@@ -180,13 +180,15 @@ export default async function QuotesPage({
             )
           }
           description={
-            hasFilters ? "Try another search or status." : "No quotes yet."
+            hasFilters
+              ? "Try another search or status."
+              : "Create a quote manually or send one from an inquiry."
           }
           icon={ReceiptText}
           title={
             hasFilters
               ? "No quotes match these filters."
-              : "Your quote business is still empty."
+              : "Your quote list is still empty."
           }
           variant="list"
         />

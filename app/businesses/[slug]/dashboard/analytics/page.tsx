@@ -46,23 +46,23 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
 
   return (
     <DashboardPage>
-      <PageHeader eyebrow="Analytics" title="Performance" />
+      <PageHeader eyebrow="Analytics" title="Inquiry-to-quote performance" />
 
       <DashboardStatsGrid>
         <AnalyticsMetricCard
           icon={BarChart3}
-          title="Total inquiries"
+          title="All inquiries"
           value={`${analytics.totalInquiries}`}
         />
         <AnalyticsMetricCard
           icon={CalendarRange}
-          title="Inquiries this week"
+          title="New this week"
           value={`${analytics.inquiriesThisWeek}`}
         />
         <AnalyticsMetricCard
           description={`${analytics.wonCount} won / ${analytics.lostCount} lost`}
           icon={Trophy}
-          title="Won vs lost"
+          title="Inquiry win rate"
           value={formatAnalyticsPercent(winRate)}
         />
         <AnalyticsMetricCard

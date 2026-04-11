@@ -27,7 +27,7 @@ export default async function BusinessPricingPage() {
       <PageHeader
         eyebrow="Quotes"
         title="Pricing"
-        description="Reusable blocks and packages."
+        description="Reusable pricing blocks and packages for faster quotes."
       />
 
       <BusinessPricingLibraryManager

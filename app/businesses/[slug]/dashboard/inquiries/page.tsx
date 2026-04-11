@@ -146,7 +146,7 @@ export default async function InquiriesPage({
     <DashboardPage>
       <PageHeader
         eyebrow="Requests"
-        title="Customer requests"
+        title="Customer inquiries"
         actions={
           <InquiryExportCsvDropdown
             businessSlug={businessSlug}
@@ -203,7 +203,7 @@ export default async function InquiriesPage({
                   href={publicInquiryUrl}
                   prefetch={false}
                 >
-                  Preview public inquiry page
+                  Preview inquiry page
                 </Link>
               </Button>
             )
@@ -211,13 +211,13 @@ export default async function InquiriesPage({
           description={
             hasFilters
               ? "Try another search or status."
-              : "Requests show up here."
+              : "New inquiries show up here."
           }
           icon={Inbox}
           title={
             hasFilters
               ? "No requests match these filters."
-              : "Your request inbox is still empty."
+              : "Your inquiry inbox is still empty."
           }
           variant="list"
         />

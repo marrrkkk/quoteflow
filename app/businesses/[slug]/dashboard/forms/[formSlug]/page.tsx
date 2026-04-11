@@ -55,7 +55,7 @@ export default async function BusinessFormPage({
       <PageHeader
         eyebrow="Forms"
         title={settings.formName}
-        description="Edit the fields, public page, preview, and publishing controls for this inquiry flow."
+        description="Edit the fields, public page, preview, and publishing controls for this inquiry workflow."
       />
 
       <div className="mt-6 sm:mt-8">
