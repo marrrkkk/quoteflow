@@ -13,7 +13,7 @@ async function signIn(page: Page) {
   await page.waitForLoadState("networkidle");
 
   await page.getByLabel("Email address").fill(demoOwnerEmail);
-  await page.getByLabel("Password").fill(demoOwnerPassword);
+  await page.locator("#password").fill(demoOwnerPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/businesses$/, { timeout: 20_000 });
@@ -43,6 +43,86 @@ function getToggleCard(page: Page, label: string): Locator {
   return page.locator("label").filter({
     has: page.getByText(label, { exact: true }),
   });
+}
+
+function getPreviewOverlay(page: Page) {
+  return page.getByTestId("inquiry-form-preview-overlay");
+}
+
+async function openPreview(page: Page) {
+  await page.getByRole("button", { name: "Preview" }).click();
+  await expect(getPreviewOverlay(page)).toBeVisible();
+}
+
+async function closePreview(page: Page) {
+  const overlay = getPreviewOverlay(page);
+  await overlay.getByRole("button", { name: "Back to editor" }).click();
+  await expect(overlay).toBeHidden();
+}
+
+async function dragLocatorToLocator(
+  page: Page,
+  source: Locator,
+  target: Locator,
+) {
+  await source.scrollIntoViewIfNeeded();
+  await target.scrollIntoViewIfNeeded();
+
+  const sourceBox = await source.boundingBox();
+  const targetBox = await target.boundingBox();
+
+  if (!sourceBox || !targetBox) {
+    throw new Error("Drag source or target is not visible.");
+  }
+
+  await page.mouse.move(
+    sourceBox.x + sourceBox.width / 2,
+    sourceBox.y + sourceBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    sourceBox.x + sourceBox.width / 2,
+    sourceBox.y + sourceBox.height / 2 + 16,
+    {
+      steps: 6,
+    },
+  );
+  await page.mouse.move(
+    targetBox.x + targetBox.width / 2,
+    targetBox.y + targetBox.height / 2,
+    {
+      steps: 16,
+    },
+  );
+  await page.mouse.up();
+}
+
+async function expectDocumentOrder(page: Page, locators: Locator[]) {
+  const handles = await Promise.all(
+    locators.map(async (locator) => {
+      await expect(locator).toBeVisible();
+      return locator.elementHandle();
+    }),
+  );
+
+  for (const handle of handles) {
+    expect(handle).not.toBeNull();
+  }
+
+  const isOrdered = await page.evaluate((elements) => {
+    return elements.every((element, index) => {
+      if (index === 0) {
+        return true;
+      }
+
+      return Boolean(
+        elements[index - 1].compareDocumentPosition(element) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+  }, handles as NonNullable<(typeof handles)[number]>[]);
+
+  expect(isOrdered).toBeTruthy();
 }
 
 test("dashboard and detail pages surface follow-up, expiring-soon, and customer history context", async ({
@@ -189,37 +269,187 @@ test("inquiry form preview reflects unsaved field and page edits in realtime", a
 
   await contactNameLabelInput.fill(updatedNameLabel);
 
-  const previewPagePromise = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "Live preview" }).click();
-  const previewPage = await previewPagePromise;
-  await previewPage.waitForLoadState("networkidle");
+  await openPreview(page);
+  const previewOverlay = getPreviewOverlay(page);
 
-  await expect(previewPage.getByLabel(updatedNameLabel)).toBeVisible({
+  await expect(previewOverlay.getByLabel(updatedNameLabel)).toBeVisible({
     timeout: 20_000,
   });
 
-  await page.bringToFront();
+  await closePreview(page);
   await page.getByRole("button", { name: "Page" }).click();
 
   const headlineInput = page.locator("#inquiry-page-headline");
   const originalHeadline = await headlineInput.inputValue();
 
   await headlineInput.fill(updatedHeadline);
+  await openPreview(page);
 
   await expect(
-    previewPage.getByRole("heading", { name: updatedHeadline, exact: true }),
+    previewOverlay.getByRole("heading", { name: updatedHeadline, exact: true }),
   ).toBeVisible({ timeout: 20_000 });
 
+  await closePreview(page);
   await page.getByRole("button", { name: "Cancel" }).click();
+  await openPreview(page);
 
   await expect(
-    previewPage.getByRole("heading", { name: originalHeadline, exact: true }),
+    previewOverlay.getByRole("heading", { name: originalHeadline, exact: true }),
   ).toBeVisible({ timeout: 20_000 });
 
+  await closePreview(page);
   await page.getByRole("button", { name: "Fields" }).click();
   await page.getByRole("button", { name: "Cancel" }).click();
+  await openPreview(page);
 
-  await expect(previewPage.getByLabel(originalNameLabel)).toBeVisible({
+  await expect(previewOverlay.getByLabel(originalNameLabel)).toBeVisible({
+    timeout: 20_000,
+  });
+});
+
+test("project fields can be dragged and the preview order persists after save", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+
+  await signIn(page);
+  await openBusinessesPage(page, "/forms/project-request");
+
+  const budgetHandle = page.getByRole("button", { name: "Reorder Budget" });
+  const quantityHandle = page.getByRole("button", { name: "Reorder Quantity" });
+
+  await dragLocatorToLocator(page, budgetHandle, quantityHandle);
+  await expect(
+    page.getByRole("button", { name: "Reorder Budget" }),
+  ).toBeVisible();
+
+  await openPreview(page);
+  const previewOverlay = getPreviewOverlay(page);
+
+  await expectDocumentOrder(page, [
+    previewOverlay.getByLabel("Project type"),
+    previewOverlay.getByLabel("Budget"),
+    previewOverlay.getByLabel("Quantity"),
+  ]);
+
+  await closePreview(page);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Inquiry form saved.")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  const savedPreviewPage = await page.context().newPage();
+  await savedPreviewPage.goto(
+    `/businesses/${demoBusinessSlug}/preview/inquiry/project-request`,
+  );
+  await savedPreviewPage.waitForLoadState("networkidle");
+
+  await expectDocumentOrder(savedPreviewPage, [
+    savedPreviewPage.getByLabel("Project type"),
+    savedPreviewPage.getByLabel("Budget"),
+    savedPreviewPage.getByLabel("Quantity"),
+  ]);
+
+  await savedPreviewPage.close();
+  await dragLocatorToLocator(
+    page,
+    page.getByRole("button", { name: "Reorder Quantity" }),
+    page.getByRole("button", { name: "Reorder Budget" }),
+  );
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Inquiry form saved.")).toBeVisible({
+    timeout: 20_000,
+  });
+});
+
+test("supporting card fields can be edited and previewed before save", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+
+  const updatedCardTitle = `Specs first ${Date.now()}`;
+  const updatedCardDescription =
+    "Share the size, quantity, and any install constraints before we review the request.";
+
+  await signIn(page);
+  await openBusinessesPage(page, "/forms/project-request");
+  await page.getByRole("button", { name: "Page" }).click();
+
+  const titleInput = page.locator("#inquiry-card-title-specs");
+  const descriptionInput = page.locator("#inquiry-card-description-specs");
+
+  await titleInput.fill(updatedCardTitle);
+  await descriptionInput.fill(updatedCardDescription);
+
+  await expect(titleInput).toHaveValue(updatedCardTitle);
+  await expect(descriptionInput).toHaveValue(updatedCardDescription);
+
+  await openPreview(page);
+  const previewOverlay = getPreviewOverlay(page);
+
+  await expect(
+    previewOverlay.getByRole("heading", {
+      name: updatedCardTitle,
+      exact: true,
+    }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(
+    previewOverlay.getByText(updatedCardDescription, { exact: true }),
+  ).toBeVisible();
+
+  await closePreview(page);
+  await page.getByRole("button", { name: "Cancel" }).click();
+});
+
+test("supporting cards can be dragged and the preview order persists after save", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+
+  await signIn(page);
+  await openBusinessesPage(page, "/forms/project-request");
+  await page.getByRole("button", { name: "Page" }).click();
+
+  const scheduleHandle = page.getByRole("button", { name: "Reorder Call out timing" });
+  const specsHandle = page.getByRole("button", { name: "Reorder Specs first" });
+
+  await dragLocatorToLocator(page, scheduleHandle, specsHandle);
+
+  await openPreview(page);
+  const previewOverlay = getPreviewOverlay(page);
+
+  await expectDocumentOrder(page, [
+    previewOverlay.getByRole("heading", { name: "Call out timing", exact: true }),
+    previewOverlay.getByRole("heading", { name: "Specs first", exact: true }),
+    previewOverlay.getByRole("heading", { name: "Send artwork", exact: true }),
+  ]);
+
+  await closePreview(page);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Inquiry page saved.")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  const savedPreviewPage = await page.context().newPage();
+  await savedPreviewPage.goto(
+    `/businesses/${demoBusinessSlug}/preview/inquiry/project-request`,
+  );
+  await savedPreviewPage.waitForLoadState("networkidle");
+
+  await expectDocumentOrder(savedPreviewPage, [
+    savedPreviewPage.getByRole("heading", { name: "Call out timing", exact: true }),
+    savedPreviewPage.getByRole("heading", { name: "Specs first", exact: true }),
+    savedPreviewPage.getByRole("heading", { name: "Send artwork", exact: true }),
+  ]);
+
+  await savedPreviewPage.close();
+  await dragLocatorToLocator(
+    page,
+    page.getByRole("button", { name: "Reorder Specs first" }),
+    page.getByRole("button", { name: "Reorder Call out timing" }),
+  );
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Inquiry page saved.")).toBeVisible({
     timeout: 20_000,
   });
 });
