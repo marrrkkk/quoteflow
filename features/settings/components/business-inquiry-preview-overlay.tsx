@@ -1,0 +1,113 @@
+"use client";
+
+import Link from "next/link";
+import { ArrowLeft, ArrowUpRight, Eye } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { PublicInquiryPageRenderer } from "@/features/inquiries/components/public-inquiry-page-renderer";
+import type {
+  PublicInquiryBusiness,
+  PublicInquiryFormState,
+} from "@/features/inquiries/types";
+
+type BusinessInquiryPreviewOverlayProps = {
+  business: PublicInquiryBusiness;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  openFormHref: string;
+};
+
+async function previewOnlyAction(
+  state: PublicInquiryFormState,
+  formData: FormData,
+): Promise<PublicInquiryFormState> {
+  void formData;
+  return state;
+}
+
+export function BusinessInquiryPreviewOverlay({
+  business,
+  open,
+  onOpenChange,
+  openFormHref,
+}: BusinessInquiryPreviewOverlayProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none border-0 bg-background p-0 shadow-none sm:w-screen"
+        data-testid="inquiry-form-preview-overlay"
+        showCloseButton={false}
+      >
+        <DialogTitle className="sr-only">Inquiry form preview</DialogTitle>
+        <DialogDescription className="sr-only">
+          Review the current inquiry form draft and return to the editor without
+          leaving the page.
+        </DialogDescription>
+
+        <div className="flex h-full min-h-0 flex-col bg-background">
+          <div className="sticky top-0 z-10 border-b border-border/75 bg-background/95 px-4 py-3 backdrop-blur sm:px-6 xl:px-8">
+            <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="meta-label">Preview</p>
+                <p className="font-heading text-lg font-semibold tracking-tight text-foreground">
+                  Inquiry form preview
+                </p>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => onOpenChange(false)}
+                  type="button"
+                  variant="outline"
+                >
+                  <ArrowLeft data-icon="inline-start" />
+                  Back to editor
+                </Button>
+                <Button asChild className="w-full sm:w-auto" type="button">
+                  <Link
+                    href={openFormHref}
+                    prefetch={false}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Open form
+                    <ArrowUpRight data-icon="inline-end" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <PublicInquiryPageRenderer
+              action={previewOnlyAction}
+              beforeHero={
+                <div className="w-full">
+                  <div className="info-tile flex items-start gap-3 bg-primary/8 text-primary">
+                    <Eye className="mt-0.5 size-4 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">Preview mode</p>
+                      <p className="mt-1 text-sm leading-6 text-primary/80">
+                        This preview reflects the current editor state. Returning
+                        to the editor keeps your draft in place.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              }
+              business={business}
+              previewMode
+            />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
