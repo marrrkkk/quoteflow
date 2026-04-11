@@ -21,7 +21,7 @@ export default async function BusinessQuoteSettingsPage() {
       <PageHeader
         eyebrow="Quotes"
         title="Quote defaults"
-        description="Set default quote copy and validity."
+        description="Set the default note and validity window for new quotes."
       />
 
       <BusinessQuoteSettingsForm

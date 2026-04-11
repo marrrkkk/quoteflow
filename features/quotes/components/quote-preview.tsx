@@ -1,3 +1,4 @@
+import { TruncatedTextWithTooltip } from "@/components/shared/truncated-text-with-tooltip";
 import { cn } from "@/lib/utils";
 import { formatQuoteDate, formatQuoteMoney } from "@/features/quotes/utils";
 
@@ -22,6 +23,7 @@ type QuotePreviewProps = {
   subtotalInCents: number;
   discountInCents: number;
   totalInCents: number;
+  metaLabel?: string;
   className?: string;
 };
 
@@ -38,6 +40,7 @@ export function QuotePreview({
   subtotalInCents,
   discountInCents,
   totalInCents,
+  metaLabel = "Quote preview",
   className,
 }: QuotePreviewProps) {
   return (
@@ -51,7 +54,7 @@ export function QuotePreview({
         <div className="flex flex-col gap-4 border-b border-border/80 pb-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
-              <span className="meta-label">Quote preview</span>
+              <span className="meta-label">{metaLabel}</span>
               <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance">
                 {title}
               </h2>
@@ -66,13 +69,19 @@ export function QuotePreview({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="info-tile h-full shadow-none">
+            <div className="info-tile min-w-0 h-full shadow-none">
               <p className="meta-label">Prepared for</p>
-              <p className="mt-2 font-medium text-foreground">{customerName}</p>
-              <p className="text-sm text-muted-foreground">{customerEmail}</p>
+              <TruncatedTextWithTooltip
+                className="mt-2 font-medium text-foreground"
+                text={customerName}
+              />
+              <TruncatedTextWithTooltip
+                className="mt-1 text-sm text-muted-foreground"
+                text={customerEmail}
+              />
             </div>
 
-            <div className="info-tile h-full shadow-none">
+            <div className="info-tile min-w-0 h-full shadow-none">
               <p className="meta-label">Summary</p>
               <p className="mt-2 font-medium text-foreground">
                 {items.length} {items.length === 1 ? "line item" : "line items"}

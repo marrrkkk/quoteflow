@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -157,8 +158,8 @@ export function CustomerHistoryPanel({
                   View history
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full gap-0 sm:max-w-xl">
-                <SheetHeader className="gap-2 border-b border-border/75">
+              <SheetContent className="w-full sm:max-w-xl">
+                <SheetHeader>
                   <SheetTitle>Customer history</SheetTitle>
                   <SheetDescription>
                     Recent inquiries and quotes for {history.customerEmail} inside the
@@ -166,7 +167,7 @@ export function CustomerHistoryPanel({
                   </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex min-h-0 flex-1 flex-col gap-5 p-5">
+                <SheetBody className="min-h-0 flex-1 gap-5">
                   <div className="grid gap-3 sm:grid-cols-3">
                     <InfoTile label="Past inquiries" value={`${history.inquiryCount}`} />
                     <InfoTile label="Past quotes" value={`${history.quoteCount}`} />
@@ -306,7 +307,7 @@ export function CustomerHistoryPanel({
                       </ScrollArea>
                     </TabsContent>
                   </Tabs>
-                </div>
+                </SheetBody>
               </SheetContent>
             </Sheet>
           </div>

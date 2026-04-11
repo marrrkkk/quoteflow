@@ -39,7 +39,11 @@ export function TruncatedTextWithTooltip({
     }
 
     const updateTruncation = () => {
-      setIsTruncated(node.scrollWidth > node.clientWidth + 1);
+      const bounds = node.getBoundingClientRect();
+      const isWidthTruncated = node.scrollWidth - bounds.width > 0.5;
+      const isHeightTruncated = node.scrollHeight - bounds.height > 0.5;
+
+      setIsTruncated(isWidthTruncated || isHeightTruncated);
     };
 
     updateTruncation();

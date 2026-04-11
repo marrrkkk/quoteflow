@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Inbox } from "lucide-react";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { DashboardListResultsSkeleton } from "@/components/shared/dashboard-list-results-skeleton";
@@ -20,11 +21,14 @@ import {
 } from "@/features/inquiries/queries";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import {
+  businessesHubPath,
   getBusinessInquiriesPath,
 } from "@/features/businesses/routes";
-import { requireCurrentBusinessContext } from "@/lib/db/business-access";
+import { requireSession } from "@/lib/auth/session";
+import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
 type InquiriesPageProps = {
+  params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -60,12 +64,23 @@ function getCachedPageWindow(currentPage: number, totalPages: number) {
 }
 
 export default async function InquiriesPage({
+  params,
   searchParams,
 }: InquiriesPageProps) {
-  const [{ businessContext }, resolvedSearchParams] = await Promise.all([
-    requireCurrentBusinessContext(),
+  const [session, { slug }, resolvedSearchParams] = await Promise.all([
+    requireSession(),
+    params,
     searchParams,
   ]);
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    slug,
+  );
+
+  if (!businessContext) {
+    redirect(businessesHubPath);
+  }
+
   const parsedFilters = inquiryListFiltersSchema.safeParse(resolvedSearchParams);
   const filters = parsedFilters.success
     ? parsedFilters.data
@@ -131,7 +146,7 @@ export default async function InquiriesPage({
     <DashboardPage>
       <PageHeader
         eyebrow="Requests"
-        title="Customer requests"
+        title="Customer inquiries"
         actions={
           <InquiryExportCsvDropdown
             businessSlug={businessSlug}
@@ -188,7 +203,7 @@ export default async function InquiriesPage({
                   href={publicInquiryUrl}
                   prefetch={false}
                 >
-                  Preview public inquiry page
+                  Preview inquiry page
                 </Link>
               </Button>
             )
@@ -196,13 +211,13 @@ export default async function InquiriesPage({
           description={
             hasFilters
               ? "Try another search or status."
-              : "Requests show up here."
+              : "New inquiries show up here."
           }
           icon={Inbox}
           title={
             hasFilters
               ? "No requests match these filters."
-              : "Your request inbox is still empty."
+              : "Your inquiry inbox is still empty."
           }
           variant="list"
         />

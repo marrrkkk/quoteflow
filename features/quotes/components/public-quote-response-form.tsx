@@ -5,9 +5,8 @@ import {
   FormNote,
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { getFieldError } from "@/lib/action-state";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -32,7 +31,7 @@ const initialState: PublicQuoteResponseActionState = {};
 export function PublicQuoteResponseForm({
   action,
 }: PublicQuoteResponseFormProps) {
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -40,13 +39,6 @@ export function PublicQuoteResponseForm({
 
   return (
     <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not record your response.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
       <FormNote>
         <p className="text-sm font-medium text-foreground">
           Respond to this quote

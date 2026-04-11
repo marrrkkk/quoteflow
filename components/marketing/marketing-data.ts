@@ -4,10 +4,11 @@ import {
   FileText,
   Globe2,
   Inbox,
-  MessageSquareText,
   Sparkles,
   Upload,
 } from "lucide-react";
+
+import { starterTemplateLabels } from "@/features/businesses/starter-templates";
 
 export const navItems = [
   { href: "#why-requo", label: "Why Requo" },
@@ -16,26 +17,20 @@ export const navItems = [
   { href: "#faq", label: "FAQ" },
 ] as const;
 
-export const audienceSegments = [
-  "Print shops",
-  "Repair shops",
-  "Tutors",
-  "Event suppliers",
-  "Agencies",
-] as const;
+export const audienceSegments = starterTemplateLabels;
 
 export const heroSignals = [
   {
-    label: "Public intake",
-    value: "Capture files, scope, budget, and timing",
+    label: "Inbound capture",
+    value: "Forms, referrals, ads, socials, and directory leads",
   },
   {
-    label: "Quote workflow",
-    value: "Draft, send, and track the next response",
+    label: "Lead qualification",
+    value: "Collect scope, timing, budget, and files before pricing",
   },
   {
-    label: "AI drafting",
-    value: "Use your FAQs and knowledge files",
+    label: "Quotes and follow-up",
+    value: "Send professional quotes and keep the next step visible",
   },
 ] as const;
 
@@ -43,22 +38,22 @@ export const proofItems = [
   {
     title: "One owner dashboard",
     description:
-      "Keep intake, quote prep, follow-up, and customer context in one place instead of bouncing between tabs.",
+      "Keep inbound inquiries, qualification notes, quote prep, and follow-up in one place instead of bouncing between tabs.",
   },
   {
     title: "Scoped public pages",
     description:
-      "Use a clean inquiry page for intake and a clean quote page for customer response without exposing private data.",
+      "Use a clean inquiry page for lead capture and a clean quote page for customer response without exposing private data.",
   },
   {
-    title: "Quote status that stays visible",
+    title: "Lead-to-quote context stays connected",
     description:
-      "See whether a quote is draft, sent, viewed, accepted, or waiting on the customer without rebuilding the story.",
+      "See whether a lead still needs qualification, a quote is in progress, or a customer is waiting on follow-up without rebuilding the story.",
   },
   {
     title: "Practical reply drafts",
     description:
-      "Draft concise replies from inquiry details, owner notes, FAQs, and uploaded knowledge.",
+      "Draft concise qualification and follow-up replies from inquiry details, owner notes, FAQs, and uploaded knowledge.",
   },
 ] as const;
 
@@ -87,39 +82,39 @@ export const whyRequoCards: readonly {
 }[] = [
   {
     icon: Upload,
-    title: "Get the right details earlier",
+    title: "Capture complete inquiries earlier",
     description:
       "Public inquiry pages collect files, timing, budget, and scope before the owner starts chasing missing context.",
   },
   {
-    icon: FileText,
-    title: "Keep pricing attached to the job",
+    icon: Inbox,
+    title: "Qualify before you price",
     description:
-      "Quotes stay tied to the original request, so pricing, notes, and the next customer response live in one thread.",
+      "Review fit, confirm details, and keep qualification notes attached to the lead instead of buried in email.",
   },
   {
-    icon: MessageSquareText,
-    title: "Make the next follow-up obvious",
+    icon: FileText,
+    title: "Keep quotes and follow-up connected",
     description:
-      "The queue and quote states show whether to reply, send, or wait instead of making the owner reconstruct status from memory.",
+      "Quotes stay tied to the original inquiry, so pricing, customer responses, and the next follow-up live in one thread.",
   },
 ] as const;
 
 export const whyBeforeItems = [
-  "Customer details are split across forms, emails, and attachments.",
-  "Pricing lives in old docs, spreadsheets, or past quotes.",
-  "Follow-up depends on inbox memory and manual reminders.",
+  "New leads arrive from forms, referrals, ads, socials, and directories.",
+  "Qualification questions live in inbox threads, docs, and memory.",
+  "Quotes and follow-up depend on old templates, spreadsheets, and manual reminders.",
 ] as const;
 
 export const whyAfterItems = [
-  "The inquiry arrives with the project brief and files attached.",
-  "Quote prep, status, and customer response stay connected.",
-  "The next action is visible from one owner dashboard.",
+  "Each inquiry arrives with the key scope details and files attached.",
+  "Qualification, quote prep, status, and follow-up stay attached to the same lead.",
+  "The next action is visible from one calm owner dashboard.",
 ] as const;
 
 export const whyOutcomeSignals = [
-  "Fewer back-and-forth emails",
-  "Clearer quote handoff",
+  "Faster qualification",
+  "More consistent follow-up",
   "Calmer owner workflow",
 ] as const;
 
@@ -130,21 +125,21 @@ export const featureSummaryItems: readonly {
 }[] = [
   {
     icon: Globe2,
-    title: "Inquiry intake",
+    title: "Inquiry capture",
     description:
-      "Collect the brief, files, budget, and timing on one clean public form.",
+      "Collect the brief, files, timing, and budget from one clean inquiry page.",
   },
   {
     icon: Inbox,
-    title: "Owner queue",
+    title: "Lead qualification queue",
     description:
-      "See what needs a reply, a quote, or a follow-up without living in email.",
+      "See which inquiries need review, a quote, or a follow-up without living in email.",
   },
   {
     icon: FileText,
-    title: "Quote workflow",
+    title: "Professional quote workflow",
     description:
-      "Keep pricing, status, and the customer response attached to the same job.",
+      "Keep pricing, quote status, and customer response attached to the same job.",
   },
   {
     icon: Sparkles,
@@ -168,19 +163,19 @@ export const featureQueueItems = [
   {
     title: "Window graphics refresh",
     detail: "Customer sent photos and needs install next week.",
-    meta: "New inquiry",
+    meta: "Needs qualification",
     tone: "new",
   },
   {
     title: "Spring promo signage",
-    detail: "Quote draft is ready for final pricing review.",
-    meta: "Quote draft",
+    detail: "Scope is confirmed and the quote draft is ready for final pricing.",
+    meta: "Quote in progress",
     tone: "draft",
   },
   {
     title: "Menu board update",
     detail: "Customer viewed the quote and has not replied yet.",
-    meta: "Waiting",
+    meta: "Follow up due",
     tone: "waiting",
   },
 ] as const;
@@ -194,26 +189,32 @@ export const featureKnowledgeItems = [
 
 export const workflowSteps = [
   {
-    title: "Customer sends a request",
+    title: "Capture the inquiry",
     description:
-      "They use your inquiry page and attach the files and details you need.",
+      "Collect inbound requests from forms, referrals, ads, socials, or directories in one place.",
   },
   {
-    title: "You prepare the quote",
+    title: "Qualify the lead",
     description:
-      "You review the job, price it, and send the quote from one dashboard.",
+      "Review fit, confirm scope, and gather the missing details before you price.",
   },
   {
-    title: "Customer reviews and replies",
+    title: "Send the quote",
     description:
-      "They open a clean quote page, respond there, and the next step stays visible.",
+      "Build and send a professional quote with the original inquiry still attached.",
+  },
+  {
+    title: "Follow up consistently",
+    description:
+      "Track customer response, quote status, and the next follow-up without relying on memory.",
   },
 ] as const;
 
 export const workflowSummary = [
-  "Request comes in",
-  "Quote goes out",
-  "Response stays tracked",
+  "Capture inquiries",
+  "Qualify leads",
+  "Send quotes",
+  "Follow up",
 ] as const;
 
 export const faqItems = [
@@ -240,12 +241,12 @@ export const faqItems = [
   {
     question: "Who is Requo built for?",
     answer:
-      "It is designed for owner-operated service businesses that handle inquiries, pricing, and follow-up themselves or with a lean team.",
+      "It is designed for owner-led service businesses, usually with lean teams, that handle inbound inquiries, custom quotes, and follow-up themselves.",
   },
   {
     question: "What do I get on day one?",
     answer:
-      "A protected business dashboard, public intake, quote workflow, and the foundations for faster follow-up without setting up a complex system first.",
+      "A protected business dashboard, public inquiry capture, quote workflow, and the foundations for faster qualification and follow-up without setting up a complex system first.",
   },
 ] as const;
 

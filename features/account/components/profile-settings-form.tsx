@@ -7,6 +7,7 @@ import {
   useState,
   type ChangeEvent,
 } from "react";
+import { Camera } from "lucide-react";
 
 import {
   FloatingFormActions,
@@ -15,8 +16,7 @@ import {
 import {
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -53,6 +54,7 @@ import {
   profileAvatarMaxSize,
 } from "@/features/account/utils";
 import { useProgressRouter } from "@/hooks/use-progress-router";
+import { cn } from "@/lib/utils";
 
 type ProfileSettingsFormProps = {
   action: (
@@ -76,7 +78,7 @@ export function ProfileSettingsForm({
   profile,
 }: ProfileSettingsFormProps) {
   const router = useProgressRouter();
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -147,14 +149,6 @@ export function ProfileSettingsForm({
       onInputCapture={() => setFormRevision((current) => current + 1)}
       ref={formRef}
     >
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save your profile.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-
       <input name="removeAvatar" type="hidden" value={String(removeAvatar)} />
 
       <Card className="gap-0 border-border/75 bg-card/97">
@@ -375,13 +369,6 @@ function ProfileAvatarField({
     : removeAvatar
       ? oauthAvatarSrc
       : initialAvatarSrc;
-  const avatarStatusLabel = previewUrl
-    ? "Pending update"
-    : hasUploadedAvatar && !removeAvatar
-      ? "Uploaded photo"
-      : oauthAvatarSrc
-        ? "Using sign-in photo"
-        : null;
 
   async function handleAvatarSelection(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.currentTarget.files?.[0];
@@ -514,10 +501,50 @@ function ProfileAvatarField({
 
           <div className="rounded-3xl border border-border/75 bg-background/80 px-5 py-5">
             <div className="flex flex-col items-center gap-4 text-center">
-              <Avatar className="size-24 border border-border/75 shadow-[0_10px_28px_rgba(15,23,42,0.08)] xl:size-28">
-                <AvatarImage alt={`${displayName} avatar`} src={effectivePreviewUrl ?? undefined} />
-                <AvatarFallback className="text-xl">{getInitials(displayName)}</AvatarFallback>
-              </Avatar>
+              <div className="group relative">
+                <input
+                  ref={inputRef}
+                  accept={profileAvatarAccept}
+                  className="sr-only"
+                  disabled={disabled}
+                  id="profile-avatar"
+                  name="avatar"
+                  onChange={handleAvatarSelection}
+                  type="file"
+                />
+                <Avatar className="size-24 border border-border/75 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition-transform duration-150 group-hover:scale-[1.01] xl:size-28">
+                  <AvatarImage alt={`${displayName} avatar`} src={effectivePreviewUrl ?? undefined} />
+                  <AvatarFallback className="text-xl">{getInitials(displayName)}</AvatarFallback>
+                </Avatar>
+                <label
+                  className={cn(
+                    "absolute inset-0 flex cursor-pointer items-end justify-end rounded-full focus-within:outline-none",
+                    disabled && "pointer-events-none cursor-default opacity-60",
+                  )}
+                  htmlFor="profile-avatar"
+                  onKeyDown={(event) => {
+                    if (
+                      disabled ||
+                      (event.key !== "Enter" && event.key !== " ")
+                    ) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    inputRef.current?.click();
+                  }}
+                  role="button"
+                  tabIndex={disabled ? -1 : 0}
+                >
+                  <span className="absolute inset-0 rounded-full bg-foreground/0 transition-colors duration-150 sm:group-hover:bg-foreground/10 sm:group-focus-within:bg-foreground/10" />
+                  <span className="relative mr-1.5 mb-1.5 inline-flex size-10 items-center justify-center rounded-full border border-border/80 bg-background/94 text-foreground shadow-[0_8px_20px_rgba(15,23,42,0.14)] transition-[transform,opacity] duration-150 opacity-100 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100">
+                    <Camera className="size-4" />
+                    <span className="sr-only">
+                      {effectivePreviewUrl ? "Update profile photo" : "Upload profile photo"}
+                    </span>
+                  </span>
+                </label>
+              </div>
 
               <div className="min-w-0 max-w-full space-y-2">
                 <div className="space-y-1">
@@ -530,77 +557,67 @@ function ProfileAvatarField({
                   <p className="break-words text-sm text-muted-foreground">{email}</p>
                 </div>
 
-                {avatarStatusLabel ? (
-                  <span className="inline-flex items-center rounded-full border border-border/75 bg-background/90 px-3 py-1 text-[0.72rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    {avatarStatusLabel}
-                  </span>
-                ) : null}
+                <p className="text-sm text-muted-foreground">
+                  Click the photo to upload or update it.
+                </p>
               </div>
             </div>
           </div>
 
           <div className="border-t border-border/70 pt-5">
-            <Field data-invalid={Boolean(fieldError || localError) || undefined}>
-              <FieldLabel htmlFor="profile-avatar">Upload new photo</FieldLabel>
-              <FieldContent>
-                <FieldDescription>JPG, PNG, or WEBP up to 2 MB.</FieldDescription>
-                <Input
-                  ref={inputRef}
-                  accept={profileAvatarAccept}
-                  disabled={disabled}
-                  id="profile-avatar"
-                  name="avatar"
-                  onChange={handleAvatarSelection}
-                  type="file"
-                />
-                {previewUrl ? (
-                  <div className="soft-panel mt-4 flex flex-col gap-3 px-4 py-3 text-sm shadow-none sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">Cropped avatar ready</p>
-                      <p className="text-muted-foreground">Applies after save.</p>
-                    </div>
+            <div className="flex flex-col gap-3">
+              {previewUrl ? (
+                <div className="soft-panel flex flex-col gap-3 px-4 py-3 text-sm shadow-none sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">Cropped photo ready</p>
+                    <p className="text-muted-foreground">Applies after save.</p>
+                  </div>
+                  <Button
+                    disabled={disabled}
+                    onClick={clearPendingAvatar}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              ) : null}
+
+              {hasUploadedAvatar && !previewUrl ? (
+                <div className="flex flex-col gap-1 text-sm">
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                     <Button
+                      aria-pressed={removeAvatar}
                       disabled={disabled}
-                      onClick={clearPendingAvatar}
+                      onClick={() => onRemoveAvatarChange(!removeAvatar)}
+                      size="sm"
                       type="button"
                       variant="outline"
                     >
-                      Clear
+                      {removeAvatar ? "Keep photo" : "Remove photo"}
                     </Button>
                   </div>
-                ) : null}
-                {hasUploadedAvatar && !previewUrl ? (
-                  <label className="soft-panel mt-4 flex items-start gap-3 px-4 py-3 shadow-none">
-                    <input
-                      checked={removeAvatar}
-                      className="mt-1 size-4 accent-current"
-                      disabled={disabled}
-                      onChange={(event) => onRemoveAvatarChange(event.currentTarget.checked)}
-                      type="checkbox"
-                    />
-                    <span className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-foreground">
-                        Remove uploaded avatar
-                      </span>
-                      <span className="text-muted-foreground">
-                        {oauthAvatarSrc
-                          ? "Falls back to sign-in photo."
-                          : "Falls back to initials."}
-                      </span>
-                    </span>
-                  </label>
-                ) : null}
-                <FieldError
-                  errors={
-                    localError
-                      ? [{ message: localError }]
-                      : fieldError
-                        ? [{ message: fieldError }]
-                        : undefined
-                  }
-                />
-              </FieldContent>
-            </Field>
+                  {removeAvatar ? (
+                    <p className="text-muted-foreground">
+                      {oauthAvatarSrc
+                        ? "Falls back to your sign-in photo after save."
+                        : "Falls back to your initials after save."}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <FieldError
+                errors={
+                  localError
+                    ? [{ message: localError }]
+                    : fieldError
+                      ? [{ message: fieldError }]
+                      : undefined
+                }
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -613,13 +630,13 @@ function ProfileAvatarField({
           }
         }}
       >
-        <DialogContent className="gap-0 p-0 sm:max-w-4xl">
-          <DialogHeader className="gap-3 border-b border-border/70 pb-4">
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
             <DialogTitle>Crop profile photo</DialogTitle>
             <DialogDescription>Adjust the crop.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <DialogBody className="grid min-h-0 flex-1 gap-6 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="flex flex-col gap-4">
               <div className="soft-panel relative min-h-[24rem] overflow-hidden bg-muted/25">
                 {draftAsset ? (
@@ -669,9 +686,9 @@ function ProfileAvatarField({
                 </div>
               ) : null}
             </div>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="border-t border-border/70">
+          <DialogFooter>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
               <Button onClick={closeCropper} type="button" variant="outline">
                 Cancel

@@ -3,6 +3,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 
 import { resolveCurrencyForCountry } from "@/features/businesses/locale";
+import { getStarterTemplateDefinition } from "@/features/businesses/starter-templates";
 import type { BusinessType } from "@/features/inquiries/business-types";
 import { createInquiryFormPreset } from "@/features/inquiries/inquiry-forms";
 import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
@@ -14,6 +15,7 @@ import {
   businessInquiryForms,
   businessMembers,
   businesses,
+  replySnippets,
 } from "@/lib/db/schema";
 import { appendRandomSlugSuffix, slugifyPublicName } from "@/lib/slugs";
 
@@ -79,6 +81,7 @@ export async function createBusinessRecordForUser({
   const trimmedName = name.trim();
   const normalizedShortDescription = shortDescription?.trim() || null;
   const defaultCurrency = resolveCurrencyForCountry(countryCode);
+  const starterTemplate = getStarterTemplateDefinition(businessType);
   const slug = await getAvailableBusinessSlug(
     tx,
     slugifyPublicName(trimmedName, {
@@ -110,6 +113,8 @@ export async function createBusinessRecordForUser({
       businessName: trimmedName,
       businessType,
     }),
+    defaultQuoteNotes: starterTemplate.defaultQuoteNotes,
+    defaultQuoteValidityDays: starterTemplate.defaultQuoteValidityDays,
     defaultCurrency,
     createdAt: now,
     updatedAt: now,
@@ -137,6 +142,19 @@ export async function createBusinessRecordForUser({
     createdAt: now,
     updatedAt: now,
   });
+
+  if (starterTemplate.replySnippets.length) {
+    await tx.insert(replySnippets).values(
+      starterTemplate.replySnippets.map((snippet) => ({
+        id: createId("rsn"),
+        businessId,
+        title: snippet.title,
+        body: snippet.body,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    );
+  }
 
   await tx.insert(activityLogs).values({
     id: createId("act"),

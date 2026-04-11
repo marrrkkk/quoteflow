@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Download, ExternalLink, Mail, Printer } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import {
   DashboardDetailLayout,
@@ -43,25 +43,33 @@ import {
   getQuoteEditorInitialValuesFromDetail,
 } from "@/features/quotes/utils";
 import {
+  businessesHubPath,
   getBusinessInquiryPath,
   getBusinessQuotePdfExportPath,
   getBusinessQuotePrintPath,
 } from "@/features/businesses/routes";
-import { requireCurrentBusinessContext } from "@/lib/db/business-access";
 import { env } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { requireSession } from "@/lib/auth/session";
+import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
 type QuoteDetailPageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 };
 
 export default async function QuoteDetailPage({
   params,
 }: QuoteDetailPageProps) {
-  const [resolvedParams, { businessContext }] = await Promise.all([
-    params,
-    requireCurrentBusinessContext(),
-  ]);
+  const [session, resolvedParams] = await Promise.all([requireSession(), params]);
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    resolvedParams.slug,
+  );
+
+  if (!businessContext) {
+    redirect(businessesHubPath);
+  }
+
   const parsedParams = quoteRouteParamsSchema.safeParse(resolvedParams);
 
   if (!parsedParams.success) {
@@ -350,31 +358,21 @@ export default async function QuoteDetailPage({
 
           <DashboardSidebarStack>
             <DashboardSection
-              contentClassName="grid gap-3 sm:grid-cols-2"
+              contentClassName="!grid !grid-cols-2 gap-3"
               description="Key totals and lifecycle dates."
-              title="Commercial summary"
+              title="Summary"
             >
               <InfoTile
-                label="Subtotal"
-                value={formatQuoteMoney(quote.subtotalInCents, quote.currency)}
+                label="Total"
+                value={formatQuoteMoney(quote.totalInCents, quote.currency)}
               />
               <InfoTile
                 label="Discount"
                 value={formatQuoteMoney(quote.discountInCents, quote.currency)}
               />
               <InfoTile
-                label="Total"
-                value={formatQuoteMoney(quote.totalInCents, quote.currency)}
-              />
-              <InfoTile
                 label="Valid until"
                 value={formatQuoteDate(quote.validUntil)}
-              />
-              <InfoTile
-                label="Sent"
-                value={
-                  quote.sentAt ? formatQuoteDateTime(quote.sentAt) : "Not sent"
-                }
               />
               <InfoTile
                 label="Accepted"

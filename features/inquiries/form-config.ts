@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getStarterTemplateBusinessType } from "@/features/businesses/starter-templates";
 import {
   businessTypes,
   normalizeBusinessType,
@@ -329,34 +330,18 @@ type CreateInquiryFormConfigDefaultsInput = {
 function getDefaultInquiryFormGroupLabels(
   businessType: BusinessType,
 ): InquiryFormGroupLabels {
-  const contact = "Contact";
+  const contact = "Contact details";
 
-  switch (businessType) {
-    case "repair_services":
-      return { contact, project: "Repair details" };
-    case "contractor_home_improvement":
-      return { contact, project: "Project details" };
-    case "cleaning_services":
-      return { contact, project: "Cleaning details" };
-    case "print_signage":
-      return { contact, project: "Order details" };
-    case "fabrication_custom_build":
-      return { contact, project: "Project details" };
-    case "event_services_rentals":
-      return { contact, project: "Event details" };
-    case "landscaping_outdoor_services":
-      return { contact, project: "Project details" };
-    case "web_it_services":
-      return { contact, project: "Project details" };
-    case "photo_video_production":
-      return { contact, project: "Production details" };
-    case "consulting_professional_services":
-      return { contact, project: "Consultation details" };
+  switch (getStarterTemplateBusinessType(businessType)) {
     case "creative_marketing_services":
+      return { contact, project: "Project brief" };
+    case "consulting_professional_services":
+      return { contact, project: "Discovery details" };
+    case "contractor_home_improvement":
       return { contact, project: "Project details" };
     case "general_project_services":
     default:
-      return { contact, project: "Project details" };
+      return { contact, project: "Inquiry details" };
   }
 }
 
@@ -437,19 +422,19 @@ function createContactFieldConfig(
       required: true,
     },
     customerEmail: {
-      label: overrides?.customerEmail?.label ?? "Email address",
+      label: overrides?.customerEmail?.label ?? "Email",
       placeholder: overrides?.customerEmail?.placeholder ?? "you@example.com",
       enabled: true,
       required: true,
     },
     customerPhone: {
-      label: overrides?.customerPhone?.label ?? "Phone number",
+      label: overrides?.customerPhone?.label ?? "Phone",
       placeholder: overrides?.customerPhone?.placeholder ?? "Optional",
       enabled: overrides?.customerPhone?.enabled ?? true,
       required: false,
     },
     companyName: {
-      label: overrides?.companyName?.label ?? "Company name",
+      label: overrides?.companyName?.label ?? "Company or organization",
       placeholder: overrides?.companyName?.placeholder ?? "Optional",
       enabled: overrides?.companyName?.enabled ?? false,
       required: false,
@@ -461,94 +446,73 @@ function createGeneralProjectServicesFields() {
   return [
     createSystemField("serviceCategory", {
       label: "Service needed",
-      placeholder: "Tell us what you need",
+      placeholder: "Tell us what you need help with",
       required: true,
     }),
     createCustomField("site-location", "short_text", {
-      label: "Location",
+      label: "Service location",
       placeholder: "City or site address",
     }),
     createSystemField("requestedDeadline", {
-      label: "Needed by",
+      label: "Preferred timing",
       enabled: true,
     }),
     createSystemField("budgetText", {
-      label: "Budget",
+      label: "Budget range",
       enabled: true,
     }),
     createSystemField("details", {
-      label: "Project details",
-      placeholder: "Share the scope, size, timing, or anything else that matters.",
+      label: "Inquiry details",
+      placeholder: "Share the scope, size, timing, and anything we should review before pricing.",
       required: true,
     }),
     createSystemField("attachment", {
-      label: "Reference file",
+      label: "Reference files",
       enabled: true,
     }),
   ] satisfies InquiryFormFieldDefinition[];
 }
 
-function createPrintSignageFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Project type",
-      placeholder: "Signs, decals, banners, wraps",
-      required: true,
-    }),
-    createCustomField("quantity", "number", {
-      label: "Quantity",
-      placeholder: "How many items?",
-    }),
-    createCustomField("size", "short_text", {
-      label: "Size or dimensions",
-      placeholder: "48 x 96 in, storefront window, vehicle side",
-    }),
-    createCustomField("material", "select", {
-      label: "Material",
-      options: [
-        createOption("vinyl", "Vinyl"),
-        createOption("banner", "Banner"),
-        createOption("rigid", "Rigid board"),
-        createOption("paper", "Paper"),
-        createOption("not-sure", "Not sure"),
-      ],
-    }),
-    createCustomField("installation", "boolean", {
-      label: "Installation needed?",
-    }),
-    createSystemField("requestedDeadline", {
-      label: "Needed by",
-      enabled: true,
-    }),
-    createSystemField("budgetText", {
-      label: "Budget",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Project details",
-      placeholder: "Share quantities, placement, artwork status, and site notes.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Artwork or reference file",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
+function normalizeLegacyContactFieldLabel(
+  field: InquiryContactFieldConfig,
+  contactKey: InquiryContactFieldKey,
+): InquiryContactFieldConfig {
+  const normalizedLabel = field.label.trim().toLowerCase();
+
+  if (contactKey === "customerEmail" && normalizedLabel === "best email") {
+    return {
+      ...field,
+      label: "Email",
+    };
+  }
+
+  if (
+    contactKey === "customerPhone" &&
+    (normalizedLabel === "best phone" ||
+      normalizedLabel === "best phone number")
+  ) {
+    return {
+      ...field,
+      label: "Phone",
+    };
+  }
+
+  return field;
 }
 
 function createContractorHomeImprovementFields() {
   return [
     createSystemField("serviceCategory", {
-      label: "Project type",
-      placeholder: "Remodel, install, upgrade, repair",
+      label: "Project or service needed",
+      placeholder: "Remodel, install, repair, cleanup",
       required: true,
     }),
     createCustomField("service-address", "short_text", {
-      label: "Project address",
-      placeholder: "Street, city, or area",
+      label: "Service location",
+      placeholder: "Street, city, or service area",
     }),
     createCustomField("property-type", "select", {
-      label: "Property type",
+      label: "Location type",
       options: [
         createOption("house", "House"),
         createOption("condo", "Condo"),
@@ -557,7 +521,7 @@ function createContractorHomeImprovementFields() {
       ],
     }),
     createCustomField("preferred-visit", "date", {
-      label: "Preferred site visit",
+      label: "Preferred visit or start date",
     }),
     createCustomField("access-notes", "short_text", {
       label: "Access notes",
@@ -569,237 +533,7 @@ function createContractorHomeImprovementFields() {
     }),
     createSystemField("details", {
       label: "Project details",
-      placeholder: "Describe the scope, site conditions, and work needed.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Photos or plans",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createFabricationCustomBuildFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Project type",
-      placeholder: "Fixture, custom part, display, built-in",
-      required: true,
-    }),
-    createCustomField("quantity", "number", {
-      label: "Quantity",
-      placeholder: "How many units?",
-    }),
-    createCustomField("dimensions", "short_text", {
-      label: "Dimensions",
-      placeholder: "Sizes, measurements, or tolerances",
-    }),
-    createCustomField("material", "select", {
-      label: "Material",
-      options: [
-        createOption("steel", "Steel"),
-        createOption("aluminum", "Aluminum"),
-        createOption("wood", "Wood"),
-        createOption("acrylic", "Acrylic"),
-        createOption("not-sure", "Not sure"),
-      ],
-    }),
-    createCustomField("finish", "select", {
-      label: "Finish",
-      options: [
-        createOption("raw", "Raw"),
-        createOption("painted", "Painted"),
-        createOption("powder-coated", "Powder coated"),
-        createOption("laminated", "Laminated"),
-        createOption("not-sure", "Not sure"),
-      ],
-    }),
-    createCustomField("installation-needed", "boolean", {
-      label: "Installation needed?",
-    }),
-    createSystemField("requestedDeadline", {
-      label: "Needed by",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Project details",
-      placeholder: "Share the scope, specs, quantities, and use case.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Drawings or reference files",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createRepairServicesFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Item or service",
-      placeholder: "Phone repair, laptop repair, appliance repair",
-      required: true,
-    }),
-    createCustomField("item-model", "short_text", {
-      label: "Item model",
-      placeholder: "Brand and model",
-    }),
-    createCustomField("issue-summary", "long_text", {
-      label: "Issue summary",
-      placeholder: "What is happening and when did it start?",
-      required: true,
-    }),
-    createCustomField("urgent-repair", "boolean", {
-      label: "Urgent request?",
-    }),
-    createSystemField("requestedDeadline", {
-      label: "Needed by",
-      enabled: true,
-    }),
-    createSystemField("budgetText", {
-      label: "Budget",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Extra details",
-      placeholder: "Share symptoms, prior repairs, or important context.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Photos or diagnostic file",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createCleaningServicesFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Cleaning service",
-      placeholder: "Residential, move-out, office, deep clean",
-      required: true,
-    }),
-    createCustomField("property-type", "select", {
-      label: "Property type",
-      options: [
-        createOption("home", "Home"),
-        createOption("office", "Office"),
-        createOption("retail", "Retail"),
-        createOption("short-term-rental", "Short-term rental"),
-      ],
-    }),
-    createCustomField("property-size", "short_text", {
-      label: "Property size",
-      placeholder: "Bedrooms, bathrooms, square footage",
-    }),
-    createCustomField("frequency", "select", {
-      label: "Frequency",
-      options: [
-        createOption("one-time", "One-time"),
-        createOption("weekly", "Weekly"),
-        createOption("bi-weekly", "Bi-weekly"),
-        createOption("monthly", "Monthly"),
-      ],
-    }),
-    createCustomField("supplies", "boolean", {
-      label: "Need us to bring supplies?",
-    }),
-    createSystemField("requestedDeadline", {
-      label: "Preferred date",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Cleaning details",
-      placeholder: "Share the rooms, priorities, and anything special to know.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Photos",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createEventServicesRentalsFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Event type",
-      placeholder: "Wedding, launch, corporate gathering, private event",
-      required: true,
-    }),
-    createCustomField("event-date", "date", {
-      label: "Event date",
-      required: true,
-    }),
-    createCustomField("location", "short_text", {
-      label: "Location",
-      placeholder: "Venue, city, or address",
-    }),
-    createCustomField("guest-count", "number", {
-      label: "Guest count",
-    }),
-    createCustomField("services-needed", "multi_select", {
-      label: "Services needed",
-      required: true,
-      options: [
-        createOption("rentals", "Rentals"),
-        createOption("setup", "Setup"),
-        createOption("staffing", "Staffing"),
-        createOption("production", "Production"),
-        createOption("coordination", "Coordination"),
-      ],
-    }),
-    createSystemField("budgetText", {
-      label: "Budget",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Event details",
-      placeholder: "Share the schedule, scope, and anything guests or crew need to know.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Run sheet or reference files",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createLandscapingOutdoorServicesFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Service needed",
-      placeholder: "Lawn care, cleanup, planting, irrigation",
-      required: true,
-    }),
-    createCustomField("property-address", "short_text", {
-      label: "Property address",
-      placeholder: "Street, city, or area",
-    }),
-    createCustomField("area-size", "short_text", {
-      label: "Area size",
-      placeholder: "Yard size or area to cover",
-    }),
-    createCustomField("service-frequency", "select", {
-      label: "Service frequency",
-      options: [
-        createOption("one-time", "One-time"),
-        createOption("weekly", "Weekly"),
-        createOption("bi-weekly", "Bi-weekly"),
-        createOption("monthly", "Monthly"),
-      ],
-    }),
-    createCustomField("site-access", "short_text", {
-      label: "Site access",
-      placeholder: "Gate, parking, HOA, pets",
-    }),
-    createSystemField("requestedDeadline", {
-      label: "Preferred start date",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Project details",
-      placeholder: "Share the site, goals, and current conditions.",
+      placeholder: "Describe the scope, site conditions, and anything we should review before pricing.",
       required: true,
     }),
     createSystemField("attachment", {
@@ -812,20 +546,20 @@ function createLandscapingOutdoorServicesFields() {
 function createCreativeMarketingServicesFields() {
   return [
     createSystemField("serviceCategory", {
-      label: "Project type",
-      placeholder: "Branding, design, campaign, content",
+      label: "Project or service needed",
+      placeholder: "Branding, design, website, content, production",
       required: true,
     }),
     createCustomField("deliverables", "long_text", {
       label: "Deliverables",
-      placeholder: "What do you need produced?",
+      placeholder: "What needs to be created, delivered, or completed?",
       required: true,
     }),
-    createCustomField("launch-date", "date", {
-      label: "Launch date",
+    createCustomField("project-timing", "date", {
+      label: "Target date",
     }),
-    createCustomField("channels", "multi_select", {
-      label: "Channels",
+    createCustomField("delivery-focus", "multi_select", {
+      label: "Where this will be used",
       options: [
         createOption("web", "Web"),
         createOption("social", "Social"),
@@ -834,8 +568,8 @@ function createCreativeMarketingServicesFields() {
         createOption("video", "Video"),
       ],
     }),
-    createCustomField("brand-assets-ready", "boolean", {
-      label: "Brand assets ready?",
+    createCustomField("reference-materials-ready", "boolean", {
+      label: "Reference files ready?",
     }),
     createSystemField("budgetText", {
       label: "Budget",
@@ -843,96 +577,11 @@ function createCreativeMarketingServicesFields() {
     }),
     createSystemField("details", {
       label: "Project brief",
-      placeholder: "Share the goal, audience, and scope.",
+      placeholder: "Share the goal, scope, audience, and anything we should review before pricing.",
       required: true,
     }),
     createSystemField("attachment", {
-      label: "Brief or reference file",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createWebItServicesFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Service needed",
-      placeholder: "Website, support, automation, setup",
-      required: true,
-    }),
-    createCustomField("site-or-system", "short_text", {
-      label: "Website or system",
-      placeholder: "URL, platform, or system name",
-    }),
-    createCustomField("platform", "short_text", {
-      label: "Platform",
-      placeholder: "WordPress, Shopify, Google Business",
-    }),
-    createCustomField("priority", "select", {
-      label: "Priority",
-      options: [
-        createOption("low", "Low"),
-        createOption("normal", "Normal"),
-        createOption("high", "High"),
-        createOption("urgent", "Urgent"),
-      ],
-    }),
-    createCustomField("ongoing-support", "boolean", {
-      label: "Need ongoing support?",
-    }),
-    createSystemField("requestedDeadline", {
-      label: "Target date",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Request details",
-      placeholder: "Describe the issue, scope, or outcome you need.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Screenshots or files",
-      enabled: true,
-    }),
-  ] satisfies InquiryFormFieldDefinition[];
-}
-
-function createPhotoVideoProductionFields() {
-  return [
-    createSystemField("serviceCategory", {
-      label: "Production needed",
-      placeholder: "Photo shoot, video coverage, editing, post-production",
-      required: true,
-    }),
-    createCustomField("event-date", "date", {
-      label: "Shoot date",
-    }),
-    createCustomField("location", "short_text", {
-      label: "Location",
-      placeholder: "Venue or city",
-    }),
-    createCustomField("guest-count", "number", {
-      label: "Approx. headcount",
-    }),
-    createCustomField("deliverables", "multi_select", {
-      label: "Deliverables",
-      options: [
-        createOption("photos", "Photos"),
-        createOption("highlight-video", "Highlight video"),
-        createOption("full-edit", "Full edit"),
-        createOption("reels", "Reels"),
-      ],
-    }),
-    createSystemField("budgetText", {
-      label: "Budget",
-      enabled: true,
-    }),
-    createSystemField("details", {
-      label: "Production brief",
-      placeholder: "Share the shoot, deliverables, timing, and production notes.",
-      required: true,
-    }),
-    createSystemField("attachment", {
-      label: "Run sheet or reference file",
+      label: "Brief or reference files",
       enabled: true,
     }),
   ] satisfies InquiryFormFieldDefinition[];
@@ -984,54 +633,29 @@ export function createInquiryFormConfigDefaults({
   businessType = "general_project_services",
 }: CreateInquiryFormConfigDefaultsInput = {}): InquiryFormConfig {
   const resolvedBusinessType = normalizeBusinessType(businessType);
+  const starterTemplateBusinessType =
+    getStarterTemplateBusinessType(resolvedBusinessType);
   const contactFieldOverrides: ContactFieldOverrides = {
     companyName: {
       enabled: [
         "creative_marketing_services",
-        "web_it_services",
         "consulting_professional_services",
-        "print_signage",
-        "fabrication_custom_build",
-      ].includes(resolvedBusinessType),
+      ].includes(starterTemplateBusinessType),
       required: false,
     },
   };
 
   let projectFields: InquiryFormFieldDefinition[];
 
-  switch (resolvedBusinessType) {
-    case "print_signage":
-      projectFields = createPrintSignageFields();
-      break;
-    case "contractor_home_improvement":
-      projectFields = createContractorHomeImprovementFields();
-      break;
-    case "fabrication_custom_build":
-      projectFields = createFabricationCustomBuildFields();
-      break;
-    case "repair_services":
-      projectFields = createRepairServicesFields();
-      break;
-    case "cleaning_services":
-      projectFields = createCleaningServicesFields();
-      break;
-    case "event_services_rentals":
-      projectFields = createEventServicesRentalsFields();
-      break;
-    case "landscaping_outdoor_services":
-      projectFields = createLandscapingOutdoorServicesFields();
-      break;
+  switch (starterTemplateBusinessType) {
     case "creative_marketing_services":
       projectFields = createCreativeMarketingServicesFields();
       break;
-    case "web_it_services":
-      projectFields = createWebItServicesFields();
-      break;
-    case "photo_video_production":
-      projectFields = createPhotoVideoProductionFields();
-      break;
     case "consulting_professional_services":
       projectFields = createConsultingProfessionalServicesFields();
+      break;
+    case "contractor_home_improvement":
+      projectFields = createContractorHomeImprovementFields();
       break;
     case "general_project_services":
     default:
@@ -1066,6 +690,24 @@ export function getNormalizedInquiryFormConfig(
     groupLabels: {
       ...fallback.groupLabels,
       ...(parsed.data.groupLabels ?? {}),
+    },
+    contactFields: {
+      customerName: normalizeLegacyContactFieldLabel(
+        parsed.data.contactFields.customerName,
+        "customerName",
+      ),
+      customerEmail: normalizeLegacyContactFieldLabel(
+        parsed.data.contactFields.customerEmail,
+        "customerEmail",
+      ),
+      customerPhone: normalizeLegacyContactFieldLabel(
+        parsed.data.contactFields.customerPhone,
+        "customerPhone",
+      ),
+      companyName: normalizeLegacyContactFieldLabel(
+        parsed.data.contactFields.companyName,
+        "companyName",
+      ),
     },
   } satisfies InquiryFormConfig;
 }

@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { MarketingHero } from "@/components/marketing/marketing-hero";
 
 export const metadata: Metadata = {
-  title: "Organized quotes for service businesses",
+  title: "Inquiry-to-quote workflow for service businesses",
   description:
-    "Requo helps owner-operated service businesses capture better inquiries, build clear quotes, and follow up from one calm dashboard.",
+    "Requo helps owner-led service businesses capture inquiries, qualify leads, send professional quotes, and follow up from one calm dashboard.",
 };
 
 export default function MarketingPage() {

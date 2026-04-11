@@ -9,6 +9,7 @@ import { ThemePreferenceSync } from "@/features/theme/components/theme-preferenc
 import { getThemePreferenceForUser } from "@/features/theme/queries";
 import { CreateBusinessForm } from "@/features/businesses/components/create-business-form";
 import { createBusinessAction } from "@/features/businesses/actions";
+import { starterTemplateSelectionDescription } from "@/features/businesses/starter-templates";
 import { getBusinessDashboardPath } from "@/features/businesses/routes";
 import { businessTypeMeta } from "@/features/inquiries/business-types";
 import { onboardingPath } from "@/features/onboarding/routes";
@@ -160,6 +161,10 @@ export default async function BusinessesPage() {
                         <p className="text-sm font-medium text-foreground">
                           No businesses yet.
                         </p>
+                        <p className="text-sm leading-6 text-muted-foreground">
+                          Use a starter template to set up inquiry capture, quote
+                          defaults, and follow-up basics in one pass.
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -171,6 +176,9 @@ export default async function BusinessesPage() {
               <Card className="sticky top-6">
                 <CardHeader>
                   <CardTitle>Create business</CardTitle>
+                  <CardDescription>
+                    {starterTemplateSelectionDescription}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <CreateBusinessForm action={createBusinessAction} />

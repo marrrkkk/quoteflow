@@ -1,8 +1,7 @@
 "use client";
 
-import { CircleAlert, CircleCheckBig } from "lucide-react";
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 type AuthFormFeedbackProps = {
   error?: string;
@@ -14,24 +13,28 @@ type AuthFormFeedbackProps = {
 export function AuthFormFeedback({
   error,
   success,
-  errorTitle,
-  successTitle,
+  errorTitle = "We couldn't complete that request.",
+  successTitle = "Request received.",
 }: AuthFormFeedbackProps) {
-  if (!error && !success) {
-    return null;
-  }
+  const keyRef = useRef("");
+  const key = `${error ?? ""}|${success ?? ""}`;
 
-  const isError = Boolean(error);
+  useEffect(() => {
+    if (!key || keyRef.current === key) {
+      return;
+    }
 
-  return (
-    <Alert variant={isError ? "destructive" : "default"}>
-      {isError ? <CircleAlert /> : <CircleCheckBig />}
-      <AlertTitle>
-        {isError
-          ? (errorTitle ?? "We couldn't complete that request.")
-          : (successTitle ?? "Request received.")}
-      </AlertTitle>
-      <AlertDescription>{error ?? success}</AlertDescription>
-    </Alert>
-  );
+    keyRef.current = key;
+
+    if (error) {
+      toast.error(error, { description: errorTitle });
+      return;
+    }
+
+    if (success) {
+      toast.success(success, { description: successTitle });
+    }
+  }, [error, errorTitle, key, success, successTitle]);
+
+  return null;
 }

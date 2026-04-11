@@ -5,8 +5,7 @@ import {
   FormActions,
   FormNote,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { QuoteSendActionState } from "@/features/quotes/types";
@@ -27,20 +26,13 @@ export function QuoteSendForm({
   customerEmail,
   disabled = false,
 }: QuoteSendFormProps) {
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
 
   return (
     <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not send the quote.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
       <FormNote>
         <p className="text-sm font-medium text-foreground">Send to customer</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">

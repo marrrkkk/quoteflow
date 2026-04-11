@@ -79,16 +79,17 @@ export function MarketingHero() {
           <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 text-center">
             <div className="flex flex-col items-center gap-4">
               <Badge className="w-fit" variant="outline">
-                Owner-first quoting software
+                Owner-led service workflow software
               </Badge>
 
               <div className="flex flex-col items-center gap-4">
                 <h1 className="max-w-4xl font-heading text-4xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-6xl xl:text-[4.2rem]">
-                  Turn messy inquiries into organized quotes and bookings.
+                  Capture inquiries, qualify leads, send quotes, and follow up.
                 </h1>
                 <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                  Requo gives service businesses one calm place to capture
-                  requests, prepare quotes, and follow up without losing context.
+                  Requo gives owner-led service businesses one calm place to
+                  collect inbound requests, review fit, send professional quotes,
+                  and keep follow-up moving.
                 </p>
               </div>
             </div>
@@ -107,7 +108,7 @@ export function MarketingHero() {
 
             <div className="flex flex-col items-center gap-3">
               <p className="text-sm font-medium text-foreground">
-                Built for owner-operated service businesses:
+                Works well for owner-led service businesses like:
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2.5">
                 {audienceSegments.map((segment) => (
@@ -132,9 +133,9 @@ export function MarketingHero() {
                   <p className="truncate text-sm font-semibold text-foreground">
                     BrightSide Print Studio
                   </p>
-                  <p className="text-xs text-muted-foreground">Sample owner workflow</p>
+                  <p className="text-xs text-muted-foreground">Sample inquiry-to-quote workflow</p>
                 </div>
-                <Badge variant="secondary">Inquiry to quote</Badge>
+                <Badge variant="secondary">Capture to follow-up</Badge>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15rem]">
@@ -151,7 +152,7 @@ export function MarketingHero() {
                         </p>
                       </div>
                     </div>
-                    <StatusBadge tone="new">Needs reply</StatusBadge>
+                    <StatusBadge tone="new">Needs review</StatusBadge>
                   </div>
 
                   <div className="grid gap-4 px-4 py-4">
@@ -181,9 +182,9 @@ export function MarketingHero() {
                   <div className="info-tile px-4 py-4">
                     <p className="meta-label">Owner queue</p>
                     <div className="mt-3 grid gap-2">
-                      <QueueSignal label="Reply needed" tone="new" />
+                      <QueueSignal label="Needs qualification" tone="new" />
                       <QueueSignal label="Quote in progress" tone="draft" />
-                      <QueueSignal label="Waiting on customer" tone="waiting" />
+                      <QueueSignal label="Follow up due" tone="waiting" />
                     </div>
                   </div>
 
@@ -239,7 +240,7 @@ export function MarketingHero() {
                       Clean quote page
                     </p>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Send the quote once and keep status plus response in the same flow.
+                      Send the quote once and keep response plus follow-up in the same flow.
                     </p>
                   </div>
                 </div>
@@ -265,11 +266,12 @@ export function MarketingHero() {
               Why Requo
             </Badge>
             <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              Most owner time disappears before the quote is sent.
+              Most of the admin happens before pricing is even ready.
             </h2>
             <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-              Requo is built for the messy middle between the first request and
-              the final send. It turns scattered admin into one clearer workflow.
+              Requo is built for the messy middle between a new inquiry and a
+              sent quote. It turns scattered lead admin into one clearer
+              workflow.
             </p>
           </div>
 
@@ -280,7 +282,7 @@ export function MarketingHero() {
                   <div className="flex flex-col gap-2">
                     <p className="meta-label">Without Requo</p>
                     <p className="text-lg font-semibold tracking-tight text-foreground">
-                      The work is there, but the context is scattered.
+                      The work is there, but the lead context is scattered.
                     </p>
                   </div>
 
@@ -297,7 +299,7 @@ export function MarketingHero() {
                   <div className="flex flex-col gap-2">
                     <p className="meta-label">With Requo</p>
                     <p className="text-lg font-semibold tracking-tight text-foreground">
-                      The request, quote, and next step stay connected.
+                      The inquiry, quote, and next step stay connected.
                     </p>
                   </div>
 
@@ -343,8 +345,8 @@ export function MarketingHero() {
               <div className="soft-panel px-5 py-5">
                 <p className="meta-label">The point</p>
                 <p className="mt-2 text-base font-semibold tracking-tight text-foreground">
-                  Requo helps the owner spend less time rebuilding context and more
-                  time deciding, quoting, and following through.
+                  Requo helps the owner spend less time rebuilding lead context
+                  and more time qualifying, quoting, and following through.
                 </p>
               </div>
             </div>
@@ -358,12 +360,12 @@ export function MarketingHero() {
             Features
           </Badge>
           <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            Features built for the real workflow.
+            Features built around the shared workflow.
           </h2>
           <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-            Requo is easier to understand when the product is shown doing the work:
-            collecting the request, organizing the queue, preparing the quote, and
-            helping with the next reply.
+            Requo is easier to understand when the product is shown doing the
+            work: capturing the inquiry, qualifying the lead, preparing the
+            quote, and supporting the next follow-up.
           </p>
         </div>
 
@@ -394,7 +396,7 @@ export function MarketingHero() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Public inquiry form</p>
-                  <p className="text-xs text-muted-foreground">Customer-facing intake</p>
+                  <p className="text-xs text-muted-foreground">Customer-facing lead capture</p>
                 </div>
               </div>
               <Badge variant="secondary">Live page</Badge>
@@ -459,7 +461,7 @@ export function MarketingHero() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Owner queue</p>
-                  <p className="text-xs text-muted-foreground">What needs action now</p>
+                  <p className="text-xs text-muted-foreground">What needs action next</p>
                 </div>
               </div>
               <Badge variant="secondary">Dashboard</Badge>
@@ -510,7 +512,7 @@ export function MarketingHero() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Quote workflow</p>
-                  <p className="text-xs text-muted-foreground">Pricing tied to the job</p>
+                  <p className="text-xs text-muted-foreground">Pricing tied to the lead</p>
                 </div>
               </div>
               <StatusBadge tone="sent">Sent</StatusBadge>
@@ -619,15 +621,15 @@ export function MarketingHero() {
             How it works
           </Badge>
           <h2 className="max-w-3xl font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            How Requo works in three steps.
+            How Requo supports the workflow.
           </h2>
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            A customer sends a request. You send the quote. They review and reply
-            from the same flow.
+            Requo helps you move from inbound inquiry to quote follow-up without
+            rebuilding context at each step.
           </p>
         </div>
 
-        <div className="grid gap-4 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-3">
+        <div className="grid gap-4 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-2 xl:grid-cols-4">
           {workflowSteps.map((step, index) => (
             <WorkflowStep
               description={step.description}
@@ -687,11 +689,11 @@ export function MarketingHero() {
               Requo
             </Badge>
             <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              Run intake, quotes, and follow-up from one place.
+              Run inquiries, quotes, and follow-up from one place.
             </h2>
             <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-              Stop rebuilding the same context across forms, inboxes, and old
-              documents. Start with a clearer owner workflow.
+              Stop rebuilding the same context across forms, inboxes, docs, and
+              spreadsheets. Start with a clearer owner workflow.
             </p>
           </div>
 
@@ -711,7 +713,7 @@ export function MarketingHero() {
         <Separator className="bg-border/70" />
 
         <div className="flex flex-col gap-4 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <BrandMark subtitle="Owner-first workflow" />
+          <BrandMark subtitle="Inquiry-to-quote workflow" />
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             {navItems.map((item) => (
               <Link className="transition-colors hover:text-foreground" href={item.href} key={item.href}>

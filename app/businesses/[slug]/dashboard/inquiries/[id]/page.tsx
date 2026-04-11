@@ -8,7 +8,7 @@ import {
   Printer,
   ReceiptText,
 } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import {
   DashboardDetailLayout,
@@ -23,12 +23,10 @@ import {
   DashboardStatsGrid,
 } from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
-import { generateInquiryAssistantAction } from "@/features/ai/actions";
 import { InquiryAiPanel } from "@/features/ai/components/inquiry-ai-panel";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
-import { getReplySnippetsForBusiness } from "@/features/inquiries/reply-snippet-queries";
 import {
   addInquiryNoteAction,
   changeInquiryStatusAction,
@@ -47,25 +45,33 @@ import {
 } from "@/features/inquiries/utils";
 import { formatQuoteMoney } from "@/features/quotes/utils";
 import {
+  businessesHubPath,
   getBusinessNewQuotePath,
   getBusinessInquiryPdfExportPath,
   getBusinessInquiryPrintPath,
   getBusinessQuotePath,
 } from "@/features/businesses/routes";
 import { Button } from "@/components/ui/button";
-import { requireCurrentBusinessContext } from "@/lib/db/business-access";
+import { requireSession } from "@/lib/auth/session";
+import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
 type InquiryDetailPageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 };
 
 export default async function InquiryDetailPage({
   params,
 }: InquiryDetailPageProps) {
-  const [resolvedParams, { businessContext }] = await Promise.all([
-    params,
-    requireCurrentBusinessContext(),
-  ]);
+  const [session, resolvedParams] = await Promise.all([requireSession(), params]);
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    resolvedParams.slug,
+  );
+
+  if (!businessContext) {
+    redirect(businessesHubPath);
+  }
+
   const parsedParams = inquiryRouteParamsSchema.safeParse(resolvedParams);
 
   if (!parsedParams.success) {
@@ -83,21 +89,17 @@ export default async function InquiryDetailPage({
 
   const noteAction = addInquiryNoteAction.bind(null, inquiry.id);
   const statusAction = changeInquiryStatusAction.bind(null, inquiry.id);
-  const aiAction = generateInquiryAssistantAction.bind(null, inquiry.id);
   const additionalFields = getAdditionalInquirySubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
-  const [customerHistory, replySnippets] = await Promise.all([
-    getCustomerHistoryForBusiness({
-      businessId: businessContext.business.id,
-      customerEmail: inquiry.customerEmail,
-      excludeInquiryId: inquiry.id,
-    }),
-    getReplySnippetsForBusiness(businessContext.business.id),
-  ]);
+  const customerHistory = await getCustomerHistoryForBusiness({
+    businessId: businessContext.business.id,
+    customerEmail: inquiry.customerEmail,
+    excludeInquiryId: inquiry.id,
+  });
 
   return (
-    <DashboardPage>
+    <DashboardPage className="pb-24">
       <DashboardDetailHeader
         eyebrow="Inquiry detail"
         title={inquiry.customerName}
@@ -383,11 +385,8 @@ export default async function InquiryDetailPage({
                   <DashboardMetaPill className="text-foreground">
                     {inquiry.relatedQuote.quoteNumber ?? inquiry.relatedQuote.id}
                   </DashboardMetaPill>
-                  <DashboardMetaPill className="capitalize">
-                    {inquiry.relatedQuote.status}
-                  </DashboardMetaPill>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="!grid !grid-cols-2 gap-3">
                   <InfoTile
                     label="Total"
                     value={formatQuoteMoney(
@@ -402,6 +401,10 @@ export default async function InquiryDetailPage({
                   <InfoTile
                     label="Quotes from inquiry"
                     value={`${inquiry.relatedQuote.quoteCount}`}
+                  />
+                  <InfoTile
+                    label="Status"
+                    value={inquiry.relatedQuote.status.charAt(0).toUpperCase() + inquiry.relatedQuote.status.slice(1)}
                   />
                 </div>
               </div>
@@ -424,16 +427,15 @@ export default async function InquiryDetailPage({
             description="Move the inquiry forward."
             title="Status"
           >
-              <InquiryStatusForm
-                key={inquiry.status}
-                action={statusAction}
-                currentStatus={inquiry.status}
-              />
+            <InquiryStatusForm
+              key={inquiry.status}
+              action={statusAction}
+              currentStatus={inquiry.status}
+            />
           </DashboardSection>
-
-          <InquiryAiPanel action={aiAction} replySnippets={replySnippets} />
         </DashboardSidebarStack>
       </DashboardDetailLayout>
+      <InquiryAiPanel inquiryId={inquiry.id} userName={session.user.name || "You"} />
     </DashboardPage>
   );
 }

@@ -15,7 +15,32 @@ This version has breaking changes - APIs, conventions, and file structure may al
 
 ## Project
 
-Requo is an owner-first SaaS app for service businesses. It handles public inquiry intake, business-scoped dashboards, quotes, knowledge files, AI-assisted drafts, and transactional email.
+Requo is an owner-led SaaS app for service businesses that handle inbound inquiries and custom quotes. The shared product workflow is:
+
+1. capture inquiries,
+2. qualify leads,
+3. send professional quotes,
+4. follow up consistently.
+
+The app also handles public inquiry intake, business-scoped dashboards, quotes, knowledge files, AI-assisted drafts, and transactional email.
+
+## Product Direction
+
+- Prioritize the inquiry -> qualification -> quote -> follow-up workflow across marketing, onboarding, defaults, and in-app product copy.
+- Support multiple business types through editable starter templates.
+- Do not over-specialize into a single vertical.
+- Lead with workflow value, not generic configurability.
+- Templates should speed up onboarding and setup; they are not the main positioning.
+- Multi-business is a capability, not the primary marketing story.
+
+## Repo Layout
+
+- `app/` owns routes, layouts, loading states, route handlers, and page composition.
+- `components/` owns shared UI primitives, app shell, marketing UI, and reusable wrappers.
+- `features/` owns product logic, validation, queries, actions, mutations, and feature-specific UI.
+- `lib/` owns auth, database access, provider clients, env parsing, and shared utilities.
+- `scripts/` owns migrations, seeders, and operational scripts.
+- `tests/e2e/` owns Playwright coverage for user flows.
 
 ### Core Stack
 
@@ -34,19 +59,32 @@ Requo is an owner-first SaaS app for service businesses. It handles public inqui
 3. Prefer small, reviewable diffs over rewrites.
 4. Keep `app/` thin and move product logic into `features/` or `lib/`.
 5. Reuse existing utilities, shared wrappers, and semantic tokens before creating new patterns.
-6. Do not invent fake implementations if a real one can be built.
-7. Mention assumptions clearly and summarize changed files plus follow-ups.
-8. Run the relevant checks after code changes.
+6. Prefer strong defaults over excessive configuration.
+7. Keep onboarding guided and editable later.
+8. Use concise, outcome-first copy. Empty states should point users to the next useful action.
+9. Avoid bloated settings experiences.
+10. Do not invent fake implementations if a real one can be built.
+11. Make minimal, surgical changes and preserve current architecture patterns.
+12. Avoid unnecessary schema changes and unnecessary abstractions.
+13. Keep strict typing, responsive behavior, and accessibility intact.
+14. Update tests when behavior changes.
+15. Do not silently remove existing functionality.
+16. Mention assumptions clearly and summarize changed files plus follow-ups.
+17. Run the relevant checks after code changes.
 
 ## Product Constraints
 
 Do not add:
 
 - billing or subscriptions
+- enterprise CRM positioning
+- field-service dispatch workflows
 - marketplace features
 - mobile app flows
 - live chat
 - advanced team collaboration beyond owner-first flows
+- dozens of micro-vertical templates
+- scheduling, routing, payroll, or invoicing unless already present or explicitly requested
 - advanced RAG infrastructure unless explicitly requested
 - over-engineered abstractions
 
@@ -60,6 +98,7 @@ Do not add:
 - Users must only access their own business data.
 - Validate all external input with Zod.
 - Keep private asset access server-side and scoped to the active business context.
+- Prefer copy, defaults, and config-driven changes before schema or route changes when repositioning product workflows.
 
 ## UI Rules
 
@@ -67,6 +106,10 @@ Do not add:
 - Reuse shared wrappers such as `DashboardPage`, `PageHeader`, `DashboardSection`, `DashboardTableContainer`, `FormSection`, `FormActions`, `FieldGroup`, `Field`, `Button`, `Card`, `Empty`, `Alert`, `Badge`, `Sheet`, and `Dialog` before custom markup.
 - Prefer semantic tokens and utilities such as `surface-*`, `control-*`, `overlay-*`, `table-*`, `meta-label`, `hero-panel`, `section-panel`, and `soft-panel`.
 - Keep the UI calm, modern, minimalist, polished, and practical.
+- Keep messaging concise and practical. Favor clear workflow and outcome language over generic flexibility language.
+- Empty states should point to the next useful action.
+- Keep onboarding focused on a few guided starter paths and allow deeper editing later.
+- Templates should feel opinionated but editable.
 - Avoid raw palette utilities, noisy decoration, random gradients, flashy animation, and page-by-page primitive restyling.
 - Legacy raw status colors and `space-y-*` stacks still exist in older files. Treat them as cleanup debt, not patterns for new work.
 
@@ -75,15 +118,20 @@ Do not add:
 A task is done when:
 
 1. the requested slice is implemented,
-2. the change matches the current architecture and design system,
-3. relevant lint, type, build, or end-to-end checks are run or explicitly called out,
-4. assumptions and follow-ups are stated clearly,
-5. touched files are summarized briefly.
+2. messaging is clearer and aligned with the owner-led service business ICP,
+3. the workflow emphasis stays on inquiry -> qualification -> quote -> follow-up,
+4. onboarding remains guided through a few starter business paths,
+5. templates and defaults are more opinionated but still editable,
+6. the implementation stays lightweight, maintainable, and consistent with the current architecture and design system,
+7. relevant lint, type, build, or end-to-end checks are run or explicitly called out,
+8. assumptions and follow-ups are stated clearly,
+9. touched files are summarized briefly.
 
 ## Verification
 
 - Docs and instruction changes: do a read-through plus targeted grep checks.
-- Most code changes: `npm run lint` and `npm run typecheck`.
+- Most code changes: `npm run check` or run `npm run lint` plus `npm run typecheck`.
 - Route, layout, or system changes: also run `npm run build`.
 - Covered user-flow changes: run the relevant `npm run test:e2e`.
+- If demo data or e2e fixtures need refreshing, use `npm run db:migrate` and `npm run db:seed-demo` when the environment supports it.
 - CI currently runs lint, typecheck, build, and Playwright on push and pull request.

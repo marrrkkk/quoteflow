@@ -8,7 +8,14 @@ import {
 } from "@/features/businesses/locale";
 import { businessTypes } from "@/features/inquiries/business-types";
 import { inquiryFormConfigSchema } from "@/features/inquiries/form-config";
-import { inquiryPageCardSchema, inquiryPageTemplates } from "@/features/inquiries/page-config";
+import {
+  inquiryPageCardSchema,
+  inquiryPageImageUrlSchema,
+  inquiryPageShowcaseImageFrames,
+  inquiryPageShowcaseImageSizes,
+  inquiryPageTemplateSchema,
+  maxInquiryPageCards,
+} from "@/features/inquiries/page-config";
 import { isAcceptedFileType } from "@/lib/files";
 import {
   normalizePublicSlugInput,
@@ -38,7 +45,11 @@ function emptyToUndefined(value: unknown) {
 function optionalText(maxLength: number) {
   return z.preprocess(
     emptyToUndefined,
-    z.string().trim().max(maxLength).optional(),
+    z
+      .string()
+      .trim()
+      .max(maxLength, `Use ${maxLength} characters or fewer.`)
+      .optional(),
   );
 }
 
@@ -72,7 +83,12 @@ function supportedCurrencyCode(defaultValue = "USD") {
 function optionalEmail(maxLength = 320) {
   return z.preprocess(
     emptyToUndefined,
-    z.string().trim().max(maxLength).email().optional(),
+    z
+      .string()
+      .trim()
+      .max(maxLength, `Email must be ${maxLength} characters or fewer.`)
+      .email("Enter a valid email address.")
+      .optional(),
   );
 }
 
@@ -80,6 +96,43 @@ function formBoolean() {
   return z.preprocess(
     (value) => value === true || value === "true" || value === "on",
     z.boolean(),
+  );
+}
+
+function formNumber({
+  invalidMessage,
+  max,
+  min,
+}: {
+  invalidMessage: string;
+  max: number;
+  min: number;
+}) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value === "number") {
+        return value;
+      }
+
+      if (typeof value !== "string") {
+        return value;
+      }
+
+      const normalized = value.trim();
+
+      if (!normalized) {
+        return Number.NaN;
+      }
+
+      return Number(normalized);
+    },
+    z
+      .number({
+        error: invalidMessage,
+      })
+      .finite(invalidMessage)
+      .min(min)
+      .max(max),
   );
 }
 
@@ -133,12 +186,16 @@ const businessLogoSchema = z.preprocess(
 );
 
 export const businessGeneralSettingsSchema = z.object({
-  name: z.string().trim().min(2).max(120),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Enter a business name.")
+    .max(120, "Use 120 characters or fewer."),
   slug: z
     .string()
     .trim()
-    .min(2)
-    .max(publicSlugMaxLength)
+    .min(2, "Use at least 2 characters.")
+    .max(publicSlugMaxLength, `Use ${publicSlugMaxLength} characters or fewer.`)
     .transform(normalizeBusinessSlug)
     .refine(
       (value) => publicSlugRegex.test(value),
@@ -190,7 +247,11 @@ export const businessQuoteSettingsSchema = z.object({
 
       return Number(normalized);
     },
-    z.number().int().min(1).max(365),
+    z
+      .number()
+      .int("Enter a whole number of days.")
+      .min(1, "Use at least 1 day.")
+      .max(365, "Use 365 days or fewer."),
   ),
 });
 
@@ -199,22 +260,80 @@ export type BusinessQuoteSettingsInput = z.infer<
 >;
 
 export const businessDeleteSchema = z.object({
-  confirmation: z.string().trim().min(1).max(120),
+  confirmation: z
+    .string()
+    .trim()
+    .min(1, "Type the confirmation text.")
+    .max(120, "Use 120 characters or fewer."),
 });
 
 export type BusinessDeleteInput = z.infer<typeof businessDeleteSchema>;
 
 export const businessInquiryPageSettingsSchema = z.object({
-  formId: z.string().trim().min(1).max(128),
+  formId: z
+    .string()
+    .trim()
+    .min(1, "Choose a form.")
+    .max(128, "Form id is too long."),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Enter a form name.")
+    .max(80, "Use 80 characters or fewer."),
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Use at least 2 characters.")
+    .max(publicSlugMaxLength, `Use ${publicSlugMaxLength} characters or fewer.`)
+    .transform(normalizePublicSlugInput)
+    .refine(
+      (value) => publicSlugRegex.test(value),
+      "Use lowercase letters, numbers, and hyphens only.",
+    ),
+  businessType: z.enum(businessTypes),
   publicInquiryEnabled: formBoolean(),
-  template: z.enum(inquiryPageTemplates),
+  template: inquiryPageTemplateSchema,
   eyebrow: optionalText(48),
-  headline: z.string().trim().min(1).max(120),
+  headline: z
+    .string()
+    .trim()
+    .min(1, "Enter a headline.")
+    .max(120, "Use 120 characters or fewer."),
   description: optionalText(280),
   brandTagline: optionalText(120),
-  formTitle: z.string().trim().min(1).max(80),
+  formTitle: z
+    .string()
+    .trim()
+    .min(1, "Enter a form title.")
+    .max(80, "Use 80 characters or fewer."),
   formDescription: optionalText(200),
-  cards: jsonField(z.array(inquiryPageCardSchema).max(8), []),
+  showcaseImageUrl: inquiryPageImageUrlSchema,
+  showcaseImageFrame: z.enum(inquiryPageShowcaseImageFrames),
+  showcaseImageSize: z.enum(inquiryPageShowcaseImageSizes),
+  showcaseImageCropX: formNumber({
+    invalidMessage: "Save the page again after cropping the image.",
+    min: -4,
+    max: 4,
+  }),
+  showcaseImageCropY: formNumber({
+    invalidMessage: "Save the page again after cropping the image.",
+    min: -4,
+    max: 4,
+  }),
+  showcaseImageCropZoom: formNumber({
+    invalidMessage: "Save the page again after cropping the image.",
+    min: 1,
+    max: 4,
+  }),
+  cards: jsonField(
+    z
+      .array(inquiryPageCardSchema)
+      .max(
+        maxInquiryPageCards,
+        `Use ${maxInquiryPageCards} supporting cards or fewer.`,
+      ),
+    [],
+  ),
 });
 
 export type BusinessInquiryPageSettingsInput = z.infer<
@@ -222,18 +341,11 @@ export type BusinessInquiryPageSettingsInput = z.infer<
 >;
 
 export const businessInquiryFormSettingsSchema = z.object({
-  formId: z.string().trim().min(1).max(128),
-  name: z.string().trim().min(2).max(80),
-  slug: z
+  formId: z
     .string()
     .trim()
-    .min(2)
-    .max(publicSlugMaxLength)
-    .transform(normalizePublicSlugInput)
-    .refine(
-      (value) => publicSlugRegex.test(value),
-      "Use lowercase letters, numbers, and hyphens only.",
-    ),
+    .min(1, "Form id is required.")
+    .max(128, "Form id is too long."),
   businessType: z.enum(businessTypes),
   inquiryFormConfig: jsonField(inquiryFormConfigSchema, Symbol.for("invalid-json-field")),
 });
@@ -243,7 +355,11 @@ export type BusinessInquiryFormSettingsInput = z.infer<
 >;
 
 export const businessInquiryFormPresetSchema = z.object({
-  formId: z.string().trim().min(1).max(128),
+  formId: z
+    .string()
+    .trim()
+    .min(1, "Form id is required.")
+    .max(128, "Form id is too long."),
   businessType: z.enum(businessTypes),
 });
 
@@ -252,7 +368,11 @@ export type BusinessInquiryFormPresetInput = z.infer<
 >;
 
 export const businessInquiryFormCreateSchema = z.object({
-  name: z.string().trim().min(2).max(80),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Enter a form name.")
+    .max(80, "Use 80 characters or fewer."),
   businessType: z.enum(businessTypes),
 });
 
@@ -261,7 +381,11 @@ export type BusinessInquiryFormCreateInput = z.infer<
 >;
 
 export const businessInquiryFormTargetSchema = z.object({
-  targetFormId: z.string().trim().min(1).max(128),
+  targetFormId: z
+    .string()
+    .trim()
+    .min(1, "Target form id is required.")
+    .max(128, "Target form id is too long."),
 });
 
 export type BusinessInquiryFormTargetInput = z.infer<

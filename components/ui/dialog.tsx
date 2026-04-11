@@ -6,6 +6,11 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+  overlayBodyClassName,
+  overlayFooterClassName,
+  overlayHeaderClassName,
+} from "@/components/ui/overlay-layout"
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -65,7 +70,7 @@ function DialogContent({
         {children}
         {showCloseButton ? (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
-            <Button className="absolute top-3 right-3" size="icon-sm" variant="ghost">
+            <Button className="absolute top-4 right-4 sm:top-5 sm:right-5" size="icon-sm" variant="ghost">
               <XIcon />
               <span className="sr-only">Close</span>
             </Button>
@@ -79,8 +84,18 @@ function DialogContent({
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex flex-col gap-1 p-5", className)}
+      className={cn(overlayHeaderClassName, className)}
       data-slot="dialog-header"
+      {...props}
+    />
+  )
+}
+
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      className={cn(overlayBodyClassName, className)}
+      data-slot="dialog-body"
       {...props}
     />
   )
@@ -89,7 +104,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
 function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("mt-auto flex flex-col gap-2 p-5", className)}
+      className={cn(overlayFooterClassName, className)}
       data-slot="dialog-footer"
       {...props}
     />
@@ -115,7 +130,7 @@ function DialogDescription({
 }: React.ComponentProps<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn("text-sm leading-6 text-muted-foreground", className)}
       data-slot="dialog-description"
       {...props}
     />
@@ -130,6 +145,7 @@ export {
   DialogClose,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogFooter,
   DialogTitle,
   DialogDescription,

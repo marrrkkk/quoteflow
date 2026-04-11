@@ -4,6 +4,7 @@ import {
   Trophy,
   Workflow,
 } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import {
   DashboardDetailLayout,
@@ -18,10 +19,25 @@ import { AnalyticsStatusBreakdown } from "@/features/analytics/components/analyt
 import { AnalyticsTrendOverview } from "@/features/analytics/components/analytics-trend-overview";
 import { getBusinessAnalyticsData } from "@/features/analytics/queries";
 import { formatAnalyticsPercent } from "@/features/analytics/utils";
-import { requireCurrentBusinessContext } from "@/lib/db/business-access";
+import { businessesHubPath } from "@/features/businesses/routes";
+import { requireSession } from "@/lib/auth/session";
+import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
-export default async function AnalyticsPage() {
-  const { businessContext } = await requireCurrentBusinessContext();
+type AnalyticsPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
+  const [session, { slug }] = await Promise.all([requireSession(), params]);
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    slug,
+  );
+
+  if (!businessContext) {
+    redirect(businessesHubPath);
+  }
+
   const analytics = await getBusinessAnalyticsData(businessContext.business.id);
   const closedOutcomeCount = analytics.wonCount + analytics.lostCount;
   const winRate = closedOutcomeCount
@@ -30,23 +46,23 @@ export default async function AnalyticsPage() {
 
   return (
     <DashboardPage>
-      <PageHeader eyebrow="Analytics" title="Performance" />
+      <PageHeader eyebrow="Analytics" title="Inquiry-to-quote performance" />
 
       <DashboardStatsGrid>
         <AnalyticsMetricCard
           icon={BarChart3}
-          title="Total inquiries"
+          title="All inquiries"
           value={`${analytics.totalInquiries}`}
         />
         <AnalyticsMetricCard
           icon={CalendarRange}
-          title="Inquiries this week"
+          title="New this week"
           value={`${analytics.inquiriesThisWeek}`}
         />
         <AnalyticsMetricCard
           description={`${analytics.wonCount} won / ${analytics.lostCount} lost`}
           icon={Trophy}
-          title="Won vs lost"
+          title="Inquiry win rate"
           value={formatAnalyticsPercent(winRate)}
         />
         <AnalyticsMetricCard

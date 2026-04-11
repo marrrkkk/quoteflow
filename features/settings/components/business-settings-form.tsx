@@ -18,8 +18,7 @@ import {
 import {
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { getFieldError } from "@/lib/action-state";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -41,6 +40,7 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -150,7 +150,7 @@ export function BusinessSettingsForm({
   settings,
 }: BusinessSettingsFormProps) {
   const router = useProgressRouter();
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -241,12 +241,6 @@ export function BusinessSettingsForm({
         action={formAction}
         className="form-stack pb-28"
       >
-        {state.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>We could not save the settings.</AlertTitle>
-            <AlertDescription>{state.error}</AlertDescription>
-          </Alert>
-        ) : null}
         <input name="removeLogo" type="hidden" value={String(removeLogo)} />
         <input name="countryCode" type="hidden" value={draftValues.countryCode} />
         <input
@@ -264,7 +258,7 @@ export function BusinessSettingsForm({
           <CardHeader className="gap-2.5 pb-6">
             <CardTitle>Business profile</CardTitle>
             <CardDescription>
-              Update your business details, branding, and defaults.
+              Update your business details, branding, and workflow defaults.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
@@ -393,14 +387,14 @@ export function BusinessSettingsForm({
 
                   <FormSection
                     className="soft-panel px-5 py-5 shadow-none sm:px-6"
-                    description="Used in forms and quotes."
-                    title="Short description"
+                    description="Used on inquiry pages and quotes."
+                    title="Business summary"
                   >
                     <Field
                       data-invalid={Boolean(state.fieldErrors?.shortDescription) || undefined}
                     >
                       <FieldLabel htmlFor="settings-short-description">
-                        Business summary
+                        Short description
                       </FieldLabel>
                       <FieldContent>
                         <Textarea
@@ -512,8 +506,8 @@ export function BusinessSettingsForm({
 
         <Card className="gap-0 border-border/75 bg-card/97">
           <CardHeader className="gap-2.5 pb-6">
-            <CardTitle>Writing defaults</CardTitle>
-            <CardDescription>Default tone and signature.</CardDescription>
+            <CardTitle>Writing and follow-up defaults</CardTitle>
+            <CardDescription>Default tone and signature for replies and drafts.</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="flex min-w-0 flex-col gap-5">
@@ -822,7 +816,7 @@ function BusinessLogoField({
               <h2 className="text-lg font-semibold tracking-tight text-foreground">
                 Business identity
               </h2>
-              <p className="text-sm text-muted-foreground">Shown on public pages and quotes.</p>
+              <p className="text-sm text-muted-foreground">Shown on inquiry pages and quotes.</p>
             </div>
           </div>
 
@@ -931,13 +925,13 @@ function BusinessLogoField({
           }
         }}
       >
-        <DialogContent className="gap-0 p-0 sm:max-w-5xl">
-          <DialogHeader className="gap-3 border-b border-border/70 pb-4">
+        <DialogContent className="sm:max-w-5xl">
+          <DialogHeader>
             <DialogTitle>Crop brand asset</DialogTitle>
             <DialogDescription>Adjust the crop.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <DialogBody className="grid min-h-0 flex-1 gap-6 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="flex flex-col gap-4">
               <div className="soft-panel relative min-h-[26rem] overflow-hidden bg-muted/25">
                 {draftAsset ? (
@@ -1005,9 +999,9 @@ function BusinessLogoField({
                 </div>
               ) : null}
             </div>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="border-t border-border/70">
+          <DialogFooter>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
               <Button onClick={closeCropper} type="button" variant="outline">
                 Cancel

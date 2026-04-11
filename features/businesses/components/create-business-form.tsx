@@ -1,12 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 
 import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions, FormSection } from "@/components/shared/form-layout";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Field,
@@ -17,13 +15,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  businessTypeMeta,
-  businessTypeOptions,
-  type BusinessType,
-} from "@/features/inquiries/business-types";
+import { StarterTemplateChoiceGrid } from "@/features/businesses/components/starter-template-choice-grid";
 import { getBusinessCountryOption } from "@/features/businesses/locale";
+import {
+  starterTemplateDefaultsSummary,
+  getStarterTemplateDefinition,
+  starterTemplateSelectionDescription,
+} from "@/features/businesses/starter-templates";
+import type { BusinessType } from "@/features/inquiries/business-types";
 import type { CreateBusinessActionState } from "@/features/businesses/types";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 
 type CreateBusinessFormProps = {
   action: (
@@ -37,7 +38,10 @@ const initialState: CreateBusinessActionState = {};
 export function CreateBusinessForm({
   action,
 }: CreateBusinessFormProps) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useActionStateWithSonner(
+    action,
+    initialState,
+  );
   const [businessType, setBusinessType] = useState<BusinessType>(
     "general_project_services",
   );
@@ -49,13 +53,6 @@ export function CreateBusinessForm({
 
   return (
     <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not create the business.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
       <input name="businessType" type="hidden" value={businessType} />
       <input name="countryCode" type="hidden" value={countryCode} />
 
@@ -108,31 +105,21 @@ export function CreateBusinessForm({
           </Field>
 
           <Field data-invalid={Boolean(businessTypeError) || undefined}>
-            <FieldLabel htmlFor="business-type">
-              Business type
-            </FieldLabel>
+            <FieldLabel>Starter template</FieldLabel>
             <FieldContent>
-              <Combobox
-                aria-invalid={Boolean(businessTypeError) || undefined}
+              <StarterTemplateChoiceGrid
+                ariaLabel="Starter template"
                 disabled={isPending}
-                id="business-type"
-                onValueChange={(value) => setBusinessType(value as BusinessType)}
-                options={businessTypeOptions}
-                placeholder="Choose a business type"
-                renderOption={(option) => (
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{option.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {option.description}
-                    </p>
-                  </div>
-                )}
-                searchPlaceholder="Search business type"
+                inputName="business-starter-template"
+                onChange={setBusinessType}
                 value={businessType}
               />
-              <p className="text-sm text-muted-foreground">
-                {businessTypeMeta[businessType].description}
-              </p>
+              <FieldDescription>
+                {getStarterTemplateDefinition(businessType).helperText}{" "}
+                {starterTemplateDefaultsSummary}
+                {" "}
+                {starterTemplateSelectionDescription}
+              </FieldDescription>
               <FieldError
                 errors={
                   businessTypeError ? [{ message: businessTypeError }] : undefined

@@ -19,8 +19,8 @@ export default async function BusinessSavedRepliesPage() {
     <>
       <PageHeader
         eyebrow="Responses"
-        title="Saved replies"
-        description="Reusable replies for faster drafting."
+        title="Saved follow-up replies"
+        description="Reusable reply snippets for faster lead follow-up."
         actions={
           replySnippets.length ? (
             <DashboardMetaPill>{replySnippets.length} saved</DashboardMetaPill>

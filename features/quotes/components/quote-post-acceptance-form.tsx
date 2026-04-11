@@ -3,8 +3,7 @@
 import { useState } from "react";
 
 import { FormActions } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
@@ -43,20 +42,13 @@ export function QuotePostAcceptanceForm({
 }: QuotePostAcceptanceFormProps) {
   const [selectedStatus, setSelectedStatus] =
     useState<QuotePostAcceptanceStatus>(currentStatus);
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
 
   return (
     <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not update the post-acceptance status.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
       <input
         name="postAcceptanceStatus"
         type="hidden"

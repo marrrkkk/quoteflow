@@ -5,8 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { FormActions } from "@/components/shared/form-layout";
 import { useProgressRouter } from "@/hooks/use-progress-router";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import {
@@ -73,7 +72,7 @@ export function QuoteLibraryEntryForm({
   idPrefix = "quote-library-entry",
 }: QuoteLibraryEntryFormProps) {
   const router = useProgressRouter();
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -97,13 +96,6 @@ export function QuoteLibraryEntryForm({
 
   return (
     <form action={formAction} className="form-stack">
-      {state.error ? (
-        <Alert className="motion-pop-in" variant="destructive">
-          <AlertTitle>We could not save the pricing entry.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
       <QuoteLibraryEntryFormFields
         key={initialValues ? idPrefix : state.success ?? "quote-library-create"}
         fixedKind={fixedKind}
@@ -368,13 +360,6 @@ function QuoteLibraryEntryFormFields({
             </Button>
           ) : null}
         </div>
-
-        {state.fieldErrors?.items?.[0] ? (
-          <Alert className="motion-pop-in" variant="destructive">
-            <AlertTitle>Check the line items.</AlertTitle>
-            <AlertDescription>{state.fieldErrors.items[0]}</AlertDescription>
-          </Alert>
-        ) : null}
 
         <div className="flex flex-col gap-4">
           {items.map((item, index) => {

@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | Requo",
   },
   description:
-    "Requo helps service businesses turn scattered customer inquiries into organized quotes and bookings.",
+    "Requo helps owner-led service businesses capture inquiries, qualify leads, send professional quotes, and follow up from one place.",
   icons: {
     icon: "/logo.svg",
     shortcut: "/logo.svg",

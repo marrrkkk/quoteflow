@@ -1,3 +1,4 @@
+import { getStarterTemplateBusinessType } from "@/features/businesses/starter-templates";
 import type { BusinessType } from "@/features/inquiries/business-types";
 import { createInquiryFormConfigDefaults } from "@/features/inquiries/form-config";
 import { createInquiryPageConfigDefaults } from "@/features/inquiries/page-config";
@@ -16,32 +17,14 @@ export function normalizeInquiryFormSlug(value: string) {
 export function getDefaultInquiryFormName(
   businessType: BusinessType,
 ) {
-  switch (businessType) {
-    case "print_signage":
-      return "Project request";
-    case "contractor_home_improvement":
-      return "Project request";
-    case "fabrication_custom_build":
-      return "Quote request";
-    case "repair_services":
-      return "Repair request";
-    case "cleaning_services":
-      return "Cleaning request";
-    case "event_services_rentals":
-      return "Event request";
-    case "landscaping_outdoor_services":
-      return "Outdoor request";
-    case "creative_marketing_services":
-      return "Project brief";
-    case "web_it_services":
-      return "Project request";
-    case "photo_video_production":
-      return "Production request";
+  switch (getStarterTemplateBusinessType(businessType)) {
     case "consulting_professional_services":
-      return "Discovery request";
+      return "Discovery inquiry";
+    case "contractor_home_improvement":
+    case "creative_marketing_services":
     case "general_project_services":
     default:
-      return "Project request";
+      return "Project inquiry";
   }
 }
 

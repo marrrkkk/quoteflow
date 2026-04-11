@@ -20,7 +20,7 @@ export default async function BusinessFormsPage() {
     <>
       <PageHeader
         title="Forms"
-        description="Manage inquiry forms, public URLs, and live intake defaults."
+        description="Manage inquiry capture, public URLs, and starting intake defaults."
       />
 
       <BusinessInquiryFormsManager

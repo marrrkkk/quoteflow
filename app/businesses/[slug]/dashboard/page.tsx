@@ -27,6 +27,7 @@ import { formatQuoteDate, formatQuoteMoney } from "@/features/quotes/utils";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { getBusinessOverviewData } from "@/features/businesses/queries";
 import {
+  businessesHubPath,
   getBusinessAnalyticsPath,
   getBusinessInquiriesPath,
   getBusinessInquiryPath,
@@ -39,11 +40,28 @@ import type {
   BusinessOverviewInquiryActionItem,
   BusinessOverviewQuoteActionItem,
 } from "@/features/businesses/types";
-import { requireCurrentBusinessContext } from "@/lib/db/business-access";
+import { requireSession } from "@/lib/auth/session";
+import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 import { cn } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
-export default async function DashboardOverviewPage() {
-  const { businessContext } = await requireCurrentBusinessContext();
+type DashboardOverviewPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+export default async function DashboardOverviewPage({
+  params,
+}: DashboardOverviewPageProps) {
+  const [session, { slug }] = await Promise.all([requireSession(), params]);
+  const businessContext = await getBusinessContextForMembershipSlug(
+    session.user.id,
+    slug,
+  );
+
+  if (!businessContext) {
+    redirect(businessesHubPath);
+  }
+
   const [analytics, overview] = await Promise.all([
     getBusinessAnalyticsData(businessContext.business.id),
     getBusinessOverviewData(businessContext.business.id),
@@ -77,7 +95,7 @@ export default async function DashboardOverviewPage() {
             <DashboardActionsRow className="w-full [&>*]:w-full sm:[&>*]:w-auto lg:w-auto lg:justify-end">
               <Button asChild>
                 <Link href={getBusinessInquiriesPath(businessSlug)} prefetch={true}>
-                  Open requests
+                  Open inquiries
                   <ArrowRight data-icon="inline-end" />
                 </Link>
               </Button>
@@ -120,7 +138,7 @@ export default async function DashboardOverviewPage() {
           action={
             <Button asChild size="sm" variant="ghost">
               <Link href={getBusinessInquiriesPath(businessSlug)} prefetch={true}>
-                All requests
+                All inquiries
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>
@@ -142,7 +160,7 @@ export default async function DashboardOverviewPage() {
           ) : (
             <DashboardEmptyState
               className="px-5 py-12 sm:px-6"
-              description="Nothing has been sitting without a quote for more than 48 hours."
+              description="Nothing has been waiting for qualification or a quote for more than 48 hours."
               icon={Inbox}
               title="No overdue replies"
               variant="flat"
@@ -188,7 +206,7 @@ export default async function DashboardOverviewPage() {
           action={
             <Button asChild size="sm" variant="ghost">
               <Link href={getBusinessInquiriesPath(businessSlug)} prefetch={true}>
-                Review requests
+                Review inquiries
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>
@@ -218,9 +236,9 @@ export default async function DashboardOverviewPage() {
                 </Button>
               }
               className="px-5 py-12 sm:px-6"
-              description="Every active request already has a quote in motion."
+              description="Every active inquiry already has a quote in motion."
               icon={Inbox}
-              title="Nothing waiting for pricing"
+              title="Nothing waiting for a quote"
               variant="flat"
             />
           )}

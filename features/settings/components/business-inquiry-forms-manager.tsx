@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -10,7 +10,6 @@ import {
   Plus,
 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -40,8 +40,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  getStarterTemplateBusinessType,
+  starterTemplateOptions,
+} from "@/features/businesses/starter-templates";
+import {
   businessTypeMeta,
-  businessTypeOptions,
   type BusinessType,
 } from "@/features/inquiries/business-types";
 import {
@@ -56,6 +59,7 @@ import type {
 } from "@/features/settings/types";
 import { getBusinessInquiryFormEditorPath } from "@/features/businesses/routes";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 
 type BusinessInquiryFormsManagerProps = {
   settings: BusinessInquiryFormsSettingsView;
@@ -71,12 +75,12 @@ export function BusinessInquiryFormsManager({
   settings,
   createAction,
 }: BusinessInquiryFormsManagerProps) {
-  const [createState, createFormAction, isCreatePending] = useActionState(
+  const [createState, createFormAction, isCreatePending] = useActionStateWithSonner(
     createAction,
     initialState,
   );
   const [businessType, setBusinessType] = useState<BusinessType>(
-    settings.businessType,
+    getStarterTemplateBusinessType(settings.businessType),
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const nameError = createState.fieldErrors?.name?.[0];
@@ -87,190 +91,187 @@ export function BusinessInquiryFormsManager({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-8">
-      <div className="flex justify-end">
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus data-icon="inline-start" />
-              Create form
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="p-7 sm:max-w-xl sm:p-8">
-            <DialogHeader className="px-1 pb-5 sm:px-2">
-              <DialogTitle>Create form</DialogTitle>
-              <DialogDescription>
-                Add a new inquiry form and its public page for this business.
-              </DialogDescription>
-            </DialogHeader>
+        <div className="flex justify-end">
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus data-icon="inline-start" />
+                Create form
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Create form</DialogTitle>
+                <DialogDescription>
+                  Add a new inquiry form and its public page for this business.
+                </DialogDescription>
+              </DialogHeader>
 
-            <form
-              action={createFormAction}
-              className="flex flex-col gap-8 px-2 py-3 sm:px-3 sm:py-4"
-            >
-              <input name="businessType" type="hidden" value={businessType} />
+              <form action={createFormAction} className="flex min-h-0 flex-1 flex-col">
+                <DialogBody className="gap-6">
+                  <input name="businessType" type="hidden" value={businessType} />
 
-              {createState.error ? (
-                <Alert variant="destructive">
-                  <AlertTitle>We could not create the inquiry form.</AlertTitle>
-                  <AlertDescription>{createState.error}</AlertDescription>
-                </Alert>
-              ) : null}
+                  <FieldGroup className="rounded-xl border border-border/70 bg-muted/20 p-3 sm:p-4">
+                    <Field data-invalid={Boolean(nameError) || undefined}>
+                      <FieldLabel htmlFor="business-inquiry-form-create-name">
+                        Form name
+                      </FieldLabel>
+                      <FieldContent>
+                        <Input
+                          disabled={isCreatePending}
+                          id="business-inquiry-form-create-name"
+                          maxLength={80}
+                          minLength={2}
+                          name="name"
+                          placeholder="Wholesale request"
+                          required
+                        />
+                        <FieldError
+                          errors={nameError ? [{ message: nameError }] : undefined}
+                        />
+                      </FieldContent>
+                    </Field>
 
-              <FieldGroup className="rounded-xl border border-border/70 bg-muted/20 p-3 sm:p-4">
-                <Field data-invalid={Boolean(nameError) || undefined}>
-                  <FieldLabel htmlFor="business-inquiry-form-create-name">
-                    Form name
-                  </FieldLabel>
-                  <FieldContent>
-                    <Input
-                      disabled={isCreatePending}
-                      id="business-inquiry-form-create-name"
-                      maxLength={80}
-                      minLength={2}
-                      name="name"
-                      placeholder="Wholesale request"
-                      required
-                    />
-                    <FieldError
-                      errors={nameError ? [{ message: nameError }] : undefined}
-                    />
-                  </FieldContent>
-                </Field>
+                    <Field data-invalid={Boolean(businessTypeError) || undefined}>
+                      <FieldLabel htmlFor="business-inquiry-form-create-type">
+                        Starter template
+                      </FieldLabel>
+                      <FieldContent>
+                        <Combobox
+                          aria-invalid={Boolean(businessTypeError) || undefined}
+                          disabled={isCreatePending}
+                          id="business-inquiry-form-create-type"
+                          onValueChange={(value) =>
+                            setBusinessType(value as BusinessType)
+                          }
+                          options={starterTemplateOptions}
+                          placeholder="Choose a starter template"
+                          renderOption={(option) => (
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">{option.label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {option.description}
+                              </p>
+                            </div>
+                          )}
+                          searchPlaceholder="Search starter template"
+                          value={businessType}
+                        />
+                        <FieldError
+                          errors={
+                            businessTypeError
+                              ? [{ message: businessTypeError }]
+                              : undefined
+                          }
+                        />
+                      </FieldContent>
+                    </Field>
+                  </FieldGroup>
+                </DialogBody>
 
-                <Field data-invalid={Boolean(businessTypeError) || undefined}>
-                  <FieldLabel htmlFor="business-inquiry-form-create-type">
-                    Business type
-                  </FieldLabel>
-                  <FieldContent>
-                    <Combobox
-                      aria-invalid={Boolean(businessTypeError) || undefined}
-                      disabled={isCreatePending}
-                      id="business-inquiry-form-create-type"
-                      onValueChange={(value) =>
-                        setBusinessType(value as BusinessType)
-                      }
-                      options={businessTypeOptions}
-                      placeholder="Choose a business type"
-                      renderOption={(option) => (
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{option.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {option.description}
-                          </p>
-                        </div>
-                      )}
-                      searchPlaceholder="Search business type"
-                      value={businessType}
-                    />
-                    <FieldError
-                      errors={
-                        businessTypeError
-                          ? [{ message: businessTypeError }]
-                          : undefined
-                      }
-                    />
-                  </FieldContent>
-                </Field>
-              </FieldGroup>
-
-              <DialogFooter className="grid grid-cols-1 gap-3 border-t border-border/70 pt-4 sm:grid-cols-2">
-                <Button
-                  className="w-full"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button className="w-full" disabled={isCreatePending} size="lg" type="submit">
-                  {isCreatePending ? (
-                    <>
-                      <Spinner data-icon="inline-start" aria-hidden="true" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus data-icon="inline-start" />
-                      Create form
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {activeForms.length ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {activeForms.map((form) => (
-            <Card className="h-full border-border/80 bg-card/98" key={form.id}>
-              <CardHeader className="gap-3">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="flex w-0 min-w-0 flex-1 items-start gap-3">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background/90 text-sm font-semibold tracking-[0.16em] text-foreground">
-                      {getFormInitials(form.name)}
-                    </div>
-                    <div className="w-0 min-w-0 flex-1">
-                      <CardTitle>
-                        <TruncatedWithTooltip text={form.name} />
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        <TruncatedWithTooltip text={`/${settings.slug}/${form.slug}`} />
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge
-                    className={`w-fit shrink-0 self-start ${
-                      form.publicInquiryEnabled
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
-                        : "border-red-200 bg-red-50 text-red-700 hover:bg-red-50"
-                    }`}
+                <DialogFooter className="grid grid-cols-1 sm:grid-cols-2">
+                  <Button
+                    className="w-full"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                    type="button"
                     variant="outline"
                   >
-                    {form.publicInquiryEnabled ? "Live" : "Unpublished"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <div>
-                  <Badge variant="outline">{businessTypeMeta[form.businessType].label}</Badge>
-                </div>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="w-full"
+                    disabled={isCreatePending}
+                    size="lg"
+                    type="submit"
+                  >
+                    {isCreatePending ? (
+                      <>
+                        <Spinner data-icon="inline-start" aria-hidden="true" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus data-icon="inline-start" />
+                        Create form
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {form.publicInquiryEnabled ? (
-                    <Button asChild>
+        {activeForms.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {activeForms.map((form) => (
+              <Card className="h-full border-border/80 bg-card/98" key={form.id}>
+                <CardHeader className="gap-3">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="flex w-0 min-w-0 flex-1 items-start gap-3">
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background/90 text-sm font-semibold tracking-[0.16em] text-foreground">
+                        {getFormInitials(form.name)}
+                      </div>
+                      <div className="w-0 min-w-0 flex-1">
+                        <CardTitle>
+                          <TruncatedWithTooltip text={form.name} />
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          <TruncatedWithTooltip text={`/${settings.slug}/${form.slug}`} />
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge
+                      className={`w-fit shrink-0 self-start ${
+                        form.publicInquiryEnabled
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
+                          : "border-red-200 bg-red-50 text-red-700 hover:bg-red-50"
+                      }`}
+                      variant="outline"
+                    >
+                      {form.publicInquiryEnabled ? "Live" : "Unpublished"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <div>
+                    <Badge variant="outline">{businessTypeMeta[form.businessType].label}</Badge>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {form.publicInquiryEnabled ? (
+                      <Button asChild>
+                        <Link
+                          href={getBusinessPublicInquiryUrl(settings.slug, form.slug)}
+                          prefetch={false}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Open live form
+                          <ArrowUpRight data-icon="inline-end" />
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button disabled type="button">
+                        Form unpublished
+                      </Button>
+                    )}
+
+                    <Button asChild type="button" variant="outline">
                       <Link
-                        href={getBusinessPublicInquiryUrl(settings.slug, form.slug)}
-                        prefetch={false}
-                        rel="noreferrer"
-                        target="_blank"
+                        href={getBusinessInquiryFormEditorPath(settings.slug, form.slug)}
+                        prefetch={true}
                       >
-                        Open live form
-                        <ArrowUpRight data-icon="inline-end" />
+                        <PencilLine data-icon="inline-start" />
+                        Edit
                       </Link>
                     </Button>
-                  ) : (
-                    <Button disabled type="button">
-                      Form unpublished
-                    </Button>
-                  )}
-
-                  <Button asChild type="button" variant="outline">
-                    <Link
-                      href={getBusinessInquiryFormEditorPath(settings.slug, form.slug)}
-                      prefetch={true}
-                    >
-                      <PencilLine data-icon="inline-start" />
-                      Edit
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
         <Card className="border-dashed">
           <CardHeader>
             <CardTitle>No active forms</CardTitle>

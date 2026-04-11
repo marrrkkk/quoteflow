@@ -6,8 +6,7 @@ import {
   FormActions,
   FormSection,
 } from "@/components/shared/form-layout";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -49,7 +48,7 @@ export function KnowledgeFaqForm({
   showSectionHeader = true,
 }: KnowledgeFaqFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction, isPending] = useActionStateWithSuccessToast(
+  const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
@@ -68,14 +67,6 @@ export function KnowledgeFaqForm({
 
   return (
     <form action={formAction} className="form-stack" ref={formRef}>
-      {state.error ? (
-        <Alert variant="destructive">
-          <AlertTitle>We could not save the FAQ.</AlertTitle>
-          <AlertDescription>{state.error}</AlertDescription>
-        </Alert>
-      ) : null}
-
-
       <FormSection title={showSectionHeader ? (initialValues ? "FAQ content" : "New FAQ") : undefined}>
         <FieldGroup>
           <Field data-invalid={Boolean(state.fieldErrors?.question) || undefined}>

@@ -1,37 +1,48 @@
 "use client";
 
 import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MutableRefObject,
   type ReactNode,
 } from "react";
 import {
   ChevronDown,
+  Eye,
+  GripVertical,
   MoreHorizontal,
   PencilLine,
   Plus,
-  RefreshCcw,
   Trash2,
 } from "lucide-react";
 
+import { FloatingFormActions } from "@/components/shared/floating-form-actions";
 import { useProgressRouter } from "@/hooks/use-progress-router";
-import { useActionStateWithSuccessToast } from "@/hooks/use-action-state-with-success-toast";
+import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -65,40 +76,46 @@ import {
   type InquiryFormSystemFieldDefinition,
   getNormalizedInquiryFormConfig,
 } from "@/features/inquiries/form-config";
-import {
-  businessTypeOptions,
-  businessTypeMeta,
-  type BusinessType,
-} from "@/features/inquiries/business-types";
 import type {
   BusinessInquiryFormActionState,
+  BusinessInquiryFormPreviewDraft,
   BusinessInquiryFormSettingsView,
 } from "@/features/settings/types";
-import { publicSlugMaxLength, publicSlugPattern } from "@/lib/slugs";
 import { cn } from "@/lib/utils";
 
 const MAX_CUSTOM_PROJECT_FIELDS = 12;
 const MAX_CUSTOM_FIELD_OPTIONS = 12;
+const inquiryProjectFieldsDndContextId = "business-inquiry-project-fields-dnd";
+const inquiryProjectFieldsSortableContextId =
+  "business-inquiry-project-fields-sortable";
+const inquirySortableTransition = {
+  duration: 160,
+  easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+} as const;
 
 type BusinessInquiryFormFormProps = {
-  applyPresetAction: (
-    state: BusinessInquiryFormActionState,
-    formData: FormData,
-  ) => Promise<BusinessInquiryFormActionState>;
   saveAction: (
     state: BusinessInquiryFormActionState,
     formData: FormData,
   ) => Promise<BusinessInquiryFormActionState>;
+  onDraftChange: (draft: BusinessInquiryFormPreviewDraft) => void;
+  onPreview: () => void;
+  draft: BusinessInquiryFormPreviewDraft;
+  isActive: boolean;
   settings: BusinessInquiryFormSettingsView;
 };
 
 const initialState: BusinessInquiryFormActionState = {};
 
 export function BusinessInquiryFormForm({
-  applyPresetAction,
   saveAction,
+  onDraftChange,
+  onPreview,
+  draft,
+  isActive,
   settings,
 }: BusinessInquiryFormFormProps) {
+  const router = useProgressRouter();
   const normalizedSettingsConfig = useMemo(
     () =>
       getNormalizedInquiryFormConfig(settings.inquiryFormConfig, {
@@ -106,45 +123,28 @@ export function BusinessInquiryFormForm({
       }),
     [settings.businessType, settings.inquiryFormConfig],
   );
-  const router = useProgressRouter();
   const [saveState, saveFormAction, isSavePending] =
-    useActionStateWithSuccessToast(saveAction, initialState);
-  const [presetState, presetFormAction, isPresetPending] =
-    useActionStateWithSuccessToast(applyPresetAction, initialState);
-  const [businessType, setBusinessType] = useState(settings.businessType);
-  const [contactFields, setContactFields] = useState(
-    normalizedSettingsConfig.contactFields,
-  );
-  const [projectFields, setProjectFields] = useState(
-    normalizedSettingsConfig.projectFields,
-  );
-  const [groupLabels, setGroupLabels] = useState(normalizedSettingsConfig.groupLabels);
-  const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
+    useActionStateWithSonner(saveAction, initialState);
+  const [contactFields, setContactFields] = useState(draft.inquiryFormConfig.contactFields);
+  const [projectFields, setProjectFields] = useState(draft.inquiryFormConfig.projectFields);
+  const [groupLabels, setGroupLabels] = useState(draft.inquiryFormConfig.groupLabels);
   const [isEditingProjectGroupLabel, setIsEditingProjectGroupLabel] = useState(false);
-  const [projectGroupLabelDraft, setProjectGroupLabelDraft] = useState(() => {
-    return normalizedSettingsConfig.groupLabels.project;
-  });
+  const [projectGroupLabelDraft, setProjectGroupLabelDraft] = useState(
+    draft.inquiryFormConfig.groupLabels.project,
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const projectFieldLabelInputRefs = useRef(new Map<string, HTMLInputElement | null>());
   const projectFieldCardRefs = useRef(new Map<string, HTMLDivElement | null>());
   const projectFieldRectsRef = useRef(new Map<string, DOMRect>());
   const projectFieldAnimationsRef = useRef(new Map<string, Animation>());
   const projectFieldTimeoutsRef = useRef<number[]>([]);
-  const [nameDraft, setNameDraft] = useState(settings.formName);
-  const [slugDraft, setSlugDraft] = useState(settings.formSlug);
+  const skipNextProjectFieldLayoutAnimationRef = useRef(false);
   const [enteringProjectFieldIds, setEnteringProjectFieldIds] = useState<string[]>([]);
   const [exitingProjectFieldIds, setExitingProjectFieldIds] = useState<string[]>([]);
   const [pendingProjectFieldFocusId, setPendingProjectFieldFocusId] = useState<
     string | null
   >(null);
-
-  useEffect(() => {
-    if (!presetState.success) {
-      return;
-    }
-
-    router.refresh();
-  }, [presetState.success, router]);
+  const wasActiveRef = useRef(isActive);
 
   useEffect(() => {
     if (!saveState.success) {
@@ -167,7 +167,7 @@ export function BusinessInquiryFormForm({
   );
   const serializedConfig = JSON.stringify({
     version: 1,
-    businessType,
+    businessType: settings.businessType,
     groupLabels,
     contactFields,
     projectFields: activeProjectFields,
@@ -189,10 +189,31 @@ export function BusinessInquiryFormForm({
     ],
   );
 
-  const hasConfigChanges = serializedConfig !== initialSerializedConfig;
-  const hasTextInputChanges =
-    nameDraft !== settings.formName || slugDraft !== settings.formSlug;
-  const hasUnsavedChanges = hasConfigChanges || hasTextInputChanges;
+  const hasUnsavedChanges = serializedConfig !== initialSerializedConfig;
+  const previewDraft = useMemo(
+    () => ({
+      businessType: settings.businessType,
+      formName: settings.formName,
+      formSlug: settings.formSlug,
+      inquiryFormConfig: {
+        version: 1,
+        businessType: settings.businessType,
+        groupLabels,
+        contactFields,
+        projectFields: activeProjectFields,
+      } satisfies InquiryFormConfig,
+      inquiryPageConfig: settings.inquiryPageConfig,
+    }),
+    [
+      activeProjectFields,
+      contactFields,
+      groupLabels,
+      settings.inquiryPageConfig,
+      settings.businessType,
+      settings.formName,
+      settings.formSlug,
+    ],
+  );
   const [shouldRenderFloatingActions, setShouldRenderFloatingActions] = useState(false);
   const [floatingActionsState, setFloatingActionsState] = useState<"open" | "closed">(
     "closed",
@@ -200,6 +221,25 @@ export function BusinessInquiryFormForm({
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+
+    onDraftChange(previewDraft);
+  }, [isActive, onDraftChange, previewDraft]);
+
+  useEffect(() => {
+    if (!isActive || wasActiveRef.current) {
+      wasActiveRef.current = isActive;
+      return;
+    }
+
+    wasActiveRef.current = isActive;
+
+    if (draftMatchesState({ draft, previewDraft })) {
+      return;
+    }
+
     queueMicrotask(() => {
       clearProjectFieldTimers(projectFieldTimeoutsRef);
       projectFieldRectsRef.current = new Map();
@@ -207,27 +247,16 @@ export function BusinessInquiryFormForm({
         animation.cancel();
       }
       projectFieldAnimationsRef.current.clear();
-      setBusinessType(settings.businessType);
-      setContactFields(normalizedSettingsConfig.contactFields);
-      setProjectFields(normalizedSettingsConfig.projectFields);
-      setGroupLabels(normalizedSettingsConfig.groupLabels);
-      setProjectGroupLabelDraft(normalizedSettingsConfig.groupLabels.project);
+      setContactFields(draft.inquiryFormConfig.contactFields);
+      setProjectFields(draft.inquiryFormConfig.projectFields);
+      setGroupLabels(draft.inquiryFormConfig.groupLabels);
+      setProjectGroupLabelDraft(draft.inquiryFormConfig.groupLabels.project);
       setIsEditingProjectGroupLabel(false);
-      setNameDraft(settings.formName);
-      setSlugDraft(settings.formSlug);
       setEnteringProjectFieldIds([]);
       setExitingProjectFieldIds([]);
       setPendingProjectFieldFocusId(null);
     });
-  }, [
-    normalizedSettingsConfig.contactFields,
-    normalizedSettingsConfig.groupLabels,
-    normalizedSettingsConfig.projectFields,
-    settings.businessType,
-    settings.formId,
-    settings.formName,
-    settings.formSlug,
-  ]);
+  }, [draft, isActive, previewDraft]);
 
   useLayoutEffect(() => {
     const nextRects = new Map<string, DOMRect>();
@@ -243,7 +272,7 @@ export function BusinessInquiryFormForm({
       const nextRect = node.getBoundingClientRect();
       nextRects.set(fieldId, nextRect);
 
-      if (prefersReducedMotion) {
+      if (prefersReducedMotion || skipNextProjectFieldLayoutAnimationRef.current) {
         continue;
       }
 
@@ -283,6 +312,10 @@ export function BusinessInquiryFormForm({
             projectFieldAnimationsRef.current.delete(fieldId);
           }
         });
+    }
+
+    if (skipNextProjectFieldLayoutAnimationRef.current) {
+      skipNextProjectFieldLayoutAnimationRef.current = false;
     }
 
     projectFieldRectsRef.current = nextRects;
@@ -527,19 +560,14 @@ export function BusinessInquiryFormForm({
 
   const configError = saveState.fieldErrors?.inquiryFormConfig?.[0];
   const businessTypeError = saveState.fieldErrors?.businessType?.[0];
-  const nameError = saveState.fieldErrors?.name?.[0];
-  const slugError = saveState.fieldErrors?.slug?.[0];
 
   function handleCancelChanges() {
     formRef.current?.reset();
     clearProjectFieldTimers(projectFieldTimeoutsRef);
-    setBusinessType(settings.businessType);
     setGroupLabels(normalizedSettingsConfig.groupLabels);
     setContactFields(normalizedSettingsConfig.contactFields);
     setProjectFields(normalizedSettingsConfig.projectFields);
     setIsEditingProjectGroupLabel(false);
-    setNameDraft(settings.formName);
-    setSlugDraft(settings.formSlug);
     setEnteringProjectFieldIds([]);
     setExitingProjectFieldIds([]);
     setPendingProjectFieldFocusId(null);
@@ -574,6 +602,56 @@ export function BusinessInquiryFormForm({
   );
   const hasReachedCustomFieldLimit = customProjectFieldCount >= MAX_CUSTOM_PROJECT_FIELDS;
   const isFieldInteractionLocked = isSavePending || exitingProjectFieldIds.length > 0;
+  const projectFieldSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  function resetProjectFieldAnimations() {
+    for (const animation of projectFieldAnimationsRef.current.values()) {
+      animation.cancel();
+    }
+
+    projectFieldAnimationsRef.current.clear();
+  }
+
+  function handleProjectFieldDragStart() {
+    resetProjectFieldAnimations();
+  }
+
+  function handleProjectFieldDragCancel() {
+    skipNextProjectFieldLayoutAnimationRef.current = false;
+  }
+
+  function handleProjectFieldDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    skipNextProjectFieldLayoutAnimationRef.current = true;
+    setProjectFields((currentFields) => {
+      const activeIndex = currentFields.findIndex(
+        (field) => getFieldId(field) === active.id,
+      );
+      const overIndex = currentFields.findIndex(
+        (field) => getFieldId(field) === over.id,
+      );
+
+      if (activeIndex < 0 || overIndex < 0) {
+        return currentFields;
+      }
+
+      return arrayMove(currentFields, activeIndex, overIndex);
+    });
+  }
 
   return (
     <>
@@ -582,172 +660,28 @@ export function BusinessInquiryFormForm({
         className="form-stack pb-28"
         ref={formRef}
       >
-        {saveState.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>We could not save the inquiry form.</AlertTitle>
-            <AlertDescription>{saveState.error}</AlertDescription>
-          </Alert>
-        ) : null}
-
-
-
-        {presetState.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>We could not apply the preset.</AlertTitle>
-            <AlertDescription>{presetState.error}</AlertDescription>
-          </Alert>
-        ) : null}
-
-
-
         <input name="formId" type="hidden" value={settings.formId} />
-        <input name="businessType" type="hidden" value={businessType} />
+        <input name="businessType" type="hidden" value={settings.businessType} />
         <input name="inquiryFormConfig" type="hidden" value={serializedConfig} />
 
         <div className="flex flex-col gap-8 sm:gap-10">
           <section className="space-y-5">
             <div className="space-y-2">
               <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-                Form setup
+                Fields
               </h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                Name the form, update the public URL slug, and choose the business type.
+                Edit the contact and project fields shown in the public inquiry form.
               </p>
             </div>
 
-            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.08fr)_20rem] xl:gap-7">
-              <div className="rounded-3xl border border-border/75 bg-muted/20 px-5 py-5 sm:px-6">
-                <div className="space-y-2">
-                  <p className="meta-label">Form details</p>
-                  <p className="font-heading text-xl font-semibold tracking-tight text-foreground">
-                    Public form identity
-                  </p>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Update the internal name, public URL slug, and business type.
-                  </p>
-                </div>
-
-                <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                  <Field data-invalid={Boolean(nameError) || undefined}>
-                    <FieldLabel htmlFor="business-inquiry-form-name">
-                      Form name
-                    </FieldLabel>
-                    <FieldContent>
-                      <Input
-                        aria-invalid={Boolean(nameError) || undefined}
-                        defaultValue={settings.formName}
-                        disabled={isSavePending}
-                        id="business-inquiry-form-name"
-                        maxLength={80}
-                        minLength={2}
-                        name="name"
-                        onChange={(event) => {
-                          setNameDraft(event.currentTarget.value);
-                        }}
-                        required
-                      />
-                      <FieldError
-                        errors={nameError ? [{ message: nameError }] : undefined}
-                      />
-                    </FieldContent>
-                  </Field>
-
-                  <Field data-invalid={Boolean(slugError) || undefined}>
-                    <FieldLabel htmlFor="business-inquiry-form-slug">
-                      Form slug
-                    </FieldLabel>
-                    <FieldContent>
-                      <Input
-                        aria-invalid={Boolean(slugError) || undefined}
-                        defaultValue={settings.formSlug}
-                        disabled={isSavePending}
-                        id="business-inquiry-form-slug"
-                        maxLength={publicSlugMaxLength}
-                        minLength={2}
-                        name="slug"
-                        onChange={(event) => {
-                          setSlugDraft(event.currentTarget.value);
-                        }}
-                        pattern={publicSlugPattern}
-                        required
-                        spellCheck={false}
-                      />
-                      <FieldError
-                        errors={slugError ? [{ message: slugError }] : undefined}
-                      />
-                    </FieldContent>
-                  </Field>
-
-                  <Field
-                    className="lg:col-span-2"
-                    data-invalid={Boolean(businessTypeError) || undefined}
-                  >
-                    <FieldLabel htmlFor="business-inquiry-business-type">
-                      Business type
-                    </FieldLabel>
-                    <FieldContent>
-                      <Combobox
-                        aria-invalid={Boolean(businessTypeError) || undefined}
-                        disabled={isSavePending}
-                        id="business-inquiry-business-type"
-                        onValueChange={(value) =>
-                          setBusinessType(value as BusinessType)
-                        }
-                        options={businessTypeOptions}
-                        placeholder="Choose a business type"
-                        renderOption={(option) => (
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{option.label}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {option.description}
-                            </p>
-                          </div>
-                        )}
-                        searchPlaceholder="Search business type"
-                        value={businessType}
-                      />
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {businessTypeMeta[businessType].description}
-                      </p>
-                      <FieldError
-                        errors={
-                          businessTypeError
-                            ? [{ message: businessTypeError }]
-                            : undefined
-                        }
-                      />
-                    </FieldContent>
-                  </Field>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-border/75 bg-muted/20 p-4 sm:p-5">
-                <Button
-                  className="w-full"
-                  disabled={isPresetPending}
-                  onClick={() => setIsPresetDialogOpen(true)}
-                  type="button"
-                >
-                  <RefreshCcw data-icon="inline-start" />
-                  Apply defaults
-                </Button>
-              </div>
-            </div>
+            {businessTypeError ? (
+              <FieldError errors={[{ message: businessTypeError }]} />
+            ) : null}
 
             {configError ? (
               <FieldError errors={[{ message: configError }]} />
             ) : null}
-          </section>
-
-          <section className="space-y-4">
-            <div className="space-y-2">
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-                {groupLabels.contact}
-              </h2>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Edit the fields shown in Contact.
-              </p>
-            </div>
 
             <InquiryFieldSection
               countLabel={`${inquiryContactFieldKeys.length} fields`}
@@ -832,45 +766,63 @@ export function BusinessInquiryFormForm({
               helperText="Service/category and details stay shown and required."
               title="Field library"
             >
-              {projectFields.map((field, index) => {
-                const fieldId = getFieldId(field);
+              <DndContext
+                collisionDetection={closestCenter}
+                id={inquiryProjectFieldsDndContextId}
+                onDragCancel={handleProjectFieldDragCancel}
+                onDragEnd={handleProjectFieldDragEnd}
+                onDragStart={handleProjectFieldDragStart}
+                sensors={projectFieldSensors}
+              >
+                <SortableContext
+                  id={inquiryProjectFieldsSortableContextId}
+                  items={projectFields.map((field) => getFieldId(field))}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="flex flex-col gap-3">
+                    {projectFields.map((field, index) => {
+                      const fieldId = getFieldId(field);
 
-                return (
-                  <ProjectFieldCard
-                    cardRef={(node) => {
-                      if (node) {
-                        projectFieldCardRefs.current.set(fieldId, node);
-                        return;
-                      }
+                      return (
+                        <ProjectFieldCard
+                          cardRef={(node) => {
+                            if (node) {
+                              projectFieldCardRefs.current.set(fieldId, node);
+                              return;
+                            }
 
-                      projectFieldCardRefs.current.delete(fieldId);
-                    }}
-                    field={field}
-                    index={index}
-                    inputRef={(node) => {
-                      if (node) {
-                        projectFieldLabelInputRefs.current.set(fieldId, node);
-                        return;
-                      }
+                            projectFieldCardRefs.current.delete(fieldId);
+                          }}
+                          field={field}
+                          index={index}
+                          inputRef={(node) => {
+                            if (node) {
+                              projectFieldLabelInputRefs.current.set(fieldId, node);
+                              return;
+                            }
 
-                      projectFieldLabelInputRefs.current.delete(fieldId);
-                    }}
-                    isEntering={enteringProjectFieldIds.includes(fieldId)}
-                    isExiting={exitingProjectFieldIds.includes(fieldId)}
-                    isPending={isFieldInteractionLocked}
-                    key={fieldId}
-                    maxOptions={MAX_CUSTOM_FIELD_OPTIONS}
-                    onAddOption={addCustomFieldOption}
-                    onChangeCustomType={changeCustomFieldType}
-                    onMove={moveProjectField}
-                    onRemove={removeProjectField}
-                    onRemoveOption={removeCustomFieldOption}
-                    onUpdate={updateProjectField}
-                    onUpdateOption={updateCustomFieldOption}
-                    totalFields={projectFields.length}
-                  />
-                );
-              })}
+                            projectFieldLabelInputRefs.current.delete(fieldId);
+                          }}
+                          isEntering={enteringProjectFieldIds.includes(fieldId)}
+                          isExiting={exitingProjectFieldIds.includes(fieldId)}
+                          isPending={isFieldInteractionLocked}
+                          key={fieldId}
+                          maxOptions={MAX_CUSTOM_FIELD_OPTIONS}
+                          prefersReducedMotion={prefersReducedMotion}
+                          onAddOption={addCustomFieldOption}
+                          onChangeCustomType={changeCustomFieldType}
+                          onMove={moveProjectField}
+                          onRemove={removeProjectField}
+                          onRemoveOption={removeCustomFieldOption}
+                          onUpdate={updateProjectField}
+                          onUpdateOption={updateCustomFieldOption}
+                          totalFields={projectFields.length}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
 
               {hasReachedCustomFieldLimit ? (
                 <Alert>
@@ -888,112 +840,28 @@ export function BusinessInquiryFormForm({
           </section>
         </div>
 
-        {shouldRenderFloatingActions ? (
-          <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-            <div
-              className="soft-panel motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-2 motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=open]:duration-200 motion-safe:data-[state=open]:ease-(--motion-ease-emphasized) motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-2 motion-safe:data-[state=closed]:zoom-out-95 motion-safe:data-[state=closed]:duration-150 motion-safe:data-[state=closed]:ease-(--motion-ease-standard) motion-reduce:animate-none flex w-full max-w-2xl flex-col items-stretch gap-3 border-border/80 bg-background/95 px-4 py-3 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between"
-              data-state={floatingActionsState}
-            >
-              <p className="text-sm text-muted-foreground">You have unsaved changes.</p>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button
-                  className="w-full sm:w-auto"
-                  disabled={isSavePending || !hasUnsavedChanges}
-                  onClick={handleCancelChanges}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  disabled={isSavePending || exitingProjectFieldIds.length > 0}
-                  type="submit"
-                >
-                  {isSavePending ? (
-                    <>
-                      <Spinner data-icon="inline-start" aria-hidden="true" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save changes"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </form>
-
-      <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader className="gap-2">
-            <DialogTitle>Apply preset defaults</DialogTitle>
-            <DialogDescription>
-              Current field and page customization will be replaced with the{" "}
-              selected business type defaults.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Selected business type
-              </p>
-              <p className="mt-2 text-base font-semibold tracking-tight text-foreground">
-                {businessTypeMeta[businessType].label}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                {businessTypeMeta[businessType].description}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
-              <p className="text-sm font-medium text-foreground">This will replace</p>
-              <div className="mt-3 grid gap-2 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    Inquiry form fields and labels
-                  </span>
-                  <span className="text-foreground">Reset</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    Inquiry page copy and layout
-                  </span>
-                  <span className="text-foreground">Reset</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
+        <FloatingFormActions
+          className="max-w-3xl"
+          disableSubmit={exitingProjectFieldIds.length > 0}
+          extraAction={
             <Button
-              onClick={() => setIsPresetDialogOpen(false)}
+              className="w-full sm:w-auto"
+              disabled={isSavePending}
+              onClick={onPreview}
               type="button"
-              variant="ghost"
+              variant="outline"
             >
-              Cancel
+              <Eye data-icon="inline-start" />
+              Preview
             </Button>
-            <form action={presetFormAction}>
-              <input name="formId" type="hidden" value={settings.formId} />
-              <input name="businessType" type="hidden" value={businessType} />
-              <Button
-                disabled={isPresetPending}
-                onClick={() => setIsPresetDialogOpen(false)}
-                type="submit"
-              >
-                {isPresetPending ? (
-                  <>
-                    <Spinner data-icon="inline-start" aria-hidden="true" />
-                    Applying...
-                  </>
-                ) : (
-                  "Apply defaults"
-                )}
-              </Button>
-            </form>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          }
+          isPending={isSavePending}
+          onCancel={handleCancelChanges}
+          stackActionsOnMobile
+          state={floatingActionsState}
+          visible={shouldRenderFloatingActions}
+        />
+      </form>
     </>
   );
 }
@@ -1034,6 +902,7 @@ function InquiryFieldSection({
 
 function InquiryFieldCardShell({
   cardRef,
+  className,
   children,
   description,
   index,
@@ -1041,9 +910,11 @@ function InquiryFieldCardShell({
   isExiting = false,
   menu,
   meta,
+  style,
   title,
 }: {
   cardRef?: (node: HTMLDivElement | null) => void;
+  className?: string;
   children: ReactNode;
   description: string;
   index: number;
@@ -1051,6 +922,7 @@ function InquiryFieldCardShell({
   isExiting?: boolean;
   menu: ReactNode;
   meta: string;
+  style?: CSSProperties;
   title: string;
 }) {
   return (
@@ -1062,7 +934,9 @@ function InquiryFieldCardShell({
           "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-200",
         isExiting &&
           "pointer-events-none motion-safe:animate-out motion-safe:fade-out-0 motion-safe:slide-out-to-bottom-2 motion-safe:duration-150",
+        className,
       )}
+      style={style}
     >
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3">
@@ -1181,6 +1055,7 @@ function ProjectFieldCard({
   isExiting,
   isPending,
   maxOptions,
+  prefersReducedMotion,
   onAddOption,
   onChangeCustomType,
   onMove,
@@ -1198,6 +1073,7 @@ function ProjectFieldCard({
   isExiting: boolean;
   isPending: boolean;
   maxOptions: number;
+  prefersReducedMotion: boolean;
   onAddOption: (fieldId: string) => void;
   onChangeCustomType: (fieldId: string, fieldType: InquiryCustomFieldType) => void;
   onMove: (fieldId: string, direction: "up" | "down") => void;
@@ -1208,6 +1084,19 @@ function ProjectFieldCard({
   totalFields: number;
 }) {
   const fieldId = getFieldId(field);
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: fieldId,
+    disabled: isPending || isExiting,
+    transition: prefersReducedMotion ? null : inquirySortableTransition,
+  });
   const isSystem = field.kind === "system";
   const hasSelectableOptions =
     field.kind === "custom" &&
@@ -1220,46 +1109,78 @@ function ProjectFieldCard({
   const optionCount = field.kind === "custom" ? (field.options?.length ?? 0) : 0;
   const [optionsOpenOverride, setOptionsOpenOverride] = useState<boolean | null>(null);
   const isOptionsOpen = hasSelectableOptions && (optionsOpenOverride ?? true);
+  const title = field.label || (isSystem ? getSystemFieldTitle(field) : "New field");
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    willChange: isDragging ? "transform" : undefined,
+  } satisfies CSSProperties;
+  const handleCardRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      cardRef?.(node);
+    },
+    [cardRef, setNodeRef],
+  );
 
   return (
     <InquiryFieldCardShell
-      cardRef={cardRef}
+      cardRef={handleCardRef}
+      className={cn(
+        isDragging && "relative z-10 ring-2 ring-primary/20 shadow-lg",
+      )}
       description={getProjectFieldStateLabel(field)}
       index={index}
       isEntering={isEntering}
       isExiting={isExiting}
       menu={
-        <FieldCardMenu
-          deleteDisabled={isSystem || isPending}
-          moveDownDisabled={isPending || index === totalFields - 1}
-          moveUpDisabled={isPending || index === 0}
-          requiredChecked={field.required}
-          requiredDisabled={!canToggleRequired || (isSystem && !field.enabled) || isPending}
-          showChecked={field.kind === "system" ? field.enabled : true}
-          showDisabled={field.kind === "custom" || !canToggleEnabled || isPending}
-          title={field.label || (isSystem ? getSystemFieldTitle(field) : "New field")}
-          typeDisabled={field.kind !== "custom" || isPending}
-          typeLabel={getFieldTypeLabel(field)}
-          typeValue={field.kind === "custom" ? field.fieldType : undefined}
-          onDelete={() => onRemove(fieldId)}
-          onMoveDown={() => onMove(fieldId, "down")}
-          onMoveUp={() => onMove(fieldId, "up")}
-          onRequiredChange={(required) => onUpdate(fieldId, { required })}
-          onShowChange={(enabled) => {
-            if (field.kind !== "system") {
-              return;
-            }
+        <div className="flex items-center gap-1">
+          <Button
+            aria-label={`Reorder ${title}`}
+            className="size-8 cursor-grab rounded-full touch-none active:cursor-grabbing"
+            disabled={isPending || isExiting}
+            ref={setActivatorNodeRef}
+            size="icon"
+            type="button"
+            variant="ghost"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="size-4" />
+          </Button>
+          <FieldCardMenu
+            deleteDisabled={isSystem || isPending}
+            moveDownDisabled={isPending || index === totalFields - 1}
+            moveUpDisabled={isPending || index === 0}
+            requiredChecked={field.required}
+            requiredDisabled={!canToggleRequired || (isSystem && !field.enabled) || isPending}
+            showChecked={field.kind === "system" ? field.enabled : true}
+            showDisabled={field.kind === "custom" || !canToggleEnabled || isPending}
+            title={title}
+            typeDisabled={field.kind !== "custom" || isPending}
+            typeLabel={getFieldTypeLabel(field)}
+            typeValue={field.kind === "custom" ? field.fieldType : undefined}
+            onDelete={() => onRemove(fieldId)}
+            onMoveDown={() => onMove(fieldId, "down")}
+            onMoveUp={() => onMove(fieldId, "up")}
+            onRequiredChange={(required) => onUpdate(fieldId, { required })}
+            onShowChange={(enabled) => {
+              if (field.kind !== "system") {
+                return;
+              }
 
-            onUpdate(fieldId, {
-              enabled,
-              required: field.key === "attachment" ? false : enabled ? field.required : false,
-            });
-          }}
-          onTypeChange={(fieldType) => onChangeCustomType(fieldId, fieldType)}
-        />
+              onUpdate(fieldId, {
+                enabled,
+                required: field.key === "attachment" ? false : enabled ? field.required : false,
+              });
+            }}
+            onTypeChange={(fieldType) => onChangeCustomType(fieldId, fieldType)}
+          />
+        </div>
       }
       meta={getFieldTypeLabel(field)}
-      title={field.label || (isSystem ? getSystemFieldTitle(field) : "New field")}
+      style={sortableStyle}
+      title={title}
     >
       <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
         <Field>
@@ -1829,4 +1750,14 @@ function createFieldOptionDraft(): InquiryFieldOption {
     label: "",
     value: "",
   };
+}
+
+function draftMatchesState({
+  draft,
+  previewDraft,
+}: {
+  draft: BusinessInquiryFormPreviewDraft;
+  previewDraft: BusinessInquiryFormPreviewDraft;
+}) {
+  return JSON.stringify(draft) === JSON.stringify(previewDraft);
 }
