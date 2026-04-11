@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -15,6 +17,8 @@ type FloatingFormActionsProps = {
   submitPendingLabel?: string;
   onCancel: () => void;
   className?: string;
+  extraAction?: ReactNode;
+  stackActionsOnMobile?: boolean;
 };
 
 export function useFloatingUnsavedChanges(hasUnsavedChanges: boolean) {
@@ -37,6 +41,8 @@ export function FloatingFormActions({
   submitPendingLabel = "Saving...",
   onCancel,
   className,
+  extraAction,
+  stackActionsOnMobile = false,
 }: FloatingFormActionsProps) {
   if (!visible) {
     return null;
@@ -51,21 +57,39 @@ export function FloatingFormActions({
       <div
         className={cn(
           "soft-panel motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-2 motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=open]:duration-200 motion-safe:data-[state=open]:ease-(--motion-ease-emphasized) motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-2 motion-safe:data-[state=closed]:zoom-out-95 motion-safe:data-[state=closed]:duration-150 motion-safe:data-[state=closed]:ease-(--motion-ease-standard) data-[state=closed]:pointer-events-none motion-reduce:animate-none flex w-full max-w-2xl items-center justify-between gap-3 border-border/80 bg-background/95 px-4 py-3 shadow-xl backdrop-blur",
+          stackActionsOnMobile &&
+            "flex-col items-stretch sm:flex-row sm:items-center",
           className,
         )}
         data-state={state}
       >
         <p className="text-sm text-muted-foreground">{message}</p>
-        <div className="flex items-center gap-2">
+        <div
+          className={cn(
+            "flex items-center gap-2",
+            stackActionsOnMobile && "flex-col sm:flex-row",
+          )}
+        >
+          {extraAction ? (
+            <div className={cn(stackActionsOnMobile && "w-full sm:w-auto [&>*]:w-full sm:[&>*]:w-auto")}>
+              {extraAction}
+            </div>
+          ) : null}
           <Button
             disabled={disableCancelButton}
             onClick={onCancel}
             type="button"
             variant="outline"
+            className={cn(stackActionsOnMobile && "w-full sm:w-auto")}
           >
             {cancelLabel}
           </Button>
-          <Button disabled={disableSubmitButton} size="lg" type="submit">
+          <Button
+            className={cn(stackActionsOnMobile && "w-full sm:w-auto")}
+            disabled={disableSubmitButton}
+            size="lg"
+            type="submit"
+          >
             {isPending ? (
               <>
                 <Spinner data-icon="inline-start" aria-hidden="true" />

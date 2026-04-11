@@ -60,6 +60,7 @@ export default async function BusinessFormPage({
 
       <div className="mt-6 sm:mt-8">
         <BusinessInquiryFormEditorTabs
+          key={`${settings.formId}-${settings.updatedAt.getTime()}`}
           settings={settings}
           logoPreviewUrl={logoPreviewUrl}
           generalSettingsHref={generalSettingsHref}
