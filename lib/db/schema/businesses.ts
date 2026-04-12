@@ -15,11 +15,11 @@ import {
 import type { BusinessType } from "@/features/inquiries/business-types";
 import type { InquiryFormConfig } from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
+import { businessMemberRoles } from "@/lib/business-members";
 import { user } from "@/lib/db/schema/auth";
 
 export const businessMemberRoleEnum = pgEnum("business_member_role", [
-  "owner",
-  "member",
+  ...businessMemberRoles,
 ]);
 
 export const businessAiTonePreferenceEnum = pgEnum(
@@ -131,7 +131,7 @@ export const businessMembers = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    role: businessMemberRoleEnum("role").notNull().default("member"),
+    role: businessMemberRoleEnum("role").notNull().default("staff"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -146,5 +146,38 @@ export const businessMembers = pgTable(
     ),
     index("business_members_user_id_idx").on(table.userId),
     index("business_members_business_role_idx").on(table.businessId, table.role),
+  ],
+);
+
+export const businessMemberInvites = pgTable(
+  "business_member_invites",
+  {
+    id: text("id").primaryKey(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    inviterUserId: text("inviter_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: businessMemberRoleEnum("role").notNull().default("staff"),
+    token: text("token").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("business_member_invites_token_unique").on(table.token),
+    uniqueIndex("business_member_invites_business_email_unique").on(
+      table.businessId,
+      table.email,
+    ),
+    index("business_member_invites_business_id_idx").on(table.businessId),
+    index("business_member_invites_email_idx").on(table.email),
+    index("business_member_invites_expires_at_idx").on(table.expiresAt),
   ],
 );
