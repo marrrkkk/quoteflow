@@ -1,9 +1,15 @@
 import { getBusinessSettingsPath } from "@/features/businesses/routes";
+import type { BusinessMemberRole } from "@/lib/business-members";
+import {
+  canManageBusinessAdministration,
+  canManageOperationalBusinessSettings,
+} from "@/lib/business-members";
 
 export type BusinessSettingsNavigationIcon =
   | "profile"
   | "security"
   | "general"
+  | "members"
   | "notifications"
   | "replies"
   | "knowledge"
@@ -21,8 +27,28 @@ export type BusinessSettingsNavigationGroup = {
   items: BusinessSettingsNavigationItem[];
 };
 
+export function getDefaultBusinessSettingsSection(role: BusinessMemberRole) {
+  if (canManageBusinessAdministration(role)) {
+    return "general" as const;
+  }
+
+  if (canManageOperationalBusinessSettings(role)) {
+    return "notifications" as const;
+  }
+
+  return "profile" as const;
+}
+
+export function getDefaultBusinessSettingsPath(
+  slug: string,
+  role: BusinessMemberRole,
+) {
+  return getBusinessSettingsPath(slug, getDefaultBusinessSettingsSection(role));
+}
+
 export function getBusinessSettingsNavigation(
   slug: string,
+  role: BusinessMemberRole,
 ): BusinessSettingsNavigationGroup[] {
   return [
     {
@@ -40,50 +66,65 @@ export function getBusinessSettingsNavigation(
         },
       ],
     },
-    {
-      label: "Business",
-      items: [
-        {
-          href: getBusinessSettingsPath(slug, "general"),
-          label: "Business profile",
-          icon: "general",
-        },
-        {
-          href: getBusinessSettingsPath(slug, "notifications"),
-          label: "Notifications",
-          icon: "notifications",
-        },
-      ],
-    },
-    {
-      label: "Responses",
-      items: [
-        {
-          href: getBusinessSettingsPath(slug, "replies"),
-          label: "Saved replies",
-          icon: "replies",
-        },
-        {
-          href: getBusinessSettingsPath(slug, "knowledge"),
-          label: "Knowledge base",
-          icon: "knowledge",
-        },
-      ],
-    },
-    {
-      label: "Quotes",
-      items: [
-        {
-          href: getBusinessSettingsPath(slug, "quote"),
-          label: "Quote defaults",
-          icon: "quote",
-        },
-        {
-          href: getBusinessSettingsPath(slug, "pricing"),
-          label: "Pricing",
-          icon: "pricing",
-        },
-      ],
-    },
-  ];
+    canManageOperationalBusinessSettings(role)
+      ? {
+          label: "Business",
+          items: [
+            ...(canManageBusinessAdministration(role)
+              ? [
+                  {
+                    href: getBusinessSettingsPath(slug, "general"),
+                    label: "Business profile",
+                    icon: "general" as const,
+                  },
+                  {
+                    href: getBusinessSettingsPath(slug, "members"),
+                    label: "Members",
+                    icon: "members" as const,
+                  },
+                ]
+              : []),
+            {
+              href: getBusinessSettingsPath(slug, "notifications"),
+              label: "Notifications",
+              icon: "notifications" as const,
+            },
+          ],
+        }
+      : null,
+    canManageOperationalBusinessSettings(role)
+      ? {
+          label: "Responses",
+          items: [
+            {
+              href: getBusinessSettingsPath(slug, "replies"),
+              label: "Saved replies",
+              icon: "replies" as const,
+            },
+            {
+              href: getBusinessSettingsPath(slug, "knowledge"),
+              label: "Knowledge base",
+              icon: "knowledge" as const,
+            },
+          ],
+        }
+      : null,
+    canManageOperationalBusinessSettings(role)
+      ? {
+          label: "Quotes",
+          items: [
+            {
+              href: getBusinessSettingsPath(slug, "quote"),
+              label: "Quote defaults",
+              icon: "quote" as const,
+            },
+            {
+              href: getBusinessSettingsPath(slug, "pricing"),
+              label: "Pricing",
+              icon: "pricing" as const,
+            },
+          ],
+        }
+      : null,
+  ].filter((group): group is BusinessSettingsNavigationGroup => Boolean(group));
 }
