@@ -10,7 +10,8 @@ export type BusinessSettingsSection =
   | "replies"
   | "quote"
   | "pricing"
-  | "knowledge";
+  | "knowledge"
+  | "integrations";
 
 export function getBusinessPath(slug: string) {
   return `${businessesHubPath}/${slug}`;

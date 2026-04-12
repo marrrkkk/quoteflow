@@ -14,7 +14,8 @@ export type BusinessSettingsNavigationIcon =
   | "replies"
   | "knowledge"
   | "quote"
-  | "pricing";
+  | "pricing"
+  | "integrations";
 
 export type BusinessSettingsNavigationItem = {
   href: string;
@@ -121,5 +122,15 @@ export function getBusinessSettingsNavigation(
           ],
         }
       : null,
+    {
+      label: "Integrations",
+      items: [
+        {
+          href: getBusinessSettingsPath(slug, "integrations"),
+          label: "Google Calendar",
+          icon: "integrations" as const,
+        },
+      ],
+    },
   ].filter((group): group is BusinessSettingsNavigationGroup => Boolean(group));
 }

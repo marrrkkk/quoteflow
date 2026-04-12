@@ -3,6 +3,7 @@
 import {
   BookCopy,
   Bell,
+  Cable,
   FileText,
   MessageSquareText,
   Settings2,
@@ -46,6 +47,7 @@ const settingsNavigationIcons: Record<BusinessSettingsNavigationIcon, typeof Use
   knowledge: BookCopy,
   quote: FileText,
   pricing: Tags,
+  integrations: Cable,
 };
 
 function isActiveSettingsItem(pathname: string, href: string) {
