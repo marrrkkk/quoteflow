@@ -3,6 +3,7 @@ export const activeBusinessSlugCookieName = "requo-active-business";
 
 export type BusinessSettingsSection =
   | "general"
+  | "members"
   | "notifications"
   | "profile"
   | "security"
@@ -87,6 +88,10 @@ export function getBusinessSettingsPath(
   const basePath = `${getBusinessDashboardPath(slug)}/settings`;
 
   return section ? `${basePath}/${section}` : basePath;
+}
+
+export function getBusinessMemberInvitePath(token: string) {
+  return `/invite/${token}`;
 }
 
 export function getBusinessFormsPath(slug: string) {
