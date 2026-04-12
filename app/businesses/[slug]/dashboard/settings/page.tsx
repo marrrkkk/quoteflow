@@ -1,10 +1,22 @@
 import { redirect } from "next/navigation";
 
-import { getBusinessSettingsPath } from "@/features/businesses/routes";
-import { getBusinessOwnerPageContext } from "./_lib/page-context";
+import { getDefaultBusinessSettingsPath } from "@/features/settings/navigation";
+import { getBusinessSettingsPageContext } from "./_lib/page-context";
 
-export default async function SettingsPage() {
-  const { businessContext } = await getBusinessOwnerPageContext();
+export default async function SettingsPage({
+  params,
+}: {
+  params: Promise<{
+    slug: string;
+  }>;
+}) {
+  const { slug } = await params;
+  const { businessContext } = await getBusinessSettingsPageContext(slug);
 
-  redirect(getBusinessSettingsPath(businessContext.business.slug, "general"));
+  redirect(
+    getDefaultBusinessSettingsPath(
+      businessContext.business.slug,
+      businessContext.role,
+    ),
+  );
 }

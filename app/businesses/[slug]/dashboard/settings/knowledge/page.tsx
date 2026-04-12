@@ -8,10 +8,10 @@ import {
 } from "@/features/knowledge/actions";
 import { getKnowledgeDashboardData } from "@/features/knowledge/queries";
 import { BusinessKnowledgeManager } from "@/features/settings/components/business-knowledge-manager";
-import { getBusinessOwnerPageContext } from "../_lib/page-context";
+import { getBusinessOperationalPageContext } from "../_lib/page-context";
 
 export default async function BusinessKnowledgePage() {
-  const { businessContext } = await getBusinessOwnerPageContext();
+  const { businessContext } = await getBusinessOperationalPageContext();
   const knowledgeData = await getKnowledgeDashboardData(businessContext.business.id);
 
   return (

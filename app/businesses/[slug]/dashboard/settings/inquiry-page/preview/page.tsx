@@ -5,10 +5,10 @@ import {
   getBusinessInquiryFormPreviewPath,
   getBusinessInquiryFormsPath,
 } from "@/features/businesses/routes";
-import { getBusinessOwnerPageContext } from "../../_lib/page-context";
+import { getBusinessOperationalPageContext } from "../../_lib/page-context";
 
 export default async function LegacyBusinessInquiryPagePreviewRedirect() {
-  const { businessContext } = await getBusinessOwnerPageContext();
+  const { businessContext } = await getBusinessOperationalPageContext();
 
   const form = await getDefaultBusinessInquiryFormForBusiness(
     businessContext.business.id,

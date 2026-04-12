@@ -1,20 +1,19 @@
-import type { ReactNode } from "react";
-
 import { DashboardPage } from "@/components/shared/dashboard-layout";
 import { BusinessSettingsNav } from "@/features/settings/components/business-settings-nav";
 import { getBusinessSettingsNavigation } from "@/features/settings/navigation";
-import { getBusinessOwnerPageContext } from "./_lib/page-context";
-
-type BusinessSettingsLayoutProps = {
-  children: ReactNode;
-};
+import { getBusinessSettingsPageContext } from "./_lib/page-context";
 
 export default async function BusinessSettingsLayout({
   children,
-}: BusinessSettingsLayoutProps) {
-  const { businessContext } = await getBusinessOwnerPageContext();
+  params,
+}: LayoutProps<"/businesses/[slug]/dashboard/settings">) {
+  const { slug } = await params;
+  const { businessContext } = await getBusinessSettingsPageContext(slug);
   const businessSlug = businessContext.business.slug;
-  const navigationGroups = getBusinessSettingsNavigation(businessSlug);
+  const navigationGroups = getBusinessSettingsNavigation(
+    businessSlug,
+    businessContext.role,
+  );
 
   return (
     <DashboardPage>

@@ -9,10 +9,10 @@ import {
 import { getQuoteLibraryForBusiness } from "@/features/quotes/quote-library-queries";
 import { getBusinessSettingsForBusiness } from "@/features/settings/queries";
 import { BusinessPricingLibraryManager } from "@/features/settings/components/business-pricing-library-manager";
-import { getBusinessOwnerPageContext } from "../_lib/page-context";
+import { getBusinessOperationalPageContext } from "../_lib/page-context";
 
 export default async function BusinessPricingPage() {
-  const { businessContext } = await getBusinessOwnerPageContext();
+  const { businessContext } = await getBusinessOperationalPageContext();
   const [settings, quoteLibrary] = await Promise.all([
     getBusinessSettingsForBusiness(businessContext.business.id),
     getQuoteLibraryForBusiness(businessContext.business.id),

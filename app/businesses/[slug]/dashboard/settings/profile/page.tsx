@@ -4,10 +4,10 @@ import { ProfileSettingsForm } from "@/features/account/components/profile-setti
 import { getAccountProfileForUser } from "@/features/account/queries";
 import { resolveUserAvatarSrc } from "@/features/account/utils";
 import { ensureProfileForUser } from "@/lib/auth/business-bootstrap";
-import { getBusinessOwnerPageContext } from "../_lib/page-context";
+import { getBusinessSettingsPageContext } from "../_lib/page-context";
 
 export default async function BusinessProfileSettingsPage() {
-  const { user } = await getBusinessOwnerPageContext();
+  const { user } = await getBusinessSettingsPageContext();
 
   await ensureProfileForUser({
     id: user.id,

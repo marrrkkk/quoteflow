@@ -10,10 +10,10 @@ import {
 import { SecuritySettingsForm } from "@/features/account/components/security-settings-form";
 import { getAccountSecurityForUser } from "@/features/account/queries";
 import { auth } from "@/lib/auth/server";
-import { getBusinessOwnerPageContext } from "../_lib/page-context";
+import { getBusinessSettingsPageContext } from "../_lib/page-context";
 
 export default async function BusinessSecuritySettingsPage() {
-  const { user } = await getBusinessOwnerPageContext();
+  const { user } = await getBusinessSettingsPageContext();
   const [security, sessions] = await Promise.all([
     getAccountSecurityForUser(user.id, user.email),
     auth.api.listSessions({

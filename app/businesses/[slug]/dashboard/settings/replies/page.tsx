@@ -7,10 +7,10 @@ import {
 } from "@/features/inquiries/reply-snippet-actions";
 import { getReplySnippetsForBusiness } from "@/features/inquiries/reply-snippet-queries";
 import { BusinessReplySnippetsManager } from "@/features/settings/components/business-reply-snippets-manager";
-import { getBusinessOwnerPageContext } from "../_lib/page-context";
+import { getBusinessOperationalPageContext } from "../_lib/page-context";
 
 export default async function BusinessSavedRepliesPage() {
-  const { businessContext } = await getBusinessOwnerPageContext();
+  const { businessContext } = await getBusinessOperationalPageContext();
   const replySnippets = await getReplySnippetsForBusiness(
     businessContext.business.id,
   );
