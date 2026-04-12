@@ -3,7 +3,7 @@ import { aiAssistantRequestSchema } from "@/features/ai/schemas";
 import type { AiAssistantStreamEvent } from "@/features/ai/types";
 import { getInquiryAssistantContextForBusiness } from "@/features/ai/queries";
 import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
-import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
+import { getWorkspaceBusinessActionContext } from "@/lib/db/business-access";
 
 const encoder = new TextEncoder();
 const ssePaddingComment = `:${" ".repeat(2048)}\n\n`;
@@ -40,7 +40,7 @@ export async function POST(
     return Response.json({ error: "Not found." }, { status: 404 });
   }
 
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getWorkspaceBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return Response.json({ error: ownerAccess.error }, { status: 403 });
