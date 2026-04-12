@@ -19,6 +19,7 @@ import {
   replySnippets,
   user,
   businessInquiryForms,
+  businessMemberInvites,
   businessMembers,
   businesses,
 } from "../lib/db/schema";
@@ -171,6 +172,37 @@ const demoConfig = {
     "brightside-print-studio",
   ),
 };
+
+const demoAccessUserConfig = {
+  manager: {
+    name: getSeedValue("DEMO_MANAGER_NAME", "Avery Brooks"),
+    email: getSeedValue("DEMO_MANAGER_EMAIL", "manager@requo.local").toLowerCase(),
+    password: getSeedValue("DEMO_MANAGER_PASSWORD", "ChangeMe123456!"),
+  },
+  staff: {
+    name: getSeedValue("DEMO_STAFF_NAME", "Jordan Cruz"),
+    email: getSeedValue("DEMO_STAFF_EMAIL", "staff@requo.local").toLowerCase(),
+    password: getSeedValue("DEMO_STAFF_PASSWORD", "ChangeMe123456!"),
+  },
+  pendingInvite: {
+    name: getSeedValue("DEMO_PENDING_INVITE_NAME", "Taylor Nguyen"),
+    email: getSeedValue(
+      "DEMO_PENDING_INVITE_EMAIL",
+      "pending-invite@requo.local",
+    ).toLowerCase(),
+    password: getSeedValue("DEMO_PENDING_INVITE_PASSWORD", "ChangeMe123456!"),
+  },
+  outsider: {
+    name: getSeedValue("DEMO_OUTSIDER_NAME", "Casey Morgan"),
+    email: getSeedValue("DEMO_OUTSIDER_EMAIL", "outsider@requo.local").toLowerCase(),
+    password: getSeedValue("DEMO_OUTSIDER_PASSWORD", "ChangeMe123456!"),
+  },
+};
+
+const demoPendingInviteToken = getSeedValue(
+  "DEMO_PENDING_INVITE_TOKEN",
+  "demo-business-invite-token",
+);
 
 const demoBusinessDefinitions: DemoBusinessDefinition[] = [
   {
@@ -1096,6 +1128,161 @@ async function ensureDemoUser(): Promise<DemoUser> {
     email: existingUser.email,
     name: demoConfig.ownerName,
   };
+}
+
+async function ensureSupplementalDemoUser({
+  name,
+  email,
+  password,
+}: {
+  name: string;
+  email: string;
+  password: string;
+}): Promise<DemoUser> {
+  let [existingUser] = await db
+    .select({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1);
+
+  if (!existingUser) {
+    await auth.api.signUpEmail({
+      body: {
+        name,
+        email,
+        password,
+      },
+    });
+
+    [existingUser] = await db
+      .select({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      })
+      .from(user)
+      .where(eq(user.email, email))
+      .limit(1);
+  }
+
+  if (!existingUser) {
+    throw new Error(`Unable to create or load the demo user for ${email}.`);
+  }
+
+  const now = new Date();
+
+  await db
+    .update(user)
+    .set({
+      name,
+      updatedAt: now,
+    })
+    .where(eq(user.id, existingUser.id));
+
+  await db
+    .insert(profiles)
+    .values({
+      userId: existingUser.id,
+      fullName: name,
+      onboardingCompletedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: profiles.userId,
+      set: {
+        fullName: name,
+        onboardingCompletedAt: now,
+        updatedAt: now,
+      },
+    });
+
+  return {
+    id: existingUser.id,
+    email: existingUser.email,
+    name,
+  };
+}
+
+async function syncDemoBusinessMembers({
+  owner,
+  primaryBusiness,
+  seedBusinesses,
+  manager,
+  staff,
+  pendingInviteUser,
+  outsider,
+}: {
+  owner: DemoUser;
+  primaryBusiness: DemoBusiness;
+  seedBusinesses: DemoBusiness[];
+  manager: DemoUser;
+  staff: DemoUser;
+  pendingInviteUser: DemoUser;
+  outsider: DemoUser;
+}) {
+  const now = new Date();
+  const seedBusinessIds = seedBusinesses.map((business) => business.id);
+  const collaboratorUsers = [manager, staff, pendingInviteUser, outsider];
+  const collaboratorUserIds = collaboratorUsers.map((demoUser) => demoUser.id);
+  const collaboratorEmails = collaboratorUsers.map((demoUser) =>
+    demoUser.email.toLowerCase(),
+  );
+
+  await db.transaction(async (tx) => {
+    if (seedBusinessIds.length && collaboratorUserIds.length) {
+      await tx.delete(businessMembers).where(
+        and(
+          inArray(businessMembers.businessId, seedBusinessIds),
+          inArray(businessMembers.userId, collaboratorUserIds),
+        ),
+      );
+    }
+
+    if (seedBusinessIds.length && collaboratorEmails.length) {
+      await tx.delete(businessMemberInvites).where(
+        and(
+          inArray(businessMemberInvites.businessId, seedBusinessIds),
+          inArray(businessMemberInvites.email, collaboratorEmails),
+        ),
+      );
+    }
+
+    await tx.insert(businessMembers).values([
+      {
+        id: createSeededId("seed_bm", "primary", "manager"),
+        businessId: primaryBusiness.id,
+        userId: manager.id,
+        role: "manager",
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: createSeededId("seed_bm", "primary", "staff"),
+        businessId: primaryBusiness.id,
+        userId: staff.id,
+        role: "staff",
+        createdAt: now,
+        updatedAt: now,
+      },
+    ]);
+
+    await tx.insert(businessMemberInvites).values({
+      id: createSeededId("seed_bmi", "primary", "pending"),
+      businessId: primaryBusiness.id,
+      inviterUserId: owner.id,
+      email: pendingInviteUser.email.toLowerCase(),
+      role: "staff",
+      token: demoPendingInviteToken,
+      expiresAt: addDays(now, 14),
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
 }
 
 function getDefaultFormDefinition(definition: DemoBusinessDefinition) {
@@ -2670,6 +2857,13 @@ async function seedManagedBusinessData(
 
 async function main() {
   const demoUser = await ensureDemoUser();
+  const [managerUser, staffUser, pendingInviteUser, outsiderUser] =
+    await Promise.all([
+      ensureSupplementalDemoUser(demoAccessUserConfig.manager),
+      ensureSupplementalDemoUser(demoAccessUserConfig.staff),
+      ensureSupplementalDemoUser(demoAccessUserConfig.pendingInvite),
+      ensureSupplementalDemoUser(demoAccessUserConfig.outsider),
+    ]);
   const business = await ensureDemoBusiness(demoUser);
   const seededBusinesses: Array<{
     business: DemoBusiness;
@@ -2694,6 +2888,16 @@ async function main() {
       counts,
     });
   }
+
+  await syncDemoBusinessMembers({
+    owner: demoUser,
+    primaryBusiness: business,
+    seedBusinesses: seededBusinesses.map((entry) => entry.business),
+    manager: managerUser,
+    staff: staffUser,
+    pendingInviteUser,
+    outsider: outsiderUser,
+  });
 
   const totals = seededBusinesses.reduce(
     (aggregate, entry) => ({
@@ -2737,6 +2941,22 @@ async function main() {
   console.log(`Primary business slug: ${business.slug}`);
   console.log(`Demo owner email: ${demoUser.email}`);
   console.log(`Demo owner password: ${demoConfig.ownerPassword}`);
+  console.log(`Demo manager email: ${managerUser.email}`);
+  console.log(`Demo manager password: ${demoAccessUserConfig.manager.password}`);
+  console.log(`Demo staff email: ${staffUser.email}`);
+  console.log(`Demo staff password: ${demoAccessUserConfig.staff.password}`);
+  console.log(`Demo pending invite email: ${pendingInviteUser.email}`);
+  console.log(
+    `Demo pending invite password: ${demoAccessUserConfig.pendingInvite.password}`,
+  );
+  console.log(`Demo outsider email: ${outsiderUser.email}`);
+  console.log(`Demo outsider password: ${demoAccessUserConfig.outsider.password}`);
+  console.log(
+    `Demo pending invite URL: ${new URL(
+      `/invite/${demoPendingInviteToken}`,
+      env.BETTER_AUTH_URL,
+    ).toString()}`,
+  );
   console.log(`Dashboard URL: ${dashboardUrl}`);
   console.log(`Public inquiry URL: ${inquiryUrl}`);
   console.log("");
