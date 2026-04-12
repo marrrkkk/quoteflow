@@ -4,10 +4,10 @@ import type {
   QuoteReminderKind,
   QuoteStatus,
 } from "@/features/quotes/types";
-
-export const businessMemberRoles = ["owner", "member"] as const;
-
-export type BusinessMemberRole = (typeof businessMemberRoles)[number];
+export {
+  businessMemberRoles,
+  type BusinessMemberRole,
+} from "@/lib/business-members";
 
 export type BusinessOverviewInquiryActionItem = {
   id: string;

@@ -384,7 +384,7 @@ export function SecuritySettingsForm({
                 Delete account
               </h2>
               <p className="text-sm text-muted-foreground">
-                Permanently remove this owner account and its owned workspace data.
+                Permanently remove this account and any workspaces it owns.
               </p>
             </div>
 
