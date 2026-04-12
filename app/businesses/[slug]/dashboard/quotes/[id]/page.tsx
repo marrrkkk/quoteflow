@@ -15,6 +15,10 @@ import {
 } from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
 import { Button } from "@/components/ui/button";
+import { AddToCalendarButton } from "@/features/calendar/components/add-to-calendar-button";
+import { CalendarEventSummary } from "@/features/calendar/components/calendar-event-summary";
+import { prefillFromQuote, prefillFromAcceptedQuote } from "@/features/calendar/prefill";
+import { getCalendarConnectionForUser, getCalendarEventsForQuote } from "@/features/calendar/queries";
 import {
   changeQuoteStatusAction,
   sendQuoteAction,
@@ -48,7 +52,7 @@ import {
   getBusinessQuotePdfExportPath,
   getBusinessQuotePrintPath,
 } from "@/features/businesses/routes";
-import { env } from "@/lib/env";
+import { env, isGoogleCalendarConfigured } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
@@ -105,6 +109,34 @@ export default async function QuoteDetailPage({
     customerEmail: quote.customerEmail,
     excludeQuoteId: quote.id,
   });
+
+  const [calendarConnection, calendarEvents] = await Promise.all([
+    isGoogleCalendarConfigured
+      ? getCalendarConnectionForUser(session.user.id)
+      : Promise.resolve({ connected: false, googleEmail: null, selectedCalendarId: null }),
+    isGoogleCalendarConfigured
+      ? getCalendarEventsForQuote(businessContext.business.id, quote.id)
+      : Promise.resolve([]),
+  ]);
+
+  const calendarPrefill = isGoogleCalendarConfigured
+    ? (quote.status === "accepted"
+        ? prefillFromAcceptedQuote
+        : prefillFromQuote)(
+        {
+          title: quote.title,
+          customerName: quote.customerName,
+          customerEmail: quote.customerEmail,
+          publicToken: quote.publicToken,
+        },
+        {
+          name: businessContext.business.name,
+          contactEmail: null,
+        },
+        env.BETTER_AUTH_URL,
+      )
+    : null;
+
   const linkedInquiry = quote.linkedInquiry
     ? {
         id: quote.linkedInquiry.id,
@@ -218,7 +250,15 @@ export default async function QuoteDetailPage({
           </>
         }
         actions={
-          <div className="dashboard-actions">
+          <div className="flex flex-nowrap items-center gap-2.5">
+            {isGoogleCalendarConfigured && calendarPrefill ? (
+              <AddToCalendarButton
+                businessId={businessContext.business.id}
+                connected={calendarConnection.connected}
+                prefill={calendarPrefill}
+                quoteId={quote.id}
+              />
+            ) : null}
             <Button asChild variant="outline">
               <a href={getBusinessQuotePdfExportPath(businessSlug, quote.id)}>
                 <Download data-icon="inline-start" />
@@ -483,6 +523,10 @@ export default async function QuoteDetailPage({
                   currentStatus={quote.postAcceptanceStatus}
                 />
               </DashboardSection>
+            ) : null}
+
+            {isGoogleCalendarConfigured ? (
+              <CalendarEventSummary events={calendarEvents} />
             ) : null}
           </DashboardSidebarStack>
         </DashboardDetailLayout>
