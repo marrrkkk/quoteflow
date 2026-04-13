@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { LockedFeaturePage } from "@/components/shared/paywall";
 import {
   cancelBusinessMemberInviteAction,
   createBusinessMemberInviteAction,
@@ -10,6 +11,7 @@ import {
 import { BusinessMembersManager } from "@/features/business-members/components/business-members-manager";
 import { getBusinessMembersSettingsForBusiness } from "@/features/business-members/queries";
 import { getBusinessOwnerPageContext } from "@/app/businesses/[slug]/dashboard/settings/_lib/page-context";
+import { hasFeatureAccess } from "@/lib/plans";
 
 export default async function BusinessMembersPage({
   params,
@@ -18,6 +20,19 @@ export default async function BusinessMembersPage({
 }) {
   const { slug } = await params;
   const { user, businessContext } = await getBusinessOwnerPageContext(slug);
+
+  if (!hasFeatureAccess(businessContext.business.plan, "members")) {
+    return (
+      <>
+        <PageHeader title="Members" />
+        <LockedFeaturePage
+          feature="members"
+          plan={businessContext.business.plan}
+        />
+      </>
+    );
+  }
+
   const view = await getBusinessMembersSettingsForBusiness(
     businessContext.business.id,
     user.id,

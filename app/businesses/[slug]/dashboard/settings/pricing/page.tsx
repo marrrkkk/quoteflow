@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { LockedFeaturePage } from "@/components/shared/paywall";
 import {
   createQuoteLibraryEntryAction,
   deleteQuoteLibraryEntryAction,
@@ -9,10 +10,28 @@ import {
 import { getQuoteLibraryForBusiness } from "@/features/quotes/quote-library-queries";
 import { getBusinessSettingsForBusiness } from "@/features/settings/queries";
 import { BusinessPricingLibraryManager } from "@/features/settings/components/business-pricing-library-manager";
+import { hasFeatureAccess } from "@/lib/plans";
 import { getBusinessOperationalPageContext } from "../_lib/page-context";
 
 export default async function BusinessPricingPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
+
+  if (!hasFeatureAccess(businessContext.business.plan, "quoteLibrary")) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Quotes"
+          title="Pricing"
+          description="Reusable pricing blocks and packages for faster quotes."
+        />
+        <LockedFeaturePage
+          feature="quoteLibrary"
+          plan={businessContext.business.plan}
+        />
+      </>
+    );
+  }
+
   const [settings, quoteLibrary] = await Promise.all([
     getBusinessSettingsForBusiness(businessContext.business.id),
     getQuoteLibraryForBusiness(businessContext.business.id),

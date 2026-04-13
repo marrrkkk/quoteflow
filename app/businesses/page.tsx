@@ -17,6 +17,7 @@ import { onboardingPath } from "@/features/onboarding/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessMembershipsForUser } from "@/lib/db/business-access";
 import { BrandMark } from "@/components/shared/brand-mark";
+import { LockedFeatureCard } from "@/components/shared/paywall";
 import { TruncatedTextWithTooltip } from "@/components/shared/truncated-text-with-tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -193,7 +194,13 @@ export default async function BusinessesPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CreateBusinessForm action={createBusinessAction} />
+                  <CreateBusinessForm
+                    action={createBusinessAction}
+                    isLocked={
+                      memberships.length > 0 &&
+                      !memberships.some((m) => m.business.plan !== "free")
+                    }
+                  />
                 </CardContent>
               </Card>
             </aside>
