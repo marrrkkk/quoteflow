@@ -54,6 +54,7 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
         conversionData={conversionData}
         workflowData={workflowData}
         currency={businessContext.business.defaultCurrency}
+        plan={businessContext.business.plan}
       />
     </DashboardPage>
   );

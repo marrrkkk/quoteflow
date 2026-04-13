@@ -3,12 +3,14 @@
 import { BarChart3, GitCompareArrows, Timer } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LockedFeatureOverlay } from "@/components/shared/paywall";
 import { analyticsSections } from "@/features/analytics/config";
 import type {
   BusinessAnalyticsData,
   ConversionAnalyticsData,
   WorkflowAnalyticsData,
 } from "@/features/analytics/types";
+import type { BusinessPlan } from "@/lib/plans";
 import { AnalyticsOverviewTab } from "@/features/analytics/components/analytics-overview-tab";
 import { AnalyticsConversionTab } from "@/features/analytics/components/analytics-conversion-tab";
 import { AnalyticsWorkflowTab } from "@/features/analytics/components/analytics-workflow-tab";
@@ -18,11 +20,13 @@ export function AnalyticsTabsClient({
   conversionData,
   workflowData,
   currency,
+  plan,
 }: {
   overviewData: BusinessAnalyticsData;
   conversionData: ConversionAnalyticsData;
   workflowData: WorkflowAnalyticsData;
   currency: string;
+  plan: BusinessPlan;
 }) {
   return (
     <Tabs defaultValue={analyticsSections.overview.id}>
@@ -46,11 +50,15 @@ export function AnalyticsTabsClient({
       </TabsContent>
 
       <TabsContent value={analyticsSections.conversion.id}>
-        <AnalyticsConversionTab data={conversionData} currency={currency} />
+        <LockedFeatureOverlay feature="analyticsConversion" plan={plan}>
+          <AnalyticsConversionTab data={conversionData} currency={currency} />
+        </LockedFeatureOverlay>
       </TabsContent>
 
       <TabsContent value={analyticsSections.workflow.id}>
-        <AnalyticsWorkflowTab data={workflowData} />
+        <LockedFeatureOverlay feature="analyticsWorkflow" plan={plan}>
+          <AnalyticsWorkflowTab data={workflowData} />
+        </LockedFeatureOverlay>
       </TabsContent>
     </Tabs>
   );
