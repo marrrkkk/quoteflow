@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import {
   getBusinessDashboardPath,
   getBusinessDashboardSlugFromPathname,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 
 type DashboardErrorProps = {
   error: Error & { digest?: string };
@@ -25,7 +25,7 @@ export default function DashboardError({
   const businessSlug = getBusinessDashboardSlugFromPathname(pathname);
   const overviewHref = businessSlug
     ? getBusinessDashboardPath(businessSlug)
-    : businessesHubPath;
+    : workspacesHubPath;
 
   return (
     <StatePageCard

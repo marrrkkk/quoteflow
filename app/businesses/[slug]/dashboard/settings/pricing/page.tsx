@@ -16,7 +16,7 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessPricingPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.plan, "quoteLibrary")) {
+  if (!hasFeatureAccess(businessContext.business.workspacePlan, "quoteLibrary")) {
     return (
       <>
         <PageHeader
@@ -26,7 +26,7 @@ export default async function BusinessPricingPage() {
         />
         <LockedFeaturePage
           feature="quoteLibrary"
-          plan={businessContext.business.plan}
+          plan={businessContext.business.workspacePlan}
         />
       </>
     );

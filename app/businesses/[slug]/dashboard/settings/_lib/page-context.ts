@@ -4,9 +4,9 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import {
-  businessesHubPath,
   getBusinessDashboardPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import {
   getBusinessContextForMembershipSlug,
   hasOperationalBusinessAccess,
@@ -26,7 +26,7 @@ async function getScopedBusinessSettingsContext(businessSlug?: string | null) {
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   return {

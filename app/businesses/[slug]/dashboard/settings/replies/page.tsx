@@ -14,7 +14,7 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessSavedRepliesPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.plan, "replySnippets")) {
+  if (!hasFeatureAccess(businessContext.business.workspacePlan, "replySnippets")) {
     return (
       <>
         <PageHeader
@@ -24,7 +24,7 @@ export default async function BusinessSavedRepliesPage() {
         />
         <LockedFeaturePage
           feature="replySnippets"
-          plan={businessContext.business.plan}
+          plan={businessContext.business.workspacePlan}
         />
       </>
     );

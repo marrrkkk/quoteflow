@@ -5,7 +5,7 @@ import { getAccountProfileForUser } from "@/features/account/queries";
 import { resolveUserAvatarSrc } from "@/features/account/utils";
 import { getThemePreferenceForUser } from "@/features/theme/queries";
 import { getBusinessNotificationBellView } from "@/features/notifications/queries";
-import { businessesHubPath } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { requireSession } from "@/lib/auth/session";
 import {
   getBusinessContextForMembershipSlug,
@@ -27,7 +27,7 @@ export default async function BusinessDashboardLayout({
   ]);
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const notificationView = await getBusinessNotificationBellView({

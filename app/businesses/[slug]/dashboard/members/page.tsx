@@ -21,13 +21,13 @@ export default async function BusinessMembersPage({
   const { slug } = await params;
   const { user, businessContext } = await getBusinessOwnerPageContext(slug);
 
-  if (!hasFeatureAccess(businessContext.business.plan, "members")) {
+  if (!hasFeatureAccess(businessContext.business.workspacePlan, "members")) {
     return (
       <>
         <PageHeader title="Members" />
         <LockedFeaturePage
           feature="members"
-          plan={businessContext.business.plan}
+          plan={businessContext.business.workspacePlan}
         />
       </>
     );

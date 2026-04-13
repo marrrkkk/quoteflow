@@ -27,7 +27,6 @@ import { formatQuoteDate, formatQuoteMoney } from "@/features/quotes/utils";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { getBusinessOverviewData } from "@/features/businesses/queries";
 import {
-  businessesHubPath,
   getBusinessAnalyticsPath,
   getBusinessInquiriesPath,
   getBusinessInquiryPath,
@@ -44,6 +43,7 @@ import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 
 type DashboardOverviewPageProps = {
   params: Promise<{ slug: string }>;
@@ -59,7 +59,7 @@ export default async function DashboardOverviewPage({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const [analytics, overview] = await Promise.all([

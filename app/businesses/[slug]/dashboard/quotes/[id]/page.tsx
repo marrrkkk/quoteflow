@@ -47,11 +47,11 @@ import {
   getQuoteEditorInitialValuesFromDetail,
 } from "@/features/quotes/utils";
 import {
-  businessesHubPath,
   getBusinessInquiryPath,
   getBusinessQuotePdfExportPath,
   getBusinessQuotePrintPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { env, isGoogleCalendarConfigured } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireSession } from "@/lib/auth/session";
@@ -71,7 +71,7 @@ export default async function QuoteDetailPage({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const parsedParams = quoteRouteParamsSchema.safeParse(resolvedParams);

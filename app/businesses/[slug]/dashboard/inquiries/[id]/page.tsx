@@ -48,8 +48,8 @@ import {
   formatInquiryDateTime,
 } from "@/features/inquiries/utils";
 import { formatQuoteMoney } from "@/features/quotes/utils";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import {
-  businessesHubPath,
   getBusinessNewQuotePath,
   getBusinessInquiryPdfExportPath,
   getBusinessInquiryPrintPath,
@@ -74,7 +74,7 @@ export default async function InquiryDetailPage({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const parsedParams = inquiryRouteParamsSchema.safeParse(resolvedParams);

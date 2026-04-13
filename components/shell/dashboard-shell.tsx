@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   Fragment,
   type CSSProperties,
@@ -10,6 +11,7 @@ import {
 import { useTransition } from "react";
 import {
   ArrowUpRight,
+  BriefcaseBusiness,
   Check,
   ChevronsUpDown,
   LogOut,
@@ -72,8 +74,8 @@ import {
 } from "@/components/ui/sidebar";
 import {
   getBusinessDashboardPath,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath, getWorkspacePath } from "@/features/workspaces/routes";
 import { getDefaultBusinessSettingsPath } from "@/features/settings/navigation";
 import { cn } from "@/lib/utils";
 
@@ -160,6 +162,7 @@ export function DashboardShell({
             user={user}
             businessRole={businessContext.role}
             businessSlug={business.slug}
+            workspaceSlug={business.workspaceSlug}
           />
         </SidebarFooter>
 
@@ -270,10 +273,12 @@ function DashboardUserMenu({
   user,
   businessRole,
   businessSlug,
+  workspaceSlug,
 }: {
   user: DashboardShellProps["user"];
   businessRole: DashboardShellProps["businessContext"]["role"];
   businessSlug: string;
+  workspaceSlug: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -378,7 +383,17 @@ function DashboardUserMenu({
               ) : null}
               <DropdownMenuItem asChild>
                 <Link
-                  href={businessesHubPath}
+                  href={getWorkspacePath(workspaceSlug)}
+                  prefetch={true}
+                  onClick={closeMobileSidebar}
+                >
+                  <BriefcaseBusiness data-icon="inline-start" />
+                  Workspace & billing
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href={getWorkspacePath(workspaceSlug)}
                   prefetch={true}
                   onClick={closeMobileSidebar}
                 >
@@ -526,9 +541,9 @@ function BusinessSwitcher({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={businessesHubPath} prefetch={true}>
+          <Link href={workspacesHubPath} prefetch={true}>
             <PanelsTopLeft data-icon="inline-start" />
-            Manage businesses
+            Manage workspaces
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

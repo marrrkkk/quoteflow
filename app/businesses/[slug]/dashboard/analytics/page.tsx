@@ -8,7 +8,7 @@ import {
   getConversionAnalyticsData,
   getWorkflowAnalyticsData,
 } from "@/features/analytics/queries";
-import { businessesHubPath } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { requireSession } from "@/lib/auth/session";
 import {
   getBusinessContextForMembershipSlug,
@@ -27,7 +27,7 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   if (!hasOperationalBusinessAccess(businessContext.role)) {
@@ -54,7 +54,7 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
         conversionData={conversionData}
         workflowData={workflowData}
         currency={businessContext.business.defaultCurrency}
-        plan={businessContext.business.plan}
+        plan={businessContext.business.workspacePlan}
       />
     </DashboardPage>
   );

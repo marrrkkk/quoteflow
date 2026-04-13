@@ -21,9 +21,9 @@ import {
 } from "@/features/inquiries/queries";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import {
-  businessesHubPath,
   getBusinessInquiriesPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
@@ -78,7 +78,7 @@ export default async function InquiriesPage({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const parsedFilters = inquiryListFiltersSchema.safeParse(resolvedSearchParams);

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
 import {
-  businessesHubPath,
   getBusinessSettingsPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
@@ -19,7 +19,7 @@ export default async function KnowledgePage({ params }: KnowledgePageProps) {
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   redirect(getBusinessSettingsPath(businessContext.business.slug, "knowledge"));

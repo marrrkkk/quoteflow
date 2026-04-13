@@ -15,7 +15,7 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessKnowledgePage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.plan, "knowledgeBase")) {
+  if (!hasFeatureAccess(businessContext.business.workspacePlan, "knowledgeBase")) {
     return (
       <>
         <PageHeader
@@ -25,7 +25,7 @@ export default async function BusinessKnowledgePage() {
         />
         <LockedFeaturePage
           feature="knowledgeBase"
-          plan={businessContext.business.plan}
+          plan={businessContext.business.workspacePlan}
         />
       </>
     );
