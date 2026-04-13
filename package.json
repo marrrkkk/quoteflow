@@ -15,7 +15,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed-demo": "tsx scripts/seed-demo.ts",
-    "test": "vitest"
+    "test": "vitest run tests/unit/ tests/components/",
+    "test:integration": "vitest run tests/integration/ -c vitest.integration.config.ts",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.5.6",
