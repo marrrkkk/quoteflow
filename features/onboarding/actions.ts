@@ -21,13 +21,14 @@ export async function completeOnboardingAction(
 
   const user = await requireUser();
   const validationResult = completeOnboardingSchema.safeParse({
+    workspaceName: formData.get("workspaceName"),
+    workspacePlan: formData.get("workspacePlan"),
     businessName: formData.get("businessName"),
     businessType: formData.get("businessType"),
     countryCode: formData.get("countryCode"),
-    shortDescription: formData.get("shortDescription"),
     fullName: formData.get("fullName"),
     jobTitle: formData.get("jobTitle"),
-    phone: formData.get("phone"),
+    referralSource: formData.get("referralSource"),
   });
 
   if (!validationResult.success) {
@@ -49,13 +50,14 @@ export async function completeOnboardingAction(
 
     const business = await completeOnboardingForUser({
       user,
+      workspaceName: validationResult.data.workspaceName,
+      workspacePlan: validationResult.data.workspacePlan,
       businessName: validationResult.data.businessName,
       businessType: validationResult.data.businessType,
       countryCode: validationResult.data.countryCode,
-      shortDescription: validationResult.data.shortDescription,
       fullName: validationResult.data.fullName,
       jobTitle: validationResult.data.jobTitle,
-      phone: validationResult.data.phone,
+      referralSource: validationResult.data.referralSource,
     });
 
     dashboardPath = getBusinessDashboardPath(business.slug);

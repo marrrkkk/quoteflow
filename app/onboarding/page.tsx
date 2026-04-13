@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BrandMark } from "@/components/shared/brand-mark";
 import { getAccountProfileForUser } from "@/features/account/queries";
-import { businessesHubPath } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { completeOnboardingAction } from "@/features/onboarding/actions";
 import { OnboardingForm } from "@/features/onboarding/components/onboarding-form";
 import { AppearanceMenu } from "@/features/theme/components/appearance-menu";
@@ -28,7 +28,7 @@ export default async function OnboardingPage() {
   ]);
 
   if (memberships.length > 0 || profile?.onboardingCompletedAt) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   return (
