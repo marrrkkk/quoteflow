@@ -5,6 +5,13 @@ import { useState } from "react";
 import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions, FormSection } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -29,13 +36,16 @@ type CreateBusinessFormProps = {
     state: CreateBusinessActionState,
     formData: FormData,
   ) => Promise<CreateBusinessActionState>;
+  isLocked?: boolean;
 };
 
 const initialState: CreateBusinessActionState = {};
 
 export function CreateBusinessForm({
   action,
+  isLocked = false,
 }: CreateBusinessFormProps) {
+  const [showLockedDialog, setShowLockedDialog] = useState(false);
   const [state, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
@@ -50,11 +60,21 @@ export function CreateBusinessForm({
   const selectedCountry = getBusinessCountryOption(countryCode);
 
   return (
-    <form action={formAction} className="form-stack">
-      <input name="businessType" type="hidden" value={businessType} />
-      <input name="countryCode" type="hidden" value={countryCode} />
+    <>
+      <form
+        action={formAction}
+        className="form-stack"
+        onSubmit={(e) => {
+          if (isLocked) {
+            e.preventDefault();
+            setShowLockedDialog(true);
+          }
+        }}
+      >
+        <input name="businessType" type="hidden" value={businessType} />
+        <input name="countryCode" type="hidden" value={countryCode} />
 
-      <FormSection title="New business">
+        <FormSection title="New business">
         <FieldGroup>
           <Field data-invalid={Boolean(nameError) || undefined}>
             <FieldLabel htmlFor="business-name">Business name</FieldLabel>
@@ -148,5 +168,22 @@ export function CreateBusinessForm({
         </Button>
       </FormActions>
     </form>
+
+    <Dialog open={showLockedDialog} onOpenChange={setShowLockedDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Multiple businesses</DialogTitle>
+          <DialogDescription>
+            Managing completely separate brands, services, and billing requires a Pro subscription. Wait for checkout to be added!
+          </DialogDescription>
+        </DialogHeader>
+        <FormActions align="end">
+          <Button variant="outline" onClick={() => setShowLockedDialog(false)}>
+            Close
+          </Button>
+        </FormActions>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
