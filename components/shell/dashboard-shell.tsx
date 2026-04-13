@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   Fragment,
   type CSSProperties,
@@ -10,6 +11,7 @@ import {
 import { useTransition } from "react";
 import {
   ArrowUpRight,
+  BriefcaseBusiness,
   Check,
   ChevronsUpDown,
   LogOut,
@@ -26,6 +28,7 @@ import { DashboardNotificationBell } from "@/features/notifications/components/d
 import type { BusinessNotificationBellView } from "@/features/notifications/types";
 import { ThemePreferenceSync } from "@/features/theme/components/theme-preference-sync";
 import type { ThemePreference } from "@/features/theme/types";
+import { canManageOperationalBusinessSettings } from "@/lib/business-members";
 import type { BusinessContext } from "@/lib/db/business-access";
 import { BrandMark } from "@/components/shared/brand-mark";
 import {
@@ -71,9 +74,9 @@ import {
 } from "@/components/ui/sidebar";
 import {
   getBusinessDashboardPath,
-  getBusinessSettingsPath,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath, getWorkspacePath } from "@/features/workspaces/routes";
+import { getDefaultBusinessSettingsPath } from "@/features/settings/navigation";
 import { cn } from "@/lib/utils";
 
 type DashboardShellProps = {
@@ -100,7 +103,10 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const pathname = usePathname();
   const breadcrumbs = getDashboardBreadcrumbs(pathname);
-  const dashboardNavigation = getDashboardNavigation(businessContext.business.slug);
+  const dashboardNavigation = getDashboardNavigation(
+    businessContext.business.slug,
+    businessContext.role,
+  );
   const business = businessContext.business;
 
   return (
@@ -152,7 +158,12 @@ export function DashboardShell({
         <SidebarSeparator />
 
         <SidebarFooter className="p-3 pt-2 group-data-[collapsible=icon]:px-2">
-          <DashboardUserMenu user={user} businessSlug={business.slug} />
+          <DashboardUserMenu
+            user={user}
+            businessRole={businessContext.role}
+            businessSlug={business.slug}
+            workspaceSlug={business.workspaceSlug}
+          />
         </SidebarFooter>
 
         <SidebarRail />
@@ -260,10 +271,14 @@ function DashboardNavigationItem({
 
 function DashboardUserMenu({
   user,
+  businessRole,
   businessSlug,
+  workspaceSlug,
 }: {
   user: DashboardShellProps["user"];
+  businessRole: DashboardShellProps["businessContext"]["role"];
   businessSlug: string;
+  workspaceSlug: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -285,6 +300,13 @@ function DashboardUserMenu({
       window.location.assign("/login");
     });
   }
+
+  const canOpenBusinessSettings =
+    canManageOperationalBusinessSettings(businessRole);
+  const businessSettingsHref = getDefaultBusinessSettingsPath(
+    businessSlug,
+    businessRole,
+  );
 
   return (
     <SidebarMenu>
@@ -347,19 +369,31 @@ function DashboardUserMenu({
                   Your profile
                 </Link>
               </DropdownMenuItem>
+              {canOpenBusinessSettings ? (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={businessSettingsHref}
+                    prefetch={true}
+                    onClick={closeMobileSidebar}
+                  >
+                    <Settings2 data-icon="inline-start" />
+                    Business settings
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem asChild>
                 <Link
-                  href={getBusinessSettingsPath(businessSlug, "general")}
+                  href={getWorkspacePath(workspaceSlug)}
                   prefetch={true}
                   onClick={closeMobileSidebar}
                 >
-                  <Settings2 data-icon="inline-start" />
-                  Business settings
+                  <BriefcaseBusiness data-icon="inline-start" />
+                  Workspace & billing
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href={businessesHubPath}
+                  href={getWorkspacePath(workspaceSlug)}
                   prefetch={true}
                   onClick={closeMobileSidebar}
                 >
@@ -428,11 +462,11 @@ function BusinessSwitcher({
               {business.logoStoragePath ? (
                 <Image
                   alt={`${business.name} logo`}
-                  className="h-auto max-h-10 w-auto object-contain"
-                  height={48}
+                  className="h-full w-full object-cover"
+                  height={56}
                   src="/api/business/logo"
                   unoptimized
-                  width={48}
+                  width={56}
                 />
               ) : (
                 <span className="text-sm font-semibold tracking-[0.16em] text-sidebar-foreground">
@@ -507,9 +541,9 @@ function BusinessSwitcher({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={businessesHubPath} prefetch={true}>
+          <Link href={workspacesHubPath} prefetch={true}>
             <PanelsTopLeft data-icon="inline-start" />
-            Manage businesses
+            Manage workspaces
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

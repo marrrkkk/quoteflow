@@ -5,6 +5,16 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 
 import type { BusinessType } from "@/features/inquiries/business-types";
+import type { WorkspacePlan } from "@/lib/plans/plans";
+import {
+  type BusinessMemberRole,
+  businessMemberRoleMeta,
+  canManageBusinessAdministration,
+  canManageBusinessMembers,
+  canManageBusinessWorkspace,
+  canManageOperationalBusinessSettings,
+  hasBusinessRoleAccess,
+} from "@/lib/business-members";
 import { getSession, requireUser, type AuthUser } from "@/lib/auth/session";
 import { activeBusinessSlugCookieName } from "@/features/businesses/routes";
 import { db } from "@/lib/db/client";
@@ -13,13 +23,17 @@ import {
   businessInquiryForms,
   businessMembers,
   businesses,
+  workspaces,
 } from "@/lib/db/schema";
 
 export type BusinessContext = {
   membershipId: string;
-  role: "owner" | "member";
+  role: BusinessMemberRole;
   business: {
     id: string;
+    workspaceId: string;
+    workspaceSlug: string;
+    workspacePlan: WorkspacePlan;
     name: string;
     slug: string;
     businessType: BusinessType;
@@ -28,6 +42,17 @@ export type BusinessContext = {
     publicInquiryEnabled: boolean;
   };
 };
+
+export type BusinessActionContextResult =
+  | {
+      ok: true;
+      user: AuthUser;
+      businessContext: BusinessContext;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 export type BusinessMessagingSettings = {
   id: string;
@@ -43,16 +68,13 @@ export type BusinessMessagingSettings = {
   notifyInAppOnQuoteResponse: boolean;
 };
 
-export type OwnerBusinessActionContext =
-  | {
-      ok: true;
-      user: AuthUser;
-      businessContext: BusinessContext;
-    }
-  | {
-      ok: false;
-      error: string;
-    };
+function getBusinessRoleSortExpression() {
+  return sql`case
+    when ${businessMembers.role} = 'owner' then 0
+    when ${businessMembers.role} = 'manager' then 1
+    else 2
+  end`;
+}
 
 export const getBusinessMembershipsForUser = cache(async (userId: string) => {
   const publicInquiryEnabledSelection = sql<boolean>`coalesce((
@@ -69,6 +91,9 @@ export const getBusinessMembershipsForUser = cache(async (userId: string) => {
       membershipId: businessMembers.id,
       role: businessMembers.role,
       businessId: businesses.id,
+      workspaceId: businesses.workspaceId,
+      workspaceSlug: workspaces.slug,
+      workspacePlan: workspaces.plan,
       businessName: businesses.name,
       businessSlug: businesses.slug,
       businessType: businesses.businessType,
@@ -78,9 +103,10 @@ export const getBusinessMembershipsForUser = cache(async (userId: string) => {
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(eq(businessMembers.userId, userId))
     .orderBy(
-      sql`case when ${businessMembers.role} = 'owner' then 0 else 1 end`,
+      getBusinessRoleSortExpression(),
       asc(businesses.name),
       asc(businesses.createdAt),
     );
@@ -90,6 +116,9 @@ export const getBusinessMembershipsForUser = cache(async (userId: string) => {
     role: membership.role,
     business: {
       id: membership.businessId,
+      workspaceId: membership.workspaceId,
+      workspaceSlug: membership.workspaceSlug,
+      workspacePlan: membership.workspacePlan as WorkspacePlan,
       name: membership.businessName,
       slug: membership.businessSlug,
       businessType: membership.businessType,
@@ -118,6 +147,9 @@ export const getBusinessContextForMembershipSlug = cache(async (
       membershipId: businessMembers.id,
       role: businessMembers.role,
       businessId: businesses.id,
+      workspaceId: businesses.workspaceId,
+      workspaceSlug: workspaces.slug,
+      workspacePlan: workspaces.plan,
       businessName: businesses.name,
       businessSlug: businesses.slug,
       businessType: businesses.businessType,
@@ -127,6 +159,7 @@ export const getBusinessContextForMembershipSlug = cache(async (
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(
       and(
         eq(businessMembers.userId, userId),
@@ -144,6 +177,9 @@ export const getBusinessContextForMembershipSlug = cache(async (
     role: context.role,
     business: {
       id: context.businessId,
+      workspaceId: context.workspaceId,
+      workspaceSlug: context.workspaceSlug,
+      workspacePlan: context.workspacePlan as WorkspacePlan,
       name: context.businessName,
       slug: context.businessSlug,
       businessType: context.businessType,
@@ -209,7 +245,7 @@ export const requireCurrentBusinessContext = cache(async () => {
 export async function requireOwnerBusinessContext() {
   const { user, businessContext } = await requireCurrentBusinessContext();
 
-  if (businessContext.role !== "owner") {
+  if (!canManageBusinessAdministration(businessContext.role)) {
     throw new Error("The current user does not have owner access.");
   }
 
@@ -260,9 +296,17 @@ export async function getBusinessRequestContextForSlug(slug: string) {
   };
 }
 
-export async function getOwnerBusinessActionContext(): Promise<OwnerBusinessActionContext> {
+export async function getBusinessActionContext({
+  businessSlug,
+  minimumRole = "staff",
+  unauthorizedMessage,
+}: {
+  businessSlug?: string | null;
+  minimumRole?: BusinessMemberRole;
+  unauthorizedMessage?: string;
+} = {}): Promise<BusinessActionContextResult> {
   const user = await requireUser();
-  const businessContext = await getBusinessContextForUser(user.id);
+  const businessContext = await getBusinessContextForUser(user.id, businessSlug);
 
   if (!businessContext) {
     return {
@@ -271,10 +315,12 @@ export async function getOwnerBusinessActionContext(): Promise<OwnerBusinessActi
     };
   }
 
-  if (businessContext.role !== "owner") {
+  if (!hasBusinessRoleAccess(businessContext.role, minimumRole)) {
     return {
       ok: false,
-      error: "Only the business owner can do that.",
+      error:
+        unauthorizedMessage ??
+        `${businessMemberRoleMeta[minimumRole].label} access is required for that action.`,
     };
   }
 
@@ -283,6 +329,39 @@ export async function getOwnerBusinessActionContext(): Promise<OwnerBusinessActi
     user,
     businessContext,
   };
+}
+
+export async function getOwnerBusinessActionContext() {
+  return getBusinessActionContext({
+    minimumRole: "owner",
+    unauthorizedMessage: "Only the business owner can do that.",
+  });
+}
+
+export async function getOperationalBusinessActionContext() {
+  return getBusinessActionContext({
+    minimumRole: "manager",
+    unauthorizedMessage: "Only an owner or manager can do that.",
+  });
+}
+
+export async function getWorkspaceBusinessActionContext() {
+  return getBusinessActionContext({
+    minimumRole: "staff",
+    unauthorizedMessage: "You do not have access to that business action.",
+  });
+}
+
+export function hasOperationalBusinessAccess(role: BusinessMemberRole) {
+  return canManageOperationalBusinessSettings(role);
+}
+
+export function hasBusinessWorkspaceAccess(role: BusinessMemberRole) {
+  return canManageBusinessWorkspace(role);
+}
+
+export function hasBusinessMemberManagementAccess(role: BusinessMemberRole) {
+  return canManageBusinessMembers(role);
 }
 
 export const getBusinessOwnerEmails = cache(async (businessId: string) => {

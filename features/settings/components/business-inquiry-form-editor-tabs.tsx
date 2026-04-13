@@ -10,7 +10,6 @@ import {
 
 import { DashboardSidebarStack } from "@/components/shared/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
 import type { PublicInquiryBusiness } from "@/features/inquiries/types";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +29,8 @@ import { BusinessInquiryPageForm } from "@/features/settings/components/business
 type BusinessInquiryFormEditorTabsProps = {
   settings: BusinessInquiryFormEditorView;
   logoPreviewUrl: string | null;
-  generalSettingsHref: string;
+  generalSettingsHref: string | null;
+  settingsHref: string;
   previewHref: string;
   publicInquiryHref: string;
   inquiryListHref: string;
@@ -88,6 +88,7 @@ export function BusinessInquiryFormEditorTabs({
   settings,
   logoPreviewUrl,
   generalSettingsHref,
+  settingsHref,
   previewHref,
   publicInquiryHref,
   inquiryListHref,
@@ -157,167 +158,111 @@ export function BusinessInquiryFormEditorTabs({
   }
 
   return (
-    <div className="grid min-w-0 items-start gap-3 sm:gap-4 lg:gap-5 xl:grid-cols-[15rem_minmax(0,1fr)] xl:gap-4">
-      <div className="min-w-0 xl:sticky xl:top-[5.5rem] xl:self-start">
-        <div className="px-1 pb-1 xl:hidden">
-          <div className="flex flex-col gap-2">
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Form section
-            </p>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-1">
+          {editorSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.id;
 
-            <Combobox
-              id="form-editor-section"
-              onValueChange={(value) =>
-                handleSectionChange(value as BusinessInquiryFormEditorSection)
-              }
-              options={editorSections.map((section) => ({
-                icon: section.icon,
-                label: section.label,
-                searchText: section.label,
-                value: section.id,
-              }))}
-              placeholder="Choose a form editor section"
-              renderOption={(option) => {
-                const Icon = option.icon;
-
-                return (
-                  <span className="flex items-center gap-2">
-                    <Icon className="size-4 text-muted-foreground" />
-                    <span>{option.label}</span>
-                  </span>
-                );
-              }}
-              renderValue={(option) => {
-                const Icon = option.icon;
-
-                return (
-                  <span className="flex min-w-0 items-center gap-2 text-left">
-                    <Icon className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{option.label}</span>
-                  </span>
-                );
-              }}
-              searchPlaceholder="Search form section"
-              value={activeSection}
-            />
-          </div>
+            return (
+              <button
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "relative inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all",
+                  isActive
+                    ? "border-border/80 bg-[var(--control-bg)] text-primary shadow-[var(--control-shadow)] after:absolute after:inset-x-0 after:bottom-[-5px] after:h-0.5 after:bg-primary"
+                    : "border-transparent text-foreground/65 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground",
+                )}
+                key={section.id}
+                onClick={() => handleSectionChange(section.id)}
+                type="button"
+              >
+                <Icon className="size-4" />
+                {section.label}
+              </button>
+            );
+          })}
         </div>
 
-        <aside className="hidden xl:block">
-          <nav className="flex flex-col gap-1 pr-3">
-            {editorSections.map((section) => {
-              const Icon = section.icon;
-              const isActive = activeSection === section.id;
-
-              return (
-                <button
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "group flex items-center gap-3 rounded-xl border px-3 py-3 text-left text-[0.94rem] font-medium tracking-tight transition-[border-color,background-color,color,box-shadow]",
-                    isActive
-                      ? "border-border/75 bg-accent/35 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-                      : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-accent/16 hover:text-foreground",
-                  )}
-                  key={section.id}
-                  onClick={() => handleSectionChange(section.id)}
-                  type="button"
-                >
-                  <div
-                    className={cn(
-                      "flex size-8 shrink-0 items-center justify-center rounded-md text-current transition-colors",
-                      isActive
-                        ? "text-primary"
-                        : "text-muted-foreground group-hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="size-4" />
-                  </div>
-
-                  <span className="min-w-0 truncate leading-tight">{section.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
+        <Button asChild className="w-full sm:w-auto" type="button">
+          <Link
+            href={isPublicLive ? publicInquiryHref : previewHref}
+            prefetch={false}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Open form
+            <ArrowUpRight data-icon="inline-end" />
+          </Link>
+        </Button>
       </div>
 
-      <div className="min-w-0 w-full">
-        <div className="flex flex-col gap-2 sm:flex-row xl:justify-end">
-          <Button asChild className="w-full sm:w-auto" type="button">
-            <Link
-              href={isPublicLive ? publicInquiryHref : previewHref}
-              prefetch={false}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Open form
-              <ArrowUpRight data-icon="inline-end" />
-            </Link>
-          </Button>
+      {/* Separator matching the line tabs indicator offset */}
+      <div className="-mt-1 border-b border-border/50" />
+
+      <div className="min-w-0">
+        <div aria-hidden={activeSection !== "fields"} className={activeSection === "fields" ? "block" : "hidden"}>
+          <DashboardSidebarStack>
+            <BusinessInquiryFormForm
+              key={`${settings.updatedAt.getTime()}-${settings.formId}-form`}
+              draft={formDraft}
+              isActive={activeSection === "fields"}
+              onDraftChange={handleFormDraftChange}
+              onPreview={handleOpenPreview}
+              saveAction={saveFormAction}
+              settings={settings}
+            />
+          </DashboardSidebarStack>
         </div>
 
-        <div className="mt-3 min-w-0 sm:mt-4">
-          <div aria-hidden={activeSection !== "fields"} className={activeSection === "fields" ? "block" : "hidden"}>
-            <DashboardSidebarStack>
-              <BusinessInquiryFormForm
-                key={`${settings.updatedAt.getTime()}-${settings.formId}-form`}
-                draft={formDraft}
-                isActive={activeSection === "fields"}
-                onDraftChange={handleFormDraftChange}
-                onPreview={handleOpenPreview}
-                saveAction={saveFormAction}
-                settings={settings}
-              />
-            </DashboardSidebarStack>
-          </div>
+        <div aria-hidden={activeSection !== "page"} className={activeSection === "page" ? "block" : "hidden"}>
+          <DashboardSidebarStack>
+            <BusinessInquiryPageForm
+              key={`${settings.updatedAt.getTime()}-${settings.formId}-page`}
+              action={updatePageAction}
+              generalSettingsHref={generalSettingsHref}
+              logoPreviewUrl={logoPreviewUrl}
+              onDraftChange={handlePageDraftChange}
+              onPreview={handleOpenPreview}
+              settingsHref={settingsHref}
+              settings={settings}
+            />
+          </DashboardSidebarStack>
+        </div>
 
-          <div aria-hidden={activeSection !== "page"} className={activeSection === "page" ? "block" : "hidden"}>
-            <DashboardSidebarStack>
-              <BusinessInquiryPageForm
-                key={`${settings.updatedAt.getTime()}-${settings.formId}-page`}
-                action={updatePageAction}
-                generalSettingsHref={generalSettingsHref}
-                logoPreviewUrl={logoPreviewUrl}
-                onDraftChange={handlePageDraftChange}
-                onPreview={handleOpenPreview}
-                settings={settings}
-              />
-            </DashboardSidebarStack>
-          </div>
-
-          <div
-            aria-hidden={activeSection !== "publishing"}
-            className={activeSection === "publishing" ? "block" : "hidden"}
-          >
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
-              <div className="min-w-0">
-                <div className="grid gap-4">
-                  <BusinessInquiryFormManageCard
-                    duplicateAction={duplicateAction}
-                    formId={settings.formId}
-                    isDefault={settings.isDefault}
-                    isPublicInquiryEnabled={settings.publicInquiryEnabled}
-                    setDefaultAction={setDefaultAction}
-                    togglePublicAction={togglePublicAction}
-                  />
-                  <BusinessInquiryFormPresetCard
-                    action={applyPresetAction}
-                    businessType={pageDraft.businessType}
-                    formId={settings.formId}
-                  />
-                </div>
-              </div>
-              <div className="min-w-0">
-                <BusinessInquiryFormDangerZone
-                  activeFormCount={settings.activeFormCount}
-                  archiveAction={archiveAction}
-                  deleteAction={deleteAction}
+        <div
+          aria-hidden={activeSection !== "publishing"}
+          className={activeSection === "publishing" ? "block" : "hidden"}
+        >
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
+            <div className="min-w-0">
+              <div className="grid gap-4">
+                <BusinessInquiryFormManageCard
+                  duplicateAction={duplicateAction}
                   formId={settings.formId}
-                  inquiryListHref={inquiryListHref}
                   isDefault={settings.isDefault}
-                  submittedInquiryCount={settings.submittedInquiryCount}
+                  isPublicInquiryEnabled={settings.publicInquiryEnabled}
+                  setDefaultAction={setDefaultAction}
+                  togglePublicAction={togglePublicAction}
+                />
+                <BusinessInquiryFormPresetCard
+                  action={applyPresetAction}
+                  businessType={pageDraft.businessType}
+                  formId={settings.formId}
                 />
               </div>
+            </div>
+            <div className="min-w-0">
+              <BusinessInquiryFormDangerZone
+                activeFormCount={settings.activeFormCount}
+                archiveAction={archiveAction}
+                deleteAction={deleteAction}
+                formId={settings.formId}
+                inquiryListHref={inquiryListHref}
+                isDefault={settings.isDefault}
+                submittedInquiryCount={settings.submittedInquiryCount}
+              />
             </div>
           </div>
         </div>
@@ -378,6 +323,7 @@ function createPreviewSnapshot({
     id: settings.id,
     name: settings.name,
     slug: settings.slug,
+    plan: settings.plan,
     businessType: pageDraft.businessType,
     shortDescription: settings.shortDescription,
     logoUrl: previewLogoUrl,

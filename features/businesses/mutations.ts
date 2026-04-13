@@ -25,6 +25,7 @@ type CreateBusinessForUserInput = {
     name: string;
     email: string;
   };
+  workspaceId: string;
   countryCode: string;
   name: string;
   businessType: BusinessType;
@@ -69,6 +70,7 @@ type CreateBusinessRecordForUserInput = CreateBusinessForUserInput & {
 
 export async function createBusinessRecordForUser({
   tx,
+  workspaceId,
   countryCode,
   user,
   name,
@@ -100,6 +102,7 @@ export async function createBusinessRecordForUser({
 
   await tx.insert(businesses).values({
     id: businessId,
+    workspaceId,
     name: trimmedName,
     slug,
     businessType,
@@ -176,6 +179,7 @@ export async function createBusinessRecordForUser({
 }
 
 export async function createBusinessForUser({
+  workspaceId,
   countryCode,
   user,
   name,
@@ -189,6 +193,7 @@ export async function createBusinessForUser({
   return db.transaction(async (tx) =>
     createBusinessRecordForUser({
       tx,
+      workspaceId,
       countryCode,
       user,
       name,

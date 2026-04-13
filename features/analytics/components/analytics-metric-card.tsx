@@ -1,16 +1,19 @@
 import type { LucideIcon } from "lucide-react";
 
+import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function AnalyticsMetricCard({
   title,
   value,
   description,
+  tooltip,
   icon: Icon,
 }: {
   title: string;
   value: string;
   description?: string;
+  tooltip?: string;
   icon: LucideIcon;
 }) {
   return (
@@ -18,7 +21,12 @@ export function AnalyticsMetricCard({
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="meta-label">{title}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="meta-label">{title}</p>
+              {tooltip ? (
+                <HelpTooltip content={tooltip} label={title} />
+              ) : null}
+            </div>
             <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
               {value}
             </p>

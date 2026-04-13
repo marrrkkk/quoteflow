@@ -23,6 +23,10 @@ import {
   DashboardStatsGrid,
 } from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
+import { AddToCalendarButton } from "@/features/calendar/components/add-to-calendar-button";
+import { CalendarEventSummary } from "@/features/calendar/components/calendar-event-summary";
+import { prefillFromInquiry } from "@/features/calendar/prefill";
+import { getCalendarConnectionForUser, getCalendarEventsForInquiry } from "@/features/calendar/queries";
 import { InquiryAiPanel } from "@/features/ai/components/inquiry-ai-panel";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
@@ -44,14 +48,15 @@ import {
   formatInquiryDateTime,
 } from "@/features/inquiries/utils";
 import { formatQuoteMoney } from "@/features/quotes/utils";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import {
-  businessesHubPath,
   getBusinessNewQuotePath,
   getBusinessInquiryPdfExportPath,
   getBusinessInquiryPrintPath,
   getBusinessQuotePath,
 } from "@/features/businesses/routes";
 import { Button } from "@/components/ui/button";
+import { isGoogleCalendarConfigured } from "@/lib/env";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
@@ -69,7 +74,7 @@ export default async function InquiryDetailPage({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const parsedParams = inquiryRouteParamsSchema.safeParse(resolvedParams);
@@ -92,11 +97,35 @@ export default async function InquiryDetailPage({
   const additionalFields = getAdditionalInquirySubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
-  const customerHistory = await getCustomerHistoryForBusiness({
-    businessId: businessContext.business.id,
-    customerEmail: inquiry.customerEmail,
-    excludeInquiryId: inquiry.id,
-  });
+  const [customerHistory, calendarConnection, calendarEvents] = await Promise.all([
+    getCustomerHistoryForBusiness({
+      businessId: businessContext.business.id,
+      customerEmail: inquiry.customerEmail,
+      excludeInquiryId: inquiry.id,
+    }),
+    isGoogleCalendarConfigured
+      ? getCalendarConnectionForUser(session.user.id)
+      : Promise.resolve({ connected: false, googleEmail: null, selectedCalendarId: null }),
+    isGoogleCalendarConfigured
+      ? getCalendarEventsForInquiry(businessContext.business.id, inquiry.id)
+      : Promise.resolve([]),
+  ]);
+
+  const calendarPrefill = isGoogleCalendarConfigured
+    ? prefillFromInquiry(
+        {
+          customerName: inquiry.customerName,
+          customerEmail: inquiry.customerEmail,
+          serviceCategory: inquiry.serviceCategory,
+          subject: inquiry.subject,
+          details: inquiry.details,
+        },
+        {
+          name: businessContext.business.name,
+          contactEmail: null,
+        },
+      )
+    : null;
 
   return (
     <DashboardPage className="pb-24">
@@ -120,7 +149,15 @@ export default async function InquiryDetailPage({
           </>
         }
         actions={
-          <div className="dashboard-actions">
+          <div className="flex flex-nowrap items-center gap-2.5">
+            {isGoogleCalendarConfigured && calendarPrefill ? (
+              <AddToCalendarButton
+                businessId={businessContext.business.id}
+                connected={calendarConnection.connected}
+                inquiryId={inquiry.id}
+                prefill={calendarPrefill}
+              />
+            ) : null}
             <Button asChild variant="outline">
               <a href={getBusinessInquiryPdfExportPath(businessSlug, inquiry.id)}>
                 <Download data-icon="inline-start" />
@@ -422,6 +459,10 @@ export default async function InquiryDetailPage({
             history={customerHistory}
             businessSlug={businessSlug}
           />
+
+          {isGoogleCalendarConfigured ? (
+            <CalendarEventSummary events={calendarEvents} />
+          ) : null}
 
           <DashboardSection
             description="Move the inquiry forward."

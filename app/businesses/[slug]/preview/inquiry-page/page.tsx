@@ -2,12 +2,15 @@ import { redirect } from "next/navigation";
 
 import { getDefaultBusinessInquiryFormForBusiness } from "@/features/settings/queries";
 import { requireSession } from "@/lib/auth/session";
-import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
+import {
+  getBusinessContextForMembershipSlug,
+  hasOperationalBusinessAccess,
+} from "@/lib/db/business-access";
 import {
   getBusinessDashboardPath,
   getBusinessInquiryFormPreviewPath,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 
 export default async function BusinessInquiryPagePreviewRedirect({
   params,
@@ -21,10 +24,10 @@ export default async function BusinessInquiryPagePreviewRedirect({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
-  if (businessContext.role !== "owner") {
+  if (!hasOperationalBusinessAccess(businessContext.role)) {
     redirect(getBusinessDashboardPath(businessContext.business.slug));
   }
 

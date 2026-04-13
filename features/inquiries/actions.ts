@@ -11,9 +11,11 @@ import {
 } from "@/lib/cache/business-tags";
 import {
   getBusinessMessagingSettings,
-  getOwnerBusinessActionContext,
+  getWorkspaceBusinessActionContext,
 } from "@/lib/db/business-access";
 import { env } from "@/lib/env";
+import { getWorkspacePlanByBusinessId } from "@/lib/plans/queries";
+import { checkUsageAllowance } from "@/lib/plans/usage";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import { sendPublicInquiryNotificationEmail } from "@/lib/resend/client";
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
@@ -82,6 +84,19 @@ export async function submitPublicInquiryAction(
   if (!business) {
     return {
       error: "This inquiry page is unavailable right now.",
+    };
+  }
+
+  const { plan: workspacePlan, workspaceId } = await getWorkspacePlanByBusinessId(business.id);
+  const inquiryAllowance = await checkUsageAllowance(
+    workspaceId,
+    workspacePlan,
+    "inquiriesPerMonth",
+  );
+
+  if (!inquiryAllowance.allowed) {
+    return {
+      error: "This business has reached its monthly inquiry limit. The owner has been notified.",
     };
   }
 
@@ -176,7 +191,7 @@ export async function addInquiryNoteAction(
   _prevState: InquiryNoteActionState,
   formData: FormData,
 ): Promise<InquiryNoteActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getWorkspaceBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -228,7 +243,7 @@ export async function changeInquiryStatusAction(
   _prevState: InquiryStatusActionState,
   formData: FormData,
 ): Promise<InquiryStatusActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getWorkspaceBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {

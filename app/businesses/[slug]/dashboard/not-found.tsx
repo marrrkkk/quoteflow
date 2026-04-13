@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
   getBusinessDashboardPath,
   getBusinessInquiriesPath,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { getCurrentBusinessRequestContext } from "@/lib/db/business-access";
 
 export default async function DashboardNotFound() {
@@ -15,10 +15,10 @@ export default async function DashboardNotFound() {
   const businessSlug = requestContext?.businessContext.business.slug;
   const inquiriesHref = businessSlug
     ? getBusinessInquiriesPath(businessSlug)
-    : businessesHubPath;
+    : workspacesHubPath;
   const overviewHref = businessSlug
     ? getBusinessDashboardPath(businessSlug)
-    : businessesHubPath;
+    : workspacesHubPath;
 
   return (
     <div className="flex min-h-[28rem] items-center justify-center">

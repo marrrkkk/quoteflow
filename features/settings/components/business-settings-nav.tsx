@@ -3,11 +3,13 @@
 import {
   BookCopy,
   Bell,
+  Cable,
   FileText,
   MessageSquareText,
   Settings2,
   Shield,
   Tags,
+  Users,
   User,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -39,11 +41,13 @@ const settingsNavigationIcons: Record<BusinessSettingsNavigationIcon, typeof Use
   profile: User,
   security: Shield,
   general: Settings2,
+  members: Users,
   notifications: Bell,
   replies: MessageSquareText,
   knowledge: BookCopy,
   quote: FileText,
   pricing: Tags,
+  integrations: Cable,
 };
 
 function isActiveSettingsItem(pathname: string, href: string) {

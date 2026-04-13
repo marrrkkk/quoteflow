@@ -1,18 +1,19 @@
-export const businessesHubPath = "/businesses";
 export const activeBusinessSlugCookieName = "requo-active-business";
 
 export type BusinessSettingsSection =
   | "general"
+  | "members"
   | "notifications"
   | "profile"
   | "security"
   | "replies"
   | "quote"
   | "pricing"
-  | "knowledge";
+  | "knowledge"
+  | "integrations";
 
 export function getBusinessPath(slug: string) {
-  return `${businessesHubPath}/${slug}`;
+  return `/businesses/${slug}`;
 }
 
 export function getBusinessDashboardPath(slug: string) {
@@ -89,8 +90,16 @@ export function getBusinessSettingsPath(
   return section ? `${basePath}/${section}` : basePath;
 }
 
+export function getBusinessMemberInvitePath(token: string) {
+  return `/invite/${token}`;
+}
+
 export function getBusinessFormsPath(slug: string) {
   return `${getBusinessDashboardPath(slug)}/forms`;
+}
+
+export function getBusinessMembersPath(slug: string) {
+  return `${getBusinessDashboardPath(slug)}/members`;
 }
 
 export function getBusinessFormPath(slug: string, formSlug: string) {

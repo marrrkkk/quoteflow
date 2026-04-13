@@ -20,7 +20,7 @@ import {
   settingsBusinessCacheLife,
 } from "@/lib/cache/business-tags";
 import { db } from "@/lib/db/client";
-import { inquiries, businessInquiryForms, businesses } from "@/lib/db/schema";
+import { inquiries, businessInquiryForms, businesses, workspaces } from "@/lib/db/schema";
 
 export async function getBusinessSettingsForBusiness(
   businessId: string,
@@ -158,6 +158,7 @@ export async function getBusinessInquiryFormSettingsForBusiness(
       id: businesses.id,
       name: businesses.name,
       slug: businesses.slug,
+      plan: workspaces.plan,
       updatedAt: businesses.updatedAt,
       inquiryHeadline: businesses.inquiryHeadline,
       shortDescription: businesses.shortDescription,
@@ -171,6 +172,7 @@ export async function getBusinessInquiryFormSettingsForBusiness(
       inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
     })
     .from(businesses)
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .innerJoin(
       businessInquiryForms,
       and(
@@ -194,6 +196,7 @@ export async function getBusinessInquiryFormSettingsForBusiness(
     id: row.id,
     name: row.name,
     slug: row.slug,
+    plan: row.plan,
     formId: row.formId,
     formName: row.formName,
     formSlug: row.formSlug,
@@ -316,6 +319,7 @@ export async function getBusinessInquiryFormEditorForBusiness(
         id: businesses.id,
         name: businesses.name,
         slug: businesses.slug,
+        plan: workspaces.plan,
         shortDescription: businesses.shortDescription,
         logoStoragePath: businesses.logoStoragePath,
         updatedAt: businesses.updatedAt,
@@ -330,6 +334,7 @@ export async function getBusinessInquiryFormEditorForBusiness(
         inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
       })
       .from(businesses)
+      .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
       .innerJoin(
         businessInquiryForms,
         and(
@@ -380,6 +385,7 @@ export async function getBusinessInquiryFormEditorForBusiness(
     id: businessRow.id,
     name: businessRow.name,
     slug: businessRow.slug,
+    plan: businessRow.plan,
     shortDescription: businessRow.shortDescription,
     logoStoragePath: businessRow.logoStoragePath,
     formId: businessRow.formId,

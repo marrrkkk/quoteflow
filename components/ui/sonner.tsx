@@ -19,28 +19,31 @@ export function Toaster({ className, toastOptions, ...props }: ToasterProps) {
         ...toastOptions,
         classNames: {
           toast: cn(
-            "group toast rounded-2xl border border-border/80 bg-background/96 text-foreground shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/88",
+            "group toast rounded-2xl border border-border/80 bg-background/96 text-foreground shadow-[var(--surface-shadow-md)] backdrop-blur supports-[backdrop-filter]:bg-background/88",
+            "data-[type=success]:![background:var(--alert-surface-bg)] data-[type=success]:!border-primary/20",
+            "data-[type=error]:![background:var(--alert-destructive-surface-bg)] data-[type=error]:!border-destructive/20",
             toastOptions?.classNames?.toast,
           ),
           title: cn(
-            "text-sm font-medium text-foreground",
+            "font-heading text-[0.92rem] font-semibold text-foreground group-data-[type=error]:text-destructive",
             toastOptions?.classNames?.title,
           ),
           description: cn(
-            "text-sm text-muted-foreground",
+            "text-sm text-balance text-muted-foreground group-data-[type=error]:text-destructive/88",
             toastOptions?.classNames?.description,
           ),
-          success: cn("border-border/80", toastOptions?.classNames?.success),
-          error: cn(
-            "border-destructive/25",
-            toastOptions?.classNames?.error,
+          icon: cn(
+            "group-data-[type=success]:text-primary group-data-[type=error]:text-destructive",
+            toastOptions?.classNames?.icon,
           ),
+          success: cn(toastOptions?.classNames?.success),
+          error: cn(toastOptions?.classNames?.error),
           actionButton: cn(
-            "rounded-xl bg-primary text-primary-foreground",
+            "rounded-xl bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90",
             toastOptions?.classNames?.actionButton,
           ),
           cancelButton: cn(
-            "rounded-xl bg-muted text-muted-foreground",
+            "rounded-xl bg-muted px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
             toastOptions?.classNames?.cancelButton,
           ),
           closeButton: cn(

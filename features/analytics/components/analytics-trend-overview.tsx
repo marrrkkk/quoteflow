@@ -1,4 +1,6 @@
-import { TrendingUp } from "lucide-react";
+"use client";
+
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
   Card,
@@ -7,73 +9,88 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import type { BusinessAnalyticsTrendPoint } from "@/features/analytics/types";
-import { getTrendBarHeight } from "@/features/analytics/utils";
+
+const chartConfig = {
+  inquiries: {
+    label: "Inquiries",
+    color: "oklch(0.623 0.214 259.815)",
+  },
+  won: {
+    label: "Won",
+    color: "oklch(0.765 0.177 163.223)",
+  },
+  lost: {
+    label: "Lost",
+    color: "oklch(0.637 0.237 25.331)",
+  },
+} satisfies ChartConfig;
 
 export function AnalyticsTrendOverview({
   points,
 }: {
   points: BusinessAnalyticsTrendPoint[];
 }) {
-  const maxInquiries = Math.max(...points.map((point) => point.inquiries), 1);
-
   return (
     <Card className="gap-0">
       <CardHeader className="gap-2">
-        <CardTitle>Recent inquiry trend</CardTitle>
+        <CardTitle>Inquiry trend</CardTitle>
         <CardDescription>Rolling six-week view.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {points.map((point) => (
-            <div className="soft-panel p-4 shadow-none" key={point.weekStart}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {point.label}
-                  </p>
-                  <p className="meta-label">Week</p>
-                </div>
-                <div className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <TrendingUp className="size-4" />
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-end gap-3">
-                <div className="soft-panel flex h-24 flex-1 items-end bg-muted/20 px-2 py-2 shadow-none">
-                  <div
-                    className="w-full rounded-full bg-primary/80"
-                    style={{
-                      height: getTrendBarHeight(point.inquiries, maxInquiries),
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col gap-1 text-right">
-                  <p className="text-2xl font-semibold tracking-tight text-foreground">
-                    {point.inquiries}
-                  </p>
-                  <p className="meta-label">Inquiries</p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <TrendMeta label="Won" value={point.won} />
-                <TrendMeta label="Lost" value={point.lost} />
-                <TrendMeta label="Accepted" value={point.acceptedQuotes} />
-              </div>
-            </div>
-          ))}
-        </div>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-64 w-full">
+          <BarChart
+            data={points}
+            barCategoryGap="20%"
+            barGap={2}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              fontSize={12}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={4}
+              fontSize={12}
+              width={32}
+              allowDecimals={false}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent />}
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="inquiries"
+              fill="var(--color-inquiries)"
+              radius={[4, 4, 0, 0]}
+            />
+            <Bar
+              dataKey="won"
+              fill="var(--color-won)"
+              radius={[4, 4, 0, 0]}
+            />
+            <Bar
+              dataKey="lost"
+              fill="var(--color-lost)"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ChartContainer>
       </CardContent>
     </Card>
-  );
-}
-
-function TrendMeta({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="soft-panel bg-muted/20 px-3 py-2 shadow-none">
-      <p className="meta-label">{label}</p>
-      <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
-    </div>
   );
 }

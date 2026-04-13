@@ -4,12 +4,16 @@ import { BusinessInquiryPreviewShell } from "@/features/inquiries/components/bus
 import { submitPublicInquiryAction } from "@/features/inquiries/actions";
 import { getInquiryBusinessPreviewByFormSlug } from "@/features/inquiries/queries";
 import { requireSession } from "@/lib/auth/session";
-import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
+import {
+  getBusinessContextForMembershipSlug,
+  hasOperationalBusinessAccess,
+} from "@/lib/db/business-access";
 import {
   getBusinessDashboardPath,
   getBusinessInquiryPageEditorPath,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
+
 
 export default async function BusinessInquiryFormPreviewPage({
   params,
@@ -29,10 +33,10 @@ export default async function BusinessInquiryFormPreviewPage({
   ]);
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
-  if (businessContext.role !== "owner") {
+  if (!hasOperationalBusinessAccess(businessContext.role)) {
     redirect(getBusinessDashboardPath(businessContext.business.slug));
   }
 

@@ -27,6 +27,7 @@ import {
   businessInquiryForms,
   businessMembers,
   businesses,
+  workspaces,
 } from "@/lib/db/schema";
 import type {
   DashboardInquiryDetail,
@@ -43,6 +44,7 @@ export async function getPublicInquiryBusinessBySlug(
       id: businesses.id,
       name: businesses.name,
       slug: businesses.slug,
+      plan: workspaces.plan,
       businessType: businesses.businessType,
       shortDescription: businesses.shortDescription,
       logoStoragePath: businesses.logoStoragePath,
@@ -58,6 +60,7 @@ export async function getPublicInquiryBusinessBySlug(
       inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
     })
     .from(businesses)
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .innerJoin(
       businessInquiryForms,
       and(
@@ -79,6 +82,7 @@ export async function getPublicInquiryBusinessBySlug(
     id: business.id,
     name: business.name,
     slug: business.slug,
+    plan: business.plan,
     businessType: formBusinessType,
     shortDescription: business.shortDescription,
     logoUrl: business.logoStoragePath
@@ -169,6 +173,7 @@ async function getInquiryBusinessByFormSlug({
       id: businesses.id,
       name: businesses.name,
       slug: businesses.slug,
+      plan: workspaces.plan,
       businessType: businesses.businessType,
       shortDescription: businesses.shortDescription,
       logoStoragePath: businesses.logoStoragePath,
@@ -184,6 +189,7 @@ async function getInquiryBusinessByFormSlug({
       inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
     })
     .from(businesses)
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .innerJoin(
       businessInquiryForms,
       and(
@@ -205,6 +211,7 @@ async function getInquiryBusinessByFormSlug({
     id: business.id,
     name: business.name,
     slug: business.slug,
+    plan: business.plan,
     businessType: formBusinessType,
     shortDescription: business.shortDescription,
     logoUrl: business.logoStoragePath
@@ -613,14 +620,10 @@ export async function getBusinessInquiryFormOptionsForBusiness(
       name: businessInquiryForms.name,
       slug: businessInquiryForms.slug,
       isDefault: businessInquiryForms.isDefault,
+      archivedAt: businessInquiryForms.archivedAt,
     })
     .from(businessInquiryForms)
-    .where(
-      and(
-        eq(businessInquiryForms.businessId, businessId),
-        isNull(businessInquiryForms.archivedAt),
-      ),
-    )
+    .where(eq(businessInquiryForms.businessId, businessId))
     .orderBy(desc(businessInquiryForms.isDefault), asc(businessInquiryForms.name));
 }
 

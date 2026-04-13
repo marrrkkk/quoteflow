@@ -4,6 +4,25 @@
 
 Requo uses a feature-oriented Next.js App Router architecture. The app is already beyond scaffold stage, so the goal is to extend the current structure rather than replace it.
 
+The product direction is workflow-first:
+
+- capture inquiries
+- qualify leads
+- send professional quotes
+- follow up consistently
+
+The subscription and billing model is workspace-based:
+
+- A user belongs to one or more workspaces
+- A workspace is the top-level billing/subscription container
+- A workspace can contain one or more businesses
+- Plans and entitlements apply at the workspace level
+- Businesses inherit workspace entitlements
+
+The app supports multiple service-business types through editable starter templates, but
+the architecture should continue to favor shared workflow features over vertical-specific
+branching.
+
 ## Target Folder Structure
 
 ```text
@@ -93,20 +112,22 @@ Feature responsibilities:
 
 - `features/account`: profile, security, and account-owned asset flows.
 - `features/auth`: auth forms, validation, and client UX.
-- `features/businesses`: business creation, hub queries, and business overview composition.
+- `features/businesses`: business creation, guided starter templates, hub queries, and business overview composition.
 - `features/customers`: customer presentation and customer-related utilities.
-- `features/inquiries`: public intake, inbox listing, notes, attachments, forms, and status changes.
+- `features/inquiries`: public intake, inquiry page presentation, inbox listing, notes, attachments, forms, and status changes.
 - `features/knowledge`: FAQs and uploaded knowledge files.
 - `features/notifications`: notification data and UI.
-- `features/onboarding`: first-business onboarding flow.
+- `features/onboarding`: first-business onboarding flow and starter-template selection.
 - `features/quotes`: quote editor, delivery, reminders, and public quote response.
-- `features/settings`: business identity, logo, notifications, public inquiry settings, and defaults.
+- `features/settings`: business identity, logo, notifications, public inquiry settings, inquiry page or form defaults, and other workflow settings.
 - `features/ai`, `features/analytics`, and `features/theme`: assistant, reporting, and theme concerns.
 
 ## Auth, Data, And Security
 
 - Better Auth is the only auth system. Do not introduce Supabase Auth.
-- Better Auth creates authenticated users and server-side profiles. Onboarding creates the first business; later business creation is explicit in business flows.
+- Better Auth creates authenticated users and server-side profiles. Onboarding creates the first workspace and business; later business creation adds to the existing workspace.
+- Workspaces own plans, entitlements, and usage limits. Businesses inherit these from their workspace.
+- `workspace_members` controls workspace-level access; `business_members` controls business-level roles.
 - Authenticated mutations should continue to use business-aware helpers such as `getOwnerBusinessActionContext`.
 - Drizzle queries are the current enforcement layer for business ownership and membership.
 - SQL RLS helpers and policies exist in migrations, but the app does not currently set `app.current_user_id` on the database session, so runtime session-based RLS is not the primary app guard.
@@ -126,3 +147,4 @@ Feature responsibilities:
 - Run `npm run build` when routes, layouts, or system wiring change.
 - Run relevant `npm run test:e2e` coverage when user-facing flows change.
 - Keep `docs/setup/` aligned with actual env and runtime expectations.
+- Keep README and setup docs aligned with the current starter-template names and the inquiry -> qualification -> quote -> follow-up positioning.

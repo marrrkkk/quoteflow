@@ -22,4 +22,5 @@ export const createBusinessSchema = z.object({
       isSupportedBusinessCountryCode,
       "Choose a valid country.",
     ),
+  workspaceId: z.string().trim().min(1, "Please select a temporary workspace."),
 });

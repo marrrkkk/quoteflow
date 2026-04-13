@@ -1,11 +1,13 @@
 import { Resend } from "resend";
 
+import { renderBusinessMemberInviteEmail } from "@/emails/templates/business-member-invite";
 import { renderPasswordResetEmail } from "@/emails/templates/password-reset";
 import { renderPublicInquiryNotificationEmail } from "@/emails/templates/public-inquiry-notification";
 import { renderQuoteEmail } from "@/emails/templates/quote-email";
 import { renderQuoteResponseOwnerNotificationEmail } from "@/emails/templates/quote-response-owner-notification";
 import { renderQuoteSentOwnerNotificationEmail } from "@/emails/templates/quote-sent-owner-notification";
 import { env, isResendConfigured } from "@/lib/env";
+import type { BusinessMemberAssignableRole } from "@/lib/business-members";
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 const consumerMailboxProviderDomains = new Set([
@@ -33,6 +35,16 @@ type SendPasswordResetEmailInput = {
   name: string;
   url: string;
   token: string;
+};
+
+type SendBusinessMemberInviteEmailInput = {
+  inviteId: string;
+  token: string;
+  email: string;
+  businessName: string;
+  inviterName: string;
+  role: BusinessMemberAssignableRole;
+  inviteUrl: string;
 };
 
 type SendPublicInquiryNotificationEmailInput = {
@@ -191,6 +203,59 @@ export async function sendPasswordResetEmail({
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function sendBusinessMemberInviteEmail({
+  inviteId,
+  token,
+  email,
+  businessName,
+  inviterName,
+  role,
+  inviteUrl,
+}: SendBusinessMemberInviteEmailInput) {
+  if (!resend || !isResendConfigured || !env.RESEND_FROM_EMAIL) {
+    console.warn(
+      "Resend is not configured yet. Business member invite delivery was skipped.",
+    );
+    return false;
+  }
+
+  const senderConfigurationError = getResendFromEmailConfigurationError();
+
+  if (senderConfigurationError) {
+    console.warn(
+      `Resend sender is misconfigured. Business member invite delivery was skipped. ${senderConfigurationError}`,
+    );
+    return false;
+  }
+
+  const template = renderBusinessMemberInviteEmail({
+    businessName,
+    inviterName,
+    role,
+    inviteUrl,
+  });
+
+  const { error } = await resend.emails.send(
+    {
+      from: env.RESEND_FROM_EMAIL,
+      to: [email],
+      replyTo: env.RESEND_REPLY_TO_EMAIL ? [env.RESEND_REPLY_TO_EMAIL] : undefined,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    },
+    {
+      idempotencyKey: `business-member-invite/${inviteId}/${token}`,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
 }
 
 export async function sendPublicInquiryNotificationEmail({

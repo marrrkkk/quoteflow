@@ -154,7 +154,7 @@ export function ProfileSettingsForm({
       <Card className="gap-0 border-border/75 bg-card/97">
         <CardHeader className="gap-2.5 pb-6">
           <CardTitle>Profile settings</CardTitle>
-          <CardDescription>Update your owner details.</CardDescription>
+          <CardDescription>Update your personal details.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid gap-6 xl:grid-cols-[19rem_minmax(0,1fr)] xl:gap-7">
@@ -223,7 +223,7 @@ export function ProfileSettingsForm({
 
               <FormSection
                 className="soft-panel px-5 py-5 shadow-none sm:px-6"
-                description="Direct owner contact."
+                description="Your direct contact details."
                 title="Contact details"
               >
                 <FieldGroup>
@@ -493,7 +493,7 @@ function ProfileAvatarField({
             </p>
             <div className="space-y-2">
               <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                Owner identity
+                Profile identity
               </h2>
               <p className="text-sm text-muted-foreground">Shown across your workspace.</p>
             </div>
@@ -551,15 +551,14 @@ function ProfileAvatarField({
                   <p className="text-base font-semibold tracking-tight text-foreground">
                     {displayName}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {jobTitle?.trim() || "Owner account"}
-                  </p>
+                  {jobTitle?.trim() && (
+                    <p className="text-sm text-muted-foreground">
+                      {jobTitle.trim()}
+                    </p>
+                  )}
                   <p className="break-words text-sm text-muted-foreground">{email}</p>
                 </div>
 
-                <p className="text-sm text-muted-foreground">
-                  Click the photo to upload or update it.
-                </p>
               </div>
             </div>
           </div>

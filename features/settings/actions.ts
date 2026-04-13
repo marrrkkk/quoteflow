@@ -34,6 +34,7 @@ import type {
 } from "@/features/settings/types";
 import {
   archiveBusinessInquiryForm,
+  unarchiveBusinessInquiryForm,
   createBusinessInquiryForm,
   deleteBusiness,
   deleteBusinessInquiryForm,
@@ -47,7 +48,10 @@ import {
   updateBusinessQuoteSettings,
   updateBusinessSettings,
 } from "@/features/settings/mutations";
-import { getOwnerBusinessActionContext } from "@/lib/db/business-access";
+import {
+  getOperationalBusinessActionContext,
+  getOwnerBusinessActionContext,
+} from "@/lib/db/business-access";
 import {
   activeBusinessSlugCookieName,
   getBusinessDashboardPath,
@@ -58,8 +62,8 @@ import {
   getBusinessInquiryPageEditorPath,
   getBusinessPath,
   getBusinessSettingsPath,
-  businessesHubPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { getBusinessInquiryFormsSettingsForBusiness } from "@/features/settings/queries";
 
@@ -149,6 +153,8 @@ export async function updateBusinessSettingsAction(
     revalidatePath(getBusinessSettingsPath(result.nextSlug));
     revalidatePath(getBusinessSettingsPath(result.previousSlug, "general"));
     revalidatePath(getBusinessSettingsPath(result.nextSlug, "general"));
+    revalidatePath(getBusinessSettingsPath(result.previousSlug, "members"));
+    revalidatePath(getBusinessSettingsPath(result.nextSlug, "members"));
     revalidatePath(getBusinessSettingsPath(result.previousSlug, "notifications"));
     revalidatePath(getBusinessSettingsPath(result.nextSlug, "notifications"));
     revalidatePath(getBusinessSettingsPath(result.previousSlug, "security"));
@@ -205,7 +211,7 @@ export async function updateBusinessNotificationSettingsAction(
   _prevState: BusinessNotificationSettingsActionState,
   formData: FormData,
 ): Promise<BusinessNotificationSettingsActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -260,7 +266,7 @@ export async function updateBusinessQuoteSettingsAction(
   _prevState: BusinessQuoteSettingsActionState,
   formData: FormData,
 ): Promise<BusinessQuoteSettingsActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -312,7 +318,7 @@ export async function deleteBusinessAction(
   _prevState: BusinessDeleteActionState,
   formData: FormData,
 ): Promise<BusinessDeleteActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -360,7 +366,7 @@ export async function deleteBusinessAction(
 
     cookieStore.delete(activeBusinessSlugCookieName);
 
-    revalidatePath(businessesHubPath);
+    revalidatePath(workspacesHubPath);
     shouldRedirect = true;
   } catch (error) {
     console.error("Failed to delete business.", error);
@@ -371,7 +377,7 @@ export async function deleteBusinessAction(
   }
 
   if (shouldRedirect) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   return {
@@ -384,7 +390,7 @@ export async function updateBusinessInquiryPageAction(
   _prevState: BusinessInquiryPageActionState,
   formData: FormData,
 ): Promise<BusinessInquiryPageActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -491,7 +497,7 @@ export async function updateBusinessInquiryFormAction(
   _prevState: BusinessInquiryFormActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -579,7 +585,7 @@ export async function applyBusinessInquiryFormPresetAction(
   _prevState: BusinessInquiryFormActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -637,7 +643,7 @@ export async function createBusinessInquiryFormAction(
   _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormsActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -708,7 +714,7 @@ export async function duplicateBusinessInquiryFormAction(
   _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormsActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -781,7 +787,7 @@ export async function setDefaultBusinessInquiryFormAction(
   _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormsActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -839,7 +845,7 @@ export async function archiveBusinessInquiryFormAction(
   _prevState: BusinessInquiryFormsActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormsActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -908,7 +914,7 @@ export async function archiveBusinessInquiryFormFromDetailAction(
   _prevState: BusinessInquiryFormDangerActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormDangerActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -979,7 +985,7 @@ export async function deleteBusinessInquiryFormAction(
   _prevState: BusinessInquiryFormDangerActionState,
   formData: FormData,
 ): Promise<BusinessInquiryFormDangerActionState> {
-  const ownerAccess = await getOwnerBusinessActionContext();
+  const ownerAccess = await getOperationalBusinessActionContext();
 
   if (!ownerAccess.ok) {
     return {
@@ -1111,6 +1117,63 @@ export async function toggleBusinessInquiryFormPublicAction(
 
     return {
       error: "We couldn't update the form availability right now.",
+    };
+  }
+}
+
+export async function unarchiveBusinessInquiryFormAction(
+  _prevState: BusinessInquiryFormDangerActionState,
+  formData: FormData,
+): Promise<BusinessInquiryFormDangerActionState> {
+  const ownerAccess = await getOperationalBusinessActionContext();
+
+  if (!ownerAccess.ok) {
+    return {
+      error: ownerAccess.error,
+    };
+  }
+
+  const { user, businessContext } = ownerAccess;
+  const validationResult = businessInquiryFormTargetSchema.safeParse({
+    targetFormId: formData.get("targetFormId"),
+  });
+
+  if (!validationResult.success) {
+    return getValidationActionState(validationResult.error, "Choose a form and try again.");
+  }
+
+  try {
+    const result = await unarchiveBusinessInquiryForm({
+      businessId: businessContext.business.id,
+      actorUserId: user.id,
+      targetFormId: validationResult.data.targetFormId,
+    });
+
+    if (!result.ok) {
+      return {
+        error: "That inquiry form could not be found.",
+      };
+    }
+
+    updateCacheTags(
+      uniqueCacheTags([
+        ...getBusinessInquiryFormsCacheTags(businessContext.business.id),
+        ...getBusinessInquiryFormCacheTags(
+          businessContext.business.id,
+          result.formSlug,
+        ),
+      ]),
+    );
+    revalidateBusinessInquiryFormPaths(result.businessSlug, result.formSlug);
+
+    return {
+      success: "Inquiry form restored.",
+    };
+  } catch (error) {
+    console.error("Failed to unarchive inquiry form.", error);
+
+    return {
+      error: "We couldn't unarchive the inquiry form right now.",
     };
   }
 }

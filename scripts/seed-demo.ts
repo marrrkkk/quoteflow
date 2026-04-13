@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
 import { getStarterTemplateDefinition } from "../features/businesses/starter-templates";
 import type { BusinessType } from "../features/inquiries/business-types";
+import type { InquirySubmittedFieldSnapshot } from "../features/inquiries/form-config";
 import { createInquiryFormPreset } from "../features/inquiries/inquiry-forms";
 import { auth } from "../lib/auth/config";
 import { bootstrapBusinessForUser } from "../lib/auth/business-bootstrap";
@@ -21,21 +22,26 @@ import {
   businessInquiryForms,
   businessMembers,
   businesses,
+  workspaceMembers,
+  workspaces,
 } from "../lib/db/schema";
 import { env } from "../lib/env";
+import type { WorkspacePlan } from "../lib/plans/plans";
 
 type DemoUser = {
   id: string;
   email: string;
   name: string;
+  plan: WorkspacePlan;
 };
 
 type DemoBusiness = {
   key: string;
   id: string;
-  kind: "primary" | "managed";
+  kind: "primary" | "secondary";
   name: string;
   slug: string;
+  businessType: BusinessType;
   defaultInquiryFormId: string;
   quoteNumberStart: number;
   forms: Record<
@@ -79,7 +85,7 @@ type DemoFormDefinition = {
 
 type DemoBusinessDefinition = {
   key: string;
-  kind: "primary" | "managed";
+  kind: "primary" | "secondary";
   name: string;
   slug: string;
   businessType: BusinessType;
@@ -161,612 +167,198 @@ type BusinessSeedCounts = {
   quoteItems: number;
 };
 
-const demoConfig = {
-  ownerName: getSeedValue("DEMO_OWNER_NAME", "Morgan Lee"),
-  ownerEmail: getSeedValue("DEMO_OWNER_EMAIL", "demo@requo.local").toLowerCase(),
-  ownerPassword: getSeedValue("DEMO_OWNER_PASSWORD", "ChangeMe123456!"),
-  businessName: getSeedValue("DEMO_BUSINESS_NAME", "BrightSide Print Studio"),
-  businessSlug: getSeedValue(
-    "DEMO_BUSINESS_SLUG",
-    "brightside-print-studio",
-  ),
+type PlanUserConfig = {
+  name: string;
+  email: string;
+  plan: WorkspacePlan;
+  businessName: string;
+  businessSlug: string;
+  businessType: BusinessType;
+  hasSecondaryBusiness: boolean;
 };
 
-const demoBusinessDefinitions: DemoBusinessDefinition[] = [
+const DEFAULT_PASSWORD = "ChangeMe123456!";
+
+const planUserConfigs: PlanUserConfig[] = [
   {
-    key: "primary",
-    kind: "primary",
-    name: demoConfig.businessName,
-    slug: demoConfig.businessSlug,
+    name: "Free User",
+    email: "free@requo.local",
+    plan: "free",
+    businessName: "FreeBiz Print Services",
+    businessSlug: "freebiz-print-services",
     businessType: "print_signage",
-    shortDescription:
-      "Neighborhood print production for storefront graphics, menus, flyers, and event materials.",
-    inquiryHeadline:
-      "Tell us what you need printed and we will turn it into a clean quote.",
-    emailSignatureLines: [
-      demoConfig.ownerName,
-      demoConfig.businessName,
-      demoConfig.ownerEmail,
-      "Same-week rush windows available when files are ready.",
-    ],
-    defaultQuoteNotes:
-      "Prices include standard production. Installation, delivery, and rush changes are quoted separately when needed.",
-    aiTonePreference: "warm",
-    defaultCurrency: "USD",
-    inquiryCount: 220,
-    quoteNumberStart: 2001,
-    forms: [
-      {
-        key: "project",
-        name: "Project request",
-        slug: "project-request",
-        businessType: "print_signage",
-        isDefault: true,
-        distributionWeight: 50,
-        serviceCategories: [
-          "Window graphics",
-          "Event signage",
-          "Menu boards",
-          "Trade show kits",
-          "Lobby graphics",
-        ],
-        subjectTemplates: [
-          "{category} request for {company}",
-          "Need pricing on {category}",
-          "{company} needs {category}",
-        ],
-        detailTemplates: [
-          "We need {category} for an upcoming launch and want pricing, material guidance, and timing.",
-          "Please scope {category} for {company}. Files are partly ready and we want help confirming print specs.",
-          "Looking for a quote on {category} with practical recommendations on finishes, install, and lead time.",
-        ],
-        budgetOptions: ["$750-$1,500", "$1,500-$3,000", "$3,000+", null],
-      },
-      {
-        key: "reorders",
-        name: "Reorder request",
-        slug: "reorder-request",
-        businessType: "print_signage",
-        isDefault: false,
-        distributionWeight: 30,
-        serviceCategories: [
-          "Flyers",
-          "Brochures",
-          "Business cards",
-          "Labels & stickers",
-          "Postcards",
-        ],
-        subjectTemplates: [
-          "Reorder quote for {category}",
-          "{company} reorder for {category}",
-          "Need a repeat run of {category}",
-        ],
-        detailTemplates: [
-          "This is a repeat order for {category}. Please match the last run and confirm current turnaround.",
-          "We need a fresh quote for {category} with updated quantities and the same finish as our previous order.",
-          "Please price a fast reorder of {category} and flag any file or minimum-order changes we should know about.",
-        ],
-        budgetOptions: ["$250-$500", "$500-$1,000", "$1,000-$2,500", null],
-      },
-      {
-        key: "install",
-        name: "Install request",
-        slug: "install-request",
-        businessType: "print_signage",
-        isDefault: false,
-        distributionWeight: 20,
-        serviceCategories: [
-          "Window vinyl install",
-          "Wayfinding signs",
-          "Wall graphics",
-          "Door decals",
-          "Exterior banner install",
-        ],
-        subjectTemplates: [
-          "Need a quote for {category}",
-          "{company} install scope for {category}",
-          "Help with {category} production and install",
-        ],
-        detailTemplates: [
-          "Need help quoting {category} with site install and a realistic scheduling window.",
-          "Please estimate {category}. We already have measurements but need production and install coordinated.",
-          "Looking for a quote on {category} with hardware, labor, and cleanup included.",
-        ],
-        budgetOptions: ["$1,000-$2,500", "$2,500-$5,000", "$5,000+", null],
-      },
-    ],
+    hasSecondaryBusiness: false,
   },
   {
-    key: "northline",
-    kind: "managed",
-    name: "Northline Home Services",
-    slug: "northline-home-services",
-    businessType: "contractor_home_improvement",
-    shortDescription:
-      "Reliable repair, install, and recurring maintenance work for homes and small property portfolios.",
-    inquiryHeadline:
-      "Describe the work, urgency, and site details and we will scope the right next step.",
-    emailSignatureLines: [
-      demoConfig.ownerName,
-      "Northline Home Services",
-      demoConfig.ownerEmail,
-      "Licensed field support with clear windows and practical estimates.",
-    ],
-    defaultQuoteNotes:
-      "Estimates cover listed labor and standard materials. Permit work, haul-away, and after-hours service are quoted separately when required.",
-    aiTonePreference: "direct",
-    defaultCurrency: "USD",
-    inquiryCount: 190,
-    quoteNumberStart: 3001,
-    forms: [
-      {
-        key: "service",
-        name: "Service request",
-        slug: "service-request",
-        businessType: "contractor_home_improvement",
-        isDefault: true,
-        distributionWeight: 50,
-        serviceCategories: [
-          "Water heater replacement",
-          "HVAC tune-up",
-          "Electrical troubleshooting",
-          "Drywall repair",
-          "Fixture install",
-        ],
-        subjectTemplates: [
-          "{category} request for {company}",
-          "Need help with {category}",
-          "{company} needs a quote for {category}",
-        ],
-        detailTemplates: [
-          "We need help with {category} and want a practical scope, timing, and rough cost range.",
-          "Please quote {category} for {company}. Access is straightforward and we can share photos before scheduling.",
-          "Looking for a clear estimate on {category}, including labor, materials, and the soonest available visit.",
-        ],
-        budgetOptions: ["$250-$750", "$750-$1,500", "$1,500-$3,500", null],
-      },
-      {
-        key: "maintenance",
-        name: "Maintenance plan request",
-        slug: "maintenance-plan-request",
-        businessType: "contractor_home_improvement",
-        isDefault: false,
-        distributionWeight: 25,
-        serviceCategories: [
-          "Seasonal inspection",
-          "Preventive maintenance",
-          "Rental turnover checklist",
-          "Recurring handyman visits",
-        ],
-        subjectTemplates: [
-          "{company} recurring support request",
-          "Looking for a quote on {category}",
-          "Maintenance pricing for {category}",
-        ],
-        detailTemplates: [
-          "We are evaluating ongoing support and need pricing for {category} with a reliable response window.",
-          "Please quote {category} for a property that needs recurring visits and simple reporting after each visit.",
-          "Looking for a maintenance option around {category} with practical scheduling and clear inclusions.",
-        ],
-        budgetOptions: ["$300-$900", "$900-$1,800", "$1,800+", null],
-      },
-      {
-        key: "emergency",
-        name: "After-hours repair",
-        slug: "after-hours-repair",
-        businessType: "contractor_home_improvement",
-        isDefault: false,
-        distributionWeight: 25,
-        serviceCategories: [
-          "Leak investigation",
-          "Breaker issue",
-          "No-heat call",
-          "Urgent lock repair",
-        ],
-        subjectTemplates: [
-          "Urgent help needed for {category}",
-          "{company} after-hours request",
-          "Need a rapid quote for {category}",
-        ],
-        detailTemplates: [
-          "This is time-sensitive. We need help with {category} and want to confirm response time and emergency pricing.",
-          "Please quote {category}. We can share photos now and arrange access immediately if needed.",
-          "Looking for urgent support on {category} with a realistic arrival window and next-step guidance.",
-        ],
-        budgetOptions: ["$250-$500", "$500-$1,000", "$1,000+", null],
-      },
-    ],
+    name: "Pro User",
+    email: "pro@requo.local",
+    plan: "pro",
+    businessName: "ProPrint Studio",
+    businessSlug: "proprint-studio",
+    businessType: "print_signage",
+    hasSecondaryBusiness: false,
   },
   {
-    key: "summit",
-    kind: "managed",
-    name: "Summit Creative Studio",
-    slug: "summit-creative-studio",
-    businessType: "creative_marketing_services",
-    shortDescription:
-      "Brand, design, and launch support for small teams that need calm project delivery and practical creative ops.",
-    inquiryHeadline:
-      "Share the brief, goals, and timeline and we will shape the right creative scope.",
-    emailSignatureLines: [
-      demoConfig.ownerName,
-      "Summit Creative Studio",
-      demoConfig.ownerEmail,
-      "Brand systems, launch design, and retained creative support.",
-    ],
-    defaultQuoteNotes:
-      "Quotes include listed concepting, production, and revision rounds. Strategy workshops, extra revision cycles, and out-of-scope requests are quoted separately.",
-    aiTonePreference: "balanced",
-    defaultCurrency: "USD",
-    inquiryCount: 170,
-    quoteNumberStart: 4001,
-    forms: [
-      {
-        key: "brief",
-        name: "Project brief",
-        slug: "project-brief",
-        businessType: "creative_marketing_services",
-        isDefault: true,
-        distributionWeight: 45,
-        serviceCategories: [
-          "Brand identity refresh",
-          "Launch campaign",
-          "Sales deck design",
-          "Packaging concept",
-          "Website copy and layout",
-        ],
-        subjectTemplates: [
-          "{company} brief for {category}",
-          "Need a proposal for {category}",
-          "{category} support request",
-        ],
-        detailTemplates: [
-          "We need support on {category} and want a scoped proposal with timeline, deliverables, and revision expectations.",
-          "Please quote {category} for {company}. We have a rough brief and need help tightening the approach.",
-          "Looking for a calm, production-ready quote on {category} with clear phases and handoff expectations.",
-        ],
-        budgetOptions: ["$1,000-$3,000", "$3,000-$7,500", "$7,500+", null],
-      },
-      {
-        key: "retainer",
-        name: "Retainer inquiry",
-        slug: "retainer-inquiry",
-        businessType: "creative_marketing_services",
-        isDefault: false,
-        distributionWeight: 30,
-        serviceCategories: [
-          "Monthly design support",
-          "Campaign iteration",
-          "Creative operations help",
-          "Content production support",
-        ],
-        subjectTemplates: [
-          "{company} retainer request",
-          "Ongoing support for {category}",
-          "Need monthly help with {category}",
-        ],
-        detailTemplates: [
-          "We are looking for ongoing support around {category} and want pricing that reflects a steady monthly cadence.",
-          "Please quote {category} with a retainer structure, expected turnaround, and communication rhythm.",
-          "Looking for continuous help on {category} with a realistic scope and priority SLA.",
-        ],
-        budgetOptions: ["$1,500-$3,500", "$3,500-$6,000", "$6,000+", null],
-      },
-      {
-        key: "web",
-        name: "Website refresh",
-        slug: "website-refresh",
-        businessType: "creative_marketing_services",
-        isDefault: false,
-        distributionWeight: 25,
-        serviceCategories: [
-          "Marketing site refresh",
-          "Landing page sprint",
-          "Conversion copy update",
-          "Design system cleanup",
-        ],
-        subjectTemplates: [
-          "{company} website refresh request",
-          "Need a quote for {category}",
-          "{category} project inquiry",
-        ],
-        detailTemplates: [
-          "We need help with {category} and want a quote that covers design, copy, and implementation guidance.",
-          "Please scope {category} for {company}. We want a practical update that lifts clarity and conversion.",
-          "Looking for pricing on {category} with fast feedback loops and a clean handoff into build.",
-        ],
-        budgetOptions: ["$2,000-$5,000", "$5,000-$10,000", "$10,000+", null],
-      },
-    ],
-  },
-  {
-    key: "ironwood",
-    kind: "managed",
-    name: "Ironwood Custom Fabrication",
-    slug: "ironwood-custom-fabrication",
-    businessType: "fabrication_custom_build",
-    shortDescription:
-      "Custom fabrication, millwork, and built-to-spec production for branded spaces, fixtures, and install-ready components.",
-    inquiryHeadline:
-      "Share the specs, material needs, and drawings and we will turn it into a practical quote.",
-    emailSignatureLines: [
-      demoConfig.ownerName,
-      "Ironwood Custom Fabrication",
-      demoConfig.ownerEmail,
-      "Custom builds, fabrication support, and install-ready production.",
-    ],
-    defaultQuoteNotes:
-      "Quotes cover listed fabrication, standard finishing, and shop handling. Site install, engineering review, freight, and specialty materials are scoped separately when needed.",
-    aiTonePreference: "direct",
-    defaultCurrency: "USD",
-    inquiryCount: 155,
-    quoteNumberStart: 5001,
-    forms: [
-      {
-        key: "quote",
-        name: "Quote request",
-        slug: "quote-request",
-        businessType: "fabrication_custom_build",
-        isDefault: true,
-        distributionWeight: 55,
-        serviceCategories: [
-          "Retail display fabrication",
-          "Custom millwork package",
-          "Metal sign frame build",
-          "Fixture production",
-          "Reception desk build",
-        ],
-        subjectTemplates: [
-          "{company} quote request for {category}",
-          "Need pricing on {category}",
-          "{category} fabrication scope for {company}",
-        ],
-        detailTemplates: [
-          "We need a quote for {category} and want help confirming material, finish, and production timing.",
-          "Please scope {category} for {company}. We can share sketches and dimensions but need practical pricing guidance.",
-          "Looking for a fabrication quote on {category} with clear assumptions around materials, finishing, and install coordination.",
-        ],
-        budgetOptions: ["$2,500-$6,000", "$6,000-$12,000", "$12,000+", null],
-      },
-      {
-        key: "prototype",
-        name: "Prototype request",
-        slug: "prototype-request",
-        businessType: "fabrication_custom_build",
-        isDefault: false,
-        distributionWeight: 25,
-        serviceCategories: [
-          "Prototype enclosure",
-          "Sample display unit",
-          "Custom bracket prototype",
-          "One-off product mockup",
-        ],
-        subjectTemplates: [
-          "{company} prototype inquiry",
-          "Need a quote for {category}",
-          "Prototype support for {category}",
-        ],
-        detailTemplates: [
-          "We want to prototype {category} before moving into a larger run and need pricing plus realistic shop timing.",
-          "Please quote {category} for {company}. This is an early prototype and we may need feedback on the best material path.",
-          "Looking for a practical estimate on {category} with notes on what should change before production.",
-        ],
-        budgetOptions: ["$1,000-$2,500", "$2,500-$5,000", "$5,000+", null],
-      },
-      {
-        key: "install",
-        name: "Install coordination",
-        slug: "install-coordination",
-        businessType: "fabrication_custom_build",
-        isDefault: false,
-        distributionWeight: 20,
-        serviceCategories: [
-          "Fixture install",
-          "Display install",
-          "Site measurement and install",
-          "Final fit-out support",
-        ],
-        subjectTemplates: [
-          "{company} install support for {category}",
-          "Need pricing on {category}",
-          "{category} fabrication and install request",
-        ],
-        detailTemplates: [
-          "Need help pricing {category} with site install and a realistic coordination window.",
-          "Please scope {category}. Production is only part of the job, and we need install handling included.",
-          "Looking for a quote on {category} with site access, install timing, and closeout covered clearly.",
-        ],
-        budgetOptions: ["$3,000-$7,500", "$7,500-$15,000", "$15,000+", null],
-      },
-    ],
-  },
-  {
-    key: "northstar",
-    kind: "managed",
-    name: "Northstar Event Rentals",
-    slug: "northstar-event-rentals",
-    businessType: "event_services_rentals",
-    shortDescription:
-      "Event rentals, setup, and production coordination for brand activations, weddings, and corporate gatherings.",
-    inquiryHeadline:
-      "Tell us the date, venue, and service needs and we will shape a clear event quote.",
-    emailSignatureLines: [
-      demoConfig.ownerName,
-      "Northstar Event Rentals",
-      demoConfig.ownerEmail,
-      "Event rentals, staffing, setup, and calm on-site coordination.",
-    ],
-    defaultQuoteNotes:
-      "Quotes include listed rentals, setup windows, and standard breakdown. Delivery zones, venue restrictions, overtime, and custom sourcing are scoped separately when needed.",
-    aiTonePreference: "warm",
-    defaultCurrency: "USD",
-    inquiryCount: 145,
-    quoteNumberStart: 6001,
-    forms: [
-      {
-        key: "event",
-        name: "Event request",
-        slug: "event-request",
-        businessType: "event_services_rentals",
-        isDefault: true,
-        distributionWeight: 50,
-        serviceCategories: [
-          "Corporate event setup",
-          "Wedding rentals",
-          "Brand activation support",
-          "Private dinner production",
-          "Conference lounge package",
-        ],
-        subjectTemplates: [
-          "{company} event request for {category}",
-          "Need pricing on {category}",
-          "{category} quote request",
-        ],
-        detailTemplates: [
-          "We need help with {category} and want pricing for rentals, setup, and timing in one clean quote.",
-          "Please scope {category} for {company}. We have a venue and rough guest count but need help locking the service mix.",
-          "Looking for a clear estimate on {category} with practical notes on delivery, setup, and breakdown.",
-        ],
-        budgetOptions: ["$2,000-$5,000", "$5,000-$10,000", "$10,000+", null],
-      },
-      {
-        key: "wedding",
-        name: "Wedding rentals",
-        slug: "wedding-rentals",
-        businessType: "event_services_rentals",
-        isDefault: false,
-        distributionWeight: 30,
-        serviceCategories: [
-          "Ceremony seating",
-          "Reception table package",
-          "Lounge furniture rental",
-          "Decor and styling support",
-        ],
-        subjectTemplates: [
-          "Wedding quote for {category}",
-          "{company} needs {category}",
-          "Need pricing on {category} for an upcoming wedding",
-        ],
-        detailTemplates: [
-          "Please quote {category} with delivery, setup, and pickup included where possible.",
-          "We are planning a wedding and need practical pricing for {category} with guest count and venue timing in mind.",
-          "Looking for a clean quote on {category}, including what works best for a fast venue turnaround.",
-        ],
-        budgetOptions: ["$1,500-$4,000", "$4,000-$8,000", "$8,000+", null],
-      },
-      {
-        key: "activation",
-        name: "Activation support",
-        slug: "activation-support",
-        businessType: "event_services_rentals",
-        isDefault: false,
-        distributionWeight: 20,
-        serviceCategories: [
-          "Popup launch setup",
-          "Sampling booth package",
-          "Stage and AV support",
-          "Experiential event staffing",
-        ],
-        subjectTemplates: [
-          "{company} activation request",
-          "Need a quote for {category}",
-          "{category} support request",
-        ],
-        detailTemplates: [
-          "We need support for {category} and want a quote that covers setup, staff coordination, and breakdown.",
-          "Please scope {category} for {company}. Timing is tight and we want practical recommendations, not just a rental list.",
-          "Looking for a quote on {category} with a realistic delivery schedule and on-site support plan.",
-        ],
-        budgetOptions: ["$3,000-$7,500", "$7,500-$15,000", "$15,000+", null],
-      },
-    ],
+    name: "Business User",
+    email: "business@requo.local",
+    plan: "business",
+    businessName: "Enterprise Print Co",
+    businessSlug: "enterprise-print-co",
+    businessType: "print_signage",
+    hasSecondaryBusiness: true,
   },
 ];
 
-const primaryBusinessDefinition = demoBusinessDefinitions[0];
-const managedBusinessDefinitions = demoBusinessDefinitions.filter(
-  (definition) => definition.kind === "managed",
-);
+const teamMembers = [
+  {
+    name: "Sarah Manager",
+    email: "business-manager@requo.local",
+    role: "manager" as const,
+  },
+  {
+    name: "Alex Staff",
+    email: "business-staff@requo.local",
+    role: "staff" as const,
+  },
+];
+
+const secondaryBusinessDefinition: DemoBusinessDefinition = {
+  key: "event",
+  kind: "secondary",
+  name: "Enterprise Event Graphics",
+  slug: "enterprise-event-graphics",
+  businessType: "event_services_rentals",
+  shortDescription: "Large-scale event graphics and signage production.",
+  inquiryHeadline: "Tell us about your event and we will quote the graphics.",
+  emailSignatureLines: ["Enterprise Print Co", "Event Graphics Division"],
+  defaultQuoteNotes: "Prices include standard production. Rush orders quoted separately.",
+  aiTonePreference: "warm",
+  defaultCurrency: "USD",
+  inquiryCount: 80,
+  quoteNumberStart: 5001,
+  forms: [
+    {
+      key: "event",
+      name: "Event request",
+      slug: "event-request",
+      businessType: "event_services_rentals",
+      isDefault: true,
+      distributionWeight: 50,
+      serviceCategories: [
+        "Conference banners",
+        "Stage graphics",
+        "Booth signage",
+        "Venue signage",
+      ],
+      subjectTemplates: [
+        "{category} request for {company}",
+        "Need pricing on {category}",
+        "{company} needs {category}",
+      ],
+      detailTemplates: [
+        "We need {category} for an upcoming event and want a complete quote.",
+        "Please quote {category}. We have venue details and need production and install timing.",
+        "Looking for a quote on {category} with clear pricing and turnaround.",
+      ],
+      budgetOptions: ["$1,000-$3,000", "$3,000-$7,500", "$7,500+", null],
+    },
+  ],
+};
 
 const demoInquiryIds = [
-  "demo_inquiry_new_storefront",
-  "demo_inquiry_waiting_flyers",
-  "demo_inquiry_quoted_booth_kit",
-  "demo_inquiry_won_menu_bundle",
-  "demo_inquiry_lost_merch_pack",
-  "demo_inquiry_archived_refile",
-  "demo_inquiry_history_foundry_rebrand",
-] as const;
+  "seed_inquiry_storefront",
+  "seed_inquiry_waiting",
+  "seed_inquiry_quoted",
+  "seed_inquiry_won",
+  "seed_inquiry_lost",
+];
+
+function getDemoInquiryIds(key: string) {
+  return demoInquiryIds.map((id) => `${id}_${key}`);
+}
+
+function getDemoQuoteIds(key: string) {
+  return demoQuoteIds.map((id) => `${id}_${key}`);
+}
+
+function getDemoQuotePublicTokens(key: string) {
+  return demoQuotePublicTokens.map((id) => `${id}_${key}`);
+}
+
+function getDemoQuoteItemIds(key: string) {
+  return demoQuoteItemIds.map((id) => `${id}_${key}`);
+}
+
+function getDemoReplySnippetIds(key: string) {
+  return demoReplySnippetIds.map((id) => `${id}_${key}`);
+}
+
+function getDemoFaqIds(key: string) {
+  return demoFaqIds.map((id) => `${id}_${key}`);
+}
+
+function getDemoNoteIds(key: string) {
+  return demoNoteIds.map((id) => `${id}_${key}`);
+}
+
+function getDemoActivityIds(key: string) {
+  return demoActivityIds.map((id) => `${id}_${key}`);
+}
 
 const demoQuoteIds = [
-  "demo_quote_draft_1001",
-  "demo_quote_sent_1002",
-  "demo_quote_accepted_1003",
-  "demo_quote_rejected_1004",
-  "demo_quote_expired_1005",
-  "demo_quote_history_0998",
+  "seed_quote_draft_1001",
+  "seed_quote_sent_1002",
+  "seed_quote_accepted_1003",
+  "seed_quote_rejected_1004",
+  "seed_quote_expired_1005",
 ] as const;
 
 const demoQuotePublicTokens = [
-  "demoquote1001drafttoken",
-  getSeedValue("DEMO_QUOTE_PUBLIC_TOKEN", "demoquote1002senttoken"),
-  "demoquote1003acceptedtoken",
-  "demoquote1004rejectedtoken",
-  getSeedValue("DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN", "demoquote1005expiredtoken"),
-  "demoquote0998historytoken",
+  "seed_quote_1001_draft_token",
+  "seed_quote_1002_sent_token",
+  "seed_quote_1003_accepted_token",
+  "seed_quote_1004_rejected_token",
+  "seed_quote_1005_expired_token",
 ] as const;
 
 const demoQuoteItemIds = [
-  "demo_quote_item_1001_a",
-  "demo_quote_item_1001_b",
-  "demo_quote_item_1002_a",
-  "demo_quote_item_1002_b",
-  "demo_quote_item_1003_a",
-  "demo_quote_item_1003_b",
-  "demo_quote_item_1004_a",
-  "demo_quote_item_1004_b",
-  "demo_quote_item_1005_a",
-  "demo_quote_item_1005_b",
-  "demo_quote_item_0998_a",
-  "demo_quote_item_0998_b",
+  "seed_quote_item_1001_a",
+  "seed_quote_item_1001_b",
+  "seed_quote_item_1002_a",
+  "seed_quote_item_1002_b",
+  "seed_quote_item_1003_a",
+  "seed_quote_item_1003_b",
+  "seed_quote_item_1004_a",
+  "seed_quote_item_1004_b",
+  "seed_quote_item_1005_a",
+  "seed_quote_item_1005_b",
 ] as const;
 
 const demoReplySnippetIds = [
-  "demo_reply_snippet_dimensions",
-  "demo_reply_snippet_timeline",
+  "seed_reply_snippet_dimensions",
+  "seed_reply_snippet_timeline",
 ] as const;
 
 const demoFaqIds = [
-  "demo_faq_turnaround",
-  "demo_faq_file_types",
-  "demo_faq_revisions",
-  "demo_faq_pickup_shipping",
+  "seed_faq_turnaround",
+  "seed_faq_file_types",
 ] as const;
 
 const demoNoteIds = [
-  "demo_note_storefront",
-  "demo_note_flyers",
-  "demo_note_booth_kit",
-  "demo_note_menu_bundle",
+  "seed_note_storefront",
+  "seed_note_flyers",
 ] as const;
 
 const demoActivityIds = [
-  "demo_activity_inquiry_new",
-  "demo_activity_inquiry_waiting",
-  "demo_activity_inquiry_quoted",
-  "demo_activity_inquiry_won",
-  "demo_activity_inquiry_lost",
-  "demo_activity_quote_created_1001",
-  "demo_activity_quote_created_1002",
-  "demo_activity_quote_sent_1002",
-  "demo_activity_quote_created_1003",
-  "demo_activity_quote_accepted_1003",
-  "demo_activity_quote_created_1004",
-  "demo_activity_quote_rejected_1004",
-  "demo_activity_quote_created_1005",
-  "demo_activity_inquiry_history_foundry",
-  "demo_activity_quote_created_0998",
-  "demo_activity_quote_post_acceptance_0998",
-  "demo_activity_business_seeded",
+  "seed_activity_inquiry_new",
+  "seed_activity_quote_created_1001",
+  "seed_activity_quote_created_1002",
+  "seed_activity_quote_sent_1002",
+  "seed_activity_quote_created_1003",
+  "seed_activity_quote_accepted_1003",
+  "seed_activity_quote_sent_1003",
+  "seed_activity_quote_status_changed",
+  "seed_activity_business_seeded",
 ] as const;
 
 const inquiryStatusWeights: Array<{
@@ -1024,7 +616,7 @@ async function getAvailableSlug(baseSlug: string, currentBusinessId?: string) {
   }
 }
 
-async function ensureDemoUser(): Promise<DemoUser> {
+async function ensurePlanUser(config: PlanUserConfig): Promise<DemoUser> {
   let [existingUser] = await db
     .select({
       id: user.id,
@@ -1032,15 +624,15 @@ async function ensureDemoUser(): Promise<DemoUser> {
       name: user.name,
     })
     .from(user)
-    .where(eq(user.email, demoConfig.ownerEmail))
+    .where(eq(user.email, config.email.toLowerCase()))
     .limit(1);
 
   if (!existingUser) {
     await auth.api.signUpEmail({
       body: {
-        name: demoConfig.ownerName,
-        email: demoConfig.ownerEmail,
-        password: demoConfig.ownerPassword,
+        name: config.name,
+        email: config.email.toLowerCase(),
+        password: DEFAULT_PASSWORD,
       },
     });
 
@@ -1051,12 +643,12 @@ async function ensureDemoUser(): Promise<DemoUser> {
         name: user.name,
       })
       .from(user)
-      .where(eq(user.email, demoConfig.ownerEmail))
+      .where(eq(user.email, config.email.toLowerCase()))
       .limit(1);
   }
 
   if (!existingUser) {
-    throw new Error("Unable to create or load the demo owner user.");
+    throw new Error(`Unable to create or load the user for ${config.email}.`);
   }
 
   const now = new Date();
@@ -1064,7 +656,7 @@ async function ensureDemoUser(): Promise<DemoUser> {
   await db
     .update(user)
     .set({
-      name: demoConfig.ownerName,
+      name: config.name,
       updatedAt: now,
     })
     .where(eq(user.id, existingUser.id));
@@ -1073,28 +665,112 @@ async function ensureDemoUser(): Promise<DemoUser> {
     .insert(profiles)
     .values({
       userId: existingUser.id,
-      fullName: demoConfig.ownerName,
+      fullName: config.name,
+      onboardingCompletedAt: now,
       createdAt: now,
       updatedAt: now,
     })
     .onConflictDoUpdate({
       target: profiles.userId,
       set: {
-        fullName: demoConfig.ownerName,
+        fullName: config.name,
+        onboardingCompletedAt: now,
         updatedAt: now,
       },
     });
 
   await bootstrapBusinessForUser({
     id: existingUser.id,
-    name: demoConfig.ownerName,
-    email: demoConfig.ownerEmail,
-  });
+    name: config.name,
+    email: config.email,
+  }, { plan: config.plan });
+
+  await db
+    .update(workspaces)
+    .set({ plan: config.plan })
+    .where(eq(workspaces.ownerUserId, existingUser.id));
 
   return {
     id: existingUser.id,
     email: existingUser.email,
-    name: demoConfig.ownerName,
+    name: config.name,
+    plan: config.plan,
+  };
+}
+
+async function ensureTeamMember(
+  ownerUser: DemoUser,
+  name: string,
+  email: string,
+  role: "manager" | "staff",
+): Promise<DemoUser> {
+  let [existingUser] = await db
+    .select({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    })
+    .from(user)
+    .where(eq(user.email, email.toLowerCase()))
+    .limit(1);
+
+  if (!existingUser) {
+    await auth.api.signUpEmail({
+      body: {
+        name,
+        email: email.toLowerCase(),
+        password: DEFAULT_PASSWORD,
+      },
+    });
+
+    [existingUser] = await db
+      .select({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      })
+      .from(user)
+      .where(eq(user.email, email.toLowerCase()))
+      .limit(1);
+  }
+
+  if (!existingUser) {
+    throw new Error(`Unable to create or load the team member for ${email}.`);
+  }
+
+  const now = new Date();
+
+  await db
+    .update(user)
+    .set({
+      name,
+      updatedAt: now,
+    })
+    .where(eq(user.id, existingUser.id));
+
+  await db
+    .insert(profiles)
+    .values({
+      userId: existingUser.id,
+      fullName: name,
+      onboardingCompletedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: profiles.userId,
+      set: {
+        fullName: name,
+        onboardingCompletedAt: now,
+        updatedAt: now,
+      },
+    });
+
+  return {
+    id: existingUser.id,
+    email: existingUser.email,
+    name,
+    plan: ownerUser.plan,
   };
 }
 
@@ -1204,7 +880,10 @@ async function syncBusinessForms(
   };
 }
 
-async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
+async function ensurePrimaryBusiness(
+  demoUser: DemoUser,
+  config: PlanUserConfig,
+): Promise<DemoBusiness> {
   const [membership] = await db
     .select({
       businessId: businessMembers.businessId,
@@ -1225,39 +904,38 @@ async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
     throw new Error("The demo owner does not have an owner business.");
   }
 
-  const definition = primaryBusinessDefinition;
   const now = new Date();
-  const slug = await getAvailableSlug(definition.slug, membership.businessId);
+  const slug = await getAvailableSlug(config.businessSlug, membership.businessId);
   const inquiryPreset = createInquiryFormPreset({
-    businessType: definition.businessType,
-    businessName: definition.name,
-    businessShortDescription: definition.shortDescription,
-    legacyInquiryHeadline: definition.inquiryHeadline,
+    businessType: config.businessType,
+    businessName: config.businessName,
+    businessShortDescription: "Professional print services for businesses.",
+    legacyInquiryHeadline: "Tell us what you need printed and we will turn it into a clean quote.",
   });
-  const starterTemplate = getStarterTemplateDefinition(definition.businessType);
+  const starterTemplate = getStarterTemplateDefinition(config.businessType);
 
   await db
     .update(businesses)
     .set({
-      name: definition.name,
+      name: config.businessName,
       slug,
-      businessType: definition.businessType,
-      shortDescription: definition.shortDescription,
+      businessType: config.businessType,
+      shortDescription: "Professional print services for businesses.",
       contactEmail: demoUser.email,
       publicInquiryEnabled: true,
-      inquiryHeadline: definition.inquiryHeadline,
+      inquiryHeadline: "Tell us what you need printed and we will turn it into a clean quote.",
       inquiryFormConfig: inquiryPreset.inquiryFormConfig,
       inquiryPageConfig: inquiryPreset.inquiryPageConfig,
-      defaultEmailSignature: definition.emailSignatureLines.join("\n"),
-      defaultQuoteNotes: definition.defaultQuoteNotes,
+      defaultEmailSignature: `${config.businessName}\n${demoUser.email}`,
+      defaultQuoteNotes: starterTemplate.defaultQuoteNotes ?? "Standard production included.",
       defaultQuoteValidityDays: starterTemplate.defaultQuoteValidityDays,
-      aiTonePreference: definition.aiTonePreference,
+      aiTonePreference: "warm",
       notifyOnNewInquiry: true,
       notifyOnQuoteSent: true,
       notifyOnQuoteResponse: true,
       notifyInAppOnNewInquiry: true,
       notifyInAppOnQuoteResponse: true,
-      defaultCurrency: definition.defaultCurrency,
+      defaultCurrency: "USD",
       updatedAt: now,
     })
     .where(eq(businesses.id, membership.businessId));
@@ -1280,24 +958,116 @@ async function ensureDemoBusiness(demoUser: DemoUser): Promise<DemoBusiness> {
   }
 
   const syncedForms = await syncBusinessForms(
-    definition,
+    {
+      key: "primary",
+      kind: "primary",
+      name: config.businessName,
+      slug,
+      businessType: config.businessType,
+      shortDescription: "Professional print services for businesses.",
+      inquiryHeadline: "Tell us what you need printed.",
+      emailSignatureLines: [config.businessName, demoUser.email],
+      defaultQuoteNotes: "Standard production included.",
+      aiTonePreference: "warm",
+      defaultCurrency: "USD",
+      inquiryCount: 100,
+      quoteNumberStart: 1001,
+      forms: [
+        {
+          key: "project",
+          name: "Project request",
+          slug: "project-request",
+          businessType: config.businessType,
+          isDefault: true,
+          distributionWeight: 50,
+          serviceCategories: [
+            "Window graphics",
+            "Event signage",
+            "Menu boards",
+            "Trade show kits",
+            "Lobby graphics",
+          ],
+          subjectTemplates: [
+            "{category} request for {company}",
+            "Need pricing on {category}",
+            "{company} needs {category}",
+          ],
+          detailTemplates: [
+            "We need {category} for an upcoming launch and want pricing, material guidance, and timing.",
+            "Please scope {category} for {company}. Files are partly ready.",
+            "Looking for a quote on {category} with practical recommendations.",
+          ],
+          budgetOptions: ["$750-$1,500", "$1,500-$3,000", "$3,000+", null],
+        },
+        {
+          key: "reorders",
+          name: "Reorder request",
+          slug: "reorder-request",
+          businessType: config.businessType,
+          isDefault: false,
+          distributionWeight: 30,
+          serviceCategories: [
+            "Flyers",
+            "Brochures",
+            "Business cards",
+            "Labels & stickers",
+            "Postcards",
+          ],
+          subjectTemplates: [
+            "Reorder quote for {category}",
+            "{company} reorder for {category}",
+            "Need a repeat run of {category}",
+          ],
+          detailTemplates: [
+            "This is a repeat order for {category}. Please match the last run.",
+            "We need a fresh quote for {category} with updated quantities.",
+          ],
+          budgetOptions: ["$250-$500", "$500-$1,000", "$1,000-$2,500", null],
+        },
+        {
+          key: "install",
+          name: "Install request",
+          slug: "install-request",
+          businessType: config.businessType,
+          isDefault: false,
+          distributionWeight: 20,
+          serviceCategories: [
+            "Window vinyl install",
+            "Wayfinding signs",
+            "Wall graphics",
+            "Door decals",
+            "Exterior banner install",
+          ],
+          subjectTemplates: [
+            "Need a quote for {category}",
+            "{company} install scope for {category}",
+          ],
+          detailTemplates: [
+            "Need help quoting {category} with site install.",
+            "Please estimate {category} with production and install.",
+          ],
+          budgetOptions: ["$1,000-$2,500", "$2,500-$5,000", "$5,000+", null],
+        },
+      ],
+    },
     membership.businessId,
     defaultForm.id,
   );
 
   return {
-    key: definition.key,
+    key: "primary",
     id: membership.businessId,
-    kind: definition.kind,
-    name: definition.name,
+    kind: "primary",
+    name: config.businessName,
     slug,
+    businessType: config.businessType,
     defaultInquiryFormId: syncedForms.defaultInquiryFormId,
-    quoteNumberStart: definition.quoteNumberStart,
+    quoteNumberStart: 1001,
     forms: syncedForms.forms,
   };
 }
 
-async function ensureManagedBusiness(
+async function ensureSecondaryBusiness(
   demoUser: DemoUser,
   definition: DemoBusinessDefinition,
 ): Promise<DemoBusiness> {
@@ -1317,11 +1087,24 @@ async function ensureManagedBusiness(
   });
   const starterTemplate = getStarterTemplateDefinition(definition.businessType);
 
+  const [workspaceMembership] = await db
+    .select({ workspaceId: workspaceMembers.workspaceId })
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.userId, demoUser.id))
+    .limit(1);
+
+  if (!workspaceMembership) {
+    throw new Error("Demo user has no workspace.");
+  }
+
+  const workspaceId = workspaceMembership.workspaceId;
+
   await db.transaction(async (tx) => {
     if (existingBusiness) {
       await tx
         .update(businesses)
         .set({
+          workspaceId,
           name: definition.name,
           slug,
           businessType: definition.businessType,
@@ -1347,6 +1130,7 @@ async function ensureManagedBusiness(
     } else {
       await tx.insert(businesses).values({
         id: businessId,
+        workspaceId,
         name: definition.name,
         slug,
         businessType: definition.businessType,
@@ -1391,14 +1175,6 @@ async function ensureManagedBusiness(
         createdAt: now,
         updatedAt: now,
       });
-    } else if (existingMembership.role !== "owner") {
-      await tx
-        .update(businessMembers)
-        .set({
-          role: "owner",
-          updatedAt: now,
-        })
-        .where(eq(businessMembers.id, existingMembership.id));
     }
 
     await tx
@@ -1408,7 +1184,7 @@ async function ensureManagedBusiness(
         businessId,
         actorUserId: demoUser.id,
         type: "business.created",
-        summary: `Seed business ${definition.name} is ready for demo data.`,
+        summary: `Seed business ${definition.name} created.`,
         metadata: {
           source: "demo-seed",
         },
@@ -1426,6 +1202,7 @@ async function ensureManagedBusiness(
     kind: definition.kind,
     name: definition.name,
     slug,
+    businessType: definition.businessType,
     defaultInquiryFormId: syncedForms.defaultInquiryFormId,
     quoteNumberStart: definition.quoteNumberStart,
     forms: syncedForms.forms,
@@ -1433,43 +1210,26 @@ async function ensureManagedBusiness(
 }
 
 function generateBulkInquiries(
-  definition: DemoBusinessDefinition,
+  businessKey: string,
   business: DemoBusiness,
-  count = definition.inquiryCount,
+  businessType: BusinessType,
+  count = 30,
 ) {
-  const random = createSeededRandom(`${definition.key}:inquiries`);
-  const forms = definition.forms.map((formDefinition) => {
-    const seededForm = business.forms[formDefinition.key];
-
-    if (!seededForm) {
-      throw new Error(
-        `Business "${definition.key}" is missing the "${formDefinition.key}" form.`,
-      );
-    }
-
-    return {
-      ...formDefinition,
-      id: seededForm.id,
-    };
-  });
+  const random = createSeededRandom(`${businessKey}:inquiries`);
+  const forms = Object.values(business.forms);
   const inquiries: GeneratedInquiryRow[] = [];
 
   for (let index = 0; index < count; index += 1) {
-    const form =
-      pickWeighted(
-        forms.map((formDefinition) => ({
-          item: formDefinition,
-          weight: formDefinition.distributionWeight,
-        })),
-        random,
-      ) ?? forms[0];
+    const form = pickOne(forms, random);
     const firstName = pickOne(customerFirstNames, random);
     const lastName = pickOne(customerLastNames, random);
     const company = `${pickOne(companyPrefixes, random)} ${pickOne(
       companySuffixes,
       random,
     )}`;
-    const serviceCategory = pickOne(form.serviceCategories, random);
+    const serviceCategory = pickOne(form.businessType === "print_signage"
+      ? ["Window graphics", "Event signage", "Menu boards", "Trade show kits", "Flyers"]
+      : ["Conference banners", "Stage graphics", "Booth signage", "Venue signage"], random);
     const status =
       pickWeighted(
         inquiryStatusWeights.map((value) => ({
@@ -1503,28 +1263,27 @@ function generateBulkInquiries(
     inquiries.push({
       id: createSeededId(
         "seed_inquiry",
-        definition.key,
+        businessKey,
         String(index + 1).padStart(4, "0"),
       ),
       businessId: business.id,
       businessInquiryFormId: form.id,
       status,
-      subject: fillTemplate(pickOne(form.subjectTemplates, random), {
-        category: serviceCategory,
-        company: companyLabel,
-      }),
+      subject: `${serviceCategory} request for ${companyLabel}`,
       customerName: `${firstName} ${lastName}`,
       customerEmail,
       customerPhone: chance(random, 0.72) ? formatPhoneNumber(random) : null,
       serviceCategory,
       requestedDeadline,
-      budgetText: pickOne(form.budgetOptions, random),
+      budgetText: pickOne(["$500-$1,000", "$1,000-$2,500", "$2,500+", null], random),
       companyName,
-      details: fillTemplate(pickOne(form.detailTemplates, random), {
-        category: serviceCategory,
-        company: companyLabel,
-      }),
-      source: `demo-seed-generated:${definition.key}`,
+      details: `Looking for a quote on ${serviceCategory.toLowerCase()} for ${companyLabel}.`,
+      submittedFieldSnapshot: {
+        version: 1,
+        businessType: business.businessType,
+        fields: [],
+      } as InquirySubmittedFieldSnapshot,
+      source: `demo-seed-generated:${businessKey}`,
       quoteRequested,
       submittedAt,
       lastRespondedAt,
@@ -1574,14 +1333,15 @@ function getGeneratedQuoteStatus(
 }
 
 function generateBulkQuoteData(
-  definition: DemoBusinessDefinition,
+  businessKey: string,
   business: DemoBusiness,
   inquiryRows: GeneratedInquiryRow[],
+  quoteNumberStart: number,
 ) {
-  const random = createSeededRandom(`${definition.key}:quotes`);
+  const random = createSeededRandom(`${businessKey}:quotes`);
   const quoteRows: GeneratedQuoteRow[] = [];
   const quoteItemRows: GeneratedQuoteItemRow[] = [];
-  let quoteNumber = definition.quoteNumberStart;
+  let quoteNumber = quoteNumberStart;
   let quoteIndex = 1;
 
   for (const inquiry of inquiryRows) {
@@ -1597,7 +1357,7 @@ function generateBulkQuoteData(
 
     const quoteId = createSeededId(
       "seed_quote",
-      definition.key,
+      businessKey,
       String(quoteIndex).padStart(4, "0"),
     );
     const createdAt = clampToNow(
@@ -1636,22 +1396,8 @@ function generateBulkQuoteData(
     const lineItemDescriptions = [
       `${inquiry.serviceCategory} scope`,
       "Planning and coordination",
-      definition.businessType === "creative_marketing_services"
-        ? "Creative production"
-        : definition.businessType === "contractor_home_improvement"
-          ? "Labor and materials"
-          : definition.businessType === "fabrication_custom_build"
-            ? "Fabrication and finishing"
-            : definition.businessType === "event_services_rentals"
-              ? "Setup and event operations"
-          : "Production and execution",
-      definition.businessType === "creative_marketing_services"
-        ? "Revision and handoff"
-        : definition.businessType === "fabrication_custom_build"
-          ? "Installation and fit check"
-          : definition.businessType === "event_services_rentals"
-            ? "Breakdown and post-event support"
-        : "Delivery and quality assurance",
+      "Production and execution",
+      "Delivery and quality assurance",
     ].slice(0, itemCount);
     const lineItems = lineItemDescriptions.map((description, position) => {
       const quantity = position === 0 ? randomInt(random, 1, 5) : 1;
@@ -1663,7 +1409,7 @@ function generateBulkQuoteData(
       return {
         id: createSeededId(
           "seed_quote_item",
-          definition.key,
+          businessKey,
           String(quoteIndex).padStart(4, "0"),
           String(position + 1),
         ),
@@ -1687,19 +1433,10 @@ function generateBulkQuoteData(
       ? randomInt(random, 500, maxDiscount + 1)
       : 0;
     const totalInCents = subtotalInCents - discountInCents;
-    const defaultValidUntil = addDays(
+    const validUntilDate = addDays(
       sentAt ?? createdAt,
       randomInt(random, 7, 21),
     );
-    const validUntilDate =
-      quoteStatus === "expired"
-        ? (() => {
-            const expiredDate = addDays(createdAt, randomInt(random, 5, 12));
-            return expiredDate.getTime() > Date.now()
-              ? daysAgo(randomInt(random, 2, 30), 12, 0)
-              : expiredDate;
-          })()
-        : defaultValidUntil;
     const customerResponseMessage =
       quoteStatus === "accepted"
         ? pickOne(generatedQuoteResponseMessages.accepted, random)
@@ -1715,24 +1452,11 @@ function generateBulkQuoteData(
       inquiryId: inquiry.id,
       status: quoteStatus,
       quoteNumber: `Q-${quoteNumber}`,
-      publicToken: createSeededId("seed_token", definition.key, String(quoteNumber)),
-      title: fillTemplate(
-        pickOne(
-          [
-            "{category} quote",
-            "Estimate for {company}",
-            "{company} {category} proposal",
-          ],
-          random,
-        ),
-        {
-          category: inquiry.serviceCategory,
-          company: inquiry.companyName ?? inquiry.customerName,
-        },
-      ),
+      publicToken: createSeededId("seed_token", businessKey, String(quoteNumber)),
+      title: `${inquiry.serviceCategory} quote`,
       customerName: inquiry.customerName,
       customerEmail: inquiry.customerEmail,
-      currency: definition.defaultCurrency,
+      currency: "USD",
       notes: `Generated sample quote for ${inquiry.serviceCategory.toLowerCase()}.`,
       subtotalInCents,
       discountInCents,
@@ -1760,14 +1484,16 @@ function generateBulkQuoteData(
 }
 
 function createGeneratedDataset(
-  definition: DemoBusinessDefinition,
+  businessKey: string,
   business: DemoBusiness,
+  quoteNumberStart: number,
 ) {
-  const inquiries = generateBulkInquiries(definition, business);
+  const inquiries = generateBulkInquiries(businessKey, business, business.businessType);
   const { quotes, quoteItems } = generateBulkQuoteData(
-    definition,
+    businessKey,
     business,
     inquiries,
+    quoteNumberStart,
   );
 
   return {
@@ -1780,6 +1506,7 @@ function createGeneratedDataset(
 async function seedBusinessData(
   demoUser: DemoUser,
   business: DemoBusiness,
+  businessKey: string,
 ): Promise<BusinessSeedCounts> {
   const noteTimestamps = {
     storefront: daysAgo(1, 14, 20),
@@ -1792,9 +1519,18 @@ async function seedBusinessData(
     business.forms.reorders?.id ?? business.defaultInquiryFormId;
   const installFormId = business.forms.install?.id ?? business.defaultInquiryFormId;
 
+  const keyedInquiryIds = getDemoInquiryIds(businessKey);
+  const keyedQuoteIds = getDemoQuoteIds(businessKey);
+  const keyedQuotePublicTokens = getDemoQuotePublicTokens(businessKey);
+  const keyedQuoteItemIds = getDemoQuoteItemIds(businessKey);
+  const keyedReplySnippetIds = getDemoReplySnippetIds(businessKey);
+  const keyedFaqIds = getDemoFaqIds(businessKey);
+  const keyedNoteIds = getDemoNoteIds(businessKey);
+  const keyedActivityIds = getDemoActivityIds(businessKey);
+
   const inquiryRows = [
     {
-      id: demoInquiryIds[0],
+      id: keyedInquiryIds[0],
       businessId: business.id,
       businessInquiryFormId: installFormId,
       status: "new" as const,
@@ -1807,7 +1543,12 @@ async function seedBusinessData(
       budgetText: "$1,200 to $1,600",
       companyName: "Park & Pine",
       details:
-        "We need front window vinyl for a weekend store refresh. Two large panels plus door hours decal. Looking for install timing and file setup guidance.",
+        "We need front window vinyl for a weekend store refresh. Two large panels plus door hours decal.",
+      submittedFieldSnapshot: {
+        version: 1,
+        businessType: "print_signage",
+        fields: [],
+      },
       source: "demo-seed",
       quoteRequested: true,
       submittedAt: daysAgo(1, 9, 15),
@@ -1816,235 +1557,146 @@ async function seedBusinessData(
       updatedAt: daysAgo(1, 9, 15),
     },
     {
-      id: demoInquiryIds[1],
-      businessId: business.id,
-      businessInquiryFormId: reorderFormId,
-      status: "waiting" as const,
-      subject: "Restaurant flyer drop",
-      customerName: "Daniel Kim",
-      customerEmail: "daniel@northforkkitchen.com",
-      customerPhone: "(415) 555-0177",
-      serviceCategory: "Flyers",
-      requestedDeadline: toIsoDate(daysFromNow(10)),
-      budgetText: "$300 to $500",
-      companyName: "North Fork Kitchen",
-      details:
-        "Need 2,000 promotional flyers for a new lunch menu. We can provide art but may need help tightening the print-ready file. Waiting on exact paper preference.",
-      source: "demo-seed",
-      quoteRequested: true,
-      submittedAt: daysAgo(3, 10, 30),
-      lastRespondedAt: daysAgo(3, 12, 10),
-      createdAt: daysAgo(3, 10, 30),
-      updatedAt: daysAgo(3, 12, 10),
-    },
-    {
-      id: demoInquiryIds[2],
+      id: keyedInquiryIds[1],
       businessId: business.id,
       businessInquiryFormId: projectFormId,
+      status: "waiting" as const,
+      subject: "Business flyers reprint",
+      customerName: "Noah Rivera",
+      customerEmail: "noah@cedarcove.co",
+      customerPhone: "(415) 555-0198",
+      serviceCategory: "Flyers & brochures",
+      requestedDeadline: toIsoDate(daysFromNow(12)),
+      budgetText: "$800 to $1,200",
+      companyName: "Cedar Cove Winery",
+      details:
+        "Need 2,000 flyers for an upcoming wine tasting event. Glossy cardstock, full color.",
+      submittedFieldSnapshot: {
+        version: 1,
+        businessType: "print_signage",
+        fields: [],
+      },
+      source: "demo-seed",
+      quoteRequested: true,
+      submittedAt: daysAgo(3, 11, 40),
+      lastRespondedAt: daysAgo(2, 14, 0),
+      createdAt: daysAgo(3, 11, 40),
+      updatedAt: daysAgo(2, 14, 0),
+    },
+    {
+      id: keyedInquiryIds[2],
+      businessId: business.id,
+      businessInquiryFormId: reorderFormId,
       status: "quoted" as const,
       subject: "Trade show booth kit",
       customerName: "Priya Shah",
       customerEmail: "priya@foundrylabs.io",
-      customerPhone: "(415) 555-0112",
-      serviceCategory: "Event signage",
-      requestedDeadline: toIsoDate(daysFromNow(14)),
-      budgetText: "$2,500+",
+      customerPhone: "(650) 555-0177",
+      serviceCategory: "Trade show displays",
+      requestedDeadline: toIsoDate(daysFromNow(20)),
+      budgetText: "$2,500 to $3,500",
       companyName: "Foundry Labs",
       details:
-        "Need retractable banners, a branded table throw, and mounted foam board signs for a booth in two weeks. We already sent brand files and dimensions.",
+        "Full booth package needed for tech conference. Retractable banner, table throw, and wall graphics.",
+      submittedFieldSnapshot: {
+        version: 1,
+        businessType: "print_signage",
+        fields: [],
+      },
       source: "demo-seed",
       quoteRequested: true,
-      submittedAt: daysAgo(6, 8, 20),
+      submittedAt: daysAgo(6, 15, 0),
       lastRespondedAt: daysAgo(5, 15, 0),
-      createdAt: daysAgo(6, 8, 20),
+      createdAt: daysAgo(6, 15, 0),
       updatedAt: daysAgo(5, 15, 0),
     },
     {
-      id: demoInquiryIds[3],
-      businessId: business.id,
-      businessInquiryFormId: projectFormId,
-      status: "won" as const,
-      subject: "Cafe menu board refresh",
-      customerName: "Maya Chen",
-      customerEmail: "maya@harborroast.com",
-      customerPhone: "(415) 555-0109",
-      serviceCategory: "Menus",
-      requestedDeadline: toIsoDate(daysFromNow(4)),
-      budgetText: "$800 to $1,100",
-      companyName: "Harbor Roast",
-      details:
-        "Refreshing indoor menu boards and counter cards for a seasonal launch. Need help confirming substrate choices for a matte, easy-clean finish.",
-      source: "demo-seed",
-      quoteRequested: true,
-      submittedAt: daysAgo(10, 9, 5),
-      lastRespondedAt: daysAgo(8, 16, 35),
-      createdAt: daysAgo(10, 9, 5),
-      updatedAt: daysAgo(8, 16, 35),
-    },
-    {
-      id: demoInquiryIds[4],
-      businessId: business.id,
-      businessInquiryFormId: reorderFormId,
-      status: "lost" as const,
-      subject: "Team merch reorder",
-      customerName: "Noah Bennett",
-      customerEmail: "noah@rallyfit.co",
-      customerPhone: null,
-      serviceCategory: "Branded merchandise",
-      requestedDeadline: null,
-      budgetText: "$1,500",
-      companyName: "RallyFit",
-      details:
-        "Requested a reorder of staff t-shirts and tote bags for a spring launch. Needed size breakdowns and final garment color approval before production.",
-      source: "demo-seed",
-      quoteRequested: true,
-      submittedAt: daysAgo(17, 11, 25),
-      lastRespondedAt: daysAgo(15, 14, 45),
-      createdAt: daysAgo(17, 11, 25),
-      updatedAt: daysAgo(15, 14, 45),
-    },
-    {
-      id: demoInquiryIds[5],
-      businessId: business.id,
-      businessInquiryFormId: reorderFormId,
-      status: "archived" as const,
-      subject: "Old menu reprint request",
-      customerName: "Hector Ruiz",
-      customerEmail: "hector@elmstreetdeli.com",
-      customerPhone: "(415) 555-0189",
-      serviceCategory: "Reprints",
-      requestedDeadline: null,
-      budgetText: null,
-      companyName: "Elm Street Deli",
-      details:
-        "Requested a small menu reprint but stopped responding after the first reply. Keeping the record for reference only.",
-      source: "demo-seed",
-      quoteRequested: true,
-      submittedAt: daysAgo(28, 10, 10),
-      lastRespondedAt: daysAgo(27, 13, 0),
-      createdAt: daysAgo(28, 10, 10),
-      updatedAt: daysAgo(27, 13, 0),
-    },
-    {
-      id: demoInquiryIds[6],
+      id: keyedInquiryIds[3],
       businessId: business.id,
       businessInquiryFormId: installFormId,
       status: "won" as const,
-      subject: "Foundry Labs rebrand signage",
-      customerName: "Priya Shah",
-      customerEmail: "priya@foundrylabs.io",
-      customerPhone: "(415) 555-0112",
-      serviceCategory: "Office signage",
-      requestedDeadline: null,
-      budgetText: "$3,000+",
-      companyName: "Foundry Labs",
+      subject: "Menu board package",
+      customerName: "Maya Chen",
+      customerEmail: "maya@harborroast.com",
+      customerPhone: "(415) 555-0133",
+      serviceCategory: "Interior signage",
+      requestedDeadline: toIsoDate(daysFromNow(10)),
+      budgetText: "$900 to $1,200",
+      companyName: "Harbor Roast Coffee",
       details:
-        "Previous project for a small office rebrand package including lobby graphics and door signs. Completed successfully last quarter.",
+        "Custom menu boards for our new location. Two large boards with chalkboard style design.",
+      submittedFieldSnapshot: {
+        version: 1,
+        businessType: "print_signage",
+        fields: [],
+      },
       source: "demo-seed",
       quoteRequested: true,
-      submittedAt: daysAgo(42, 9, 20),
-      lastRespondedAt: daysAgo(35, 15, 30),
-      createdAt: daysAgo(42, 9, 20),
-      updatedAt: daysAgo(35, 15, 30),
+      submittedAt: daysAgo(10, 10, 0),
+      lastRespondedAt: daysAgo(9, 10, 0),
+      createdAt: daysAgo(10, 10, 0),
+      updatedAt: daysAgo(8, 16, 35),
     },
   ];
 
   const noteRows = [
     {
-      id: demoNoteIds[0],
+      id: keyedNoteIds[0],
       businessId: business.id,
-      inquiryId: demoInquiryIds[0],
+      inquiryId: keyedInquiryIds[0],
       authorUserId: demoUser.id,
-      body: "Customer sounds ready to move quickly. Ask for window dimensions and confirm whether installation should be quoted separately.",
+      body: "Customer sounds ready to move quickly. Ask for window dimensions and confirm install timing.",
       createdAt: noteTimestamps.storefront,
       updatedAt: noteTimestamps.storefront,
     },
     {
-      id: demoNoteIds[1],
+      id: keyedNoteIds[1],
       businessId: business.id,
-      inquiryId: demoInquiryIds[1],
+      inquiryId: keyedInquiryIds[1],
       authorUserId: demoUser.id,
       body: "Waiting on paper stock preference and whether they want local pickup or courier delivery.",
       createdAt: noteTimestamps.flyers,
       updatedAt: noteTimestamps.flyers,
     },
-    {
-      id: demoNoteIds[2],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[2],
-      authorUserId: demoUser.id,
-      body: "Files received. Banner hardware options might change cost range, so keep the reply specific but do not lock pricing until finish options are confirmed.",
-      createdAt: noteTimestamps.boothKit,
-      updatedAt: noteTimestamps.boothKit,
-    },
-    {
-      id: demoNoteIds[3],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[3],
-      authorUserId: demoUser.id,
-      body: "Customer approved the matte rigid board recommendation and requested install-ready mounting hardware.",
-      createdAt: noteTimestamps.menuBundle,
-      updatedAt: noteTimestamps.menuBundle,
-    },
   ];
 
   const faqRows = [
     {
-      id: demoFaqIds[0],
+      id: keyedFaqIds[0],
       businessId: business.id,
       question: "What is your normal turnaround time?",
       answer:
-        "Standard print jobs usually ship or are ready for pickup within 3 to 5 business days after artwork approval. Rush timing depends on file readiness and production load.",
+        "Standard print jobs usually ship or are ready for pickup within 3 to 5 business days after artwork approval.",
       position: 0,
       createdAt: daysAgo(30, 9, 0),
       updatedAt: daysAgo(30, 9, 0),
     },
     {
-      id: demoFaqIds[1],
+      id: keyedFaqIds[1],
       businessId: business.id,
       question: "Which files should customers send?",
       answer:
-        "Preferred files are press-ready PDF, AI, or SVG. High-resolution PNG can work for some jobs. If files are not print-ready, we can review them before quoting final production.",
+        "Preferred files are press-ready PDF, AI, or SVG. High-resolution PNG can work for some jobs.",
       position: 1,
       createdAt: daysAgo(29, 9, 0),
       updatedAt: daysAgo(29, 9, 0),
-    },
-    {
-      id: demoFaqIds[2],
-      businessId: business.id,
-      question: "Do you include revisions in the quote?",
-      answer:
-        "Quotes normally include one practical round of production adjustments. Larger redesign work or repeated revision rounds are quoted separately once scope is clear.",
-      position: 2,
-      createdAt: daysAgo(28, 9, 0),
-      updatedAt: daysAgo(28, 9, 0),
-    },
-    {
-      id: demoFaqIds[3],
-      businessId: business.id,
-      question: "Do you offer pickup, delivery, or installation?",
-      answer:
-        "Pickup is available during business hours. Local delivery and installation can be quoted when timing, address, and install conditions are confirmed.",
-      position: 3,
-      createdAt: daysAgo(27, 9, 0),
-      updatedAt: daysAgo(27, 9, 0),
     },
   ];
 
   const quoteRows = [
     {
-      id: demoQuoteIds[0],
+      id: keyedQuoteIds[0],
       businessId: business.id,
       inquiryId: null,
       status: "draft" as const,
       quoteNumber: "Q-1001",
-      publicToken: demoQuotePublicTokens[0],
+      publicToken: keyedQuotePublicTokens[0],
       title: "Seasonal sidewalk sign refresh",
       customerName: "Jamie Torres",
       customerEmail: "jamie@cedarandlane.co",
       currency: "USD",
       notes:
-        "Draft quote prepared from a walk-in conversation. Final scope still depends on hardware preference and weather-resistant finish.",
+        "Draft quote prepared from a walk-in conversation. Final scope still depends on hardware preference.",
       subtotalInCents: 97000,
       discountInCents: 5000,
       totalInCents: 92000,
@@ -2059,18 +1711,18 @@ async function seedBusinessData(
       updatedAt: daysAgo(2, 15, 15),
     },
     {
-      id: demoQuoteIds[1],
+      id: keyedQuoteIds[1],
       businessId: business.id,
-      inquiryId: demoInquiryIds[2],
+      inquiryId: keyedInquiryIds[2],
       status: "sent" as const,
       quoteNumber: "Q-1002",
-      publicToken: demoQuotePublicTokens[1],
+      publicToken: keyedQuotePublicTokens[1],
       title: "Foundry Labs booth kit",
       customerName: "Priya Shah",
       customerEmail: "priya@foundrylabs.io",
       currency: "USD",
       notes:
-        "Includes retractable banner hardware, table throw production, and mounted event signage. Shipping timing depends on final file approval date.",
+        "Includes retractable banner hardware, table throw production, and mounted event signage.",
       subtotalInCents: 286000,
       discountInCents: 10000,
       totalInCents: 276000,
@@ -2085,18 +1737,18 @@ async function seedBusinessData(
       updatedAt: daysAgo(5, 15, 0),
     },
     {
-      id: demoQuoteIds[2],
+      id: keyedQuoteIds[2],
       businessId: business.id,
-      inquiryId: demoInquiryIds[3],
+      inquiryId: keyedInquiryIds[3],
       status: "accepted" as const,
       quoteNumber: "Q-1003",
-      publicToken: demoQuotePublicTokens[2],
+      publicToken: keyedQuotePublicTokens[2],
       title: "Harbor Roast menu board package",
       customerName: "Maya Chen",
       customerEmail: "maya@harborroast.com",
       currency: "USD",
       notes:
-        "Accepted package includes menu boards, counter cards, and mounting hardware. Install scheduling is coordinated separately.",
+        "Accepted package includes menu boards, counter cards, and mounting hardware.",
       subtotalInCents: 112000,
       discountInCents: 7000,
       totalInCents: 105000,
@@ -2111,93 +1763,13 @@ async function seedBusinessData(
       createdAt: daysAgo(10, 10, 0),
       updatedAt: daysAgo(8, 16, 35),
     },
-    {
-      id: demoQuoteIds[3],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[4],
-      status: "rejected" as const,
-      quoteNumber: "Q-1004",
-      publicToken: demoQuotePublicTokens[3],
-      title: "RallyFit merch reorder",
-      customerName: "Noah Bennett",
-      customerEmail: "noah@rallyfit.co",
-      currency: "USD",
-      notes:
-        "Quote covered garment sourcing, printing, and packing by size run. Customer paused after comparing alternate suppliers.",
-      subtotalInCents: 158000,
-      discountInCents: 8000,
-      totalInCents: 150000,
-      sentAt: daysAgo(16, 12, 0),
-      acceptedAt: null,
-      publicViewedAt: daysAgo(15, 13, 10),
-      customerRespondedAt: daysAgo(15, 14, 45),
-      customerResponseMessage:
-        "Thanks, but we decided to consolidate this reorder with another supplier.",
-      postAcceptanceStatus: "none" as const,
-      validUntil: toIsoDate(daysAgo(2)),
-      createdAt: daysAgo(17, 12, 0),
-      updatedAt: daysAgo(15, 14, 45),
-    },
-    {
-      id: demoQuoteIds[4],
-      businessId: business.id,
-      inquiryId: null,
-      status: "expired" as const,
-      quoteNumber: "Q-1005",
-      publicToken: demoQuotePublicTokens[4],
-      title: "Summer banner restock",
-      customerName: "Leah Morris",
-      customerEmail: "leah@madeandmain.com",
-      currency: "USD",
-      notes:
-        "Quote expired after artwork approval stalled. Can be reopened if file specs are confirmed again.",
-      subtotalInCents: 64000,
-      discountInCents: 0,
-      totalInCents: 64000,
-      sentAt: daysAgo(22, 11, 0),
-      acceptedAt: null,
-      publicViewedAt: daysAgo(21, 9, 40),
-      customerRespondedAt: null,
-      customerResponseMessage: null,
-      postAcceptanceStatus: "none" as const,
-      validUntil: toIsoDate(daysAgo(10)),
-      createdAt: daysAgo(23, 11, 0),
-      updatedAt: daysAgo(22, 11, 0),
-    },
-    {
-      id: demoQuoteIds[5],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[6],
-      status: "accepted" as const,
-      quoteNumber: "Q-0998",
-      publicToken: demoQuotePublicTokens[5],
-      title: "Foundry Labs rebrand signage package",
-      customerName: "Priya Shah",
-      customerEmail: "priya@foundrylabs.io",
-      currency: "USD",
-      notes:
-        "Prior accepted signage package that moved into scheduling for the office refresh.",
-      subtotalInCents: 348000,
-      discountInCents: 18000,
-      totalInCents: 330000,
-      sentAt: daysAgo(39, 11, 0),
-      acceptedAt: daysAgo(35, 15, 30),
-      publicViewedAt: daysAgo(35, 14, 50),
-      customerRespondedAt: daysAgo(35, 15, 30),
-      customerResponseMessage:
-        "Approved. Please line up installation for the week after next.",
-      postAcceptanceStatus: "scheduled" as const,
-      validUntil: toIsoDate(daysAgo(30)),
-      createdAt: daysAgo(40, 11, 0),
-      updatedAt: daysAgo(34, 10, 10),
-    },
   ];
 
   const quoteItemRows = [
     {
-      id: demoQuoteItemIds[0],
+      id: keyedQuoteItemIds[0],
       businessId: business.id,
-      quoteId: demoQuoteIds[0],
+      quoteId: keyedQuoteIds[0],
       description: "A-frame sign panel production",
       quantity: 2,
       unitPriceInCents: 28000,
@@ -2207,9 +1779,9 @@ async function seedBusinessData(
       updatedAt: daysAgo(2, 15, 15),
     },
     {
-      id: demoQuoteItemIds[1],
+      id: keyedQuoteItemIds[1],
       businessId: business.id,
-      quoteId: demoQuoteIds[0],
+      quoteId: keyedQuoteIds[0],
       description: "Weather-laminate finishing and install kit",
       quantity: 1,
       unitPriceInCents: 41000,
@@ -2219,9 +1791,9 @@ async function seedBusinessData(
       updatedAt: daysAgo(2, 15, 16),
     },
     {
-      id: demoQuoteItemIds[2],
+      id: keyedQuoteItemIds[2],
       businessId: business.id,
-      quoteId: demoQuoteIds[1],
+      quoteId: keyedQuoteIds[1],
       description: "Retractable banner kit",
       quantity: 2,
       unitPriceInCents: 62000,
@@ -2231,9 +1803,9 @@ async function seedBusinessData(
       updatedAt: daysAgo(6, 15, 0),
     },
     {
-      id: demoQuoteItemIds[3],
+      id: keyedQuoteItemIds[3],
       businessId: business.id,
-      quoteId: demoQuoteIds[1],
+      quoteId: keyedQuoteIds[1],
       description: "Table throw and mounted booth signage",
       quantity: 1,
       unitPriceInCents: 162000,
@@ -2243,9 +1815,9 @@ async function seedBusinessData(
       updatedAt: daysAgo(6, 15, 1),
     },
     {
-      id: demoQuoteItemIds[4],
+      id: keyedQuoteItemIds[4],
       businessId: business.id,
-      quoteId: demoQuoteIds[2],
+      quoteId: keyedQuoteIds[2],
       description: "Rigid menu board set",
       quantity: 3,
       unitPriceInCents: 24000,
@@ -2255,9 +1827,9 @@ async function seedBusinessData(
       updatedAt: daysAgo(10, 10, 0),
     },
     {
-      id: demoQuoteItemIds[5],
+      id: keyedQuoteItemIds[5],
       businessId: business.id,
-      quoteId: demoQuoteIds[2],
+      quoteId: keyedQuoteIds[2],
       description: "Counter cards and mounting hardware",
       quantity: 1,
       unitPriceInCents: 40000,
@@ -2266,106 +1838,25 @@ async function seedBusinessData(
       createdAt: daysAgo(10, 10, 1),
       updatedAt: daysAgo(10, 10, 1),
     },
-    {
-      id: demoQuoteItemIds[6],
-      businessId: business.id,
-      quoteId: demoQuoteIds[3],
-      description: "Staff t-shirt print run",
-      quantity: 40,
-      unitPriceInCents: 2500,
-      lineTotalInCents: 100000,
-      position: 0,
-      createdAt: daysAgo(17, 12, 0),
-      updatedAt: daysAgo(17, 12, 0),
-    },
-    {
-      id: demoQuoteItemIds[7],
-      businessId: business.id,
-      quoteId: demoQuoteIds[3],
-      description: "Branded tote bags",
-      quantity: 25,
-      unitPriceInCents: 2320,
-      lineTotalInCents: 58000,
-      position: 1,
-      createdAt: daysAgo(17, 12, 1),
-      updatedAt: daysAgo(17, 12, 1),
-    },
-    {
-      id: demoQuoteItemIds[8],
-      businessId: business.id,
-      quoteId: demoQuoteIds[4],
-      description: "Outdoor banner production",
-      quantity: 4,
-      unitPriceInCents: 14000,
-      lineTotalInCents: 56000,
-      position: 0,
-      createdAt: daysAgo(23, 11, 0),
-      updatedAt: daysAgo(23, 11, 0),
-    },
-    {
-      id: demoQuoteItemIds[9],
-      businessId: business.id,
-      quoteId: demoQuoteIds[4],
-      description: "Reinforced grommets and finishing",
-      quantity: 1,
-      unitPriceInCents: 8000,
-      lineTotalInCents: 8000,
-      position: 1,
-      createdAt: daysAgo(23, 11, 1),
-      updatedAt: daysAgo(23, 11, 1),
-    },
-    {
-      id: demoQuoteItemIds[10],
-      businessId: business.id,
-      quoteId: demoQuoteIds[5],
-      description: "Lobby logo wall graphics",
-      quantity: 1,
-      unitPriceInCents: 214000,
-      lineTotalInCents: 214000,
-      position: 0,
-      createdAt: daysAgo(40, 11, 0),
-      updatedAt: daysAgo(40, 11, 0),
-    },
-    {
-      id: demoQuoteItemIds[11],
-      businessId: business.id,
-      quoteId: demoQuoteIds[5],
-      description: "Door signs and meeting room wayfinding",
-      quantity: 1,
-      unitPriceInCents: 134000,
-      lineTotalInCents: 134000,
-      position: 1,
-      createdAt: daysAgo(40, 11, 1),
-      updatedAt: daysAgo(40, 11, 1),
-    },
   ];
 
   const replySnippetRows = [
     {
-      id: demoReplySnippetIds[0],
+      id: keyedReplySnippetIds[0],
       businessId: business.id,
       title: "Ask for missing dimensions",
       body:
-        "Thanks for sending this over. To price it accurately, could you confirm the final dimensions, quantity, and whether installation should be included?",
+        "Thanks for sending this over. To price it accurately, could you confirm the final dimensions and quantity?",
       createdAt: daysAgo(18, 9, 0),
       updatedAt: daysAgo(18, 9, 0),
-    },
-    {
-      id: demoReplySnippetIds[1],
-      businessId: business.id,
-      title: "Confirm timeline and files",
-      body:
-        "Before we lock the quote, please confirm your target install date and send the latest print-ready files or artwork links.",
-      createdAt: daysAgo(16, 9, 0),
-      updatedAt: daysAgo(16, 9, 0),
     },
   ];
 
   const activityRows = [
     {
-      id: demoActivityIds[0],
+      id: keyedActivityIds[0],
       businessId: business.id,
-      inquiryId: demoInquiryIds[0],
+      inquiryId: keyedInquiryIds[0],
       quoteId: null,
       actorUserId: demoUser.id,
       type: "inquiry.received",
@@ -2375,58 +1866,10 @@ async function seedBusinessData(
       updatedAt: daysAgo(1, 9, 15),
     },
     {
-      id: demoActivityIds[1],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[1],
-      quoteId: null,
-      actorUserId: demoUser.id,
-      type: "inquiry.status_changed",
-      summary: "Inquiry moved to waiting while paper stock details are confirmed.",
-      metadata: { source: "demo-seed", nextStatus: "waiting" },
-      createdAt: daysAgo(3, 12, 10),
-      updatedAt: daysAgo(3, 12, 10),
-    },
-    {
-      id: demoActivityIds[2],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[2],
-      quoteId: null,
-      actorUserId: demoUser.id,
-      type: "inquiry.status_changed",
-      summary: "Inquiry moved to quoted after the booth kit estimate was prepared.",
-      metadata: { source: "demo-seed", nextStatus: "quoted" },
-      createdAt: daysAgo(5, 15, 0),
-      updatedAt: daysAgo(5, 15, 0),
-    },
-    {
-      id: demoActivityIds[3],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[3],
-      quoteId: null,
-      actorUserId: demoUser.id,
-      type: "inquiry.status_changed",
-      summary: "Inquiry moved to won after the menu board quote was accepted.",
-      metadata: { source: "demo-seed", nextStatus: "won" },
-      createdAt: daysAgo(8, 16, 35),
-      updatedAt: daysAgo(8, 16, 35),
-    },
-    {
-      id: demoActivityIds[4],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[4],
-      quoteId: null,
-      actorUserId: demoUser.id,
-      type: "inquiry.status_changed",
-      summary: "Inquiry marked lost after the customer selected another supplier.",
-      metadata: { source: "demo-seed", nextStatus: "lost" },
-      createdAt: daysAgo(15, 14, 45),
-      updatedAt: daysAgo(15, 14, 45),
-    },
-    {
-      id: demoActivityIds[5],
+      id: keyedActivityIds[1],
       businessId: business.id,
       inquiryId: null,
-      quoteId: demoQuoteIds[0],
+      quoteId: keyedQuoteIds[0],
       actorUserId: demoUser.id,
       type: "quote.created",
       summary: "Draft quote Q-1001 created from a manual request.",
@@ -2435,10 +1878,10 @@ async function seedBusinessData(
       updatedAt: daysAgo(2, 15, 15),
     },
     {
-      id: demoActivityIds[6],
+      id: keyedActivityIds[2],
       businessId: business.id,
-      inquiryId: demoInquiryIds[2],
-      quoteId: demoQuoteIds[1],
+      inquiryId: keyedInquiryIds[2],
+      quoteId: keyedQuoteIds[1],
       actorUserId: demoUser.id,
       type: "quote.created",
       summary: "Quote Q-1002 prepared for the Foundry Labs booth kit.",
@@ -2447,10 +1890,10 @@ async function seedBusinessData(
       updatedAt: daysAgo(6, 15, 0),
     },
     {
-      id: demoActivityIds[7],
+      id: keyedActivityIds[3],
       businessId: business.id,
-      inquiryId: demoInquiryIds[2],
-      quoteId: demoQuoteIds[1],
+      inquiryId: keyedInquiryIds[2],
+      quoteId: keyedQuoteIds[1],
       actorUserId: demoUser.id,
       type: "quote.sent",
       summary: "Quote Q-1002 sent to Priya Shah.",
@@ -2459,10 +1902,10 @@ async function seedBusinessData(
       updatedAt: daysAgo(5, 15, 0),
     },
     {
-      id: demoActivityIds[8],
+      id: keyedActivityIds[4],
       businessId: business.id,
-      inquiryId: demoInquiryIds[3],
-      quoteId: demoQuoteIds[2],
+      inquiryId: keyedInquiryIds[3],
+      quoteId: keyedQuoteIds[2],
       actorUserId: demoUser.id,
       type: "quote.created",
       summary: "Quote Q-1003 created for the Harbor Roast menu refresh.",
@@ -2471,10 +1914,10 @@ async function seedBusinessData(
       updatedAt: daysAgo(10, 10, 0),
     },
     {
-      id: demoActivityIds[9],
+      id: keyedActivityIds[5],
       businessId: business.id,
-      inquiryId: demoInquiryIds[3],
-      quoteId: demoQuoteIds[2],
+      inquiryId: keyedInquiryIds[3],
+      quoteId: keyedQuoteIds[2],
       actorUserId: demoUser.id,
       type: "quote.status_changed",
       summary: "Quote Q-1003 marked accepted.",
@@ -2483,97 +1926,29 @@ async function seedBusinessData(
       updatedAt: daysAgo(8, 16, 35),
     },
     {
-      id: demoActivityIds[10],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[4],
-      quoteId: demoQuoteIds[3],
-      actorUserId: demoUser.id,
-      type: "quote.created",
-      summary: "Quote Q-1004 created for the RallyFit merch reorder.",
-      metadata: { source: "demo-seed" },
-      createdAt: daysAgo(17, 12, 0),
-      updatedAt: daysAgo(17, 12, 0),
-    },
-    {
-      id: demoActivityIds[11],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[4],
-      quoteId: demoQuoteIds[3],
-      actorUserId: demoUser.id,
-      type: "quote.status_changed",
-      summary: "Quote Q-1004 marked rejected after the customer chose another vendor.",
-      metadata: { source: "demo-seed", nextStatus: "rejected" },
-      createdAt: daysAgo(15, 14, 45),
-      updatedAt: daysAgo(15, 14, 45),
-    },
-    {
-      id: demoActivityIds[12],
-      businessId: business.id,
-      inquiryId: null,
-      quoteId: demoQuoteIds[4],
-      actorUserId: demoUser.id,
-      type: "quote.created",
-      summary: "Quote Q-1005 created and later left to expire.",
-      metadata: { source: "demo-seed" },
-      createdAt: daysAgo(23, 11, 0),
-      updatedAt: daysAgo(23, 11, 0),
-    },
-    {
-      id: demoActivityIds[13],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[6],
-      quoteId: null,
-      actorUserId: demoUser.id,
-      type: "inquiry.status_changed",
-      summary: "Past Foundry Labs rebrand inquiry marked won after the office signage package closed.",
-      metadata: { source: "demo-seed", nextStatus: "won" },
-      createdAt: daysAgo(35, 15, 30),
-      updatedAt: daysAgo(35, 15, 30),
-    },
-    {
-      id: demoActivityIds[14],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[6],
-      quoteId: demoQuoteIds[5],
-      actorUserId: demoUser.id,
-      type: "quote.created",
-      summary: "Quote Q-0998 created for the Foundry Labs rebrand signage package.",
-      metadata: { source: "demo-seed" },
-      createdAt: daysAgo(40, 11, 0),
-      updatedAt: daysAgo(40, 11, 0),
-    },
-    {
-      id: demoActivityIds[15],
-      businessId: business.id,
-      inquiryId: demoInquiryIds[6],
-      quoteId: demoQuoteIds[5],
-      actorUserId: demoUser.id,
-      type: "quote.post_acceptance_updated",
-      summary: "Quote Q-0998 marked scheduled.",
-      metadata: { source: "demo-seed", postAcceptanceStatus: "scheduled" },
-      createdAt: daysAgo(34, 10, 10),
-      updatedAt: daysAgo(34, 10, 10),
-    },
-    {
-      id: demoActivityIds[16],
+      id: keyedActivityIds[8],
       businessId: business.id,
       inquiryId: null,
       quoteId: null,
       actorUserId: demoUser.id,
       type: "business.demo_seeded",
-      summary: "Sample Requo MVP data refreshed for local setup.",
-      metadata: { source: "demo-seed" },
+      summary: "Sample Requo data seeded for plan demo.",
+      metadata: { source: "demo-seed", plan: demoUser.plan },
       createdAt: new Date(),
       updatedAt: new Date(),
     },
   ];
 
-  const generatedData = createGeneratedDataset(primaryBusinessDefinition, business);
+  const generatedData = createGeneratedDataset(
+    `${businessKey}-primary`,
+    business,
+    business.businessType,
+    business.quoteNumberStart,
+  );
   const bulkInquiries = generatedData.inquiries;
   const bulkQuotes = generatedData.quotes;
   const bulkQuoteItems = generatedData.quoteItems;
 
-  // Combine bulk data with demo data
   const allInquiries = [...inquiryRows, ...bulkInquiries];
   const allQuotes = [...quoteRows, ...bulkQuotes];
   const allQuoteItems = [...quoteItemRows, ...bulkQuoteItems];
@@ -2583,11 +1958,9 @@ async function seedBusinessData(
   );
 
   await db.transaction(async (tx) => {
-    // Clean up all demo/bulk data
-    await tx.delete(activityLogs).where(inArray(activityLogs.id, demoActivityIds));
-    await tx.delete(inquiryNotes).where(inArray(inquiryNotes.id, demoNoteIds));
-    
-    // Delete all quote items, quotes and inquiries from demo sources
+    await tx.delete(activityLogs).where(inArray(activityLogs.id, keyedActivityIds));
+    await tx.delete(inquiryNotes).where(inArray(inquiryNotes.id, keyedNoteIds));
+
     await tx
       .delete(quoteItems)
       .where(eq(quoteItems.businessId, business.id));
@@ -2597,15 +1970,25 @@ async function seedBusinessData(
     await tx
       .delete(inquiries)
       .where(eq(inquiries.businessId, business.id));
-    
-    await tx.delete(knowledgeFaqs).where(inArray(knowledgeFaqs.id, demoFaqIds));
-    await tx.delete(replySnippets).where(inArray(replySnippets.id, demoReplySnippetIds));
+
+    await tx.delete(knowledgeFaqs).where(inArray(knowledgeFaqs.id, keyedFaqIds));
+    await tx.delete(replySnippets).where(inArray(replySnippets.id, keyedReplySnippetIds));
+
+    await tx.delete(inquiries).where(
+      eq(inquiries.businessId, business.id)
+    );
+    await tx.delete(quotes).where(
+      eq(quotes.businessId, business.id)
+    );
+    await tx.delete(quoteItems).where(
+      eq(quoteItems.businessId, business.id)
+    );
 
     await tx.insert(knowledgeFaqs).values(faqRows);
     await tx.insert(inquiries).values(allInquiries);
-    await tx.insert(inquiryNotes).values(noteRows);
     await tx.insert(quotes).values(allQuotes);
     await tx.insert(quoteItems).values(allQuoteItems);
+    await tx.insert(inquiryNotes).values(noteRows);
     await tx.insert(replySnippets).values(replySnippetRows);
     await tx.insert(activityLogs).values(activityRows);
   });
@@ -2617,16 +2000,21 @@ async function seedBusinessData(
   };
 }
 
-async function seedManagedBusinessData(
+async function seedSecondaryBusinessData(
   demoUser: DemoUser,
-  definition: DemoBusinessDefinition,
   business: DemoBusiness,
+  businessKey: string,
 ): Promise<BusinessSeedCounts> {
-  const generatedData = createGeneratedDataset(definition, business);
-  const seedActivityId = createSeededId("seed_act", definition.key, "seeded");
+  const generatedData = createGeneratedDataset(
+    businessKey,
+    business,
+    business.businessType,
+    business.quoteNumberStart,
+  );
+  const seedActivityId = createSeededId("seed_act", businessKey, "seeded");
 
   console.log(
-    `Seeding ${business.name}: ${generatedData.inquiries.length} inquiries, ${generatedData.quotes.length} quotes, ${generatedData.quoteItems.length} quote items.`,
+    `Seeding ${business.name}: ${generatedData.inquiries.length} inquiries, ${generatedData.quotes.length} quotes.`,
   );
 
   await db.transaction(async (tx) => {
@@ -2654,7 +2042,7 @@ async function seedManagedBusinessData(
       summary: `Sample data refreshed for ${business.name}.`,
       metadata: {
         source: "demo-seed",
-        businessKey: definition.key,
+        businessKey,
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -2668,86 +2056,226 @@ async function seedManagedBusinessData(
   };
 }
 
+async function syncBusinessMembers({
+  owner,
+  businessId,
+  managerId,
+  staffId,
+}: {
+  owner: DemoUser;
+  businessId: string;
+  managerId?: string;
+  staffId?: string;
+}) {
+  const now = new Date();
+  const memberUserIds = [managerId, staffId].filter(Boolean) as string[];
+
+  await db.transaction(async (tx) => {
+    if (memberUserIds.length) {
+      await tx.delete(businessMembers).where(
+        and(
+          eq(businessMembers.businessId, businessId),
+          inArray(businessMembers.userId, memberUserIds),
+        ),
+      );
+    }
+
+    if (managerId) {
+      await tx.insert(businessMembers).values({
+        id: createSeededId("seed_bm", "manager"),
+        businessId,
+        userId: managerId,
+        role: "manager",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (staffId) {
+      await tx.insert(businessMembers).values({
+        id: createSeededId("seed_bm", "staff"),
+        businessId,
+        userId: staffId,
+        role: "staff",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  });
+}
+
 async function main() {
-  const demoUser = await ensureDemoUser();
-  const business = await ensureDemoBusiness(demoUser);
-  const seededBusinesses: Array<{
+  console.log("Starting plan-based demo seed...\n");
+
+  console.log("Cleaning up existing seed data...");
+  const seedEmails = planUserConfigs.map((c) => c.email.toLowerCase());
+  const teamEmails = teamMembers.map((m) => m.email.toLowerCase());
+  const allSeedEmails = [...seedEmails, ...teamEmails];
+
+  await db.transaction(async (tx) => {
+    const seedUsers = await tx
+      .select({ id: user.id })
+      .from(user)
+      .where(inArray(user.email, allSeedEmails));
+    const seedUserIds = seedUsers.map((u) => u.id);
+
+    if (seedUserIds.length > 0) {
+      const userWorkspaces = await tx
+        .select({ workspaceId: workspaceMembers.workspaceId })
+        .from(workspaceMembers)
+        .where(inArray(workspaceMembers.userId, seedUserIds));
+      const workspaceIds = userWorkspaces.map((w) => w.workspaceId);
+
+      if (workspaceIds.length > 0) {
+        const userBusinesses = await tx
+          .select({ id: businesses.id })
+          .from(businesses)
+          .where(inArray(businesses.workspaceId, workspaceIds));
+        const businessIds = userBusinesses.map((b) => b.id);
+
+        if (businessIds.length > 0) {
+          await tx.delete(activityLogs).where(
+            inArray(activityLogs.businessId, businessIds),
+          );
+          await tx.delete(inquiryNotes).where(
+            inArray(inquiryNotes.businessId, businessIds),
+          );
+          await tx.delete(knowledgeFaqs).where(
+            inArray(knowledgeFaqs.businessId, businessIds),
+          );
+          await tx.delete(replySnippets).where(
+            inArray(replySnippets.businessId, businessIds),
+          );
+          await tx.delete(quoteItems).where(
+            inArray(quoteItems.businessId, businessIds),
+          );
+          await tx.delete(quotes).where(
+            inArray(quotes.businessId, businessIds),
+          );
+          await tx.delete(inquiries).where(
+            inArray(inquiries.businessId, businessIds),
+          );
+          await tx.delete(businessInquiryForms).where(
+            inArray(businessInquiryForms.businessId, businessIds),
+          );
+          await tx.delete(businessMembers).where(
+            inArray(businessMembers.businessId, businessIds),
+          );
+          await tx.delete(businesses).where(
+            inArray(businesses.id, businessIds),
+          );
+        }
+
+        await tx.delete(workspaceMembers).where(
+          inArray(workspaceMembers.workspaceId, workspaceIds),
+        );
+        await tx.delete(workspaces).where(
+          inArray(workspaces.id, workspaceIds),
+        );
+      }
+
+      await tx.delete(businessMembers).where(
+        inArray(businessMembers.userId, seedUserIds),
+      );
+      await tx.delete(workspaceMembers).where(
+        inArray(workspaceMembers.userId, seedUserIds),
+      );
+      await tx.delete(profiles).where(inArray(profiles.userId, seedUserIds));
+      await tx.delete(user).where(inArray(user.id, seedUserIds));
+    }
+  });
+  console.log("Cleanup complete.\n");
+
+  const seededUsers: Array<{
+    user: DemoUser;
     business: DemoBusiness;
+    config: PlanUserConfig;
     counts: BusinessSeedCounts;
-  }> = [
-    {
+  }> = [];
+
+  for (const config of planUserConfigs) {
+    console.log(`Creating ${config.plan} user: ${config.email}`);
+
+    const demoUser = await ensurePlanUser(config);
+    const business = await ensurePrimaryBusiness(demoUser, config);
+    const counts = await seedBusinessData(demoUser, business, config.plan);
+
+    let managerUser: DemoUser | undefined;
+    let staffUser: DemoUser | undefined;
+
+    if (config.hasSecondaryBusiness) {
+      const secondaryBusiness = await ensureSecondaryBusiness(
+        demoUser,
+        secondaryBusinessDefinition,
+      );
+      await seedSecondaryBusinessData(
+        demoUser,
+        secondaryBusiness,
+        secondaryBusinessDefinition.key,
+      );
+
+      console.log(`Creating team members for ${config.email}`);
+      managerUser = await ensureTeamMember(
+        demoUser,
+        teamMembers[0].name,
+        teamMembers[0].email,
+        teamMembers[0].role,
+      );
+      staffUser = await ensureTeamMember(
+        demoUser,
+        teamMembers[1].name,
+        teamMembers[1].email,
+        teamMembers[1].role,
+      );
+
+      await syncBusinessMembers({
+        owner: demoUser,
+        businessId: secondaryBusiness.id,
+        managerId: managerUser.id,
+        staffId: staffUser.id,
+      });
+    }
+
+    seededUsers.push({
+      user: demoUser,
       business,
-      counts: await seedBusinessData(demoUser, business),
-    },
-  ];
-
-  for (const definition of managedBusinessDefinitions) {
-    const managedBusiness = await ensureManagedBusiness(demoUser, definition);
-    const counts = await seedManagedBusinessData(
-      demoUser,
-      definition,
-      managedBusiness,
-    );
-
-    seededBusinesses.push({
-      business: managedBusiness,
+      config,
       counts,
     });
   }
 
-  const totals = seededBusinesses.reduce(
-    (aggregate, entry) => ({
-      inquiries: aggregate.inquiries + entry.counts.inquiries,
-      quotes: aggregate.quotes + entry.counts.quotes,
-      quoteItems: aggregate.quoteItems + entry.counts.quoteItems,
-      forms: aggregate.forms + Object.keys(entry.business.forms).length,
-    }),
-    {
-      inquiries: 0,
-      quotes: 0,
-      quoteItems: 0,
-      forms: 0,
-    },
-  );
+  console.log("\n=== Demo seed complete ===\n");
+  console.log("Users created:");
+  for (const { user, business, config, counts } of seededUsers) {
+    const dashboardUrl = new URL(
+      `/businesses/${business.slug}/dashboard`,
+      env.BETTER_AUTH_URL,
+    ).toString();
+    const inquiryUrl = new URL(
+      `/inquire/${business.slug}`,
+      env.BETTER_AUTH_URL,
+    ).toString();
 
-  const dashboardUrl = new URL(
-    `/businesses/${business.slug}/dashboard`,
-    env.BETTER_AUTH_URL,
-  ).toString();
-  const inquiryUrl = new URL(
-    `/inquire/${business.slug}`,
-    env.BETTER_AUTH_URL,
-  ).toString();
+    console.log(`\n[${config.plan.toUpperCase()}] ${user.email}`);
+    console.log(`  Password: ${DEFAULT_PASSWORD}`);
+    console.log(`  Business: ${business.name} (${business.slug})`);
+    console.log(`  Plan: ${config.plan}`);
+    console.log(`  Inquiries: ${counts.inquiries}, Quotes: ${counts.quotes}`);
+    console.log(`  Dashboard: ${dashboardUrl}`);
+    console.log(`  Public inquiry: ${inquiryUrl}`);
 
-  console.log("");
-  console.log("Requo demo data seeded.");
-  console.log(`Businesses seeded: ${seededBusinesses.length}`);
-  console.log(`Forms seeded: ${totals.forms}`);
-  console.log(`Total inquiries: ${totals.inquiries}`);
-  console.log(`Total quotes: ${totals.quotes}`);
-  console.log(`Total quote items: ${totals.quoteItems}`);
-  console.log("");
-  for (const entry of seededBusinesses) {
-    console.log(
-      `- ${entry.business.name} (${entry.business.slug}) with ${Object.keys(entry.business.forms).length} forms`,
-    );
+    if (config.hasSecondaryBusiness) {
+      console.log(`  Team members: ${teamMembers.map((m) => m.email).join(", ")}`);
+    }
   }
-  console.log("");
-  console.log(`Primary business: ${business.name}`);
-  console.log(`Primary business slug: ${business.slug}`);
-  console.log(`Demo owner email: ${demoUser.email}`);
-  console.log(`Demo owner password: ${demoConfig.ownerPassword}`);
-  console.log(`Dashboard URL: ${dashboardUrl}`);
-  console.log(`Public inquiry URL: ${inquiryUrl}`);
-  console.log("");
-  console.log(
-    "The script refreshes the fixed demo workspace and adds extra seed-managed businesses without touching unrelated businesses.",
-  );
+
+  console.log("\n" + "=".repeat(40));
+  console.log("\nAll demo users use password: " + DEFAULT_PASSWORD);
 }
 
 main()
   .catch((error) => {
-    console.error("Failed to seed Requo demo data.");
+    console.error("Failed to seed demo data.");
     console.error(error);
     process.exitCode = 1;
   })

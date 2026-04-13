@@ -19,10 +19,10 @@ import {
 } from "@/features/quotes/queries";
 import { quoteListFiltersSchema } from "@/features/quotes/schemas";
 import {
-  businessesHubPath,
   getBusinessNewQuotePath,
   getBusinessQuotesPath,
 } from "@/features/businesses/routes";
+import { workspacesHubPath } from "@/features/workspaces/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
@@ -77,7 +77,7 @@ export default async function QuotesPage({
   );
 
   if (!businessContext) {
-    redirect(businessesHubPath);
+    redirect(workspacesHubPath);
   }
 
   const parsedFilters = quoteListFiltersSchema.safeParse(resolvedSearchParams);

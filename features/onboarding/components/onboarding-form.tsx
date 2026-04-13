@@ -5,28 +5,30 @@ import { useState } from "react";
 import { CountryCombobox } from "@/components/shared/country-combobox";
 import { FormActions } from "@/components/shared/form-layout";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { StarterTemplateChoiceGrid } from "@/features/businesses/components/starter-template-choice-grid";
-import {
-  starterTemplateDefaultsSummary,
-  starterTemplateSelectionDescription,
-} from "@/features/businesses/starter-templates";
+import { StarterTemplateCombobox } from "@/features/businesses/components/starter-template-combobox";
 import type { BusinessType } from "@/features/inquiries/business-types";
 import {
+  jobTitleOptions,
+  onboardingBusinessSchema,
   onboardingProfileSchema,
+  onboardingReferralSchema,
   onboardingWorkspaceSchema,
+  referralSourceOptions,
 } from "@/features/onboarding/schemas";
 import type { OnboardingActionState } from "@/features/onboarding/types";
+import type { WorkspacePlan } from "@/lib/plans/plans";
+import { planMeta } from "@/lib/plans/plans";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 
 type OnboardingFormProps = {
@@ -41,33 +43,50 @@ type OnboardingFormProps = {
 };
 
 type OnboardingVisibleField =
+  | "workspaceName"
+  | "workspacePlan"
   | "businessName"
   | "businessType"
+  | "countryCode"
   | "fullName"
-  | "countryCode";
+  | "jobTitle"
+  | "referralSource";
 
-const onboardingSteps = [
+type OnboardingStep = {
+  fields: OnboardingVisibleField[];
+  label: string;
+  prompt: string;
+};
+
+const onboardingSteps: OnboardingStep[] = [
   {
-    field: "businessName",
-    label: "Business name",
-    prompt: "What is your business called?",
+    fields: ["workspaceName", "workspacePlan"],
+    label: "Workspace",
+    prompt: "Set up your workspace",
   },
   {
-    field: "businessType",
-    label: "Starter template",
-    prompt: "Which starter template fits your business best?",
+    fields: ["businessName", "businessType", "countryCode"],
+    label: "Business",
+    prompt: "Create your first business",
   },
   {
-    field: "fullName",
-    label: "Your name",
-    prompt: "What should we call you?",
+    fields: ["fullName", "jobTitle"],
+    label: "About you",
+    prompt: "Tell us about yourself",
   },
   {
-    field: "countryCode",
-    label: "Country",
-    prompt: "Where is your business based?",
+    fields: ["referralSource"],
+    label: "One last thing",
+    prompt: "How did you find us?",
   },
-] as const;
+];
+
+const planOptions = (["free", "pro", "business"] as const).map((plan) => ({
+  value: plan,
+  label: planMeta[plan].label,
+  description: planMeta[plan].description,
+  searchText: `${planMeta[plan].label} ${planMeta[plan].description}`,
+}));
 
 const initialState: OnboardingActionState = {};
 const lastOnboardingStepIndex = onboardingSteps.length - 1;
@@ -92,12 +111,15 @@ export function OnboardingForm({
     Partial<Record<OnboardingVisibleField, OnboardingActionState["fieldErrors"]>>
   >({});
   const [values, setValues] = useState({
+    workspaceName: "",
+    workspacePlan: "free" as WorkspacePlan,
     businessName: "",
     businessType: "" as BusinessType | "",
     countryCode: "",
     fullName: initialValues.fullName,
+    jobTitle: initialValues.jobTitle.trim() || "",
+    referralSource: "",
   });
-  const defaultJobTitle = initialValues.jobTitle.trim() || "Owner";
 
   function updateField<FieldName extends OnboardingVisibleField>(
     field: FieldName,
@@ -135,61 +157,56 @@ export function OnboardingForm({
 
   function getFieldValidationError(field: OnboardingVisibleField) {
     switch (field) {
+      case "workspaceName": {
+        const result = onboardingWorkspaceSchema.shape.workspaceName.safeParse(values.workspaceName);
+        return result.success ? undefined : result.error.issues[0]?.message;
+      }
+      case "workspacePlan": {
+        const result = onboardingWorkspaceSchema.shape.workspacePlan.safeParse(values.workspacePlan);
+        return result.success ? undefined : result.error.issues[0]?.message;
+      }
       case "businessName": {
-        const validationResult = onboardingWorkspaceSchema.shape.businessName.safeParse(
-          values.businessName,
-        );
-
-        return validationResult.success
-          ? undefined
-          : validationResult.error.issues[0]?.message;
+        const result = onboardingBusinessSchema.shape.businessName.safeParse(values.businessName);
+        return result.success ? undefined : result.error.issues[0]?.message;
       }
       case "businessType": {
-        const validationResult = onboardingWorkspaceSchema.shape.businessType.safeParse(
-          values.businessType,
-        );
-
-        return validationResult.success
-          ? undefined
-          : validationResult.error.issues[0]?.message;
-      }
-      case "fullName": {
-        const validationResult = onboardingProfileSchema.shape.fullName.safeParse(
-          values.fullName,
-        );
-
-        return validationResult.success
-          ? undefined
-          : validationResult.error.issues[0]?.message;
+        const result = onboardingBusinessSchema.shape.businessType.safeParse(values.businessType);
+        return result.success ? undefined : result.error.issues[0]?.message;
       }
       case "countryCode": {
-        const validationResult = onboardingWorkspaceSchema.shape.countryCode.safeParse(
-          values.countryCode,
-        );
-
-        return validationResult.success
-          ? undefined
-          : validationResult.error.issues[0]?.message;
+        const result = onboardingBusinessSchema.shape.countryCode.safeParse(values.countryCode);
+        return result.success ? undefined : result.error.issues[0]?.message;
+      }
+      case "fullName": {
+        const result = onboardingProfileSchema.shape.fullName.safeParse(values.fullName);
+        return result.success ? undefined : result.error.issues[0]?.message;
+      }
+      case "jobTitle": {
+        const result = onboardingProfileSchema.shape.jobTitle.safeParse(values.jobTitle);
+        return result.success ? undefined : result.error.issues[0]?.message;
+      }
+      case "referralSource": {
+        const result = onboardingReferralSchema.shape.referralSource.safeParse(values.referralSource);
+        return result.success ? undefined : result.error.issues[0]?.message;
       }
     }
   }
 
-  function validateSingleField(field: OnboardingVisibleField) {
-    const error = getFieldValidationError(field);
+  function validateStepFields(stepIndex: number) {
+    const step = onboardingSteps[stepIndex];
+    if (!step) return true;
 
-    setClientFieldErrors((currentErrors) => {
-      const nextErrors = { ...currentErrors };
+    let allValid = true;
 
+    for (const field of step.fields) {
+      const error = getFieldValidationError(field);
       if (error) {
-        nextErrors[field] = error;
-      } else {
-        delete nextErrors[field];
+        setClientFieldErrors((current) => ({ ...current, [field]: error }));
+        allValid = false;
       }
+    }
 
-      return nextErrors;
-    });
-
-    return !error;
+    return allValid;
   }
 
   function validateAllSteps() {
@@ -197,31 +214,23 @@ export function OnboardingForm({
     let firstInvalidStepIndex = -1;
 
     onboardingSteps.forEach((step, index) => {
-      const error = getFieldValidationError(step.field);
-
-      if (!error) {
-        return;
-      }
-
-      nextErrors[step.field] = error;
-
-      if (firstInvalidStepIndex === -1) {
-        firstInvalidStepIndex = index;
+      for (const field of step.fields) {
+        const error = getFieldValidationError(field);
+        if (error) {
+          nextErrors[field] = error;
+          if (firstInvalidStepIndex === -1) {
+            firstInvalidStepIndex = index;
+          }
+        }
       }
     });
 
     setClientFieldErrors(nextErrors);
-
     return firstInvalidStepIndex;
   }
 
   function handleContinue() {
-    const activeField = onboardingSteps[currentStep]?.field;
-
-    if (!activeField || !validateSingleField(activeField)) {
-      return;
-    }
-
+    if (!validateStepFields(currentStep)) return;
     setCurrentStep((step) => Math.min(step + 1, lastOnboardingStepIndex));
   }
 
@@ -231,10 +240,15 @@ export function OnboardingForm({
 
   const currentStepMeta = onboardingSteps[currentStep];
   const progressValue = ((currentStep + 1) / onboardingSteps.length) * 100;
+
+  const workspaceNameError = getFieldError("workspaceName");
+  const workspacePlanError = getFieldError("workspacePlan");
   const businessNameError = getFieldError("businessName");
   const businessTypeError = getFieldError("businessType");
   const countryCodeError = getFieldError("countryCode");
   const fullNameError = getFieldError("fullName");
+  const jobTitleError = getFieldError("jobTitle");
+  const referralSourceError = getFieldError("referralSource");
 
   return (
     <form
@@ -255,13 +269,14 @@ export function OnboardingForm({
         }
       }}
     >
+      <input name="workspaceName" type="hidden" value={values.workspaceName} />
+      <input name="workspacePlan" type="hidden" value={values.workspacePlan} />
       <input name="businessName" type="hidden" value={values.businessName} />
       <input name="businessType" type="hidden" value={values.businessType} />
       <input name="countryCode" type="hidden" value={values.countryCode} />
-      <input name="shortDescription" type="hidden" value="" />
       <input name="fullName" type="hidden" value={values.fullName} />
-      <input name="jobTitle" type="hidden" value={defaultJobTitle} />
-      <input name="phone" type="hidden" value="" />
+      <input name="jobTitle" type="hidden" value={values.jobTitle} />
+      <input name="referralSource" type="hidden" value={values.referralSource} />
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
@@ -273,15 +288,80 @@ export function OnboardingForm({
         <Progress value={progressValue} />
       </div>
 
-      <div className="flex min-h-[19rem] flex-col justify-center gap-8">
+      <div className="flex min-h-[22rem] flex-col justify-center gap-8">
         <h1 className="font-heading text-[2rem] font-semibold tracking-tight text-foreground sm:text-[2.4rem]">
           {currentStepMeta.prompt}
         </h1>
 
-        <FieldGroup className="gap-4">
-          {currentStepMeta.field === "businessName" ? (
+        {/* Step 1: Workspace */}
+        {currentStep === 0 ? (
+          <FieldGroup className="gap-5">
+            <Field data-invalid={Boolean(workspaceNameError) || undefined}>
+              <FieldLabel htmlFor="onboarding-workspace-name">
+                Workspace name
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  aria-invalid={Boolean(workspaceNameError) || undefined}
+                  autoFocus
+                  className={onboardingInputClassName}
+                  id="onboarding-workspace-name"
+                  maxLength={80}
+                  minLength={2}
+                  onChange={(event) =>
+                    updateField("workspaceName", event.currentTarget.value)
+                  }
+                  placeholder="Acme Studio"
+                  required
+                  value={values.workspaceName}
+                />
+                <FieldError
+                  errors={
+                    workspaceNameError ? [{ message: workspaceNameError }] : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
+
+            <Field data-invalid={Boolean(workspacePlanError) || undefined}>
+              <FieldLabel htmlFor="onboarding-workspace-plan">
+                Plan
+              </FieldLabel>
+              <FieldContent>
+                <Combobox
+                  aria-invalid={Boolean(workspacePlanError) || undefined}
+                  buttonClassName={onboardingComboboxButtonClassName}
+                  disabled={isPending}
+                  id="onboarding-workspace-plan"
+                  onValueChange={(value) => updateField("workspacePlan", value)}
+                  options={planOptions}
+                  placeholder="Choose a plan"
+                  renderOption={(option) => (
+                    <div className="flex min-w-0 flex-col gap-0.5 py-0.5">
+                      <p className="truncate font-medium">{option.label}</p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </div>
+                  )}
+                  searchable={false}
+                  value={values.workspacePlan}
+                />
+                <FieldError
+                  errors={
+                    workspacePlanError ? [{ message: workspacePlanError }] : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        ) : null}
+
+        {/* Step 2: Business */}
+        {currentStep === 1 ? (
+          <FieldGroup className="gap-5">
             <Field data-invalid={Boolean(businessNameError) || undefined}>
-              <FieldLabel className="sr-only" htmlFor="onboarding-business-name">
+              <FieldLabel htmlFor="onboarding-business-name">
                 Business name
               </FieldLabel>
               <FieldContent>
@@ -306,25 +386,21 @@ export function OnboardingForm({
                 />
               </FieldContent>
             </Field>
-          ) : null}
 
-          {currentStepMeta.field === "businessType" ? (
             <Field data-invalid={Boolean(businessTypeError) || undefined}>
-              <FieldLabel className="sr-only">
+              <FieldLabel htmlFor="onboarding-starter-template">
                 Starter template
               </FieldLabel>
               <FieldContent>
-                <StarterTemplateChoiceGrid
-                  ariaLabel="Starter template"
-                  inputName="onboarding-starter-template"
-                  onChange={(value) => updateField("businessType", value)}
-                  showHelperText
+                <StarterTemplateCombobox
+                  aria-invalid={Boolean(businessTypeError) || undefined}
+                  buttonClassName={onboardingComboboxButtonClassName}
+                  disabled={isPending}
+                  id="onboarding-starter-template"
+                  onValueChange={(value) => updateField("businessType", value)}
+                  placeholder="Choose a template"
                   value={values.businessType}
                 />
-                <FieldDescription>
-                  {starterTemplateDefaultsSummary}{" "}
-                  {starterTemplateSelectionDescription}
-                </FieldDescription>
                 <FieldError
                   errors={
                     businessTypeError ? [{ message: businessTypeError }] : undefined
@@ -332,11 +408,38 @@ export function OnboardingForm({
                 />
               </FieldContent>
             </Field>
-          ) : null}
 
-          {currentStepMeta.field === "fullName" ? (
+            <Field data-invalid={Boolean(countryCodeError) || undefined}>
+              <FieldLabel htmlFor="onboarding-country-code">
+                Country
+              </FieldLabel>
+              <FieldContent>
+                <CountryCombobox
+                  aria-invalid={Boolean(countryCodeError) || undefined}
+                  buttonClassName={onboardingComboboxButtonClassName}
+                  disabled={isPending}
+                  id="onboarding-country-code"
+                  onValueChange={(value) => updateField("countryCode", value)}
+                  placeholder="Choose your country"
+                  searchPlaceholder="Search country"
+                  showFlags={false}
+                  value={values.countryCode}
+                />
+                <FieldError
+                  errors={
+                    countryCodeError ? [{ message: countryCodeError }] : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        ) : null}
+
+        {/* Step 3: About you */}
+        {currentStep === 2 ? (
+          <FieldGroup className="gap-5">
             <Field data-invalid={Boolean(fullNameError) || undefined}>
-              <FieldLabel className="sr-only" htmlFor="onboarding-full-name">
+              <FieldLabel htmlFor="onboarding-full-name">
                 Full name
               </FieldLabel>
               <FieldContent>
@@ -359,30 +462,62 @@ export function OnboardingForm({
                 />
               </FieldContent>
             </Field>
-          ) : null}
 
-          {currentStepMeta.field === "countryCode" ? (
-            <Field data-invalid={Boolean(countryCodeError) || undefined}>
-              <FieldLabel className="sr-only" htmlFor="onboarding-country-code">
-                Country
+            <Field data-invalid={Boolean(jobTitleError) || undefined}>
+              <FieldLabel htmlFor="onboarding-job-title">
+                Your role
               </FieldLabel>
               <FieldContent>
-                <CountryCombobox
-                  aria-invalid={Boolean(countryCodeError) || undefined}
-                  autoFocus
+                <Combobox
+                  aria-invalid={Boolean(jobTitleError) || undefined}
                   buttonClassName={onboardingComboboxButtonClassName}
                   disabled={isPending}
-                  id="onboarding-country-code"
-                  onValueChange={(value) => updateField("countryCode", value)}
-                  placeholder="Choose your country"
-                  searchPlaceholder="Search country"
-                  showFlags={false}
-                  value={values.countryCode}
+                  id="onboarding-job-title"
+                  onValueChange={(value) => updateField("jobTitle", value)}
+                  options={jobTitleOptions}
+                  placeholder="Choose your role"
+                  searchable
+                  searchPlaceholder="Search roles"
+                  value={values.jobTitle}
+                />
+                <FieldError
+                  errors={jobTitleError ? [{ message: jobTitleError }] : undefined}
                 />
               </FieldContent>
             </Field>
-          ) : null}
-        </FieldGroup>
+          </FieldGroup>
+        ) : null}
+
+        {/* Step 4: How did you find us */}
+        {currentStep === 3 ? (
+          <FieldGroup className="gap-5">
+            <Field data-invalid={Boolean(referralSourceError) || undefined}>
+              <FieldLabel htmlFor="onboarding-referral-source">
+                Where did you hear about us?
+              </FieldLabel>
+              <FieldContent>
+                <Combobox
+                  aria-invalid={Boolean(referralSourceError) || undefined}
+                  autoFocus
+                  buttonClassName={onboardingComboboxButtonClassName}
+                  disabled={isPending}
+                  id="onboarding-referral-source"
+                  onValueChange={(value) => updateField("referralSource", value)}
+                  options={referralSourceOptions}
+                  placeholder="Choose an option"
+                  searchable
+                  searchPlaceholder="Search"
+                  value={values.referralSource}
+                />
+                <FieldError
+                  errors={
+                    referralSourceError ? [{ message: referralSourceError }] : undefined
+                  }
+                />
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        ) : null}
       </div>
 
       <FormActions
@@ -410,7 +545,7 @@ export function OnboardingForm({
             {isPending ? (
               <>
                 <Spinner data-icon="inline-start" aria-hidden="true" />
-                Creating business workspace...
+                Creating workspace...
               </>
             ) : (
               "Create workspace"
