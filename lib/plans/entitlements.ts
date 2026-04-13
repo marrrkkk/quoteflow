@@ -4,9 +4,12 @@
  * Each feature that varies by plan is declared here. Access checks go through
  * `hasFeatureAccess` and `getRequiredPlan` — never raw `plan === "pro"` checks
  * in feature code.
+ *
+ * Entitlements are evaluated at the workspace level. Businesses inherit
+ * feature access from their workspace's plan.
  */
 
-import type { BusinessPlan } from "@/lib/plans/plans";
+import type { WorkspacePlan } from "@/lib/plans/plans";
 
 export const planFeatures = [
   "analyticsConversion",
@@ -26,7 +29,7 @@ export const planFeatures = [
 
 export type PlanFeature = (typeof planFeatures)[number];
 
-const planEntitlements: Record<BusinessPlan, ReadonlySet<PlanFeature>> = {
+const planEntitlements: Record<WorkspacePlan, ReadonlySet<PlanFeature>> = {
   free: new Set<PlanFeature>([]),
   pro: new Set<PlanFeature>([
     "analyticsConversion",
@@ -60,10 +63,10 @@ const planEntitlements: Record<BusinessPlan, ReadonlySet<PlanFeature>> = {
 };
 
 /**
- * Checks whether a plan grants access to a given feature.
+ * Checks whether a workspace plan grants access to a given feature.
  */
 export function hasFeatureAccess(
-  plan: BusinessPlan,
+  plan: WorkspacePlan,
   feature: PlanFeature,
 ): boolean {
   return planEntitlements[plan].has(feature);
@@ -73,7 +76,7 @@ export function hasFeatureAccess(
  * Returns the minimum plan required to unlock a feature, or `null` if the
  * feature is available on all plans.
  */
-export function getRequiredPlan(feature: PlanFeature): BusinessPlan | null {
+export function getRequiredPlan(feature: PlanFeature): WorkspacePlan | null {
   if (planEntitlements.free.has(feature)) {
     return null;
   }
@@ -133,5 +136,5 @@ export const planFeatureDescriptions: Record<PlanFeature, string> = {
   branding:
     "Add your logo and brand to quotes and inquiry pages.",
   multiBusiness:
-    "Manage more than one business from a single account.",
+    "Manage more than one business in this workspace.",
 };

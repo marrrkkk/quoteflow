@@ -1,6 +1,9 @@
 export {
+  workspacePlans,
   businessPlans,
+  type WorkspacePlan,
   type BusinessPlan,
+  isWorkspacePlan,
   isBusinessPlan,
   planMeta,
   type PlanMeta,

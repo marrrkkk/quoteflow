@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 
 import type { BusinessType } from "@/features/inquiries/business-types";
-import type { BusinessPlan } from "@/lib/plans/plans";
+import type { WorkspacePlan } from "@/lib/plans/plans";
 import {
   type BusinessMemberRole,
   businessMemberRoleMeta,
@@ -23,6 +23,7 @@ import {
   businessInquiryForms,
   businessMembers,
   businesses,
+  workspaces,
 } from "@/lib/db/schema";
 
 export type BusinessContext = {
@@ -30,7 +31,9 @@ export type BusinessContext = {
   role: BusinessMemberRole;
   business: {
     id: string;
-    plan: BusinessPlan;
+    workspaceId: string;
+    workspaceSlug: string;
+    workspacePlan: WorkspacePlan;
     name: string;
     slug: string;
     businessType: BusinessType;
@@ -88,7 +91,9 @@ export const getBusinessMembershipsForUser = cache(async (userId: string) => {
       membershipId: businessMembers.id,
       role: businessMembers.role,
       businessId: businesses.id,
-      businessPlan: businesses.plan,
+      workspaceId: businesses.workspaceId,
+      workspaceSlug: workspaces.slug,
+      workspacePlan: workspaces.plan,
       businessName: businesses.name,
       businessSlug: businesses.slug,
       businessType: businesses.businessType,
@@ -98,6 +103,7 @@ export const getBusinessMembershipsForUser = cache(async (userId: string) => {
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(eq(businessMembers.userId, userId))
     .orderBy(
       getBusinessRoleSortExpression(),
@@ -110,7 +116,9 @@ export const getBusinessMembershipsForUser = cache(async (userId: string) => {
     role: membership.role,
     business: {
       id: membership.businessId,
-      plan: membership.businessPlan,
+      workspaceId: membership.workspaceId,
+      workspaceSlug: membership.workspaceSlug,
+      workspacePlan: membership.workspacePlan as WorkspacePlan,
       name: membership.businessName,
       slug: membership.businessSlug,
       businessType: membership.businessType,
@@ -139,7 +147,9 @@ export const getBusinessContextForMembershipSlug = cache(async (
       membershipId: businessMembers.id,
       role: businessMembers.role,
       businessId: businesses.id,
-      businessPlan: businesses.plan,
+      workspaceId: businesses.workspaceId,
+      workspaceSlug: workspaces.slug,
+      workspacePlan: workspaces.plan,
       businessName: businesses.name,
       businessSlug: businesses.slug,
       businessType: businesses.businessType,
@@ -149,6 +159,7 @@ export const getBusinessContextForMembershipSlug = cache(async (
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(
       and(
         eq(businessMembers.userId, userId),
@@ -166,7 +177,9 @@ export const getBusinessContextForMembershipSlug = cache(async (
     role: context.role,
     business: {
       id: context.businessId,
-      plan: context.businessPlan,
+      workspaceId: context.workspaceId,
+      workspaceSlug: context.workspaceSlug,
+      workspacePlan: context.workspacePlan as WorkspacePlan,
       name: context.businessName,
       slug: context.businessSlug,
       businessType: context.businessType,

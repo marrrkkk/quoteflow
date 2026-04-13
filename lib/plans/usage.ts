@@ -3,15 +3,16 @@ import "server-only";
 /**
  * Server-side usage accounting for the Requo pricing system.
  *
- * Derives monthly counts from existing inquiry/quote timestamps.
- * No dedicated usage table is needed.
+ * Usage is counted at the workspace level — aggregated across all businesses
+ * in the workspace. Derives monthly counts from existing inquiry/quote
+ * timestamps. No dedicated usage table is needed.
  */
 
-import { and, count, eq, gte, lt } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lt } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { inquiries, quotes } from "@/lib/db/schema";
-import type { BusinessPlan } from "@/lib/plans/plans";
+import { businesses, businessInquiryForms, inquiries, quotes, workspaceMembers } from "@/lib/db/schema";
+import type { WorkspacePlan } from "@/lib/plans/plans";
 import {
   getUsageLimit,
   type UsageLimitKey,
@@ -28,19 +29,39 @@ function getCurrentMonthBounds() {
 }
 
 /**
- * Counts inquiries created in the current UTC month for a business.
+ * Returns all business IDs belonging to a workspace.
+ */
+async function getWorkspaceBusinessIds(
+  workspaceId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .where(eq(businesses.workspaceId, workspaceId));
+
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Counts inquiries created in the current UTC month across all businesses
+ * in a workspace.
  */
 export async function getMonthlyInquiryCount(
-  businessId: string,
+  workspaceId: string,
 ): Promise<number> {
   const { start, end } = getCurrentMonthBounds();
+  const bizIds = await getWorkspaceBusinessIds(workspaceId);
+
+  if (bizIds.length === 0) {
+    return 0;
+  }
 
   const [row] = await db
     .select({ value: count() })
     .from(inquiries)
     .where(
       and(
-        eq(inquiries.businessId, businessId),
+        inArray(inquiries.businessId, bizIds),
         gte(inquiries.createdAt, start),
         lt(inquiries.createdAt, end),
       ),
@@ -50,21 +71,81 @@ export async function getMonthlyInquiryCount(
 }
 
 /**
- * Counts quotes created in the current UTC month for a business.
+ * Counts quotes created in the current UTC month across all businesses
+ * in a workspace.
  */
 export async function getMonthlyQuoteCount(
-  businessId: string,
+  workspaceId: string,
 ): Promise<number> {
   const { start, end } = getCurrentMonthBounds();
+  const bizIds = await getWorkspaceBusinessIds(workspaceId);
+
+  if (bizIds.length === 0) {
+    return 0;
+  }
 
   const [row] = await db
     .select({ value: count() })
     .from(quotes)
     .where(
       and(
-        eq(quotes.businessId, businessId),
+        inArray(quotes.businessId, bizIds),
         gte(quotes.createdAt, start),
         lt(quotes.createdAt, end),
+      ),
+    );
+
+  return Number(row?.value ?? 0);
+}
+
+/**
+ * Counts the number of businesses in a workspace.
+ */
+export async function getWorkspaceBusinessCount(
+  workspaceId: string,
+): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(businesses)
+    .where(eq(businesses.workspaceId, workspaceId));
+
+  return Number(row?.value ?? 0);
+}
+
+/**
+ * Counts the number of members in a workspace.
+ */
+export async function getWorkspaceMemberCount(
+  workspaceId: string,
+): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.workspaceId, workspaceId));
+
+  return Number(row?.value ?? 0);
+}
+
+/**
+ * Counts the number of live (non-archived, public-enabled) inquiry forms
+ * across all businesses in a workspace.
+ */
+export async function getWorkspaceLiveFormsCount(
+  workspaceId: string,
+): Promise<number> {
+  const bizIds = await getWorkspaceBusinessIds(workspaceId);
+
+  if (bizIds.length === 0) {
+    return 0;
+  }
+
+  const [row] = await db
+    .select({ value: count() })
+    .from(businessInquiryForms)
+    .where(
+      and(
+        inArray(businessInquiryForms.businessId, bizIds),
+        eq(businessInquiryForms.publicInquiryEnabled, true),
       ),
     );
 
@@ -78,12 +159,12 @@ export type UsageAllowance = {
 };
 
 /**
- * Checks whether a business is allowed to create another item of the given
+ * Checks whether a workspace is allowed to create another item of the given
  * type. Returns current usage, limit, and whether the action is allowed.
  */
 export async function checkUsageAllowance(
-  businessId: string,
-  plan: BusinessPlan,
+  workspaceId: string,
+  plan: WorkspacePlan,
   key: UsageLimitKey,
 ): Promise<UsageAllowance> {
   const limit = getUsageLimit(plan, key);
@@ -92,10 +173,27 @@ export async function checkUsageAllowance(
     return { allowed: true, current: 0, limit: null };
   }
 
-  const current =
-    key === "inquiriesPerMonth"
-      ? await getMonthlyInquiryCount(businessId)
-      : await getMonthlyQuoteCount(businessId);
+  let current: number;
+
+  switch (key) {
+    case "inquiriesPerMonth":
+      current = await getMonthlyInquiryCount(workspaceId);
+      break;
+    case "quotesPerMonth":
+      current = await getMonthlyQuoteCount(workspaceId);
+      break;
+    case "businessesPerWorkspace":
+      current = await getWorkspaceBusinessCount(workspaceId);
+      break;
+    case "membersPerWorkspace":
+      current = await getWorkspaceMemberCount(workspaceId);
+      break;
+    case "liveFormsPerWorkspace":
+      current = await getWorkspaceLiveFormsCount(workspaceId);
+      break;
+    default:
+      current = 0;
+  }
 
   return {
     allowed: current < limit,
