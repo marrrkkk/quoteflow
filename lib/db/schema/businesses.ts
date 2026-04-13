@@ -17,7 +17,7 @@ import type { InquiryFormConfig } from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
 import { businessMemberRoles } from "@/lib/business-members";
 import { user } from "@/lib/db/schema/auth";
-import type { BusinessPlan } from "@/lib/plans/plans";
+import { workspaces } from "@/lib/db/schema/workspaces";
 
 export const businessMemberRoleEnum = pgEnum("business_member_role", [
   ...businessMemberRoles,
@@ -41,6 +41,7 @@ export const profiles = pgTable("profiles", {
   fullName: text("full_name").notNull(),
   phone: text("phone"),
   jobTitle: text("job_title"),
+  referralSource: text("referral_source"),
   avatarStoragePath: text("avatar_storage_path"),
   avatarContentType: text("avatar_content_type"),
   onboardingCompletedAt: timestamp("onboarding_completed_at", {
@@ -61,10 +62,9 @@ export const businesses = pgTable(
   "businesses",
   {
     id: text("id").primaryKey(),
-    plan: text("plan")
-      .$type<BusinessPlan>()
+    workspaceId: text("workspace_id")
       .notNull()
-      .default("free"),
+      .references(() => workspaces.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     businessType: text("business_type")
@@ -114,6 +114,7 @@ export const businesses = pgTable(
   (table) => [
     uniqueIndex("businesses_slug_unique").on(table.slug),
     index("businesses_created_at_idx").on(table.createdAt),
+    index("businesses_workspace_id_idx").on(table.workspaceId),
     check("businesses_slug_format", sql`${table.slug} ~ '^[a-z0-9-]+$'`),
     check(
       "businesses_country_code_format",
@@ -122,10 +123,6 @@ export const businesses = pgTable(
     check(
       "businesses_default_quote_validity_days_range",
       sql`${table.defaultQuoteValidityDays} between 1 and 365`,
-    ),
-    check(
-      "businesses_plan_valid",
-      sql`${table.plan} in ('free', 'pro', 'business')`,
     ),
   ],
 );

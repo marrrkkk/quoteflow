@@ -60,5 +60,6 @@ export type CreateBusinessActionState = {
     name?: string[] | undefined;
     businessType?: string[] | undefined;
     countryCode?: string[] | undefined;
+    workspaceId?: string[] | undefined;
   };
 };

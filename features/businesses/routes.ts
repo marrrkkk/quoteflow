@@ -1,4 +1,3 @@
-export const businessesHubPath = "/businesses";
 export const activeBusinessSlugCookieName = "requo-active-business";
 
 export type BusinessSettingsSection =
@@ -14,7 +13,7 @@ export type BusinessSettingsSection =
   | "integrations";
 
 export function getBusinessPath(slug: string) {
-  return `${businessesHubPath}/${slug}`;
+  return `/businesses/${slug}`;
 }
 
 export function getBusinessDashboardPath(slug: string) {
