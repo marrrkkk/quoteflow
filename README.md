@@ -236,18 +236,6 @@ npm run test:e2e
 - [Deployment setup](./docs/setup/deployment.md)
 - [Architecture](./docs/architecture/requo-architecture.md)
 
-## Status
-
-This repository already contains a working product foundation for:
-
-- authentication and password flows
-- profile creation, onboarding, and owner dashboard flows
-- workflow-led public inquiry intake
-- quote drafting and public quote response
-- business knowledge management
-- AI reply drafting
-- notification and analytics groundwork
-
 Requo is intentionally scoped for owner-led service businesses that handle inbound
 inquiries and custom quotes. It does not try to become an enterprise CRM, field-service
 dispatch tool, scheduling suite, payroll tool, invoicing platform, marketplace, or
