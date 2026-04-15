@@ -24,6 +24,7 @@ export const inquiryStatusEnum = pgEnum("inquiry_status", [
   "won",
   "lost",
   "archived",
+  "overdue",
 ]);
 
 export const inquiries = pgTable(

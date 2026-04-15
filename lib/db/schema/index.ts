@@ -1,7 +1,6 @@
 export * from "./activity";
 export * from "./auth";
 export * from "./inquiries";
-export * from "./knowledge";
 export * from "./notifications";
 export * from "./public-actions";
 export * from "./quote-library";
@@ -11,3 +10,4 @@ export * from "./business-inquiry-forms";
 export * from "./businesses";
 export * from "./google-calendar";
 export * from "./workspaces";
+export * from "./memories";

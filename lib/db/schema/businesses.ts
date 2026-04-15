@@ -15,6 +15,7 @@ import {
 import type { BusinessType } from "@/features/inquiries/business-types";
 import type { InquiryFormConfig } from "@/features/inquiries/form-config";
 import type { InquiryPageConfig } from "@/features/inquiries/page-config";
+import type { QuoteEmailTemplateConfig } from "@/features/settings/email-templates";
 import { businessMemberRoles } from "@/lib/business-members";
 import { user } from "@/lib/db/schema/auth";
 import { workspaces } from "@/lib/db/schema/workspaces";
@@ -84,6 +85,8 @@ export const businesses = pgTable(
     inquiryPageConfig: jsonb("inquiry_page_config").$type<InquiryPageConfig>(),
     defaultEmailSignature: text("default_email_signature"),
     defaultQuoteNotes: text("default_quote_notes"),
+    quoteEmailTemplate:
+      jsonb("quote_email_template").$type<QuoteEmailTemplateConfig>(),
     defaultQuoteValidityDays: integer("default_quote_validity_days")
       .notNull()
       .default(14),
@@ -101,6 +104,12 @@ export const businesses = pgTable(
       .notNull()
       .default(true),
     notifyInAppOnQuoteResponse: boolean("notify_in_app_on_quote_response")
+      .notNull()
+      .default(true),
+    notifyOnMemberInviteResponse: boolean("notify_on_member_invite_response")
+      .notNull()
+      .default(true),
+    notifyInAppOnMemberInviteResponse: boolean("notify_in_app_on_member_invite_response")
       .notNull()
       .default(true),
     defaultCurrency: text("default_currency").notNull().default("USD"),
