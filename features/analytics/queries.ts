@@ -304,10 +304,13 @@ export async function getBusinessAnalyticsData(
     activityMap[row.date].quotes += Number(row.count);
   }
 
+  const firstInquiryAt = inquiryBoundsRows[0]?.firstSubmittedAt;
+  const firstQuoteAt = quoteBoundsRows[0]?.firstQuoteActivityAt;
+
   const candidateYears = [
-    inquiryBoundsRows[0]?.firstSubmittedAt?.getUTCFullYear() ?? null,
-    quoteBoundsRows[0]?.firstQuoteActivityAt?.getUTCFullYear() ?? null,
-  ].filter((year): year is number => typeof year === "number");
+    firstInquiryAt ? new Date(firstInquiryAt).getUTCFullYear() : null,
+    firstQuoteAt ? new Date(firstQuoteAt).getUTCFullYear() : null,
+  ].filter((year): year is number => typeof year === "number" && !isNaN(year));
   const startYear = candidateYears.length
     ? Math.min(...candidateYears)
     : currentYear;
