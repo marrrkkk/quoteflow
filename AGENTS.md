@@ -22,7 +22,7 @@ Requo is an owner-led SaaS app for service businesses that handle inbound inquir
 3. send professional quotes,
 4. follow up consistently.
 
-The app also handles public inquiry intake, business-scoped dashboards, quotes, knowledge files, AI-assisted drafts, and transactional email.
+The app also handles public inquiry intake, business-scoped dashboards, quotes, knowledge files, AI-assisted drafts, transactional email, and workspace-level subscription billing.
 
 ## Product Direction
 
@@ -39,6 +39,8 @@ The app also handles public inquiry intake, business-scoped dashboards, quotes, 
 - `components/` owns shared UI primitives, app shell, marketing UI, and reusable wrappers.
 - `features/` owns product logic, validation, queries, actions, mutations, and feature-specific UI.
 - `lib/` owns auth, database access, provider clients, env parsing, and shared utilities.
+- `lib/billing/` owns billing domain types, plan pricing, region detection, subscription service, webhook processing, and provider clients.
+- `features/billing/` owns checkout UI, billing status, server actions, and billing-related queries.
 - `scripts/` owns migrations, seeders, and operational scripts.
 - `tests/e2e/` owns Playwright coverage for user flows.
 
@@ -51,6 +53,8 @@ The app also handles public inquiry intake, business-scoped dashboards, quotes, 
 - Supabase for storage and realtime-backed plumbing
 - Resend for transactional email
 - OpenRouter for AI features
+- PayMongo for QRPh payments (Philippines)
+- Lemon Squeezy for card/global payments
 
 ## Working Defaults
 
@@ -76,7 +80,6 @@ The app also handles public inquiry intake, business-scoped dashboards, quotes, 
 
 Do not add:
 
-- billing or subscriptions
 - enterprise CRM positioning
 - field-service dispatch workflows
 - marketplace features
@@ -99,6 +102,17 @@ Do not add:
 - Validate all external input with Zod.
 - Keep private asset access server-side and scoped to the active business context.
 - Prefer copy, defaults, and config-driven changes before schema or route changes when repositioning product workflows.
+
+### Billing Architecture
+
+- Subscriptions are workspace-scoped. Each workspace has at most one `workspace_subscriptions` row.
+- The `workspaces.plan` column is a denormalized read cache. The authoritative state lives in `workspace_subscriptions`.
+- `lib/billing/subscription-service.ts` is the single write path for all subscription mutations. It keeps `workspaces.plan` in sync.
+- `lib/billing/webhook-processor.ts` provides idempotent event deduplication using `billing_events`.
+- PayMongo handles QRPh (one-time payment intents, manual renewal). Lemon Squeezy handles recurring card subscriptions.
+- Webhook routes live at `app/api/billing/paymongo/webhook/route.ts` and `app/api/billing/lemonsqueezy/webhook/route.ts`.
+- Plan access is resolved through `getEffectivePlan()` in the subscription service, which checks subscription status, cancellation dates, and grace periods.
+- Do not bypass the subscription service or write directly to `workspace_subscriptions`.
 
 ## UI Rules
 

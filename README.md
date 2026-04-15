@@ -43,6 +43,7 @@ keeping the core experience focused on this workflow rather than generic configu
 - Knowledge and FAQ management for business-specific reference material
 - AI-assisted response drafting through OpenRouter
 - Transactional email flows through Resend
+- Subscription billing with PayMongo (QRPh for Philippines) and Lemon Squeezy (cards for international)
 - Analytics and notification foundations for operational visibility
 
 ## Tech Stack
@@ -57,6 +58,8 @@ keeping the core experience focused on this workflow rather than generic configu
 - Supabase for storage and realtime-backed notification plumbing
 - Resend for transactional email
 - OpenRouter for AI features
+- PayMongo for QRPh payments (Philippines)
+- Lemon Squeezy for card/global payments
 
 ## Getting Started
 
@@ -160,6 +163,17 @@ The demo seed also creates two additional sample businesses, three inquiry forms
 - `DEMO_QUOTE_PUBLIC_TOKEN`
 - `DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN`
 
+### Billing providers
+
+- `PAYMONGO_SECRET_KEY`
+- `PAYMONGO_PUBLIC_KEY`
+- `PAYMONGO_WEBHOOK_SECRET`
+- `LEMONSQUEEZY_API_KEY`
+- `LEMONSQUEEZY_STORE_ID`
+- `LEMONSQUEEZY_WEBHOOK_SECRET`
+- `LEMONSQUEEZY_PRO_VARIANT_ID`
+- `LEMONSQUEEZY_BUSINESS_VARIANT_ID`
+
 For full setup expectations, read:
 
 - [Local setup](./docs/setup/local.md)
@@ -211,6 +225,14 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 - `tests/integration/` Vitest integration tests for database actions
 - `tests/e2e/` Playwright end-to-end tests
 
+### Billing
+
+- `lib/billing/` billing domain types, plan pricing, region detection, subscription service, webhook processing, and provider clients (PayMongo, Lemon Squeezy)
+- `lib/billing/providers/` PayMongo and Lemon Squeezy REST clients with webhook signature verification
+- `lib/db/schema/subscriptions.ts` workspace_subscriptions, billing_events, and payment_attempts tables
+- `features/billing/` checkout dialog, billing status card, upgrade button, server actions, and queries
+- `app/api/billing/` webhook route handlers for PayMongo and Lemon Squeezy
+
 ## Architecture Notes
 
 - Better Auth is the only authentication system in this app
@@ -222,6 +244,10 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 - AI drafting stays server-side and uses business context plus uploaded knowledge
 - Marketing, onboarding, starter templates, and in-app copy are aligned around the inquiry -> qualification -> quote -> follow-up workflow
 - Starter templates are opinionated defaults, not rigid vertical product modes
+- Subscriptions are workspace-scoped with PayMongo for QRPh and Lemon Squeezy for cards
+- The `workspaces.plan` column is a denormalized read cache; the authoritative state lives in `workspace_subscriptions`
+- Billing mutations go through `lib/billing/subscription-service.ts`; webhooks go through `lib/billing/webhook-processor.ts`
+- See [docs/setup/billing.md](./docs/setup/billing.md) for provider setup instructions
 
 Detailed architecture guidance lives in [docs/architecture/requo-architecture.md](./docs/architecture/requo-architecture.md).
 
