@@ -13,7 +13,6 @@ import {
   activityLogs,
   inquiries,
   inquiryNotes,
-  knowledgeFaqs,
   profiles,
   quoteItems,
   quotes,
@@ -293,10 +292,6 @@ function getDemoReplySnippetIds(key: string) {
   return demoReplySnippetIds.map((id) => `${id}_${key}`);
 }
 
-function getDemoFaqIds(key: string) {
-  return demoFaqIds.map((id) => `${id}_${key}`);
-}
-
 function getDemoNoteIds(key: string) {
   return demoNoteIds.map((id) => `${id}_${key}`);
 }
@@ -337,11 +332,6 @@ const demoQuoteItemIds = [
 const demoReplySnippetIds = [
   "seed_reply_snippet_dimensions",
   "seed_reply_snippet_timeline",
-] as const;
-
-const demoFaqIds = [
-  "seed_faq_turnaround",
-  "seed_faq_file_types",
 ] as const;
 
 const demoNoteIds = [
@@ -1522,7 +1512,6 @@ async function seedBusinessData(
   const keyedQuotePublicTokens = getDemoQuotePublicTokens(businessKey);
   const keyedQuoteItemIds = getDemoQuoteItemIds(businessKey);
   const keyedReplySnippetIds = getDemoReplySnippetIds(businessKey);
-  const keyedFaqIds = getDemoFaqIds(businessKey);
   const keyedNoteIds = getDemoNoteIds(businessKey);
   const keyedActivityIds = getDemoActivityIds(businessKey);
 
@@ -1639,29 +1628,6 @@ async function seedBusinessData(
       body: "Waiting on paper stock preference and whether they want local pickup or courier delivery.",
       createdAt: noteTimestamps.flyers,
       updatedAt: noteTimestamps.flyers,
-    },
-  ];
-
-  const faqRows = [
-    {
-      id: keyedFaqIds[0],
-      businessId: business.id,
-      question: "What is your normal turnaround time?",
-      answer:
-        "Standard print jobs usually ship or are ready for pickup within 3 to 5 business days after artwork approval.",
-      position: 0,
-      createdAt: daysAgo(30, 9, 0),
-      updatedAt: daysAgo(30, 9, 0),
-    },
-    {
-      id: keyedFaqIds[1],
-      businessId: business.id,
-      question: "Which files should customers send?",
-      answer:
-        "Preferred files are press-ready PDF, AI, or SVG. High-resolution PNG can work for some jobs.",
-      position: 1,
-      createdAt: daysAgo(29, 9, 0),
-      updatedAt: daysAgo(29, 9, 0),
     },
   ];
 
@@ -1948,7 +1914,6 @@ async function seedBusinessData(
       .delete(inquiries)
       .where(eq(inquiries.businessId, business.id));
 
-    await tx.delete(knowledgeFaqs).where(inArray(knowledgeFaqs.id, keyedFaqIds));
     await tx.delete(replySnippets).where(inArray(replySnippets.id, keyedReplySnippetIds));
 
     await tx.delete(inquiries).where(
@@ -1961,7 +1926,6 @@ async function seedBusinessData(
       eq(quoteItems.businessId, business.id)
     );
 
-    await tx.insert(knowledgeFaqs).values(faqRows);
     await tx.insert(inquiries).values(allInquiries);
     await tx.insert(quotes).values(allQuotes);
     await tx.insert(quoteItems).values(allQuoteItems);
@@ -2111,9 +2075,6 @@ async function main() {
           );
           await tx.delete(inquiryNotes).where(
             inArray(inquiryNotes.businessId, businessIds),
-          );
-          await tx.delete(knowledgeFaqs).where(
-            inArray(knowledgeFaqs.businessId, businessIds),
           );
           await tx.delete(replySnippets).where(
             inArray(replySnippets.businessId, businessIds),
