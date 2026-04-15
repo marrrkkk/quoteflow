@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -31,12 +32,12 @@ import type { ThemePreference } from "@/features/theme/types";
 import { canManageOperationalBusinessSettings } from "@/lib/business-members";
 import type { BusinessContext } from "@/lib/db/business-access";
 import { BrandMark } from "@/components/shared/brand-mark";
+import { PlanBadge } from "@/components/shared/paywall";
 import {
   getDashboardBreadcrumbs,
   getDashboardNavigation,
   isDashboardNavigationItemActive,
 } from "@/components/shell/dashboard-navigation";
-import { CommandMenu } from "@/components/shell/command-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -79,6 +80,18 @@ import {
 import { workspacesHubPath, getWorkspacePath } from "@/features/workspaces/routes";
 import { getDefaultBusinessSettingsPath } from "@/features/settings/navigation";
 import { cn } from "@/lib/utils";
+
+const CommandMenu = dynamic(
+  () =>
+    import("@/components/shell/command-menu").then(
+      (module) => module.CommandMenu,
+    ),
+  {
+    loading: () => (
+      <div className="hidden h-9 w-64 rounded-lg border border-border/60 bg-muted/20 md:block lg:w-80" />
+    ),
+  },
+);
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -165,6 +178,7 @@ export function DashboardShell({
             businessRole={businessContext.role}
             businessSlug={business.slug}
             workspaceSlug={business.workspaceSlug}
+            workspacePlan={business.workspacePlan}
           />
         </SidebarFooter>
 
@@ -277,11 +291,13 @@ function DashboardUserMenu({
   businessRole,
   businessSlug,
   workspaceSlug,
+  workspacePlan,
 }: {
   user: DashboardShellProps["user"];
   businessRole: DashboardShellProps["businessContext"]["role"];
   businessSlug: string;
   workspaceSlug: string;
+  workspacePlan: BusinessContext["business"]["workspacePlan"];
 }) {
   const [isPending, startTransition] = useTransition();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -392,6 +408,7 @@ function DashboardUserMenu({
                 >
                   <BriefcaseBusiness data-icon="inline-start" />
                   Workspace & billing
+                  <PlanBadge plan={workspacePlan} showIcon={false} className="ml-auto" />
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -491,6 +508,7 @@ function BusinessSwitcher({
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
+            <PlanBadge plan={business.workspacePlan} showIcon={false} />
             <Badge
               className="border-sidebar-border bg-background text-sidebar-foreground"
               variant="outline"
