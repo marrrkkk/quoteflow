@@ -189,7 +189,7 @@ const planHighlights: Record<WorkspacePlan, string[]> = {
     "Conversion & workflow analytics",
     "Multiple inquiry forms",
     "Inquiry page customization",
-    "AI assistant & knowledge base",
+    "AI assistant & knowledge",
     "Saved replies & quote library",
     "Data exports & branding",
     "Multiple businesses",

@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  audienceSegments,
   faqItems,
   featureFormFields,
   featureFormUploads,
@@ -30,7 +29,6 @@ import {
   featureQueueItems,
   featureSummaryItems,
   heroDetails,
-  heroSignals,
   inquiryChecklist,
   navItems,
   proofItems,
@@ -46,7 +44,6 @@ import {
 import {
   FaqItem,
   HeroDetail,
-  HeroSignalPill,
   QueueSignal,
   StatusBadge,
   WorkflowStep,
@@ -104,25 +101,6 @@ export function MarketingHero() {
               <Button asChild className="w-full sm:w-auto" size="lg" variant="outline">
                 <Link href="#how-it-works">Request a demo</Link>
               </Button>
-            </div>
-
-            <div className="flex flex-col items-center gap-3">
-              <p className="text-sm font-medium text-foreground">
-                Works well for owner-led service businesses like:
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
-                {audienceSegments.map((segment) => (
-                  <Badge className="h-8 px-3 text-[0.72rem]" key={segment} variant="secondary">
-                    {segment}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid w-full gap-3 md:grid-cols-3">
-              {heroSignals.map((item) => (
-                <HeroSignalPill key={item.label} label={item.label} value={item.value} />
-              ))}
             </div>
           </div>
 

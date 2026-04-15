@@ -187,7 +187,11 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Run TypeScript checks |
 | `npm run check` | Run lint and typecheck together |
-| `npm run test:e2e` | Run the Playwright end-to-end suite |
+| `npm run test` | Run unit and component tests with Vitest |
+| `npm run test:integration` | Run integration tests with Vitest |
+| `npm run test:e2e` | Run Playwright end-to-end tests |
+| `npm run test:all` | Run all tests (unit + integration + e2e) |
+| `npm run test:coverage` | Run tests with coverage report |
 | `npm run db:generate` | Generate Drizzle artifacts |
 | `npm run db:migrate` | Apply Drizzle migrations |
 | `npm run db:push` | Push schema changes directly |
@@ -202,7 +206,10 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 - `lib/` auth, database, provider clients, env validation, and shared utilities
 - `emails/templates/` transactional email rendering
 - `docs/` setup and architecture documentation
-- `tests/e2e/` Playwright coverage
+- `tests/unit/` Vitest unit tests for utilities and logic
+- `tests/components/` Vitest component tests for React components
+- `tests/integration/` Vitest integration tests for database actions
+- `tests/e2e/` Playwright end-to-end tests
 
 ## Architecture Notes
 
@@ -224,6 +231,7 @@ The baseline health checks for this repository are:
 
 ```bash
 npm run check
+npm run test
 npm run build
 npm run test:e2e
 ```
