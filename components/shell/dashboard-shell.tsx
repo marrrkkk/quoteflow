@@ -515,12 +515,6 @@ function BusinessSwitcher({
             >
               {business.defaultCurrency}
             </Badge>
-            <Badge
-              className="bg-sidebar-accent text-sidebar-accent-foreground"
-              variant="secondary"
-            >
-              {business.publicInquiryEnabled ? "Public form live" : "Public form off"}
-            </Badge>
           </div>
         </button>
       </DropdownMenuTrigger>
