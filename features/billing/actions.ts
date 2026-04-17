@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/session";
 import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
-import { isPayMongoConfigured, isLemonSqueezyConfigured } from "@/lib/env";
+import { isPayMongoConfigured, isPaddleConfigured } from "@/lib/env";
 import { getProviderForCurrency } from "@/lib/billing/region";
 import { createPendingSubscription } from "@/lib/billing/subscription-service";
 import { recordPaymentAttempt } from "@/lib/billing/webhook-processor";
@@ -117,21 +117,20 @@ export async function createCheckoutAction(
     return { error: "Unexpected checkout result." };
   }
 
-  // Lemon Squeezy
-  if (!isLemonSqueezyConfigured) {
+  // Paddle
+  if (!isPaddleConfigured) {
     return { error: "Card payments are not yet configured. Please try QRPh payment instead." };
   }
 
-  const { createLemonSqueezyCheckout } = await import(
-    "@/lib/billing/providers/lemonsqueezy"
+  const { createPaddleTransaction } = await import(
+    "@/lib/billing/providers/paddle"
   );
 
-  const result = await createLemonSqueezyCheckout({
+  const result = await createPaddleTransaction({
     plan: typedPlan,
     workspaceId,
     userEmail: user.email,
     userName: user.name,
-    successUrl: `${process.env.BETTER_AUTH_URL}/workspaces/${workspace.slug}?billing=success`,
   });
 
   if (result.type === "error") {
@@ -139,7 +138,8 @@ export async function createCheckoutAction(
   }
 
   if (result.type === "redirect") {
-    return { checkoutUrl: result.url };
+    // result.url contains the Paddle transaction ID for overlay checkout
+    return { paddleTransactionId: result.url };
   }
 
   return { error: "Unexpected checkout result." };
@@ -183,13 +183,13 @@ export async function cancelSubscriptionAction(
 
   // Cancel based on provider
   if (
-    subscription.billingProvider === "lemonsqueezy" &&
+    subscription.billingProvider === "paddle" &&
     subscription.providerSubscriptionId
   ) {
-    const { cancelLemonSqueezySubscription } = await import(
-      "@/lib/billing/providers/lemonsqueezy"
+    const { cancelPaddleSubscription } = await import(
+      "@/lib/billing/providers/paddle"
     );
-    const success = await cancelLemonSqueezySubscription(
+    const success = await cancelPaddleSubscription(
       subscription.providerSubscriptionId,
     );
 

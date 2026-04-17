@@ -5,7 +5,7 @@
  *
  * - Shows plan cards with localized pricing
  * - QRPh inline flow for PHP (renders QR code)
- * - Lemon Squeezy redirect flow for USD (opens hosted checkout)
+ * - Paddle overlay checkout for USD/card (opens Paddle.js checkout)
  */
 
 import {
@@ -28,6 +28,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { createCheckoutAction } from "@/features/billing/actions";
+import { usePaddle, PaddleProvider } from "@/features/billing/components/paddle-provider";
 import type { CheckoutActionState } from "@/features/billing/types";
 import type { WorkspacePlan } from "@/lib/plans/plans";
 import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
@@ -46,7 +47,25 @@ type CheckoutDialogProps = {
   defaultCurrency: BillingCurrency;
 };
 
-export function CheckoutDialog({
+export function CheckoutDialog(props: CheckoutDialogProps) {
+  const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  const environment = (process.env.NEXT_PUBLIC_PADDLE_ENVIRONMENT ?? "sandbox") as
+    | "sandbox"
+    | "production";
+
+  // Wrap with PaddleProvider only if token available
+  if (!clientToken) {
+    return <CheckoutDialogInner {...props} />;
+  }
+
+  return (
+    <PaddleProvider clientToken={clientToken} environment={environment}>
+      <CheckoutDialogInner {...props} />
+    </PaddleProvider>
+  );
+}
+
+function CheckoutDialogInner({
   open,
   onOpenChange,
   workspaceId,
@@ -62,13 +81,18 @@ export function CheckoutDialog({
     createCheckoutAction,
     {} as CheckoutActionState,
   );
+  const paddle = usePaddle();
 
-  // Handle redirect to Lemon Squeezy
+  // Handle Paddle overlay checkout
   useEffect(() => {
-    if (state.checkoutUrl) {
-      window.location.href = state.checkoutUrl;
+    if (state.paddleTransactionId && paddle.isReady) {
+      paddle.openCheckout(state.paddleTransactionId, () => {
+        // Checkout completed — close dialog.
+        // Subscription activation happens via webhook, not here.
+        onOpenChange(false);
+      });
     }
-  }, [state.checkoutUrl]);
+  }, [state.paddleTransactionId, paddle, onOpenChange]);
 
   const isQrPh = currency === "PHP";
   const showQrCode = state.qrData && isQrPh;
@@ -178,7 +202,7 @@ export function CheckoutDialog({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">Card</p>
-                    <p className="text-xs text-muted-foreground">Pay in USD</p>
+                    <p className="text-xs text-muted-foreground">Pay in your currency</p>
                   </div>
                   {currency === "USD" ? (
                     <Check className="ml-auto size-4 text-primary" />
@@ -217,11 +241,11 @@ export function CheckoutDialog({
               </Button>
             </form>
 
-            {/* Redirect notice */}
-            {state.checkoutUrl ? (
+            {/* Paddle loading notice */}
+            {state.paddleTransactionId ? (
               <p className="text-center text-sm text-muted-foreground">
                 <Spinner className="mr-1.5 inline-block" aria-hidden="true" />
-                Redirecting to payment page...
+                Opening checkout...
               </p>
             ) : null}
           </div>
