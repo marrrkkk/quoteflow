@@ -43,6 +43,7 @@ keeping the core experience focused on this workflow rather than generic configu
 - Knowledge and FAQ management for business-specific reference material
 - AI-assisted response drafting through OpenRouter
 - Transactional email flows through Resend
+- Subscription billing with PayMongo (QRPh for Philippines) and Lemon Squeezy (cards for international)
 - Analytics and notification foundations for operational visibility
 
 ## Tech Stack
@@ -57,6 +58,8 @@ keeping the core experience focused on this workflow rather than generic configu
 - Supabase for storage and realtime-backed notification plumbing
 - Resend for transactional email
 - OpenRouter for AI features
+- PayMongo for QRPh payments (Philippines)
+- Lemon Squeezy for card/global payments
 
 ## Getting Started
 
@@ -160,6 +163,17 @@ The demo seed also creates two additional sample businesses, three inquiry forms
 - `DEMO_QUOTE_PUBLIC_TOKEN`
 - `DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN`
 
+### Billing providers
+
+- `PAYMONGO_SECRET_KEY`
+- `PAYMONGO_PUBLIC_KEY`
+- `PAYMONGO_WEBHOOK_SECRET`
+- `LEMONSQUEEZY_API_KEY`
+- `LEMONSQUEEZY_STORE_ID`
+- `LEMONSQUEEZY_WEBHOOK_SECRET`
+- `LEMONSQUEEZY_PRO_VARIANT_ID`
+- `LEMONSQUEEZY_BUSINESS_VARIANT_ID`
+
 For full setup expectations, read:
 
 - [Local setup](./docs/setup/local.md)
@@ -187,7 +201,11 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Run TypeScript checks |
 | `npm run check` | Run lint and typecheck together |
-| `npm run test:e2e` | Run the Playwright end-to-end suite |
+| `npm run test` | Run unit and component tests with Vitest |
+| `npm run test:integration` | Run integration tests with Vitest |
+| `npm run test:e2e` | Run Playwright end-to-end tests |
+| `npm run test:all` | Run all tests (unit + integration + e2e) |
+| `npm run test:coverage` | Run tests with coverage report |
 | `npm run db:generate` | Generate Drizzle artifacts |
 | `npm run db:migrate` | Apply Drizzle migrations |
 | `npm run db:push` | Push schema changes directly |
@@ -202,7 +220,18 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 - `lib/` auth, database, provider clients, env validation, and shared utilities
 - `emails/templates/` transactional email rendering
 - `docs/` setup and architecture documentation
-- `tests/e2e/` Playwright coverage
+- `tests/unit/` Vitest unit tests for utilities and logic
+- `tests/components/` Vitest component tests for React components
+- `tests/integration/` Vitest integration tests for database actions
+- `tests/e2e/` Playwright end-to-end tests
+
+### Billing
+
+- `lib/billing/` billing domain types, plan pricing, region detection, subscription service, webhook processing, and provider clients (PayMongo, Lemon Squeezy)
+- `lib/billing/providers/` PayMongo and Lemon Squeezy REST clients with webhook signature verification
+- `lib/db/schema/subscriptions.ts` workspace_subscriptions, billing_events, and payment_attempts tables
+- `features/billing/` checkout dialog, billing status card, upgrade button, server actions, and queries
+- `app/api/billing/` webhook route handlers for PayMongo and Lemon Squeezy
 
 ## Architecture Notes
 
@@ -215,6 +244,10 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 - AI drafting stays server-side and uses business context plus uploaded knowledge
 - Marketing, onboarding, starter templates, and in-app copy are aligned around the inquiry -> qualification -> quote -> follow-up workflow
 - Starter templates are opinionated defaults, not rigid vertical product modes
+- Subscriptions are workspace-scoped with PayMongo for QRPh and Lemon Squeezy for cards
+- The `workspaces.plan` column is a denormalized read cache; the authoritative state lives in `workspace_subscriptions`
+- Billing mutations go through `lib/billing/subscription-service.ts`; webhooks go through `lib/billing/webhook-processor.ts`
+- See [docs/setup/billing.md](./docs/setup/billing.md) for provider setup instructions
 
 Detailed architecture guidance lives in [docs/architecture/requo-architecture.md](./docs/architecture/requo-architecture.md).
 
@@ -224,6 +257,7 @@ The baseline health checks for this repository are:
 
 ```bash
 npm run check
+npm run test
 npm run build
 npm run test:e2e
 ```
@@ -235,18 +269,6 @@ npm run test:e2e
 - [Local setup](./docs/setup/local.md)
 - [Deployment setup](./docs/setup/deployment.md)
 - [Architecture](./docs/architecture/requo-architecture.md)
-
-## Status
-
-This repository already contains a working product foundation for:
-
-- authentication and password flows
-- profile creation, onboarding, and owner dashboard flows
-- workflow-led public inquiry intake
-- quote drafting and public quote response
-- business knowledge management
-- AI reply drafting
-- notification and analytics groundwork
 
 Requo is intentionally scoped for owner-led service businesses that handle inbound
 inquiries and custom quotes. It does not try to become an enterprise CRM, field-service

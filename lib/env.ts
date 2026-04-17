@@ -32,6 +32,14 @@ const envSchema = z.object({
   OPENROUTER_DEFAULT_MODEL: emptyToUndefined(z.string().min(1)).default(
     "openai/gpt-5-mini",
   ),
+  PAYMONGO_SECRET_KEY: emptyToUndefined(z.string().min(1)),
+  PAYMONGO_PUBLIC_KEY: emptyToUndefined(z.string().min(1)),
+  PAYMONGO_WEBHOOK_SECRET: emptyToUndefined(z.string().min(1)),
+  LEMONSQUEEZY_API_KEY: emptyToUndefined(z.string().min(1)),
+  LEMONSQUEEZY_STORE_ID: emptyToUndefined(z.string().min(1)),
+  LEMONSQUEEZY_WEBHOOK_SECRET: emptyToUndefined(z.string().min(1)),
+  LEMONSQUEEZY_PRO_VARIANT_ID: emptyToUndefined(z.string().min(1)),
+  LEMONSQUEEZY_BUSINESS_VARIANT_ID: emptyToUndefined(z.string().min(1)),
   DEMO_OWNER_NAME: emptyToUndefined(z.string().trim().min(1)),
   DEMO_OWNER_EMAIL: emptyToUndefined(z.email()),
   DEMO_OWNER_PASSWORD: emptyToUndefined(z.string().min(8)),
@@ -56,4 +64,10 @@ export const isOpenRouterConfigured = Boolean(env.OPENROUTER_API_KEY);
 export const isSupabaseRealtimeConfigured = Boolean(env.SUPABASE_JWT_SECRET);
 export const isGoogleCalendarConfigured = Boolean(
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
+);
+export const isPayMongoConfigured = Boolean(
+  env.PAYMONGO_SECRET_KEY && env.PAYMONGO_PUBLIC_KEY,
+);
+export const isLemonSqueezyConfigured = Boolean(
+  env.LEMONSQUEEZY_API_KEY && env.LEMONSQUEEZY_STORE_ID,
 );

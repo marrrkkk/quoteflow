@@ -7,16 +7,18 @@ type BrandMarkProps = {
   className?: string;
   collapseLabel?: boolean;
   subtitle?: string | null;
+  href?: string;
 };
 
 export function BrandMark({
   className,
   collapseLabel = false,
   subtitle = "Owner-led service",
+  href = "/",
 }: BrandMarkProps) {
   return (
     <Link
-      href="/"
+      href={href}
       aria-label="Requo"
       className={cn(
         "inline-flex items-center gap-3 text-foreground",

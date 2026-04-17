@@ -38,20 +38,27 @@ export type BusinessOverviewQuoteActionItem = {
 };
 
 export type BusinessOverviewCounts = {
-  overdueReplies: number;
+  overdueInquiries: number;
   expiringSoonQuotes: number;
-  inquiriesWithoutQuotes: number;
+  waitingInquiries: number;
   followUpDueQuotes: number;
   recentAcceptedQuotes: number;
 };
 
 export type BusinessOverviewData = {
-  overdueReplies: BusinessOverviewInquiryActionItem[];
+  overdueInquiries: BusinessOverviewInquiryActionItem[];
   expiringSoonQuotes: BusinessOverviewQuoteActionItem[];
-  inquiriesWithoutQuotes: BusinessOverviewInquiryActionItem[];
+  waitingInquiries: BusinessOverviewInquiryActionItem[];
   followUpDueQuotes: BusinessOverviewQuoteActionItem[];
   recentAcceptedQuotes: BusinessOverviewQuoteActionItem[];
   counts: BusinessOverviewCounts;
+};
+
+export type BusinessDashboardSummaryData = {
+  inquiriesThisWeek: number;
+  inquiryCoverageRate: number;
+  wonCount: number;
+  lostCount: number;
 };
 
 export type CreateBusinessActionState = {
@@ -59,7 +66,7 @@ export type CreateBusinessActionState = {
   fieldErrors?: {
     name?: string[] | undefined;
     businessType?: string[] | undefined;
-    countryCode?: string[] | undefined;
+    defaultCurrency?: string[] | undefined;
     workspaceId?: string[] | undefined;
   };
 };

@@ -4,7 +4,9 @@ import {
   BookCopy,
   Bell,
   Cable,
+  CreditCard,
   FileText,
+  Mail,
   MessageSquareText,
   Settings2,
   Shield,
@@ -46,8 +48,10 @@ const settingsNavigationIcons: Record<BusinessSettingsNavigationIcon, typeof Use
   replies: MessageSquareText,
   knowledge: BookCopy,
   quote: FileText,
+  email: Mail,
   pricing: Tags,
   integrations: Cable,
+  billing: CreditCard,
 };
 
 function isActiveSettingsItem(pathname: string, href: string) {
@@ -125,13 +129,13 @@ export function BusinessSettingsNav({ groups }: BusinessSettingsNavProps) {
       </div>
 
       <aside className="hidden xl:block">
-        <nav className="flex flex-col gap-4 pr-3">
+        <nav className="flex flex-col gap-3 pr-3">
           {groups.map((group) => (
-            <div className="flex flex-col gap-1" key={group.label}>
-              <p className="px-3 pb-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="flex flex-col gap-0.5" key={group.label}>
+              <p className="px-2.5 pb-0.5 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {group.label}
               </p>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 {group.items.map((item) => {
                   const Icon = settingsNavigationIcons[item.icon];
 

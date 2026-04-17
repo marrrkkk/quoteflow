@@ -1,0 +1,1 @@
+ALTER TABLE "businesses" ADD COLUMN "quote_email_template" jsonb;

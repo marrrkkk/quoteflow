@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@/lib/db/schema";
 
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/quoteflow";
+  process.env.DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/requo";
 }
 
 const pool = new Pool({

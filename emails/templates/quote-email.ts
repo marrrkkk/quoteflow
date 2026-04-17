@@ -1,3 +1,8 @@
+import {
+  type QuoteEmailTemplateConfig,
+  resolveQuoteEmailTemplate,
+} from "@/features/settings/email-templates";
+
 type QuoteEmailLineItem = {
   description: string;
   quantity: number;
@@ -19,6 +24,7 @@ type QuoteEmailTemplateInput = {
   notes?: string | null;
   emailSignature?: string | null;
   items: QuoteEmailLineItem[];
+  templateOverrides?: QuoteEmailTemplateConfig | null;
 };
 
 function escapeHtml(value: string) {
@@ -60,8 +66,15 @@ export function renderQuoteEmail({
   notes,
   emailSignature,
   items,
+  templateOverrides,
 }: QuoteEmailTemplateInput) {
-  const subject = `${quoteNumber} from ${businessName}`;
+  const template = resolveQuoteEmailTemplate(templateOverrides, {
+    businessName,
+    customerName,
+    quoteNumber,
+    quoteTitle: title,
+  });
+
   const escapedNotes = notes
     ? escapeHtml(notes).replace(/\n/g, "<br />")
     : null;
@@ -81,9 +94,9 @@ export function renderQuoteEmail({
     )
     .join("");
   const textLines = [
-    `Hi ${customerName},`,
+    template.greeting,
     "",
-    `${businessName} prepared a quote for you.`,
+    template.introText,
     `Quote number: ${quoteNumber}`,
     `Title: ${title}`,
     `Valid until: ${formatDate(validUntil)}`,
@@ -107,14 +120,14 @@ export function renderQuoteEmail({
     "",
     escapedSignature ? emailSignature : null,
     escapedSignature ? "" : null,
-    "Reply to this email if you have any questions.",
+    template.closingText,
   ].filter(Boolean);
 
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #172033;">
-      <p style="margin: 0 0 18px;">Hi ${escapeHtml(customerName)},</p>
+      <p style="margin: 0 0 18px;">${escapeHtml(template.greeting)}</p>
       <h1 style="font-size: 28px; margin: 0 0 12px;">${escapeHtml(title)}</h1>
-      <p style="margin: 0 0 20px;">${escapeHtml(businessName)} prepared quote <strong>${escapeHtml(quoteNumber)}</strong> for you.</p>
+      <p style="margin: 0 0 20px;">${escapeHtml(template.introText)}</p>
       <div style="border: 1px solid #d9deeb; border-radius: 18px; background: #ffffff; padding: 18px; margin-bottom: 20px;">
         <p style="margin: 0 0 8px;"><strong>Quote number:</strong> ${escapeHtml(quoteNumber)}</p>
         <p style="margin: 0 0 8px;"><strong>Valid until:</strong> ${escapeHtml(formatDate(validUntil))}</p>
@@ -142,7 +155,7 @@ export function renderQuoteEmail({
       </div>
       <div style="margin-bottom: 20px;">
         <a href="${escapeHtml(publicQuoteUrl)}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #172033; color: #ffffff; text-decoration: none; font-weight: 600;">
-          Review quote online
+          ${escapeHtml(template.ctaLabel)}
         </a>
       </div>
       ${
@@ -164,12 +177,12 @@ export function renderQuoteEmail({
           `
           : ""
       }
-      <p style="margin: 0;">Reply to this email if you have any questions.</p>
+      <p style="margin: 0;">${escapeHtml(template.closingText)}</p>
     </div>
   `;
 
   return {
-    subject,
+    subject: template.subject,
     text: textLines.join("\n"),
     html,
   };

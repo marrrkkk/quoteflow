@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, /* Plus */ } from "lucide-react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
@@ -14,9 +15,9 @@ import {
 } from "@/components/ui/card";
 import { CreateWorkspaceDialog } from "@/features/workspaces/components/create-workspace-dialog";
 import { getWorkspaceListForUser } from "@/features/workspaces/queries";
-import { getWorkspacePath } from "@/features/workspaces/routes";
+import { getWorkspacePath, workspacesHubPath } from "@/features/workspaces/routes";
 import { getAccountProfileForUser } from "@/features/account/queries";
-import { /* onboardingPath */ } from "@/features/onboarding/routes";
+import { onboardingPath } from "@/features/onboarding/routes";
 
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { AppearanceMenu } from "@/features/theme/components/appearance-menu";
@@ -34,7 +35,7 @@ export default async function WorkspacesPage() {
   ]);
 
   if (workspaceList.length === 0 && !profile?.onboardingCompletedAt) {
-    // redirect(onboardingPath);
+    redirect(onboardingPath);
   }
 
   return (
@@ -46,7 +47,7 @@ export default async function WorkspacesPage() {
       <div className="min-h-svh w-full bg-background">
         <header className="sticky top-0 z-10 flex h-[4.5rem] w-full shrink-0 items-center justify-between border-b border-border/70 bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
-            <BrandMark subtitle="Workspaces" />
+            <BrandMark subtitle="Workspaces" href={workspacesHubPath} />
             <div className="h-4 w-px bg-border max-sm:hidden" />
 
           </div>

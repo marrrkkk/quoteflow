@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, PlusCircle } from "lucide-react";
 
-import { PlanBadge } from "@/components/shared/paywall";
+import { BillingStatusCard } from "@/features/billing/components/billing-status-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,10 +23,14 @@ import { DashboardDetailFeed, DashboardDetailFeedItem } from "@/components/share
 import { CreateBusinessDialog } from "@/features/businesses/components/create-business-dialog";
 import type { WorkspaceOverview, WorkspaceListItem } from "@/features/workspaces/types";
 import type { CreateBusinessActionState } from "@/features/businesses/types";
+import type { WorkspaceBillingOverview } from "@/features/billing/types";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type WorkspaceOverviewContentProps = {
   overview: WorkspaceOverview;
   workspaceList: WorkspaceListItem[];
+  billingOverview: WorkspaceBillingOverview;
   createBusinessAction: (
     state: CreateBusinessActionState,
     formData: FormData,
@@ -36,6 +40,7 @@ type WorkspaceOverviewContentProps = {
 export function WorkspaceOverviewContent({
   overview,
   workspaceList,
+  billingOverview,
   createBusinessAction,
 }: WorkspaceOverviewContentProps) {
   return (
@@ -159,6 +164,13 @@ export function WorkspaceOverviewContent({
                   {overview.members.map((member) => (
                     <DashboardDetailFeedItem
                       key={member.userId}
+                      avatar={
+                        <Avatar className="size-9 border border-border/70 shadow-sm">
+                          <AvatarFallback className="bg-background text-xs font-semibold text-foreground">
+                            {getInitials(member.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      }
                       title={member.name}
                       meta={member.email}
                       action={
@@ -176,19 +188,9 @@ export function WorkspaceOverviewContent({
       </section>
 
       <aside className="xl:col-span-1">
-        <Card className="sticky top-6">
-          <CardHeader className="pb-3 text-lg font-semibold">
-            Current Plan
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center gap-2">
-              <PlanBadge plan={overview.plan} />
-            </div>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Your plan determines the limits and features available across all businesses in this workspace.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="sticky top-6">
+          <BillingStatusCard billing={billingOverview} />
+        </div>
       </aside>
     </div>
   );

@@ -39,18 +39,19 @@ export async function getWorkspacePlanByBusinessId(
 }
 
 /**
- * Returns the plan for a workspace by ID, or `"free"` if not found.
+ * Returns the plan for a workspace by ID.
+ *
+ * Derives the effective plan from `workspace_subscriptions` when a
+ * subscription exists, falling back to `workspaces.plan` for backward
+ * compatibility with existing free workspaces.
  */
 export async function getWorkspacePlanById(
   workspaceId: string,
 ): Promise<WorkspacePlan> {
-  const [row] = await db
-    .select({ plan: workspaces.plan })
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
-    .limit(1);
-
-  return (row?.plan as WorkspacePlan) ?? "free";
+  const { getEffectivePlan } = await import(
+    "@/lib/billing/subscription-service"
+  );
+  return getEffectivePlan(workspaceId);
 }
 
 /** @deprecated Use `getWorkspacePlanByBusinessId` instead. */

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -31,6 +32,7 @@ import type { ThemePreference } from "@/features/theme/types";
 import { canManageOperationalBusinessSettings } from "@/lib/business-members";
 import type { BusinessContext } from "@/lib/db/business-access";
 import { BrandMark } from "@/components/shared/brand-mark";
+import { PlanBadge } from "@/components/shared/paywall";
 import {
   getDashboardBreadcrumbs,
   getDashboardNavigation,
@@ -78,6 +80,18 @@ import {
 import { workspacesHubPath, getWorkspacePath } from "@/features/workspaces/routes";
 import { getDefaultBusinessSettingsPath } from "@/features/settings/navigation";
 import { cn } from "@/lib/utils";
+
+const CommandMenu = dynamic(
+  () =>
+    import("@/components/shell/command-menu").then(
+      (module) => module.CommandMenu,
+    ),
+  {
+    loading: () => (
+      <div className="hidden h-9 w-64 rounded-lg border border-border/60 bg-muted/20 md:block lg:w-80" />
+    ),
+  },
+);
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -130,6 +144,7 @@ export function DashboardShell({
               collapseLabel
               className="min-w-0 px-2 py-1.5"
               subtitle={null}
+              href={getBusinessDashboardPath(businessContext.business.slug)}
             />
           </div>
           <SidebarSeparator />
@@ -163,6 +178,7 @@ export function DashboardShell({
             businessRole={businessContext.role}
             businessSlug={business.slug}
             workspaceSlug={business.workspaceSlug}
+            workspacePlan={business.workspacePlan}
           />
         </SidebarFooter>
 
@@ -204,7 +220,8 @@ export function DashboardShell({
                   </BreadcrumbList>
                 </Breadcrumb>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <CommandMenu navigation={dashboardNavigation} businessSlug={business.slug} />
                 <DashboardNotificationBell
                   businessId={business.id}
                   businessSlug={business.slug}
@@ -243,7 +260,7 @@ function DashboardNavigationItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        className="min-h-11 rounded-lg border border-transparent px-3.5 py-2.5 data-[active=true]:border-sidebar-primary/12 data-[active=true]:bg-sidebar-primary/12 data-[active=true]:text-primary data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+        className="min-h-9 rounded-lg border border-transparent px-3 py-1.5 data-[active=true]:border-sidebar-primary/12 data-[active=true]:bg-sidebar-primary/12 data-[active=true]:text-primary data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:data-[active=true]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
         isActive={isActive}
         tooltip={item.label}
       >
@@ -274,11 +291,13 @@ function DashboardUserMenu({
   businessRole,
   businessSlug,
   workspaceSlug,
+  workspacePlan,
 }: {
   user: DashboardShellProps["user"];
   businessRole: DashboardShellProps["businessContext"]["role"];
   businessSlug: string;
   workspaceSlug: string;
+  workspacePlan: BusinessContext["business"]["workspacePlan"];
 }) {
   const [isPending, startTransition] = useTransition();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -389,6 +408,7 @@ function DashboardUserMenu({
                 >
                   <BriefcaseBusiness data-icon="inline-start" />
                   Workspace & billing
+                  <PlanBadge plan={workspacePlan} showIcon={false} className="ml-auto" />
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -488,17 +508,12 @@ function BusinessSwitcher({
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
+            <PlanBadge plan={business.workspacePlan} showIcon={false} />
             <Badge
               className="border-sidebar-border bg-background text-sidebar-foreground"
               variant="outline"
             >
               {business.defaultCurrency}
-            </Badge>
-            <Badge
-              className="bg-sidebar-accent text-sidebar-accent-foreground"
-              variant="secondary"
-            >
-              {business.publicInquiryEnabled ? "Public form live" : "Public form off"}
             </Badge>
           </div>
         </button>

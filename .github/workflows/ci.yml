@@ -14,27 +14,27 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: quoteflow
+          POSTGRES_DB: requo
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d quoteflow"
+        options: >
+          --health-cmd "pg_isready -U postgres -d requo"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
       NODE_ENV: test
-      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/quoteflow
-      DATABASE_DIRECT_URL: postgres://postgres:postgres@127.0.0.1:5432/quoteflow
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/requo
+      DATABASE_DIRECT_URL: postgres://postgres:postgres@127.0.0.1:5432/requo
       BETTER_AUTH_SECRET: 0123456789abcdef0123456789abcdef
       BETTER_AUTH_URL: http://127.0.0.1:3000
       NEXT_PUBLIC_BETTER_AUTH_URL: http://127.0.0.1:3000/api/auth
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: demo-anon-key
       SUPABASE_SERVICE_ROLE_KEY: demo-service-role-key
-      DEMO_OWNER_EMAIL: demo@quoteflow.test
+      DEMO_OWNER_EMAIL: demo@requo.test
       DEMO_OWNER_PASSWORD: ChangeMe123456!
       DEMO_BUSINESS_SLUG: brightside-print-studio
       DEMO_QUOTE_PUBLIC_TOKEN: demoquote1002senttoken
