@@ -6,7 +6,10 @@ import { ensureProfileForUser } from "@/lib/auth/business-bootstrap";
 import { db } from "@/lib/db/client";
 import * as schema from "@/lib/db/schema";
 import { env } from "@/lib/env";
-import { sendPasswordResetEmail } from "@/lib/resend/client";
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from "@/lib/resend/client";
 
 function toOrigin(value: string) {
   return new URL(value).origin;
@@ -46,6 +49,9 @@ function buildTrustedOrigins() {
   return Array.from(origins);
 }
 
+const shouldSkipTransactionalAuthEmails =
+  process.env.DISABLE_TRANSACTIONAL_EMAILS === "1";
+
 export const auth = betterAuth({
   appName: "Requo",
   baseURL: env.BETTER_AUTH_URL,
@@ -58,8 +64,14 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    autoSignIn: true,
+    autoSignIn: false,
+    requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url, token }) => {
+      if (shouldSkipTransactionalAuthEmails) {
+        return;
+      }
+
       await sendPasswordResetEmail({
         userId: user.id,
         email: user.email,
@@ -68,6 +80,27 @@ export const auth = betterAuth({
         token,
       });
     },
+  },
+  emailVerification: {
+    autoSignInAfterVerification: false,
+    sendOnSignIn: true,
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url, token }) => {
+      if (shouldSkipTransactionalAuthEmails) {
+        return;
+      }
+
+      await sendVerificationEmail({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        token,
+        url,
+      });
+    },
+  },
+  verification: {
+    storeIdentifier: "hashed",
   },
   socialProviders: {
     ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
@@ -92,6 +125,8 @@ export const auth = betterAuth({
     accountLinking: {
       trustedProviders: ["google", "microsoft"],
     },
+    // OAuth + `verification.storeIdentifier: "hashed"` can break DB+signed-cookie state checks (surfacing as `state_mismatch`).
+    storeStateStrategy: "cookie",
   },
   user: {
     deleteUser: {
@@ -110,6 +145,31 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
+    },
+  },
+  advanced: {
+    useSecureCookies: env.NODE_ENV === "production",
+  },
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    customRules: {
+      "/request-password-reset": {
+        max: 5,
+        window: 300,
+      },
+      "/reset-password": {
+        max: 10,
+        window: 300,
+      },
+      "/sign-in/email": {
+        max: 10,
+        window: 60,
+      },
+      "/sign-up/email": {
+        max: 5,
+        window: 60,
+      },
     },
   },
   plugins: [nextCookies()],
