@@ -104,9 +104,6 @@ export async function createPaddleTransaction(params: {
           workspace_id: params.workspaceId,
           plan: params.plan,
         },
-        checkout: {
-          url: `${env.BETTER_AUTH_URL}/workspaces?billing=success`,
-        },
         ...(params.userEmail
           ? {
               customer: {

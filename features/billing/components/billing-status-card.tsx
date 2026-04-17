@@ -110,9 +110,11 @@ export function BillingStatusCard({ billing }: BillingStatusCardProps) {
                   {subscription.currentPeriodEnd ? (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">
-                        {subscription.status === "canceled"
+                        {subscription.canceledAt
                           ? "Access until"
-                          : "Next renewal"}
+                          : subscription.status === "canceled"
+                            ? "Access until"
+                            : "Next renewal"}
                       </span>
                       <span className="text-foreground">
                         {new Date(
@@ -123,6 +125,15 @@ export function BillingStatusCard({ billing }: BillingStatusCardProps) {
                           year: "numeric",
                         })}
                       </span>
+                    </div>
+                  ) : null}
+
+                  {subscription.canceledAt && subscription.status === "active" ? (
+                    <div className="mt-1 rounded-lg border border-amber-200/60 bg-amber-50/50 px-3 py-2 dark:border-amber-800/40 dark:bg-amber-950/20">
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Subscription will cancel at end of billing period.
+                        You'll keep full access until then.
+                      </p>
                     </div>
                   ) : null}
                 </div>
@@ -152,6 +163,7 @@ export function BillingStatusCard({ billing }: BillingStatusCardProps) {
           ) : null}
 
           {hasSubscription &&
+          !subscription.canceledAt &&
           (subscription.status === "active" || subscription.status === "pending") ? (
             <form action={cancelAction}>
               <input name="workspaceId" type="hidden" value={workspaceId} />

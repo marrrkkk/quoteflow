@@ -11,8 +11,10 @@
 import {
   useActionState,
   useEffect,
+  useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, CreditCard, QrCode, Check } from "lucide-react";
 import QRCode from "react-qr-code";
 
@@ -77,22 +79,34 @@ function CheckoutDialogInner({
     targetPlan ?? (currentPlan === "pro" ? "business" : "pro"),
   );
   const [currency, setCurrency] = useState<BillingCurrency>(defaultCurrency);
+  const [processingUpgrade, setProcessingUpgrade] = useState(false);
   const [state, formAction, isPending] = useActionState(
     createCheckoutAction,
     {} as CheckoutActionState,
   );
   const paddle = usePaddle();
+  const router = useRouter();
+  const handledTxnRef = useRef<string | null>(null);
 
   // Handle Paddle overlay checkout
   useEffect(() => {
-    if (state.paddleTransactionId && paddle.isReady) {
+    if (
+      state.paddleTransactionId &&
+      paddle.isReady &&
+      handledTxnRef.current !== state.paddleTransactionId
+    ) {
+      handledTxnRef.current = state.paddleTransactionId;
       paddle.openCheckout(state.paddleTransactionId, () => {
-        // Checkout completed — close dialog.
-        // Subscription activation happens via webhook, not here.
-        onOpenChange(false);
+        // Checkout completed — wait for webhook to process, then refresh
+        setProcessingUpgrade(true);
+        setTimeout(() => {
+          router.refresh();
+          onOpenChange(false);
+          setProcessingUpgrade(false);
+        }, 3000);
       });
     }
-  }, [state.paddleTransactionId, paddle, onOpenChange]);
+  }, [state.paddleTransactionId, paddle, onOpenChange, router]);
 
   const isQrPh = currency === "PHP";
   const showQrCode = state.qrData && isQrPh;
@@ -102,16 +116,29 @@ function CheckoutDialogInner({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {showQrCode ? "Scan to pay" : "Upgrade your workspace"}
+            {processingUpgrade
+              ? "Processing your upgrade"
+              : showQrCode
+                ? "Scan to pay"
+                : "Upgrade your workspace"}
           </DialogTitle>
           <DialogDescription>
-            {showQrCode
-              ? "Scan the QR code with your banking app to complete payment."
-              : "Choose a plan and payment method to unlock premium features."}
+            {processingUpgrade
+              ? "Hang tight — we're activating your subscription."
+              : showQrCode
+                ? "Scan the QR code with your banking app to complete payment."
+                : "Choose a plan and payment method to unlock premium features."}
           </DialogDescription>
         </DialogHeader>
 
-        {showQrCode ? (
+        {processingUpgrade ? (
+          <div className="flex flex-col items-center gap-4 py-8">
+            <Spinner className="size-8" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">
+              Your workspace is being upgraded to {planMeta[selectedPlan].label}...
+            </p>
+          </div>
+        ) : showQrCode ? (
           <QrPhPaymentView
             qrData={state.qrData!}
             plan={selectedPlan}

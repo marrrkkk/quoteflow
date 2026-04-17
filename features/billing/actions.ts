@@ -196,9 +196,22 @@ export async function cancelSubscriptionAction(
     if (!success) {
       return { error: "Failed to cancel subscription. Please try again." };
     }
+
+    // Paddle cancels at end of billing period — mark canceledAt but keep status active.
+    // The actual status change to "canceled" will come via webhook when the period ends.
+    const { updateSubscriptionStatus } = await import(
+      "@/lib/billing/subscription-service"
+    );
+    await updateSubscriptionStatus(workspaceId, "active", {
+      canceledAt: new Date(),
+    });
+
+    revalidatePath(getWorkspacePath(workspace.slug));
+
+    return { success: "Subscription canceled. You'll keep access until the end of your billing period." };
   }
 
-  // For PayMongo (no managed subscription), just cancel locally
+  // For PayMongo (no managed subscription), cancel locally and immediately
   const { cancelSubscription } = await import(
     "@/lib/billing/subscription-service"
   );
