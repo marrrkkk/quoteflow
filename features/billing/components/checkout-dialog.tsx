@@ -120,8 +120,8 @@ function CheckoutDialogInner({
   const router = useRouter();
   const handledTxnRef = useRef<string | null>(null);
 
-  // QR Ph → always PHP. Card → region's default currency.
-  const currency: BillingCurrency = paymentMethod === "qrph" ? "PHP" : defaultCurrency;
+  // QR Ph → always PHP. Card → always USD (Paddle doesn't support PHP).
+  const currency: BillingCurrency = paymentMethod === "qrph" ? "PHP" : "USD";
 
   // Handle Paddle overlay checkout
   useEffect(() => {
@@ -334,7 +334,9 @@ function CheckoutDialogInner({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground">Card</p>
-                      <p className="text-xs text-muted-foreground">Visa, Mastercard</p>
+                      <p className="text-xs text-muted-foreground">
+                        Visa, Mastercard{isPH ? " · Billed in USD" : ""}
+                      </p>
                     </div>
                     {paymentMethod === "card" ? (
                       <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary">
