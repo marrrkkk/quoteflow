@@ -39,7 +39,7 @@ import { UpgradeButton } from "@/features/billing/components/upgrade-button";
 import { cancelSubscriptionAction } from "@/features/billing/actions";
 import type { WorkspaceBillingOverview, CancelActionState } from "@/features/billing/types";
 import { planMeta, getUsageLimit } from "@/lib/plans";
-import { getPlanPriceLabel } from "@/lib/billing/plans";
+import { getPlanPriceLabel, getCurrencySymbol } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
 type BillingStatusCardProps = {
@@ -95,7 +95,7 @@ export function BillingStatusCard({ billing }: BillingStatusCardProps) {
               </p>
             ) : (
               <p className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-                $0
+                {getCurrencySymbol(defaultCurrency)}0
                 <span className="text-base font-normal text-muted-foreground"> /forever</span>
               </p>
             )}
@@ -278,7 +278,7 @@ export function BillingStatusCard({ billing }: BillingStatusCardProps) {
                     </div>
                     <p className="font-heading text-xl font-semibold tracking-tight text-foreground">
                       {plan === "free"
-                        ? "$0"
+                        ? `${getCurrencySymbol(defaultCurrency)}0`
                         : getPlanPriceLabel(plan, defaultCurrency).replace("/mo", "")}
                       <span className="text-xs font-normal text-muted-foreground">
                         {plan === "free" ? " /forever" : " /mo"}
