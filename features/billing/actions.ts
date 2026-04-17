@@ -9,7 +9,7 @@ import { getProviderForCurrency } from "@/lib/billing/region";
 import { createPendingSubscription } from "@/lib/billing/subscription-service";
 import { recordPaymentAttempt } from "@/lib/billing/webhook-processor";
 import type { CheckoutActionState, CancelActionState } from "@/features/billing/types";
-import type { BillingCurrency, PaidPlan } from "@/lib/billing/types";
+import type { BillingCurrency, BillingInterval, PaidPlan } from "@/lib/billing/types";
 import { getWorkspacePath } from "@/features/workspaces/routes";
 
 /**
@@ -25,6 +25,7 @@ export async function createCheckoutAction(
   const workspaceId = formData.get("workspaceId");
   const plan = formData.get("plan");
   const currency = formData.get("currency");
+  const interval = (formData.get("interval") as BillingInterval) ?? "monthly";
 
   if (
     typeof workspaceId !== "string" ||
@@ -62,6 +63,7 @@ export async function createCheckoutAction(
 
   const typedPlan = plan as PaidPlan;
   const typedCurrency = currency as BillingCurrency;
+  const typedInterval: BillingInterval = interval === "yearly" ? "yearly" : "monthly";
   const provider = getProviderForCurrency(typedCurrency);
 
   // Route to correct provider
@@ -85,6 +87,7 @@ export async function createCheckoutAction(
     const result = await createQrPhCheckout({
       plan: typedPlan,
       workspaceId,
+      interval: typedInterval,
     });
 
     if (result.type === "error") {
@@ -131,6 +134,7 @@ export async function createCheckoutAction(
     workspaceId,
     userEmail: user.email,
     userName: user.name,
+    interval: typedInterval,
   });
 
   if (result.type === "error") {
@@ -181,6 +185,8 @@ export async function cancelSubscriptionAction(
     return { error: "No active subscription to cancel." };
   }
 
+  const isPending = subscription.status === "pending";
+
   // Cancel based on provider
   if (
     subscription.billingProvider === "paddle" &&
@@ -208,7 +214,7 @@ export async function cancelSubscriptionAction(
 
     revalidatePath(getWorkspacePath(workspace.slug));
 
-    return { success: "Subscription canceled. You'll keep access until the end of your billing period." };
+    return { success: "Subscription canceled. You\u2019ll keep access until the end of your billing period." };
   }
 
   // For PayMongo (no managed subscription), cancel locally and immediately
@@ -219,5 +225,9 @@ export async function cancelSubscriptionAction(
 
   revalidatePath(getWorkspacePath(workspace.slug));
 
-  return { success: "Subscription canceled. You'll keep access until the end of your billing period." };
+  if (isPending) {
+    return { success: "Pending payment canceled." };
+  }
+
+  return { success: "Subscription canceled. You\u2019ll keep access until the end of your billing period." };
 }
