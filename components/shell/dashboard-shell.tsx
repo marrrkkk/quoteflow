@@ -11,7 +11,6 @@ import {
 } from "react";
 import { useTransition } from "react";
 import {
-  ArrowUpRight,
   BriefcaseBusiness,
   Check,
   ChevronsUpDown,
@@ -439,7 +438,7 @@ function DashboardUserMenu({
                   onClick={closeMobileSidebar}
                 >
                   <BriefcaseBusiness data-icon="inline-start" />
-                  Workspace & billing
+                  Billing
                   <PlanBadge plan={workspacePlan} showIcon={false} className="ml-auto" />
                 </Link>
               </DropdownMenuItem>
@@ -454,17 +453,6 @@ function DashboardUserMenu({
                 </Link>
               </DropdownMenuItem>
               <AppearanceMenuSubmenu userId={user.id} />
-              <DropdownMenuItem asChild>
-                <Link
-                  href={`/inquire/${businessSlug}`}
-                  onClick={closeMobileSidebar}
-                  prefetch={false}
-                  target="_blank"
-                >
-                  <ArrowUpRight data-icon="inline-start" />
-                  Public inquiry page
-                </Link>
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
