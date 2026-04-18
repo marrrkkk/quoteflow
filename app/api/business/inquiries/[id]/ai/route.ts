@@ -6,6 +6,8 @@ import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
 import { getWorkspaceBusinessActionContext } from "@/lib/db/business-access";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 
+export const preferredRegion = "syd1";
+
 const encoder = new TextEncoder();
 const ssePaddingComment = `:${" ".repeat(2048)}\n\n`;
 
