@@ -68,10 +68,10 @@ export default async function DashboardOverviewPage({
     redirect(workspacesHubPath);
   }
 
-  const [summary, overview] = await Promise.all([
-    getBusinessDashboardSummaryData(businessContext.business.id),
-    getBusinessOverviewData(businessContext.business.id),
-  ]);
+  const summary = await getBusinessDashboardSummaryData(
+    businessContext.business.id,
+  );
+  const overview = await getBusinessOverviewData(businessContext.business.id);
   const businessSlug = businessContext.business.slug;
   const closedOutcomeCount = summary.wonCount + summary.lostCount;
   const winRate = closedOutcomeCount
