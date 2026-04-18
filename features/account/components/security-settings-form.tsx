@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, LogOut, Shield, Trash2 } from "lucide-react";
+import { useFormStatus } from "react-dom";
+import {
+  KeyRound,
+  LogOut,
+  Monitor,
+  Shield,
+  Smartphone,
+  Trash2,
+} from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,6 +29,7 @@ import { PasswordInput } from "@/features/auth/components/password-input";
 import type {
   AccountDeleteActionState,
   AccountPasswordActionState,
+  AccountSessionView,
   AccountSecurityView,
   AccountSessionActionState,
 } from "@/features/account/types";
@@ -34,6 +43,11 @@ type SecuritySettingsFormProps = {
     state: AccountDeleteActionState,
     formData: FormData,
   ) => Promise<AccountDeleteActionState>;
+  revokeAllSessionsAction: () => Promise<void>;
+  revokeSessionAction: (
+    state: AccountSessionActionState,
+    formData: FormData,
+  ) => Promise<AccountSessionActionState>;
   revokeOtherSessionsAction: (
     state: AccountSessionActionState,
     formData: FormData,
@@ -52,6 +66,8 @@ const initialDeleteState: AccountDeleteActionState = {};
 export function SecuritySettingsForm({
   changePasswordAction,
   deleteAccountAction,
+  revokeAllSessionsAction,
+  revokeSessionAction,
   revokeOtherSessionsAction,
   security,
   setPasswordAction,
@@ -61,11 +77,14 @@ export function SecuritySettingsForm({
     useActionStateWithSonner(setPasswordAction, initialPasswordState);
   const [changePasswordState, changePasswordFormAction, isChangePasswordPending] =
     useActionStateWithSonner(changePasswordAction, initialPasswordState);
-  const [sessionState, sessionFormAction, isSessionPending] =
-    useActionStateWithSonner(
-      revokeOtherSessionsAction,
-      initialSessionState,
-    );
+  const [sessionState, sessionFormAction] = useActionStateWithSonner(
+    revokeOtherSessionsAction,
+    initialSessionState,
+  );
+  const [revokeSessionState, revokeSessionFormAction] = useActionStateWithSonner(
+    revokeSessionAction,
+    initialSessionState,
+  );
   const [deleteState, deleteFormAction, isDeletePending] = useActionStateWithSonner(
     deleteAccountAction,
     initialDeleteState,
@@ -77,6 +96,10 @@ export function SecuritySettingsForm({
       ? 1
       : security.activeSessionCount;
   const hasOtherSessions = activeSessionCount > 1;
+  const sessionsToDisplay =
+    sessionState.success || (changePasswordState.success && revokeAfterPasswordChange)
+      ? security.activeSessions.filter((session) => session.isCurrent).slice(0, 1)
+      : security.activeSessions;
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -355,25 +378,64 @@ export function SecuritySettingsForm({
               </p>
             </div>
 
-            <form action={sessionFormAction}>
-              <Button
-                disabled={isSessionPending || !hasOtherSessions}
-                type="submit"
-                variant="outline"
-              >
-                {isSessionPending ? (
-                  <>
-                    <Spinner data-icon="inline-start" aria-hidden="true" />
-                    Signing out other sessions...
-                  </>
-                ) : (
-                  <>
-                    <LogOut data-icon="inline-start" />
-                    Sign out other sessions
-                  </>
-                )}
-              </Button>
-            </form>
+            <div className="rounded-2xl border border-border/70">
+              {sessionsToDisplay.length > 0 ? (
+                <ul className="divide-y divide-border/60">
+                  {sessionsToDisplay.map((session) => (
+                    <li key={session.id} className="flex items-start gap-3 px-4 py-4">
+                      {getSessionIcon(session.userAgent)}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <p className="text-sm font-medium text-foreground">
+                            {formatDeviceTitle(session.userAgent)}
+                          </p>
+                          {session.isCurrent ? (
+                            <span className="text-xs font-medium text-muted-foreground">
+                              Current device
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {getSessionMeta(session)}
+                        </p>
+                        {session.expiresAt ? (
+                          <p className="mt-1 text-xs text-muted-foreground/90">
+                            Expires {formatDateTime(session.expiresAt)}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        <form action={revokeSessionFormAction}>
+                          <input name="token" type="hidden" value={session.token ?? ""} />
+                          <SessionRowSignOutButton
+                            disabled={session.isCurrent || !session.token}
+                          />
+                        </form>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-4 py-4 text-sm text-muted-foreground">
+                  No active sessions were returned for this account.
+                </div>
+              )}
+            </div>
+
+            {revokeSessionState.error ? (
+              <p className="text-sm text-destructive">{revokeSessionState.error}</p>
+            ) : null}
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <form action={sessionFormAction}>
+                <RevokeOtherSessionsSubmitButton disabled={!hasOtherSessions} />
+              </form>
+
+              <form action={revokeAllSessionsAction}>
+                <SignOutAllDevicesSubmitButton />
+              </form>
+            </div>
           </div>
       </section>
 
@@ -487,6 +549,185 @@ export function SecuritySettingsForm({
       </section>
     </div>
   );
+}
+
+function SessionRowSignOutButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button disabled={disabled || pending} size="sm" type="submit" variant="outline">
+      {pending ? (
+        <>
+          <Spinner data-icon="inline-start" aria-hidden="true" />
+          Signing out...
+        </>
+      ) : (
+        <>
+          <LogOut data-icon="inline-start" />
+          Sign out
+        </>
+      )}
+    </Button>
+  );
+}
+
+function RevokeOtherSessionsSubmitButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button disabled={disabled || pending} type="submit" variant="outline">
+      {pending ? (
+        <>
+          <Spinner data-icon="inline-start" aria-hidden="true" />
+          Signing out other sessions...
+        </>
+      ) : (
+        <>
+          <LogOut data-icon="inline-start" />
+          Sign out other devices
+        </>
+      )}
+    </Button>
+  );
+}
+
+function SignOutAllDevicesSubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button disabled={pending} type="submit" variant="destructive">
+      {pending ? (
+        <>
+          <Spinner data-icon="inline-start" aria-hidden="true" />
+          Signing out all devices...
+        </>
+      ) : (
+        <>
+          <LogOut data-icon="inline-start" />
+          Sign out all devices
+        </>
+      )}
+    </Button>
+  );
+}
+
+function getSessionMeta(session: AccountSessionView) {
+  const parts = [
+    session.ipAddress ? `IP ${session.ipAddress}` : null,
+    session.updatedAt
+      ? `Last active ${formatDateTime(session.updatedAt)}`
+      : session.createdAt
+        ? `Signed in ${formatDateTime(session.createdAt)}`
+        : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.length > 0 ? parts.join(" • ") : "Session details unavailable";
+}
+
+function getSessionIcon(userAgent: string | null) {
+  const isMobile =
+    typeof userAgent === "string" &&
+    /(iphone|ipad|ipod|android|mobile)/i.test(userAgent);
+  const Icon = isMobile ? Smartphone : Monitor;
+
+  return (
+    <Icon
+      aria-hidden="true"
+      className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+    />
+  );
+}
+
+function formatDeviceTitle(userAgent: string | null) {
+  const parsed = parseUserAgent(userAgent);
+
+  if (!parsed.browser && !parsed.os) {
+    return "Unknown device";
+  }
+
+  if (!parsed.browser) {
+    return parsed.os;
+  }
+
+  if (!parsed.os) {
+    return parsed.browser;
+  }
+
+  return `${parsed.browser} on ${parsed.os}`;
+}
+
+function parseUserAgent(userAgent: string | null) {
+  const ua = typeof userAgent === "string" ? userAgent : "";
+
+  return {
+    browser: detectBrowser(ua),
+    os: detectOs(ua),
+  };
+}
+
+function detectBrowser(ua: string) {
+  if (!ua) {
+    return null;
+  }
+
+  if (/edg\//i.test(ua)) {
+    return "Edge";
+  }
+
+  if (/chrome\//i.test(ua) && !/edg\//i.test(ua) && !/opr\//i.test(ua)) {
+    return "Chrome";
+  }
+
+  if (/firefox\//i.test(ua)) {
+    return "Firefox";
+  }
+
+  if (/safari\//i.test(ua) && !/chrome\//i.test(ua) && !/crios\//i.test(ua)) {
+    return "Safari";
+  }
+
+  return null;
+}
+
+function detectOs(ua: string) {
+  if (!ua) {
+    return null;
+  }
+
+  if (/windows nt/i.test(ua)) {
+    return "Windows";
+  }
+
+  if (/android/i.test(ua)) {
+    return "Android";
+  }
+
+  if (/(iphone|ipad|ipod)/i.test(ua)) {
+    return "iOS";
+  }
+
+  if (/mac os x/i.test(ua)) {
+    return "macOS";
+  }
+
+  if (/linux/i.test(ua)) {
+    return "Linux";
+  }
+
+  return null;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function getDeleteDescription(ownedBusinessCount: number) {

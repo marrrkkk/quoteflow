@@ -33,7 +33,7 @@ export const getAccountProfileForUser = cache(async (
 export const getAccountSecurityForUser = cache(async (
   userId: string,
   email: string,
-): Promise<Omit<AccountSecurityView, "activeSessionCount">> => {
+): Promise<Omit<AccountSecurityView, "activeSessionCount" | "activeSessions">> => {
   const [accountRows, ownedBusinessRows] = await Promise.all([
     db
       .select({

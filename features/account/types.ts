@@ -20,6 +20,18 @@ export type AccountSecurityView = {
   connectedProviders: string[];
   ownedBusinessCount: number;
   activeSessionCount: number;
+  activeSessions: AccountSessionView[];
+};
+
+export type AccountSessionView = {
+  id: string;
+  token: string | null;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  expiresAt: string | null;
+  isCurrent: boolean;
 };
 
 export type AccountProfileActionState = {

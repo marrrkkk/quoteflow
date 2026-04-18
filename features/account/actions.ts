@@ -242,6 +242,59 @@ export async function revokeOtherSessionsAction(
   }
 }
 
+export async function revokeAccountSessionAction(
+  prevState: AccountSessionActionState = initialSessionState,
+  formData: FormData,
+): Promise<AccountSessionActionState> {
+  void prevState;
+
+  await requireUser();
+
+  const token = formData.get("token");
+
+  if (typeof token !== "string" || token.trim().length === 0) {
+    return {
+      error: "Select a device session to sign out.",
+    };
+  }
+
+  try {
+    await auth.api.revokeSession({
+      body: {
+        token,
+      },
+      headers: await headers(),
+    });
+
+    return {
+      success: "Session signed out.",
+    };
+  } catch (error) {
+    console.error("Failed to revoke session.", error);
+
+    return {
+      error: getAccountSecurityErrorMessage(
+        error,
+        "We couldn't sign out that session right now.",
+      ),
+    };
+  }
+}
+
+export async function revokeAllAccountSessionsAction() {
+  await requireUser();
+
+  try {
+    await auth.api.revokeSessions({
+      headers: await headers(),
+    });
+  } catch (error) {
+    console.error("Failed to revoke all sessions.", error);
+  }
+
+  redirect("/login");
+}
+
 export async function deleteAccountAction(
   prevState: AccountDeleteActionState = initialDeleteState,
   formData: FormData,
