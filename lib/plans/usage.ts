@@ -8,10 +8,11 @@ import "server-only";
  * timestamps. No dedicated usage table is needed.
  */
 
-import { and, count, eq, gte, inArray, isNull, lt } from "drizzle-orm";
+import { and, count, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import {
+  activityLogs,
   businesses,
   businessInquiryForms,
   inquiries,
@@ -30,6 +31,18 @@ function getCurrentMonthBounds() {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const end = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+  );
+
+  return { start, end };
+}
+
+function getCurrentDayBounds() {
+  const now = new Date();
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const end = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
   );
 
   return { start, end };
@@ -112,6 +125,58 @@ export async function getMonthlyQuoteCount(
     );
 
   return Number(row?.value ?? 0);
+}
+
+async function getWorkspaceQuoteSendCountByMethod(
+  workspaceId: string,
+  {
+    end,
+    method,
+    start,
+  }: {
+    start: Date;
+    end: Date;
+    method: "requo";
+  },
+): Promise<number> {
+  const bizIds = await getWorkspaceBusinessIds(workspaceId);
+
+  if (bizIds.length === 0) {
+    return 0;
+  }
+
+  const [row] = await db
+    .select({ value: count() })
+    .from(activityLogs)
+    .where(
+      and(
+        inArray(activityLogs.businessId, bizIds),
+        eq(activityLogs.type, "quote.sent"),
+        gte(activityLogs.createdAt, start),
+        lt(activityLogs.createdAt, end),
+        sql`${activityLogs.metadata} ->> 'sendMethod' = ${method}`,
+      ),
+    );
+
+  return Number(row?.value ?? 0);
+}
+
+export async function getDailyRequoQuoteSendCount(
+  workspaceId: string,
+): Promise<number> {
+  return getWorkspaceQuoteSendCountByMethod(workspaceId, {
+    ...getCurrentDayBounds(),
+    method: "requo",
+  });
+}
+
+export async function getMonthlyRequoQuoteSendCount(
+  workspaceId: string,
+): Promise<number> {
+  return getWorkspaceQuoteSendCountByMethod(workspaceId, {
+    ...getCurrentMonthBounds(),
+    method: "requo",
+  });
 }
 
 /**
@@ -203,6 +268,12 @@ export async function checkUsageAllowance(
       break;
     case "quotesPerMonth":
       current = await getMonthlyQuoteCount(workspaceId);
+      break;
+    case "requoQuoteEmailsPerDay":
+      current = await getDailyRequoQuoteSendCount(workspaceId);
+      break;
+    case "requoQuoteEmailsPerMonth":
+      current = await getMonthlyRequoQuoteSendCount(workspaceId);
       break;
     case "businessesPerWorkspace":
       current = await getWorkspaceBusinessCount(workspaceId);
