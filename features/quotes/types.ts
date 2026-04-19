@@ -17,8 +17,10 @@ export const quotePostAcceptanceStatuses = [
   "booked",
   "scheduled",
 ] as const;
+export const quoteDeliveryMethods = ["requo", "manual"] as const;
 export type QuotePostAcceptanceStatus =
   (typeof quotePostAcceptanceStatuses)[number];
+export type QuoteDeliveryMethod = (typeof quoteDeliveryMethods)[number];
 export const quoteReminderKinds = ["follow_up_due", "expiring_soon"] as const;
 export type QuoteReminderKind = (typeof quoteReminderKinds)[number];
 export const quoteLibraryEntryKinds = ["block", "package"] as const;
