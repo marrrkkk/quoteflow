@@ -12,7 +12,7 @@ import {
   businesses,
 } from "@/lib/db/schema";
 import type { QuoteEditorInput } from "@/features/quotes/schemas";
-import type { QuoteStatus } from "@/features/quotes/types";
+import type { QuoteDeliveryMethod, QuoteStatus } from "@/features/quotes/types";
 import {
   getTodayUtcDateString,
 } from "@/features/quotes/utils";
@@ -937,12 +937,14 @@ type MarkQuoteSentForBusinessInput = {
   businessId: string;
   quoteId: string;
   actorUserId: string;
+  sendMethod?: QuoteDeliveryMethod;
 };
 
 export async function markQuoteSentForBusiness({
   businessId,
   quoteId,
   actorUserId,
+  sendMethod = "requo",
 }: MarkQuoteSentForBusinessInput) {
   const now = new Date();
 
@@ -1003,9 +1005,13 @@ export async function markQuoteSentForBusiness({
       quoteId,
       actorUserId,
       type: "quote.sent",
-      summary: `Quote ${existingQuote.quoteNumber} sent to the customer.`,
+      summary:
+        sendMethod === "manual"
+          ? `Quote ${existingQuote.quoteNumber} marked as sent after manual delivery.`
+          : `Quote ${existingQuote.quoteNumber} sent with Requo email.`,
       metadata: {
         quoteNumber: existingQuote.quoteNumber,
+        sendMethod,
       },
       now,
     });
@@ -1021,6 +1027,7 @@ export async function markQuoteSentForBusiness({
         quoteNumber: existingQuote.quoteNumber,
         title: existingQuote.title,
         customerName: existingQuote.customerName,
+        sendMethod,
       },
       createdAt: now,
     });

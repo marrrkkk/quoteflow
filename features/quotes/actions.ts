@@ -19,6 +19,7 @@ import {
   getWorkspaceBusinessActionContext,
 } from "@/lib/db/business-access";
 import { env, isResendConfigured } from "@/lib/env";
+import { getUsageLimit } from "@/lib/plans";
 import { checkUsageAllowance } from "@/lib/plans/usage";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import {
@@ -50,6 +51,7 @@ import {
 } from "@/features/businesses/routes";
 import type {
   PublicQuoteResponseActionState,
+  QuoteDeliveryMethod,
   QuoteEditorActionState,
   QuotePostAcceptanceActionState,
   QuoteRecordActionState,
@@ -64,6 +66,10 @@ const initialEditorState: QuoteEditorActionState = {};
 const initialPostAcceptanceState: QuotePostAcceptanceActionState = {};
 const initialSendState: QuoteSendActionState = {};
 const initialPublicQuoteResponseState: PublicQuoteResponseActionState = {};
+const freePlanRequoQuoteSendsPerDay =
+  getUsageLimit("free", "requoQuoteEmailsPerDay") ?? 3;
+const freePlanRequoQuoteSendsPerMonth =
+  getUsageLimit("free", "requoQuoteEmailsPerMonth") ?? 30;
 
 function updateCacheTags(tags: string[]) {
   for (const tag of uniqueCacheTags(tags)) {
@@ -419,7 +425,6 @@ export async function sendQuoteAction(
   formData: FormData,
 ): Promise<QuoteSendActionState> {
   void prevState;
-  void formData;
 
   const ownerAccess = await getWorkspaceBusinessActionContext();
 
@@ -430,6 +435,8 @@ export async function sendQuoteAction(
   }
 
   const { user, businessContext } = ownerAccess;
+  const deliveryMethod: QuoteDeliveryMethod =
+    formData.get("deliveryMethod") === "manual" ? "manual" : "requo";
 
   try {
     const quote = await getQuoteSendPayloadForBusiness({
@@ -449,6 +456,36 @@ export async function sendQuoteAction(
       };
     }
 
+    if (
+      deliveryMethod === "requo" &&
+      businessContext.business.workspacePlan === "free"
+    ) {
+      const [dailyAllowance, monthlyAllowance] = await Promise.all([
+        checkUsageAllowance(
+          businessContext.business.workspaceId,
+          businessContext.business.workspacePlan,
+          "requoQuoteEmailsPerDay",
+        ),
+        checkUsageAllowance(
+          businessContext.business.workspaceId,
+          businessContext.business.workspacePlan,
+          "requoQuoteEmailsPerMonth",
+        ),
+      ]);
+
+      if (!dailyAllowance.allowed) {
+        return {
+          error: `Free plan includes ${freePlanRequoQuoteSendsPerDay} Requo sends per day and ${freePlanRequoQuoteSendsPerMonth} per month. You've hit today's send limit. Send this quote manually or upgrade to keep using Requo delivery.`,
+        };
+      }
+
+      if (!monthlyAllowance.allowed) {
+        return {
+          error: `Free plan includes ${freePlanRequoQuoteSendsPerDay} Requo sends per day and ${freePlanRequoQuoteSendsPerMonth} per month. You've hit this month's send limit. Send this quote manually or upgrade to keep using Requo delivery.`,
+        };
+      }
+    }
+
     const businessSettings = await getBusinessMessagingSettings(
       businessContext.business.id,
     );
@@ -465,46 +502,50 @@ export async function sendQuoteAction(
       env.BETTER_AUTH_URL,
     ).toString();
 
-    if (!isResendConfigured) {
-      return {
-        error: "Quote email delivery is unavailable right now. Configure email and try again.",
-      };
+    if (deliveryMethod === "requo") {
+      if (!isResendConfigured) {
+        return {
+          error:
+            "Quote email delivery is unavailable right now. Configure email and try again.",
+        };
+      }
+
+      const resendSenderConfigurationError =
+        getResendFromEmailConfigurationError();
+
+      if (resendSenderConfigurationError) {
+        return {
+          error: resendSenderConfigurationError,
+        };
+      }
+
+      await sendQuoteEmail({
+        quoteId: quote.id,
+        updatedAt: quote.updatedAt,
+        businessName: businessContext.business.name,
+        customerName: quote.customerName,
+        customerEmail: quote.customerEmail,
+        quoteNumber: quote.quoteNumber,
+        title: quote.title,
+        publicQuoteUrl,
+        currency: quote.currency,
+        validUntil: quote.validUntil,
+        subtotalInCents: quote.subtotalInCents,
+        discountInCents: quote.discountInCents,
+        totalInCents: quote.totalInCents,
+        notes: quote.notes,
+        emailSignature: businessSettings.defaultEmailSignature,
+        items: quote.items,
+        templateOverrides: businessSettings.quoteEmailTemplate,
+        replyToEmail: businessSettings.contactEmail ?? ownerEmails[0],
+      });
     }
-
-    const resendSenderConfigurationError =
-      getResendFromEmailConfigurationError();
-
-    if (resendSenderConfigurationError) {
-      return {
-        error: resendSenderConfigurationError,
-      };
-    }
-
-    await sendQuoteEmail({
-      quoteId: quote.id,
-      updatedAt: quote.updatedAt,
-      businessName: businessContext.business.name,
-      customerName: quote.customerName,
-      customerEmail: quote.customerEmail,
-      quoteNumber: quote.quoteNumber,
-      title: quote.title,
-      publicQuoteUrl,
-      currency: quote.currency,
-      validUntil: quote.validUntil,
-      subtotalInCents: quote.subtotalInCents,
-      discountInCents: quote.discountInCents,
-      totalInCents: quote.totalInCents,
-      notes: quote.notes,
-      emailSignature: businessSettings.defaultEmailSignature,
-      items: quote.items,
-      templateOverrides: businessSettings.quoteEmailTemplate,
-      replyToEmail: businessSettings.contactEmail ?? ownerEmails[0],
-    });
 
     const result = await markQuoteSentForBusiness({
       businessId: businessContext.business.id,
       quoteId,
       actorUserId: user.id,
+      sendMethod: deliveryMethod,
     });
 
     if (!result) {
@@ -555,7 +596,10 @@ export async function sendQuoteAction(
     );
 
     return {
-      success: `Quote ${result.quoteNumber} sent to ${quote.customerEmail}.`,
+      success:
+        deliveryMethod === "manual"
+          ? `Quote ${result.quoteNumber} marked as sent after manual delivery.`
+          : `Quote ${result.quoteNumber} sent to ${quote.customerEmail}.`,
     };
   } catch (error) {
     console.error("Failed to send quote email.", error);
