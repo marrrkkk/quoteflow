@@ -9,10 +9,8 @@ import {
   Mail,
   MessageSquareText,
   Settings2,
-  Shield,
   Tags,
   Users,
-  User,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -39,9 +37,7 @@ type SettingsNavComboboxOption = {
   value: string;
 };
 
-const settingsNavigationIcons: Record<BusinessSettingsNavigationIcon, typeof User> = {
-  profile: User,
-  security: Shield,
+const settingsNavigationIcons: Record<BusinessSettingsNavigationIcon, typeof Settings2> = {
   general: Settings2,
   members: Users,
   notifications: Bell,
