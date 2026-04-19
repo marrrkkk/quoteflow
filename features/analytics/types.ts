@@ -1,4 +1,5 @@
 import type { InquiryStatus } from "@/features/inquiries/types";
+import type { QuoteStatus } from "@/features/quotes/types";
 
 export type BusinessAnalyticsStatusCount = {
   status: InquiryStatus;
@@ -19,9 +20,18 @@ export type BusinessAnalyticsData = {
     formViews: number;
     uniqueVisitors: number;
     inquirySubmissions: number;
+    inquiriesWithQuote: number;
     formConversionRate: number;
+    inquiryToQuoteRate: number;
+    quotesSent: number;
+    quotesViewed: number;
+    quotesAccepted: number;
+    quotesRejected: number;
+    quoteAcceptanceRate: number;
     responseRate: number;
     avgFirstResponseHours: number | null;
+    avgTimeToFirstQuoteHours: number | null;
+    avgTimeSentToDecisionHours: number | null;
   };
   funnel: {
     uniqueVisitors: number;
@@ -96,7 +106,18 @@ export type WorkflowAnalyticsData = {
     avgFirstResponseHours: number | null;
     avgTimeToFirstQuoteHours: number | null;
     avgTimeSentToDecisionHours: number | null;
+    inquiryToQuoteRate: number;
+    quotesSent: number;
+    quotesViewed: number;
+    quotesAccepted: number;
+    quotesRejected: number;
+    quotesVoided: number;
+    quoteAcceptanceRate: number;
   };
+  statusCounts: Array<{
+    status: QuoteStatus;
+    count: number;
+  }>;
   alerts: {
     staleInquiryCount: number;
     pendingQuotesOverSevenDays: number;

@@ -36,9 +36,9 @@ export function AnalyticsConversionTab({
   if (!hasConversionData) {
     return (
       <DashboardEmptyState
-        description="Conversion analytics appears once inquiries start turning into quotes and customers begin opening those quotes."
+        description="Inquiry and form performance appears once your forms start capturing real traffic and those inquiries begin moving into quotes."
         icon={Target}
-        title="No conversion data yet"
+        title="No inquiry or form data yet"
         variant="section"
       />
     );
@@ -51,14 +51,14 @@ export function AnalyticsConversionTab({
           icon={FileText}
           title="Inquiry to quote"
           value={formatAnalyticsPercent(data.summary.inquiryToQuoteRate)}
-          description={`${data.summary.inquiriesWithQuote} of ${data.summary.inquirySubmissions} recent inquiries received a quote`}
+          description={`${data.summary.inquiriesWithQuote} of ${data.summary.inquirySubmissions} recent inquiries reached the quoting stage`}
           tooltip="How many of your recent inquiries were turned into at least one quote."
         />
         <AnalyticsMetricCard
           icon={Eye}
           title="Quotes viewed"
           value={`${data.summary.quotesViewed}`}
-          description={`${data.summary.quotePageViews} public quote page views recorded`}
+          description={`${data.summary.quotePageViews} public quote page views recorded from those inquiries`}
           tooltip="Distinct quotes that have been opened by customers, plus total public quote page views recorded in the last 30 days."
         />
         <AnalyticsMetricCard
@@ -80,8 +80,8 @@ export function AnalyticsConversionTab({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(18rem,0.42fr)]">
         <AnalyticsConversionTrend points={data.quotesTrend} />
         <AnalyticsFunnelCard
-          title="Quote conversion funnel"
-          description="This follows recent inquiries through quoting, viewing, and acceptance."
+          title="Inquiry handoff funnel"
+          description="Follow recent inquiry traffic through quoting, viewing, and acceptance."
           steps={[
             {
               label: "Inquiry submissions",

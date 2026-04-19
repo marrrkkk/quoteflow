@@ -1,62 +1,71 @@
-import { headers } from "next/headers";
-import { after } from "next/server";
+"use client";
 
-import {
-  createBusinessScopedVisitorHash,
-  recordPublicInquiryFormView,
-  recordPublicQuoteView,
-} from "@/features/analytics/tracking";
-import { recordQuotePublicViewAt } from "@/features/quotes/mutations";
+import { useEffect } from "react";
 
-export async function PublicInquiryFormViewTracker({
+import type { PublicAnalyticsEventInput } from "@/features/analytics/schemas";
+
+const publicAnalyticsEndpoint = "/api/public/analytics";
+
+function trackPublicAnalyticsEvent(payload: PublicAnalyticsEventInput) {
+  const body = JSON.stringify(payload);
+
+  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+    const didQueue = navigator.sendBeacon(
+      publicAnalyticsEndpoint,
+      new Blob([body], {
+        type: "application/json",
+      }),
+    );
+
+    if (didQueue) {
+      return;
+    }
+  }
+
+  void fetch(publicAnalyticsEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body,
+    keepalive: true,
+  }).catch(() => {
+    // Best-effort analytics capture should never interrupt public flows.
+  });
+}
+
+export function PublicInquiryFormViewTracker({
   businessId,
   businessInquiryFormId,
 }: {
   businessId: string;
   businessInquiryFormId: string;
 }) {
-  const headerStore = await headers();
-  const visitorHash = createBusinessScopedVisitorHash(businessId, headerStore);
-
-  after(async () => {
-    try {
-      await recordPublicInquiryFormView({
-        businessId,
-        businessInquiryFormId,
-        visitorHash,
-      });
-    } catch (error) {
-      console.error("Failed to record public inquiry form view.", error);
-    }
-  });
+  useEffect(() => {
+    trackPublicAnalyticsEvent({
+      eventType: "inquiry_form_viewed",
+      businessId,
+      businessInquiryFormId,
+    });
+  }, [businessId, businessInquiryFormId]);
 
   return null;
 }
 
-export async function PublicQuoteViewTracker({
+export function PublicQuoteViewTracker({
   businessId,
   quoteId,
 }: {
   businessId: string;
   quoteId: string;
 }) {
-  const headerStore = await headers();
-  const visitorHash = createBusinessScopedVisitorHash(businessId, headerStore);
-
-  after(async () => {
-    try {
-      await Promise.all([
-        recordQuotePublicViewAt(quoteId),
-        recordPublicQuoteView({
-          businessId,
-          quoteId,
-          visitorHash,
-        }),
-      ]);
-    } catch (error) {
-      console.error("Failed to record public quote view.", error);
-    }
-  });
+  useEffect(() => {
+    trackPublicAnalyticsEvent({
+      eventType: "quote_public_viewed",
+      businessId,
+      quoteId,
+    });
+  }, [businessId, quoteId]);
 
   return null;
 }

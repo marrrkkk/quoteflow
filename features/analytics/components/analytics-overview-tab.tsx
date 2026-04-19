@@ -1,6 +1,9 @@
 import {
+  CheckCircle2,
   Clock3,
   Eye,
+  FileText,
+  GitCompareArrows,
   Inbox,
   MessagesSquare,
   TriangleAlert,
@@ -80,6 +83,38 @@ export function AnalyticsOverviewTab({
           emptyLabel="No data"
           description={`${formatAnalyticsPercent(data.summary.responseRate)} response rate`}
           tooltip="Average time to the first owner or staff action on a new inquiry in the last 30 days."
+        />
+      </DashboardStatsGrid>
+
+      <DashboardStatsGrid className="sm:grid-cols-2 xl:grid-cols-4">
+        <AnalyticsMetricCard
+          icon={GitCompareArrows}
+          title="Inquiry to quote"
+          value={formatAnalyticsPercent(data.summary.inquiryToQuoteRate)}
+          description={`${data.summary.inquiriesWithQuote} of ${data.summary.inquirySubmissions} recent inquiries received a quote`}
+          tooltip="How many recent inquiries were turned into at least one quote."
+        />
+        <AnalyticsMetricCard
+          icon={FileText}
+          title="Quotes sent"
+          value={`${data.summary.quotesSent}`}
+          description={`${data.summary.quotesViewed} viewed by customers`}
+          tooltip="Quotes linked to the recent inquiry pipeline that were sent to customers."
+        />
+        <AnalyticsMetricCard
+          icon={CheckCircle2}
+          title="Quotes accepted"
+          value={`${data.summary.quotesAccepted}`}
+          description={`${data.summary.quotesRejected} rejected in the same window`}
+          tooltip="Accepted and rejected quote outcomes linked to the recent inquiry pipeline."
+        />
+        <AnalyticsDurationCard
+          icon={Clock3}
+          title="Avg quote turnaround"
+          value={formatAnalyticsDuration(data.summary.avgTimeToFirstQuoteHours)}
+          emptyLabel="No data"
+          description="Time from inquiry submission to first quote"
+          tooltip="Average time between receiving an inquiry and creating the first quote linked to it."
         />
       </DashboardStatsGrid>
 
