@@ -2,7 +2,6 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   Building2,
-  Download,
   FileText,
   Mail,
   Phone,
@@ -54,6 +53,7 @@ import { CopyEmailButton } from "@/features/inquiries/components/copy-email-butt
 import { InquiryNoteForm } from "@/features/inquiries/components/inquiry-note-form";
 import { InquiryRecordActions } from "@/features/inquiries/components/inquiry-record-actions";
 import { InquiryRecordStateBadge } from "@/features/inquiries/components/inquiry-record-state-badge";
+import { InquiryExportPopover } from "@/features/inquiries/components/inquiry-export-popover";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
 import { InquiryStatusForm } from "@/features/inquiries/components/inquiry-status-form";
 import { getInquiryDetailForBusiness } from "@/features/inquiries/queries";
@@ -68,8 +68,8 @@ import type { InquiryWorkflowStatus } from "@/features/inquiries/types";
 import { formatQuoteMoney } from "@/features/quotes/utils";
 import { workspacesHubPath } from "@/features/workspaces/routes";
 import {
+  getBusinessInquiryExportPath,
   getBusinessNewQuotePath,
-  getBusinessInquiryPdfExportPath,
   getBusinessInquiryPrintPath,
   getBusinessQuotePath,
 } from "@/features/businesses/routes";
@@ -208,12 +208,18 @@ export default async function InquiryDetailPage({
                 prefill={calendarPrefill}
               />
             ) : null}
-            <Button asChild variant="outline">
-              <a href={getBusinessInquiryPdfExportPath(businessSlug, inquiry.id)}>
-                <Download data-icon="inline-start" />
-                Export PDF
-              </a>
-            </Button>
+            <InquiryExportPopover
+              pdfHref={getBusinessInquiryExportPath(
+                businessSlug,
+                inquiry.id,
+                "pdf",
+              )}
+              pngHref={getBusinessInquiryExportPath(
+                businessSlug,
+                inquiry.id,
+                "png",
+              )}
+            />
             <Button asChild variant="outline">
               <Link
                 href={getBusinessInquiryPrintPath(businessSlug, inquiry.id)}
