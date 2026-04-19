@@ -104,9 +104,9 @@ export async function DashboardOverviewStatsSection({
         value={overview.counts.expiringSoonQuotes}
       />
       <OverviewActionStat
-        label="Waiting"
-        note="48h+"
-        value={overview.counts.waitingInquiries}
+        label="New"
+        note="Last 48h"
+        value={overview.counts.newInquiries}
       />
       <OverviewActionStat
         label="Follow up due"
@@ -138,9 +138,9 @@ export async function DashboardOverviewQueuesSection({
     businessSlug,
     "overdue",
   );
-  const waitingInquiryPath = getBusinessInquiriesStatusPath(
+  const newInquiryPath = getBusinessInquiriesStatusPath(
     businessSlug,
-    "waiting",
+    "new",
   );
 
   return (
@@ -219,20 +219,20 @@ export async function DashboardOverviewQueuesSection({
         <OverviewQueueCard
           action={
             <Button asChild size="sm" variant="ghost">
-              <Link href={waitingInquiryPath} prefetch={true}>
-                All waiting
+              <Link href={newInquiryPath} prefetch={true}>
+                All new
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>
           }
-          count={overview.counts.waitingInquiries}
-          title="Waiting"
+          count={overview.counts.newInquiries}
+          title="New"
         >
-          {overview.waitingInquiries.length ? (
+          {overview.newInquiries.length ? (
             <OverviewQueueList
-              emptySlots={overviewQueueMaxItems - overview.waitingInquiries.length}
+              emptySlots={overviewQueueMaxItems - overview.newInquiries.length}
             >
-              {overview.waitingInquiries.map((inquiry) => (
+              {overview.newInquiries.map((inquiry) => (
                 <OverviewInquiryRow
                   inquiry={inquiry}
                   key={inquiry.id}
@@ -245,15 +245,15 @@ export async function DashboardOverviewQueuesSection({
             <DashboardEmptyState
               action={
                 <Button asChild variant="outline">
-                  <Link href={waitingInquiryPath} prefetch={true}>
-                    Open waiting inquiries
+                  <Link href={newInquiryPath} prefetch={true}>
+                    Open new inquiries
                   </Link>
                 </Button>
               }
               className="h-full px-5 py-12 sm:px-6"
-              description="Requests that have been waiting more than 48 hours show up here."
+              description="New inquiries from the last 48 hours show up here."
               icon={Inbox}
-              title="No waiting inquiries"
+              title="No new inquiries"
               variant="flat"
             />
           )}

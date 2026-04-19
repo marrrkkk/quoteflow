@@ -42,13 +42,13 @@ function createEmptyBusinessOverviewData(): BusinessOverviewData {
   return {
     overdueInquiries: [],
     expiringSoonQuotes: [],
-    waitingInquiries: [],
+    newInquiries: [],
     followUpDueQuotes: [],
     recentAcceptedQuotes: [],
     counts: {
       overdueInquiries: 0,
       expiringSoonQuotes: 0,
-      waitingInquiries: 0,
+      newInquiries: 0,
       followUpDueQuotes: 0,
       recentAcceptedQuotes: 0,
     },
@@ -101,13 +101,13 @@ async function getCachedBusinessOverviewData(
   const today = new Date().toISOString().slice(0, 10);
   const expiringSoonCutoff = getFutureUtcDateString(7);
   const isOverdueInquiry = sql`${getEffectiveInquiryStatus} = 'overdue'`;
-  const isWaitingInquiry = sql`${getEffectiveInquiryStatus} = 'waiting'`;
+  const isNewInquiry = sql`${getEffectiveInquiryStatus} = 'new'`;
   const totalCount = sql<number>`count(*) over ()`;
 
   const [
     overdueInquiries,
     expiringSoonQuotes,
-    waitingInquiries,
+    newInquiries,
     followUpDueQuotes,
     recentAcceptedQuotes,
   ] = await Promise.all([
@@ -182,7 +182,7 @@ async function getCachedBusinessOverviewData(
         and(
           eq(inquiries.businessId, businessId),
           getOperationalInquiryCondition(),
-          isWaitingInquiry,
+          isNewInquiry,
         ),
       )
       .orderBy(asc(inquiries.submittedAt), asc(inquiries.createdAt))
@@ -288,13 +288,13 @@ async function getCachedBusinessOverviewData(
   return {
     overdueInquiries: overdueInquiries.map(stripTotalCount),
     expiringSoonQuotes: expiringSoonQuotes.map(withQuoteReminders),
-    waitingInquiries: waitingInquiries.map(stripTotalCount),
+    newInquiries: newInquiries.map(stripTotalCount),
     followUpDueQuotes: followUpDueQuotes.map(withQuoteReminders),
     recentAcceptedQuotes: recentAcceptedQuotes.map(withQuoteReminders),
     counts: {
       overdueInquiries: Number(overdueInquiries[0]?.totalCount ?? 0),
       expiringSoonQuotes: Number(expiringSoonQuotes[0]?.totalCount ?? 0),
-      waitingInquiries: Number(waitingInquiries[0]?.totalCount ?? 0),
+      newInquiries: Number(newInquiries[0]?.totalCount ?? 0),
       followUpDueQuotes: Number(followUpDueQuotes[0]?.totalCount ?? 0),
       recentAcceptedQuotes: Number(recentAcceptedQuotes[0]?.totalCount ?? 0),
     },
