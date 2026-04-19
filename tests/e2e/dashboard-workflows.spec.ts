@@ -163,7 +163,7 @@ test("dashboard and detail pages surface follow-up, expiring-soon, and customer 
   await expect(page.getByRole("link", { name: "Office signage" })).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: "Q-0998 | Foundry Labs rebrand signage package",
+      name: "Q-SMOKE-0998 | Foundry Labs rebrand signage package",
     }),
   ).toBeVisible();
   await expect(
@@ -175,7 +175,7 @@ test("dashboard and detail pages surface follow-up, expiring-soon, and customer 
   await expect(page.getByRole("link", { name: "Office signage" })).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: "Q-0998 | Foundry Labs rebrand signage package",
+      name: "Q-SMOKE-0998 | Foundry Labs rebrand signage package",
     }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Event signage" })).toHaveCount(0);
@@ -504,7 +504,7 @@ test("accepted quotes can move from booked to scheduled", async ({ page }) => {
   await page.getByRole("option", { name: "Booked" }).click();
   await page.getByRole("button", { name: "Save post-acceptance status" }).click();
 
-  await expect(page.getByText("Quote Q-1003 marked booked.")).toBeVisible({
+  await expect(page.getByText("Quote Q-SMOKE-1003 marked booked.")).toBeVisible({
     timeout: 20_000,
   });
   await expect(postAcceptanceSelect).toContainText("Booked");
@@ -513,7 +513,7 @@ test("accepted quotes can move from booked to scheduled", async ({ page }) => {
   await page.getByRole("option", { name: "Scheduled" }).click();
   await page.getByRole("button", { name: "Save post-acceptance status" }).click();
 
-  await expect(page.getByText("Quote Q-1003 marked scheduled.")).toBeVisible({
+  await expect(page.getByText("Quote Q-SMOKE-1003 marked scheduled.")).toBeVisible({
     timeout: 20_000,
   });
   await expect(postAcceptanceSelect).toContainText("Scheduled");
@@ -550,7 +550,7 @@ test("quotes and requests list exports honor filters and show export actions", a
   const quoteCsvText = await quoteCsvResponse.text();
   expect(quoteCsvText.startsWith("\uFEFF")).toBeTruthy();
   expect(quoteCsvText).toContain(
-    "quote_number,title,customer_name,customer_email,status,post_acceptance_status,linked_inquiry_id,valid_until,total_amount,currency,created_at,sent_at,customer_responded_at",
+    "quote_number,title,customer_name,customer_email,status,archived_at,voided_at,post_acceptance_status,linked_inquiry_id,valid_until,total_amount,currency,created_at,sent_at,customer_responded_at",
   );
   expect(quoteCsvText).toContain(",sent,");
 
@@ -574,7 +574,7 @@ test("quotes and requests list exports honor filters and show export actions", a
   const inquiryCsvText = await inquiryCsvResponse.text();
   expect(inquiryCsvText.startsWith("\uFEFF")).toBeTruthy();
   expect(inquiryCsvText).toContain(
-    "inquiry_id,submitted_at,form_name,customer_name,customer_email,customer_phone,company_name,service_category,subject,status,budget_text,requested_deadline,details",
+    "inquiry_id,submitted_at,form_name,customer_name,customer_email,customer_phone,company_name,service_category,subject,status,record_state,budget_text,requested_deadline,details,archived_at,deleted_at",
   );
   expect(inquiryCsvText).toContain(",new,");
 });

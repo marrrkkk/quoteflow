@@ -646,4 +646,94 @@ describe("features/analytics/queries", () => {
       pendingQuotesOverSevenDays: 1,
     });
   });
+
+  it("excludes deleted records from metrics while preserving voided quote lifecycle history", async () => {
+    const deletedInquiryId = "test_analytics_inquiry_deleted";
+    const deletedDraftQuoteId = "test_analytics_quote_deleted_draft";
+    const voidedQuoteId = "test_analytics_quote_voided";
+
+    await testDb.insert(inquiries).values({
+      id: deletedInquiryId,
+      businessId,
+      businessInquiryFormId: primaryFormId,
+      status: "new",
+      subject: "Deleted spam inquiry",
+      customerName: "Deleted Prospect",
+      customerEmail: "deleted@example.com",
+      serviceCategory: "Spam",
+      details: "Should stay out of analytics.",
+      submittedFieldSnapshot: {
+        version: 1,
+        businessType: "general_project_services",
+        fields: [],
+      },
+      deletedAt: hoursAgo(12),
+      deletedBy: userId,
+      submittedAt: hoursAgo(12),
+      createdAt: hoursAgo(12),
+      updatedAt: hoursAgo(12),
+    });
+
+    await testDb.insert(quotes).values([
+      {
+        id: deletedDraftQuoteId,
+        businessId,
+        inquiryId: inquiryIds[1],
+        status: "draft",
+        quoteNumber: "Q-DELETED-DRAFT",
+        publicToken: "analytics-deleted-draft-token",
+        title: "Deleted draft quote",
+        customerName: "Ben Prospect",
+        customerEmail: "ben@example.com",
+        currency: "USD",
+        subtotalInCents: 5000,
+        discountInCents: 0,
+        totalInCents: 5000,
+        validUntil: isoDate(hoursAgo(-48)),
+        deletedAt: hoursAgo(10),
+        deletedBy: userId,
+        createdAt: hoursAgo(10),
+        updatedAt: hoursAgo(10),
+      },
+      {
+        id: voidedQuoteId,
+        businessId,
+        inquiryId: inquiryIds[1],
+        status: "voided",
+        quoteNumber: "Q-VOIDED-1004",
+        publicToken: "analytics-voided-token",
+        title: "Voided kitchen quote",
+        customerName: "Ben Prospect",
+        customerEmail: "ben@example.com",
+        currency: "USD",
+        subtotalInCents: 22000,
+        discountInCents: 0,
+        totalInCents: 22000,
+        sentAt: hoursAgo(96),
+        publicViewedAt: hoursAgo(95),
+        voidedAt: hoursAgo(94),
+        voidedBy: userId,
+        validUntil: isoDate(hoursAgo(-24)),
+        createdAt: hoursAgo(96),
+        updatedAt: hoursAgo(94),
+      },
+    ]);
+
+    try {
+      const businessAnalytics = await getBusinessAnalyticsData(businessId);
+      const conversionAnalytics = await getConversionAnalyticsData(businessId);
+
+      expect(businessAnalytics.summary.inquirySubmissions).toBe(4);
+      expect(conversionAnalytics.summary.inquirySubmissions).toBe(4);
+      expect(conversionAnalytics.summary.quotesAccepted).toBe(1);
+      expect(conversionAnalytics.summary.quotesRejected).toBe(1);
+      expect(conversionAnalytics.summary.quotesSent).toBe(4);
+      expect(conversionAnalytics.summary.quotesViewed).toBe(4);
+    } finally {
+      await testDb
+        .delete(quotes)
+        .where(inArray(quotes.id, [deletedDraftQuoteId, voidedQuoteId]));
+      await testDb.delete(inquiries).where(eq(inquiries.id, deletedInquiryId));
+    }
+  });
 });
