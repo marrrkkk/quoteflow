@@ -119,6 +119,7 @@ export default async function QuoteDetailPage({
   const customerHistory = await getCustomerHistoryForBusiness({
     businessId: businessContext.business.id,
     customerEmail: quote.customerEmail,
+    customerContactHandle: quote.customerContactHandle,
     excludeInquiryId: quote.inquiryId,
     excludeQuoteId: quote.id,
   });
@@ -139,7 +140,7 @@ export default async function QuoteDetailPage({
         {
           title: quote.title,
           customerName: quote.customerName,
-          customerEmail: quote.customerEmail,
+          customerEmail: quote.customerEmail ?? "",
           publicToken: quote.publicToken,
         },
         {
@@ -155,6 +156,8 @@ export default async function QuoteDetailPage({
         id: quote.linkedInquiry.id,
         customerName: quote.linkedInquiry.customerName,
         customerEmail: quote.linkedInquiry.customerEmail,
+        customerContactMethod: quote.linkedInquiry.customerContactMethod,
+        customerContactHandle: quote.linkedInquiry.customerContactHandle,
         recordState: quote.linkedInquiry.recordState,
         serviceCategory: quote.linkedInquiry.serviceCategory,
         status: quote.linkedInquiry.status,

@@ -94,7 +94,7 @@ export function QuoteListTable({
                       className="table-supporting-text"
                       href={quoteHref}
                       prefetch={true}
-                      text={quote.customerEmail}
+                      text={quote.customerEmail ?? ""}
                     />
                   </div>
                 </TableCell>

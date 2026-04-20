@@ -32,9 +32,15 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  inquiryContactMethods,
+  inquiryContactMethodLabels,
+  type InquiryContactMethod,
+} from "@/features/inquiries/form-config";
 import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import type {
   DashboardQuoteLibraryEntry,
@@ -45,6 +51,7 @@ import type {
 } from "@/features/quotes/types";
 import {
   calculateQuoteEditorTotals,
+  centsToMoneyInput,
   createQuoteEditorLineItem,
   createQuoteEditorLineItemFromLibraryItem,
   formatQuoteMoney,
@@ -96,10 +103,13 @@ function areQuoteEditorValuesEqual(
   if (
     left.title !== right.title ||
     left.customerName !== right.customerName ||
-    left.customerEmail !== right.customerEmail ||
+    (left.customerEmail ?? "") !== (right.customerEmail ?? "") ||
+    left.customerContactMethod !== right.customerContactMethod ||
+    left.customerContactHandle !== right.customerContactHandle ||
     left.notes !== right.notes ||
     left.validUntil !== right.validUntil ||
     left.discount !== right.discount ||
+    left.discountType !== right.discountType ||
     left.items.length !== right.items.length
   ) {
     return false;
@@ -164,10 +174,13 @@ export function QuoteEditor({
 }: QuoteEditorProps) {
   const [title, setTitle] = useState(initialValues.title);
   const [customerName, setCustomerName] = useState(initialValues.customerName);
-  const [customerEmail, setCustomerEmail] = useState(initialValues.customerEmail);
+  const [customerEmail, setCustomerEmail] = useState(initialValues.customerEmail ?? "");
+  const [customerContactMethod, setCustomerContactMethod] = useState(initialValues.customerContactMethod);
+  const [customerContactHandle, setCustomerContactHandle] = useState(initialValues.customerContactHandle);
   const [notes, setNotes] = useState(initialValues.notes);
   const [validUntil, setValidUntil] = useState(initialValues.validUntil);
   const [discount, setDiscount] = useState(initialValues.discount);
+  const [discountType, setDiscountType] = useState(initialValues.discountType);
   const lineItemTimersRef = useRef<Map<string, number>>(new Map());
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [items, setItems] = useState<EditorLineItem[]>(
@@ -184,6 +197,7 @@ export function QuoteEditor({
   const visibleItems = useMemo(() => getVisibleEditorItems(items), [items]);
   const deferredVisibleItems = useDeferredValue(visibleItems);
   const deferredDiscount = useDeferredValue(discount);
+  const deferredDiscountType = useDeferredValue(discountType);
   const serializedItems = useMemo(
     () =>
       visibleItems.map((item) => ({
@@ -199,20 +213,23 @@ export function QuoteEditor({
     [deferredVisibleItems],
   );
   const totals = useMemo(
-    () => calculateQuoteEditorTotals(deferredVisibleItems, deferredDiscount),
-    [deferredDiscount, deferredVisibleItems],
+    () => calculateQuoteEditorTotals(deferredVisibleItems, deferredDiscount, deferredDiscountType),
+    [deferredDiscount, deferredDiscountType, deferredVisibleItems],
   );
   const currentValues = useMemo<QuoteEditorValues>(
     () => ({
       title,
       customerName,
       customerEmail,
+      customerContactMethod,
+      customerContactHandle,
       notes,
       validUntil,
       discount,
+      discountType,
       items: visibleItems,
     }),
-    [customerEmail, customerName, discount, notes, title, validUntil, visibleItems],
+    [customerEmail, customerContactMethod, customerContactHandle, customerName, discount, discountType, notes, title, validUntil, visibleItems],
   );
   const hasUnsavedChanges =
     showFloatingUnsavedChanges &&
@@ -277,10 +294,13 @@ export function QuoteEditor({
     clearLineItemTimers();
     setTitle(values.title);
     setCustomerName(values.customerName);
-    setCustomerEmail(values.customerEmail);
+    setCustomerEmail(values.customerEmail ?? "");
+    setCustomerContactMethod(values.customerContactMethod);
+    setCustomerContactHandle(values.customerContactHandle);
     setNotes(values.notes);
     setValidUntil(values.validUntil);
     setDiscount(values.discount);
+    setDiscountType(values.discountType);
     setItems(values.items.map((item) => ({ ...item })));
   }
 
@@ -454,7 +474,7 @@ export function QuoteEditor({
               </FieldContent>
             </Field>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1.5fr]">
               <Field
                 data-invalid={Boolean(state.fieldErrors?.customerName) || undefined}
               >
@@ -486,29 +506,79 @@ export function QuoteEditor({
               </Field>
 
               <Field
-                data-invalid={Boolean(state.fieldErrors?.customerEmail) || undefined}
+                data-invalid={
+                  Boolean(state.fieldErrors?.customerContactMethod) || undefined
+                }
               >
-                <FieldLabel htmlFor="quote-customer-email">
-                  Customer email
+                <FieldLabel htmlFor="quote-customer-contact-method">
+                  Preferred contact
                 </FieldLabel>
                 <FieldContent>
-                  <Input
-                    id="quote-customer-email"
-                    maxLength={320}
-                    name="customerEmail"
-                    type="email"
-                    value={customerEmail}
-                    onChange={(event) =>
-                      setCustomerEmail(event.currentTarget.value)
-                    }
-                    placeholder="jordan@example.com"
-                    required
+                  <input type="hidden" name="customerContactMethod" value={customerContactMethod} />
+                  <Combobox
                     disabled={isPending}
+                    id="quote-customer-contact-method"
+                    onValueChange={(value) => {
+                      if (value) {
+                        setCustomerContactMethod(value as InquiryContactMethod);
+                      }
+                    }}
+                    options={inquiryContactMethods.map((method) => ({
+                      label: inquiryContactMethodLabels[method],
+                      value: method,
+                    }))}
+                    placeholder="Select..."
+                    value={customerContactMethod}
                   />
                   <FieldError
                     errors={
-                      state.fieldErrors?.customerEmail?.[0]
-                        ? [{ message: state.fieldErrors.customerEmail[0] }]
+                      state.fieldErrors?.customerContactMethod?.[0]
+                        ? [{ message: state.fieldErrors.customerContactMethod[0] }]
+                        : undefined
+                    }
+                  />
+                </FieldContent>
+              </Field>
+
+              <Field
+                data-invalid={
+                  Boolean(state.fieldErrors?.customerContactHandle) || undefined
+                }
+              >
+                <FieldLabel htmlFor="quote-customer-contact-handle">
+                  {customerContactMethod === "email" ? "Email address" : "Contact details"}
+                </FieldLabel>
+                <FieldContent>
+                  <Input
+                    key={customerContactMethod} // Force re-render on method change
+                    disabled={isPending}
+                    id="quote-customer-contact-handle"
+                    maxLength={320}
+                    name="customerContactHandle"
+                    type={customerContactMethod === "email" ? "email" : "text"}
+                    autoComplete={customerContactMethod === "email" ? "email" : "off"}
+                    inputMode={customerContactMethod === "phone" || customerContactMethod === "whatsapp" ? "tel" : "text"}
+                    placeholder={
+                      customerContactMethod === "email"
+                        ? "jordan@example.com"
+                        : customerContactMethod === "phone" || customerContactMethod === "whatsapp"
+                          ? "+1 (555) 000-0000"
+                          : customerContactMethod === "facebook"
+                            ? "facebook.com/username"
+                            : customerContactMethod === "instagram"
+                              ? "@username"
+                              : "Details"
+                    }
+                    required
+                    value={customerContactHandle}
+                    onChange={(event) =>
+                      setCustomerContactHandle(event.currentTarget.value)
+                    }
+                  />
+                  <FieldError
+                    errors={
+                      state.fieldErrors?.customerContactHandle?.[0]
+                        ? [{ message: state.fieldErrors.customerContactHandle[0] }]
                         : undefined
                     }
                   />
@@ -547,19 +617,44 @@ export function QuoteEditor({
               >
                 <FieldLabel htmlFor="quote-discount">Discount</FieldLabel>
                 <FieldContent>
-                  <Input
-                    id="quote-discount"
+                  <input
                     name="discount"
-                    inputMode="decimal"
-                    max="1000000"
-                    placeholder="0.00"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={discount}
-                    onChange={(event) => setDiscount(event.currentTarget.value)}
-                    disabled={isPending}
+                    type="hidden"
+                    value={centsToMoneyInput(totals.discountInCents)}
                   />
+                  <div className="relative">
+                    <Input
+                      id="quote-discount"
+                      className="pr-14"
+                      inputMode="decimal"
+                      max={discountType === "percentage" ? "100" : "1000000"}
+                      placeholder={discountType === "percentage" ? "10" : "0.00"}
+                      type="number"
+                      min="0"
+                      step={discountType === "percentage" ? "1" : "0.01"}
+                      value={discount}
+                      onChange={(event) => setDiscount(event.currentTarget.value)}
+                      disabled={isPending}
+                    />
+                    <div className="absolute inset-y-1 right-1 flex items-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDiscountType((prev) =>
+                            prev === "percentage" ? "amount" : "percentage",
+                          )
+                        }
+                        className="flex h-full w-10 items-center justify-center rounded bg-muted/60 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="Toggle discount type"
+                      >
+                        {discountType === "percentage"
+                          ? "%"
+                          : currency === "USD"
+                            ? "$"
+                            : currency}
+                      </button>
+                    </div>
+                  </div>
                   <FieldError
                     errors={
                       state.fieldErrors?.discount?.[0]

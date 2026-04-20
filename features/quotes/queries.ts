@@ -226,6 +226,8 @@ async function getCachedQuoteListPageForBusiness({
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       totalInCents: quotes.totalInCents,
       currency: quotes.currency,
       validUntil: quotes.validUntil,
@@ -245,6 +247,8 @@ async function getCachedQuoteListPageForBusiness({
     return {
       currency: row.currency,
       customerEmail: row.customerEmail,
+      customerContactMethod: row.customerContactMethod,
+      customerContactHandle: row.customerContactHandle,
       customerName: row.customerName,
       customerRespondedAt: row.customerRespondedAt,
       id: row.id,
@@ -273,7 +277,9 @@ type QuoteExportRow = {
   quoteNumber: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   totalInCents: number;
   currency: string;
   validUntil: string;
@@ -317,6 +323,8 @@ export async function getQuoteExportRowsForBusiness({
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       totalInCents: quotes.totalInCents,
       currency: quotes.currency,
       validUntil: quotes.validUntil,
@@ -370,6 +378,8 @@ async function getCachedQuoteDetailForBusiness({
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       currency: quotes.currency,
       notes: quotes.notes,
       subtotalInCents: quotes.subtotalInCents,
@@ -390,6 +400,8 @@ async function getCachedQuoteDetailForBusiness({
       linkedInquiryId: inquiries.id,
       linkedInquiryCustomerName: inquiries.customerName,
       linkedInquiryCustomerEmail: inquiries.customerEmail,
+      linkedInquiryCustomerContactMethod: inquiries.customerContactMethod,
+      linkedInquiryCustomerContactHandle: inquiries.customerContactHandle,
       linkedInquiryServiceCategory: inquiries.serviceCategory,
       linkedInquiryStatus: getEffectiveInquiryStatus,
       linkedInquiryRecordState: getInquiryRecordState,
@@ -455,6 +467,8 @@ async function getCachedQuoteDetailForBusiness({
     title: quote.title,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     currency: quote.currency,
     notes: quote.notes,
     subtotalInCents: quote.subtotalInCents,
@@ -479,6 +493,8 @@ async function getCachedQuoteDetailForBusiness({
           id: quote.linkedInquiryId,
           customerName: quote.linkedInquiryCustomerName!,
           customerEmail: quote.linkedInquiryCustomerEmail!,
+          customerContactMethod: quote.linkedInquiryCustomerContactMethod!,
+          customerContactHandle: quote.linkedInquiryCustomerContactHandle!,
           serviceCategory: quote.linkedInquiryServiceCategory!,
           status: quote.linkedInquiryStatus!,
           recordState: quote.linkedInquiryRecordState!,
@@ -524,6 +540,8 @@ async function getCachedQuoteSendPayloadForBusiness({
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       currency: quotes.currency,
       notes: quotes.notes,
       subtotalInCents: quotes.subtotalInCents,
@@ -568,6 +586,8 @@ async function getCachedQuoteSendPayloadForBusiness({
   return {
     currency: quote.currency,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     customerName: quote.customerName,
     discountInCents: quote.discountInCents,
     id: quote.id,
@@ -604,6 +624,8 @@ export async function getPublicQuoteByToken(
       businessContactEmail: businesses.contactEmail,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       currency: quotes.currency,
       notes: quotes.notes,
       validUntil: quotes.validUntil,
@@ -657,6 +679,8 @@ export async function getPublicQuoteByToken(
     businessShortDescription: quote.businessShortDescription,
     currency: quote.currency,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     customerName: quote.customerName,
     customerRespondedAt: quote.customerRespondedAt,
     customerResponseMessage: quote.customerResponseMessage,
@@ -698,6 +722,8 @@ export async function getInquiryQuotePrefillForBusiness({
       id: inquiries.id,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
+      customerContactMethod: inquiries.customerContactMethod,
+      customerContactHandle: inquiries.customerContactHandle,
       serviceCategory: inquiries.serviceCategory,
       status: getEffectiveInquiryStatus,
       recordState: getInquiryRecordState,

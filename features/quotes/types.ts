@@ -48,7 +48,9 @@ export type DashboardQuoteListItem = {
   publicToken: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   totalInCents: number;
   currency: string;
   validUntil: string;
@@ -107,7 +109,9 @@ export type DashboardQuoteActivity = {
 export type QuoteLinkedInquirySummary = {
   id: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   status: InquiryStatus;
   recordState: InquiryRecordState;
@@ -116,7 +120,9 @@ export type QuoteLinkedInquirySummary = {
 export type QuoteInquiryPrefill = {
   id: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   status: InquiryStatus;
   recordState: InquiryRecordState;
@@ -133,7 +139,9 @@ export type DashboardQuoteDetail = {
   publicToken: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   currency: string;
   notes: string | null;
   subtotalInCents: number;
@@ -164,7 +172,9 @@ export type QuoteSendPayload = {
   publicToken: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   currency: string;
   notes: string | null;
   subtotalInCents: number;
@@ -187,7 +197,9 @@ export type PublicQuoteView = {
   businessShortDescription: string | null;
   businessContactEmail: string | null;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   currency: string;
   notes: string | null;
   validUntil: string;
@@ -213,10 +225,13 @@ export type QuoteEditorLineItemValue = {
 export type QuoteEditorValues = {
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   notes: string;
   validUntil: string;
   discount: string;
+  discountType: "amount" | "percentage";
   items: QuoteEditorLineItemValue[];
 };
 
@@ -224,6 +239,8 @@ export type QuoteEditorFieldName =
   | "title"
   | "customerName"
   | "customerEmail"
+  | "customerContactMethod"
+  | "customerContactHandle"
   | "notes"
   | "validUntil"
   | "discount"

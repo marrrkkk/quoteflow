@@ -231,6 +231,7 @@ export function parseCurrencyInputToCents(value: string) {
 export function calculateQuoteEditorTotals(
   items: QuoteEditorLineItemValue[],
   discountValue: string,
+  discountType: "amount" | "percentage" = "amount",
 ) {
   const subtotalInCents = items.reduce((sum, item) => {
     const quantity = Number.parseInt(item.quantity.trim(), 10);
@@ -239,10 +240,18 @@ export function calculateQuoteEditorTotals(
 
     return sum + safeQuantity * parseCurrencyInputToCents(item.unitPrice);
   }, 0);
-  const discountInCents = Math.min(
-    subtotalInCents,
-    parseCurrencyInputToCents(discountValue),
-  );
+
+  let parsedDiscount = 0;
+  if (discountType === "percentage") {
+    const percentage = Number.parseFloat(discountValue.trim());
+    if (Number.isFinite(percentage) && percentage > 0) {
+      parsedDiscount = Math.round(subtotalInCents * (percentage / 100));
+    }
+  } else {
+    parsedDiscount = parseCurrencyInputToCents(discountValue);
+  }
+
+  const discountInCents = Math.min(subtotalInCents, parsedDiscount);
 
   return {
     subtotalInCents,
@@ -284,6 +293,8 @@ export function getQuoteEditorInitialValuesFromInquiry(
     title: buildQuoteTitleFromInquiry(inquiry),
     customerName: inquiry.customerName,
     customerEmail: inquiry.customerEmail,
+    customerContactMethod: inquiry.customerContactMethod,
+    customerContactHandle: inquiry.customerContactHandle,
     notes: [
       `Service/category: ${inquiry.serviceCategory}`,
       inquiry.requestedDeadline
@@ -299,6 +310,7 @@ export function getQuoteEditorInitialValuesFromInquiry(
       .join("\n"),
     validUntil: getDefaultQuoteValidityDate(options?.defaultQuoteValidityDays),
     discount: "",
+    discountType: "amount" as const,
     items: [createQuoteEditorLineItem()],
   };
 }
@@ -310,9 +322,12 @@ export function getQuoteEditorInitialValuesFromDetail(
     title: quote.title,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     notes: quote.notes ?? "",
     validUntil: quote.validUntil,
     discount: centsToMoneyInput(quote.discountInCents),
+    discountType: "amount" as const,
     items: quote.items.length
       ? quote.items.map((item) => ({
           id: item.id,
