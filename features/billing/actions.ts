@@ -7,9 +7,9 @@ import { writeAuditLog } from "@/features/audit/mutations";
 import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
 import { isPayMongoConfigured, isPaddleConfigured } from "@/lib/env";
 import { getProviderForCurrency } from "@/lib/billing/region";
-import { createPendingSubscription } from "@/lib/billing/subscription-service";
+import { createPendingSubscription, getWorkspaceSubscription } from "@/lib/billing/subscription-service";
 import { recordPaymentAttempt } from "@/lib/billing/webhook-processor";
-import type { CheckoutActionState, CancelActionState } from "@/features/billing/types";
+import type { CheckoutActionState, CancelActionState, PendingQrPhData } from "@/features/billing/types";
 import type { BillingCurrency, BillingInterval, PaidPlan } from "@/lib/billing/types";
 import { getWorkspacePath } from "@/features/workspaces/routes";
 
@@ -265,4 +265,88 @@ export async function cancelSubscriptionAction(
   }
 
   return { success: "Subscription canceled. You\u2019ll keep access until the end of your billing period." };
+}
+
+/**
+ * Retrieves pending QRPh checkout data for a workspace.
+ *
+ * If the workspace has a pending PayMongo subscription and the payment intent
+ * is still valid, returns the QR code data. Otherwise returns null and
+ * cleans up expired/failed states.
+ */
+export async function getPendingQrPhCheckoutAction(
+  workspaceId: string,
+): Promise<PendingQrPhData | null> {
+  const user = await requireUser();
+
+  // Verify workspace ownership
+  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+
+  if (!workspace || workspace.memberRole !== "owner") {
+    return null;
+  }
+
+  // Check for pending subscription with PayMongo
+  const subscription = await getWorkspaceSubscription(workspaceId);
+
+  if (
+    !subscription ||
+    subscription.status !== "pending" ||
+    subscription.billingProvider !== "paymongo"
+  ) {
+    return null;
+  }
+
+  // Find the most recent pending payment attempt
+  const { db } = await import("@/lib/db/client");
+  const { paymentAttempts } = await import("@/lib/db/schema/subscriptions");
+  const { eq, and, desc } = await import("drizzle-orm");
+
+  const [latestAttempt] = await db
+    .select()
+    .from(paymentAttempts)
+    .where(
+      and(
+        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.provider, "paymongo"),
+        eq(paymentAttempts.status, "pending"),
+      ),
+    )
+    .orderBy(desc(paymentAttempts.createdAt))
+    .limit(1);
+
+  if (!latestAttempt) {
+    return null;
+  }
+
+  // Verify with PayMongo API that the intent is still valid
+  const { getPaymentIntentQrData } = await import(
+    "@/lib/billing/providers/paymongo"
+  );
+
+  const qrData = await getPaymentIntentQrData(latestAttempt.providerPaymentId);
+
+  if (!qrData) {
+    // Payment intent expired or failed — clean up
+    const { updateSubscriptionStatus } = await import(
+      "@/lib/billing/subscription-service"
+    );
+    const { updatePaymentAttemptStatus } = await import(
+      "@/lib/billing/webhook-processor"
+    );
+
+    await updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "expired");
+    await updateSubscriptionStatus(workspaceId, "expired");
+
+    return null;
+  }
+
+  return {
+    qrCodeData: qrData.qrCodeData,
+    paymentIntentId: qrData.paymentIntentId,
+    expiresAt: qrData.expiresAt,
+    amount: qrData.amount,
+    currency: "PHP",
+    plan: subscription.plan,
+  };
 }

@@ -50,6 +50,16 @@ export type CheckoutActionState = {
   };
 };
 
+/** Pending QRPh checkout data loaded from the server. */
+export type PendingQrPhData = {
+  qrCodeData: string;
+  paymentIntentId: string;
+  expiresAt: string;
+  amount: number;
+  currency: "PHP";
+  plan: string;
+};
+
 /** Cancel action state. */
 export type CancelActionState = {
   error?: string;

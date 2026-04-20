@@ -61,6 +61,11 @@ type PayMongoPaymentIntentResponse = {
       next_action?: {
         type: string;
         redirect?: { url: string };
+        code?: {
+          url?: string;
+          test_url?: string;
+          image_url?: string;
+        };
       };
       payments: Array<{
         id: string;
@@ -222,6 +227,58 @@ export async function getPaymentIntent(
   } catch {
     return null;
   }
+}
+
+/**
+ * Retrieves a pending Payment Intent and extracts QR data if still valid.
+ * Returns null if the intent is no longer awaiting payment or has expired.
+ */
+export async function getPaymentIntentQrData(
+  paymentIntentId: string,
+): Promise<{
+  qrCodeData: string;
+  paymentIntentId: string;
+  expiresAt: string;
+  amount: number;
+  currency: "PHP";
+  status: string;
+} | null> {
+  const data = await getPaymentIntent(paymentIntentId);
+
+  if (!data) {
+    return null;
+  }
+
+  const { status, amount, next_action } = data.attributes;
+  const mappedStatus = mapPayMongoStatus(status);
+
+  // Only return QR data if the intent is still pending
+  if (mappedStatus !== "pending") {
+    return null;
+  }
+
+  const qrUrl =
+    next_action?.redirect?.url ??
+    next_action?.code?.url ??
+    next_action?.code?.test_url;
+
+  if (!qrUrl) {
+    return null;
+  }
+
+  // PayMongo QRPh intents expire 30 minutes after creation.
+  // We don't have the exact creation time from the API response,
+  // so we give a conservative 20-minute window from now.
+  const expiresAt = new Date(Date.now() + 20 * 60 * 1000).toISOString();
+
+  return {
+    qrCodeData: qrUrl,
+    paymentIntentId: data.id,
+    expiresAt,
+    amount,
+    currency: "PHP",
+    status,
+  };
 }
 
 /* ── Webhook verification ─────────────────────────────────────────────────── */

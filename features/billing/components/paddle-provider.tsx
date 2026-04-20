@@ -4,7 +4,7 @@
  * Paddle.js provider component.
  *
  * Loads the Paddle.js script and provides utilities for opening
- * the overlay checkout. Must wrap any component that triggers
+ * the overlay or inline checkout. Must wrap any component that triggers
  * Paddle checkout.
  */
 
@@ -18,16 +18,23 @@ import {
   type ReactNode,
 } from "react";
 
+type PaddleCheckoutSettings = {
+  displayMode?: "overlay" | "inline";
+  frameTarget?: string;
+  frameInitialHeight?: string;
+  frameStyle?: string;
+  theme?: "light" | "dark";
+  locale?: string;
+  successUrl?: string;
+};
+
 type PaddleInstance = {
   Checkout: {
     open: (params: {
       transactionId: string;
-      settings?: {
-        successUrl?: string;
-        theme?: "light" | "dark";
-        locale?: string;
-      };
+      settings?: PaddleCheckoutSettings;
     }) => void;
+    close: () => void;
   };
   Environment: {
     set: (env: "sandbox" | "production") => void;
@@ -45,12 +52,18 @@ type PaddleCheckoutEvent = {
 
 type PaddleContextValue = {
   isReady: boolean;
-  openCheckout: (transactionId: string, onComplete?: () => void) => void;
+  openCheckout: (
+    transactionId: string,
+    onComplete?: () => void,
+    settings?: PaddleCheckoutSettings,
+  ) => void;
+  closeCheckout: () => void;
 };
 
 const PaddleContext = createContext<PaddleContextValue>({
   isReady: false,
   openCheckout: () => {},
+  closeCheckout: () => {},
 });
 
 export function usePaddle() {
@@ -128,7 +141,11 @@ export function PaddleProvider({
   }
 
   const openCheckout = useCallback(
-    (transactionId: string, onComplete?: () => void) => {
+    (
+      transactionId: string,
+      onComplete?: () => void,
+      settings?: PaddleCheckoutSettings,
+    ) => {
       if (!window.Paddle) {
         console.error("[Paddle] Paddle.js not loaded");
         return;
@@ -138,14 +155,24 @@ export function PaddleProvider({
 
       window.Paddle.Checkout.open({
         transactionId,
+        ...(settings ? { settings } : {}),
       });
     },
     [],
   );
 
+  const closeCheckout = useCallback(() => {
+    if (!window.Paddle) {
+      return;
+    }
+
+    window.Paddle.Checkout.close();
+  }, []);
+
   return (
-    <PaddleContext.Provider value={{ isReady, openCheckout }}>
+    <PaddleContext.Provider value={{ isReady, openCheckout, closeCheckout }}>
       {children}
     </PaddleContext.Provider>
   );
 }
+
