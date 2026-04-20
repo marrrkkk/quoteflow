@@ -253,6 +253,20 @@
       "when": 1776618000000,
       "tag": "0036_workspace_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1776719134706,
+      "tag": "0038_sleepy_wendell_rand",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1776719150416,
+      "tag": "0039_burly_tombstone",
+      "breakpoints": true
     }
   ]
 }
