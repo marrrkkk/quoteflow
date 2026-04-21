@@ -36,6 +36,7 @@ type QuoteSendFormProps = {
     formData: FormData,
   ) => Promise<QuoteSendActionState>;
   customerQuoteUrl: string;
+  customerContactMethod?: string;
   disabled?: boolean;
 };
 
@@ -45,16 +46,19 @@ const manualSendGuideStorageKey = "requo-manual-quote-send-guide-hidden";
 export function QuoteSendForm({
   action,
   customerQuoteUrl,
+  customerContactMethod,
   disabled = false,
 }: QuoteSendFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const requoSubmitRef = useRef<HTMLButtonElement>(null);
+  const manualSubmitRef = useRef<HTMLButtonElement>(null);
   const [, formAction, isPending] = useActionStateWithSonner(
     action,
     initialState,
   );
   const [manualMode, setManualMode] = useState(false);
   const [isManualGuideOpen, setIsManualGuideOpen] = useState(false);
+  const [isNonEmailGuideOpen, setIsNonEmailGuideOpen] = useState(false);
   const [hideManualGuide, setHideManualGuide] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -132,6 +136,16 @@ export function QuoteSendForm({
           type="submit"
           value="requo"
         />
+        <button
+          aria-hidden="true"
+          className="hidden"
+          disabled={disabled || isPending}
+          name="deliveryMethod"
+          ref={manualSubmitRef}
+          tabIndex={-1}
+          type="submit"
+          value="manual"
+        />
 
         {manualMode ? (
           <div className="soft-panel flex flex-col gap-4 px-4 py-4 shadow-none">
@@ -168,39 +182,57 @@ export function QuoteSendForm({
         ) : null}
 
         <FormActions>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button disabled={disabled || isPending} type="button">
-                {isPending ? (
-                  <Spinner data-icon="inline-start" aria-hidden="true" />
-                ) : (
-                  <SendHorizontal data-icon="inline-start" />
-                )}
-                {isSendingWithRequo
-                  ? "Sending quote..."
-                  : isMarkingManualSent
-                    ? "Marking sent..."
-                    : "Send quote"}
-                {!isPending ? <ChevronDown data-icon="inline-end" /> : null}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuGroup>
-                <DropdownMenuItem onSelect={handleSendWithRequo}>
-                  <SendHorizontal />
-                  Send with Requo
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    void handleManualSetup();
-                  }}
-                >
-                  <Copy />
-                  Send manually
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {customerContactMethod === "email" || !customerContactMethod ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button disabled={disabled || isPending} type="button">
+                  {isPending ? (
+                    <Spinner data-icon="inline-start" aria-hidden="true" />
+                  ) : (
+                    <SendHorizontal data-icon="inline-start" />
+                  )}
+                  {isSendingWithRequo
+                    ? "Sending quote..."
+                    : isMarkingManualSent
+                      ? "Marking sent..."
+                      : "Send quote"}
+                  {!isPending ? <ChevronDown data-icon="inline-end" /> : null}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onSelect={handleSendWithRequo}>
+                    <SendHorizontal />
+                    Send with Requo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      void handleManualSetup();
+                    }}
+                  >
+                    <Copy />
+                    Send manually
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              disabled={disabled || isPending}
+              onClick={() => {
+                setManualMode(true);
+                setIsNonEmailGuideOpen(true);
+              }}
+              type="button"
+            >
+              {isPending ? (
+                <Spinner data-icon="inline-start" aria-hidden="true" />
+              ) : (
+                <SendHorizontal data-icon="inline-start" />
+              )}
+              {isMarkingManualSent ? "Marking sent..." : "Send quote"}
+            </Button>
+          )}
         </FormActions>
       </form>
 
@@ -243,6 +275,65 @@ export function QuoteSendForm({
           <DialogFooter>
             <CopyQuoteLinkButton url={customerQuoteUrl} />
             <Button onClick={() => setIsManualGuideOpen(false)} type="button">
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isNonEmailGuideOpen} onOpenChange={setIsNonEmailGuideOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send quote</DialogTitle>
+            <DialogDescription>
+              Copy the message below and send it to your customer via{" "}
+              <span className="capitalize">{customerContactMethod}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="flex flex-col gap-4">
+            <div className="relative rounded-md border bg-muted/40 p-4 pt-10 text-sm leading-relaxed text-foreground">
+              <Button
+                className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                size="icon"
+                variant="ghost"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(
+                      `Hi, here is your requested quote:\n\n${customerQuoteUrl}`,
+                    );
+                    toast.success("Message copied.");
+                  } catch (error) {
+                    toast.error("We couldn't copy the message.");
+                  }
+                }}
+                type="button"
+                title="Copy message"
+              >
+                <Copy className="size-3.5" />
+              </Button>
+              <span className="whitespace-pre-wrap">
+                Hi, here is your requested quote:{"\n\n"}
+                <span className="break-all font-mono text-sm">{customerQuoteUrl}</span>
+              </span>
+            </div>
+            
+            <div className="soft-panel flex flex-col gap-3 px-4 py-4 shadow-none">
+              <ol className="flex flex-col gap-2 text-sm leading-6 text-muted-foreground">
+                <li>1. Send the copied quote to your customer.</li>
+                <li>
+                  2. Come back here and click Okay to move the quote into the sent
+                  stage.
+                </li>
+              </ol>
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <CopyQuoteLinkButton url={customerQuoteUrl} />
+            <Button
+              onClick={() => {
+                setIsNonEmailGuideOpen(false);
+              }}
+              type="button"
+            >
               Got it
             </Button>
           </DialogFooter>

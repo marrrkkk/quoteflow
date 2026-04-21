@@ -331,6 +331,7 @@ export default async function QuoteDetailPage({
                 <QuoteSendForm
                   action={sendAction}
                   customerQuoteUrl={customerQuoteUrl}
+                  customerContactMethod={quote.customerContactMethod}
                 />
               </DashboardSection>
 
