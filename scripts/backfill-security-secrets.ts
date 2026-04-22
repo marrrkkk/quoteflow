@@ -4,7 +4,6 @@ import { eq, isNotNull, or } from "drizzle-orm";
 
 import { db, dbConnection } from "../lib/db/client";
 import {
-  businessMemberInvites,
   googleCalendarConnections,
   quotes,
 } from "../lib/db/schema";
@@ -34,33 +33,6 @@ async function backfillQuotePublicTokens() {
         updatedAt: new Date(),
       })
       .where(eq(quotes.id, row.id));
-  }
-
-  return rows.length;
-}
-
-async function backfillBusinessInviteTokens() {
-  const rows = await db
-    .select({
-      id: businessMemberInvites.id,
-      token: businessMemberInvites.token,
-    })
-    .from(businessMemberInvites)
-    .where(isNotNull(businessMemberInvites.token));
-
-  for (const row of rows) {
-    if (!row.token) {
-      continue;
-    }
-
-    await db
-      .update(businessMemberInvites)
-      .set({
-        token: null,
-        tokenHash: hashOpaqueToken(row.token),
-        updatedAt: new Date(),
-      })
-      .where(eq(businessMemberInvites.id, row.id));
   }
 
   return rows.length;
@@ -102,14 +74,12 @@ async function backfillGoogleCalendarTokens() {
 }
 
 async function main() {
-  const [quoteCount, inviteCount, calendarCount] = await Promise.all([
+  const [quoteCount, calendarCount] = await Promise.all([
     backfillQuotePublicTokens(),
-    backfillBusinessInviteTokens(),
     backfillGoogleCalendarTokens(),
   ]);
 
   console.log("Security backfill completed.", {
-    businessInvites: inviteCount,
     googleCalendarConnections: calendarCount,
     quotes: quoteCount,
   });

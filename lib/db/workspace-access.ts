@@ -68,9 +68,18 @@ export const getWorkspacesForUser = cache(async (userId: string) => {
 
 /**
  * Returns workspace context for a specific workspace + user combination.
+ * Provide either workspaceId or workspaceSlug (slug is used when ID is not available, e.g. from URL params).
  */
 export const getWorkspaceContextForUser = cache(
-  async (userId: string, workspaceId: string) => {
+  async (userId: string, workspaceId?: string, workspaceSlug?: string) => {
+    if (!workspaceId && !workspaceSlug) {
+      return null;
+    }
+
+    const condition = workspaceId
+      ? eq(workspaces.id, workspaceId)
+      : eq(workspaces.slug, workspaceSlug!);
+
     const [row] = await db
       .select({
         workspaceId: workspaces.id,
@@ -88,7 +97,7 @@ export const getWorkspaceContextForUser = cache(
       .where(
         and(
           eq(workspaceMembers.userId, userId),
-          eq(workspaces.id, workspaceId),
+          condition,
           isNull(workspaces.deletedAt),
         ),
       )

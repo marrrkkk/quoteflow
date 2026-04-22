@@ -2,6 +2,7 @@ import { Resend } from "resend";
 
 import type { QuoteEmailTemplateConfig } from "@/features/settings/email-templates";
 import { renderBusinessMemberInviteEmail } from "@/emails/templates/business-member-invite";
+import { renderWorkspaceMemberInviteEmail } from "@/emails/templates/workspace-member-invite";
 import { renderEmailVerificationEmail } from "@/emails/templates/email-verification";
 import { renderPasswordResetEmail } from "@/emails/templates/password-reset";
 import { renderPublicInquiryNotificationEmail } from "@/emails/templates/public-inquiry-notification";
@@ -10,6 +11,7 @@ import { renderQuoteResponseOwnerNotificationEmail } from "@/emails/templates/qu
 import { renderQuoteSentOwnerNotificationEmail } from "@/emails/templates/quote-sent-owner-notification";
 import { env, isResendConfigured } from "@/lib/env";
 import type { BusinessMemberAssignableRole } from "@/lib/business-members";
+import type { WorkspaceMemberAssignableRole } from "@/features/workspace-members/types";
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 const consumerMailboxProviderDomains = new Set([
@@ -306,6 +308,69 @@ export async function sendBusinessMemberInviteEmail({
     },
     {
       idempotencyKey: `business-member-invite/${inviteId}/${token}`,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
+}
+
+type SendWorkspaceMemberInviteEmailInput = {
+  inviteId: string;
+  token: string;
+  email: string;
+  workspaceName: string;
+  inviterName: string;
+  workspaceRole: WorkspaceMemberAssignableRole;
+  inviteUrl: string;
+};
+
+export async function sendWorkspaceMemberInviteEmail({
+  inviteId,
+  token,
+  email,
+  workspaceName,
+  inviterName,
+  workspaceRole,
+  inviteUrl,
+}: SendWorkspaceMemberInviteEmailInput) {
+  if (!resend || !isResendConfigured || !env.RESEND_FROM_EMAIL) {
+    console.warn(
+      "Resend is not configured yet. Workspace member invite delivery was skipped.",
+    );
+    return false;
+  }
+
+  const senderConfigurationError = getResendFromEmailConfigurationError();
+
+  if (senderConfigurationError) {
+    console.warn(
+      `Resend sender is misconfigured. Workspace member invite delivery was skipped. ${senderConfigurationError}`,
+    );
+    return false;
+  }
+
+  const template = renderWorkspaceMemberInviteEmail({
+    workspaceName,
+    inviterName,
+    workspaceRole,
+    inviteUrl,
+  });
+
+  const { error } = await resend.emails.send(
+    {
+      from: env.RESEND_FROM_EMAIL,
+      to: [email],
+      replyTo: env.RESEND_REPLY_TO_EMAIL ? [env.RESEND_REPLY_TO_EMAIL] : undefined,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    },
+    {
+      idempotencyKey: `workspace-member-invite/${inviteId}/${token}`,
     },
   );
 

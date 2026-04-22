@@ -50,13 +50,14 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
     notFound();
   }
 
-  const finalizedDeletion = await finalizeScheduledWorkspaceDeletionIfDue(overview.id);
+  const [finalizedDeletion, billingOverview] = await Promise.all([
+    finalizeScheduledWorkspaceDeletionIfDue(overview.id),
+    getWorkspaceBillingOverview(overview.id),
+  ]);
 
   if (finalizedDeletion.deleted) {
     redirect(workspacesHubPath);
   }
-
-  const billingOverview = await getWorkspaceBillingOverview(overview.id);
   const isOwner = overview.memberRole === "owner";
   const avatarSrc = resolveUserAvatarSrc({
     avatarStoragePath: profile?.avatarStoragePath,

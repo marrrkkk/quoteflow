@@ -34,7 +34,7 @@ export async function getBusinessNotificationBellView({
   userId: string;
   limit?: number;
 }): Promise<BusinessNotificationBellView> {
-  const [rawRows, stateRows] = await Promise.all([
+  const [rawRows, stateRows, totalCountRows] = await Promise.all([
     db
       .select({
         id: businessNotifications.id,
@@ -65,36 +65,44 @@ export async function getBusinessNotificationBellView({
         ),
       )
       .limit(1),
+    db
+      .select({
+        count: count(),
+      })
+      .from(businessNotifications)
+      .where(eq(businessNotifications.businessId, businessId)),
   ]);
   const lastReadAt = stateRows[0]?.lastReadAt ?? null;
   const hasMore = rawRows.length > limit;
   const rows = hasMore ? rawRows.slice(0, limit) : rawRows;
-  const unreadCount = lastReadAt
-    ? Number(
-        (
-          await db
-            .select({
-              count: count(),
-            })
-            .from(businessNotifications)
-            .where(
-              and(
-                eq(businessNotifications.businessId, businessId),
-                gt(businessNotifications.createdAt, lastReadAt),
-              ),
-            )
-        )[0]?.count ?? 0,
-      )
-    : Number(
-        (
-          await db
-            .select({
-              count: count(),
-            })
-            .from(businessNotifications)
-            .where(eq(businessNotifications.businessId, businessId))
-        )[0]?.count ?? 0,
-      );
+  const totalCount = Number(totalCountRows[0]?.count ?? 0);
+
+  let unreadCount: number;
+
+  if (!lastReadAt) {
+    // Never read → everything is unread
+    unreadCount = totalCount;
+  } else if (!hasMore) {
+    // All notifications fit in the page → count from fetched rows
+    unreadCount = rows.filter((row) => row.createdAt > lastReadAt).length;
+  } else {
+    // Too many notifications to count client-side → targeted DB query
+    unreadCount = Number(
+      (
+        await db
+          .select({
+            count: count(),
+          })
+          .from(businessNotifications)
+          .where(
+            and(
+              eq(businessNotifications.businessId, businessId),
+              gt(businessNotifications.createdAt, lastReadAt),
+            ),
+          )
+      )[0]?.count ?? 0,
+    );
+  }
 
   return {
     items: (rows satisfies BusinessNotificationRecord[]).map((notification) =>

@@ -3,7 +3,8 @@ import { getWorkspaceSettingsPath } from "@/features/workspaces/routes";
 export type WorkspaceSettingsNavigationIcon =
   | "general"
   | "billing"
-  | "audit";
+  | "audit"
+  | "members";
 
 export type WorkspaceSettingsNavigationItem = {
   href: string;
@@ -31,6 +32,11 @@ export function getWorkspaceSettingsNavigation(
           href: getWorkspaceSettingsPath(workspaceSlug, "general"),
           label: "General",
           icon: "general",
+        },
+        {
+          href: getWorkspaceSettingsPath(workspaceSlug, "members"),
+          label: "Members",
+          icon: "members",
         },
         {
           href: getWorkspaceSettingsPath(workspaceSlug, "billing"),

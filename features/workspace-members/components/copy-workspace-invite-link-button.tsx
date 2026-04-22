@@ -6,27 +6,27 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
-type CopyBusinessInviteLinkButtonProps = {
-  businessSlug: string;
+type CopyWorkspaceInviteLinkButtonProps = {
+  workspaceId: string;
   copyInviteLinkAction: (
     inviteId: string,
-    businessSlug: string,
+    workspaceId: string,
   ) => Promise<{ error?: string; inviteUrl?: string }>;
   inviteId: string;
 };
 
-export function CopyBusinessInviteLinkButton({
-  businessSlug,
+export function CopyWorkspaceInviteLinkButton({
+  workspaceId,
   copyInviteLinkAction,
   inviteId,
-}: CopyBusinessInviteLinkButtonProps) {
+}: CopyWorkspaceInviteLinkButtonProps) {
   const [copied, setCopied] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   async function handleCopy() {
     try {
       setIsPending(true);
-      const result = await copyInviteLinkAction(inviteId, businessSlug);
+      const result = await copyInviteLinkAction(inviteId, workspaceId);
 
       if (!result.inviteUrl) {
         throw new Error(result.error ?? "Failed to create a fresh invite link.");
@@ -43,7 +43,7 @@ export function CopyBusinessInviteLinkButton({
         setCopied(false);
       }, 1800);
     } catch (error) {
-      console.error("Failed to copy business invite URL.", error);
+      console.error("Failed to copy workspace invite URL.", error);
       toast.error("Failed to copy link.");
     } finally {
       setIsPending(false);

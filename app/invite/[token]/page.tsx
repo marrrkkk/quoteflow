@@ -5,26 +5,29 @@ import { AuthShell } from "@/components/shell/auth-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/features/auth/components/logout-button";
-import { acceptBusinessMemberInviteAction, declineBusinessMemberInviteAction } from "@/features/business-members/actions";
-import { BusinessMemberInviteAcceptForm } from "@/features/business-members/components/business-member-invite-accept-form";
-import { getBusinessMemberInviteByToken } from "@/features/business-members/queries";
-import { getBusinessMemberInvitePath } from "@/features/business-members/routes";
+import {
+  acceptWorkspaceMemberInviteAction,
+  declineWorkspaceMemberInviteAction,
+} from "@/features/workspace-members/actions";
+import { WorkspaceMemberInviteAcceptForm } from "@/features/workspace-members/components/workspace-member-invite-accept-form";
+import { getWorkspaceMemberInviteByToken } from "@/features/workspace-members/queries";
+import { getWorkspaceMemberInvitePath } from "@/features/workspace-members/routes";
+import { workspaceMemberRoleMeta } from "@/features/workspace-members/types";
 import { getAuthPathWithNext } from "@/lib/auth/redirects";
 import { getCurrentUser } from "@/lib/auth/session";
-import { businessMemberRoleMeta } from "@/lib/business-members";
 import { createNoIndexMetadata } from "@/lib/seo/site";
 
 export const unstable_instant = false;
 export const metadata: Metadata = createNoIndexMetadata({
-  absoluteTitle: "Business invite",
-  description: "Review a business access invite securely.",
+  absoluteTitle: "Workspace invite",
+  description: "Review a workspace access invite securely.",
 });
 
 function normalizeEmailAddress(email: string) {
   return email.trim().toLowerCase();
 }
 
-export default async function BusinessMemberInvitePage({
+export default async function WorkspaceMemberInvitePage({
   params,
 }: {
   params: Promise<{
@@ -32,10 +35,10 @@ export default async function BusinessMemberInvitePage({
   }>;
 }) {
   const { token } = await params;
-  const invitePath = getBusinessMemberInvitePath(token);
+  const invitePath = getWorkspaceMemberInvitePath(token);
   const [currentUser, invite] = await Promise.all([
     getCurrentUser(),
-    getBusinessMemberInviteByToken(token),
+    getWorkspaceMemberInviteByToken(token),
   ]);
   const isExpired = invite ? invite.expiresAt <= new Date() : false;
 
@@ -43,7 +46,7 @@ export default async function BusinessMemberInvitePage({
     return (
       <AuthShell
         badge="Invite"
-        description="Ask the business owner for a fresh link if this one has expired."
+        description="Ask the workspace owner for a fresh link if this one has expired."
         layout="centered"
         title="Invite unavailable"
       >
@@ -60,17 +63,18 @@ export default async function BusinessMemberInvitePage({
   const loginHref = getAuthPathWithNext("/login", invitePath);
   const signupHref = getAuthPathWithNext("/signup", invitePath);
   const invitedEmail = normalizeEmailAddress(invite.email);
-  const inviteRoleMeta =
-    businessMemberRoleMeta[invite.role as keyof typeof businessMemberRoleMeta];
-  const signedInEmail = currentUser ? normalizeEmailAddress(currentUser.email) : null;
+  const inviteRoleMeta = workspaceMemberRoleMeta[invite.workspaceRole];
+  const signedInEmail = currentUser
+    ? normalizeEmailAddress(currentUser.email)
+    : null;
 
   if (!currentUser) {
     return (
       <AuthShell
         badge="Invite"
-        description={`You've been invited to join ${invite.business.name} as a ${inviteRoleMeta.label.toLowerCase()}.`}
+        description={`You've been invited to join ${invite.workspace.name} as a ${inviteRoleMeta.label.toLowerCase()}.`}
         layout="centered"
-        title={`Join ${invite.business.name}`}
+        title={`Join ${invite.workspace.name}`}
       >
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap gap-2">
@@ -79,7 +83,8 @@ export default async function BusinessMemberInvitePage({
           </div>
 
           <p className="text-sm leading-7 text-muted-foreground">
-            {invite.inviter.name} invited you to help manage inquiries, quotes, and follow-up for this business.
+            {invite.inviter.name} invited you to join this workspace and
+            collaborate on inquiries, quotes, and follow-up.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -120,18 +125,22 @@ export default async function BusinessMemberInvitePage({
     );
   }
 
-  const alreadyHasAccess = Boolean(invite.currentMembershipRole);
+  const alreadyHasAccess = Boolean(invite.currentWorkspaceMembershipRole);
 
   return (
     <AuthShell
       badge="Invite"
       description={
         alreadyHasAccess
-          ? `You already have access to ${invite.business.name}.`
-          : `Accept access to ${invite.business.name} as a ${inviteRoleMeta.label.toLowerCase()}.`
+          ? `You already have access to ${invite.workspace.name}.`
+          : `Accept access to ${invite.workspace.name} as a ${inviteRoleMeta.label.toLowerCase()}.`
       }
       layout="centered"
-      title={alreadyHasAccess ? "Open business" : `Join ${invite.business.name}`}
+      title={
+        alreadyHasAccess
+          ? "Open workspace"
+          : `Join ${invite.workspace.name}`
+      }
     >
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap gap-2">
@@ -140,13 +149,23 @@ export default async function BusinessMemberInvitePage({
         </div>
 
         <p className="text-sm leading-7 text-muted-foreground">
-          {invite.inviter.name} invited you to help manage inquiries, quotes, and follow-up for this business.
+          {invite.inviter.name} invited you to join this workspace and
+          collaborate on inquiries, quotes, and follow-up.
         </p>
 
-        <BusinessMemberInviteAcceptForm
-          acceptAction={acceptBusinessMemberInviteAction.bind(null, invite.token)}
-          declineAction={alreadyHasAccess ? undefined : declineBusinessMemberInviteAction.bind(null, invite.token)}
-          submitLabel={alreadyHasAccess ? "Open business" : "Accept invite"}
+        <WorkspaceMemberInviteAcceptForm
+          acceptAction={acceptWorkspaceMemberInviteAction.bind(
+            null,
+            invite.token,
+          )}
+          declineAction={
+            alreadyHasAccess
+              ? undefined
+              : declineWorkspaceMemberInviteAction.bind(null, invite.token)
+          }
+          submitLabel={
+            alreadyHasAccess ? "Open workspace" : "Accept invite"
+          }
         />
       </div>
     </AuthShell>

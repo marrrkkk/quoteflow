@@ -1,6 +1,6 @@
 "use client";
 
-import { BriefcaseBusiness, CreditCard, ScrollText } from "lucide-react";
+import { BriefcaseBusiness, CreditCard, ScrollText, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
@@ -31,6 +31,7 @@ const navigationIcons: Record<
   typeof BriefcaseBusiness
 > = {
   general: BriefcaseBusiness,
+  members: Users,
   billing: CreditCard,
   audit: ScrollText,
 };
@@ -43,9 +44,10 @@ export function WorkspaceSettingsNav({ groups }: WorkspaceSettingsNavProps) {
   const pathname = usePathname();
   const router = useProgressRouter();
   const flatItems = groups.flatMap((group) => group.items);
-  const activeItem = flatItems.find((item) =>
+  const exactActiveItem = flatItems.find((item) =>
     isActiveWorkspaceSettingsItem(pathname, item.href),
   );
+  const activeItem = exactActiveItem ?? flatItems[0];
   const comboboxGroups: ComboboxOptionGroup<WorkspaceSettingsOption>[] = groups.map(
     (group) => ({
       heading: group.label,
@@ -122,11 +124,12 @@ export function WorkspaceSettingsNav({ groups }: WorkspaceSettingsNavProps) {
               <div className="flex flex-col gap-0.5">
                 {group.items.map((item) => {
                   const Icon = navigationIcons[item.icon];
+                  const isActive = activeItem?.href === item.href;
 
                   return (
                     <BusinessSettingsNavLink
                       href={item.href}
-                      isActive={isActiveWorkspaceSettingsItem(pathname, item.href)}
+                      isActive={isActive}
                       key={item.href}
                       label={item.label}
                     >

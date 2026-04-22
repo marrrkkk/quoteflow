@@ -72,10 +72,10 @@ export async function DashboardOverviewChecklistSection({
   return (
     <DashboardActivationChecklist
       businessName={businessName}
+      businessSlug={businessSlug}
       inquiriesPath={getBusinessInquiriesPath(businessSlug)}
       newQuotePath={getBusinessNewQuotePath(businessSlug)}
       publicInquiryEnabled={publicInquiryEnabled}
-      publicInquiryUrl={getBusinessPublicInquiryUrl(businessSlug)}
       totalInquiries={summary.totalInquiries}
       totalQuotes={summary.totalQuotes}
     />

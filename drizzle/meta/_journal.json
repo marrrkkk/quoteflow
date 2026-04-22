@@ -267,6 +267,20 @@
       "when": 1776719150416,
       "tag": "0039_burly_tombstone",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1776820000000,
+      "tag": "0040_workspace_member_invites",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1776906400000,
+      "tag": "0041_drop_business_member_invites",
+      "breakpoints": true
     }
   ]
 }

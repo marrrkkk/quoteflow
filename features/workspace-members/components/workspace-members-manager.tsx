@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MailPlus, MoreHorizontal, Plus, Search, Users } from "lucide-react";
+import { MailPlus, MoreHorizontal, Search, Users } from "lucide-react";
 
 import { DashboardEmptyState } from "@/components/shared/dashboard-layout";
 import { PageHeader } from "@/components/shared/page-header";
@@ -33,7 +33,6 @@ import {
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
@@ -41,61 +40,56 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import {
-  businessMemberAssignableRoles,
-  businessMemberRoleMeta,
-  type BusinessMemberAssignableRole,
-} from "@/lib/business-members";
-import { CopyBusinessInviteLinkButton } from "@/features/business-members/components/copy-business-invite-link-button";
+  workspaceMemberAssignableRoles,
+  workspaceMemberRoleMeta,
+  type WorkspaceMemberAssignableRole,
+} from "@/features/workspace-members/types";
+import { CopyWorkspaceInviteLinkButton } from "@/features/workspace-members/components/copy-workspace-invite-link-button";
+import { InviteMemberDialog } from "@/features/workspace-members/components/invite-member-dialog";
 import type {
-  BusinessMemberInviteActionState,
-  BusinessMemberRemoveActionState,
-  BusinessMemberRoleActionState,
-  BusinessMembersSettingsView,
-} from "@/features/business-members/types";
+  WorkspaceMemberInviteActionState,
+  WorkspaceMemberRemoveActionState,
+  WorkspaceMemberRoleActionState,
+  WorkspaceMembersSettingsView,
+} from "@/features/workspace-members/types";
 
-type BusinessMembersManagerProps = {
-  businessSlug: string;
-  view: BusinessMembersSettingsView;
+type WorkspaceMembersManagerProps = {
+  workspaceId: string;
+  view: WorkspaceMembersSettingsView;
+  preselectedBusinessId?: string | null;
   createInviteAction: (
-    state: BusinessMemberInviteActionState,
+    state: WorkspaceMemberInviteActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberInviteActionState>;
+  ) => Promise<WorkspaceMemberInviteActionState>;
   copyInviteLinkAction: (
     inviteId: string,
-    businessSlug: string,
+    workspaceId: string,
   ) => Promise<{ error?: string; inviteUrl?: string }>;
   updateRoleAction: (
     membershipId: string,
-    state: BusinessMemberRoleActionState,
+    state: WorkspaceMemberRoleActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRoleActionState>;
+  ) => Promise<WorkspaceMemberRoleActionState>;
   removeMemberAction: (
     membershipId: string,
-    state: BusinessMemberRemoveActionState,
+    state: WorkspaceMemberRemoveActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRemoveActionState>;
+  ) => Promise<WorkspaceMemberRemoveActionState>;
   cancelInviteAction: (
     inviteId: string,
-    state: BusinessMemberRemoveActionState,
+    state: WorkspaceMemberRemoveActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRemoveActionState>;
+  ) => Promise<WorkspaceMemberRemoveActionState>;
 };
 
-type RoleOption = {
-  label: string;
-  searchText: string;
-  value: BusinessMemberAssignableRole;
-};
+const initialRoleState: WorkspaceMemberRoleActionState = {};
+const initialDangerState: WorkspaceMemberRemoveActionState = {};
 
-const roleOptions: RoleOption[] = businessMemberAssignableRoles.map((role) => ({
-  label: businessMemberRoleMeta[role].label,
-  searchText: `${businessMemberRoleMeta[role].label} ${businessMemberRoleMeta[role].description}`,
+const workspaceRoleOptions = workspaceMemberAssignableRoles.map((role) => ({
+  label: workspaceMemberRoleMeta[role].label,
+  searchText: `${workspaceMemberRoleMeta[role].label} ${workspaceMemberRoleMeta[role].description}`,
   value: role,
 }));
-
-const initialInviteState: BusinessMemberInviteActionState = {};
-const initialRoleState: BusinessMemberRoleActionState = {};
-const initialDangerState: BusinessMemberRemoveActionState = {};
 
 function getInitials(name: string) {
   return name
@@ -105,15 +99,16 @@ function getInitials(name: string) {
     .join("");
 }
 
-export function BusinessMembersManager({
-  businessSlug,
+export function WorkspaceMembersManager({
+  workspaceId,
   view,
+  preselectedBusinessId,
   createInviteAction,
   copyInviteLinkAction,
   updateRoleAction,
   removeMemberAction,
   cancelInviteAction,
-}: BusinessMembersManagerProps) {
+}: WorkspaceMembersManagerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredMembers = view.members.filter((member) => {
@@ -125,25 +120,39 @@ export function BusinessMembersManager({
     );
   });
 
+  const { invitePermission } = view;
+
+  // Scope the business list based on invite permission
+  const inviteBusinesses = invitePermission.allowedBusinessIds === null
+    ? view.businesses
+    : view.businesses.filter((b) =>
+        invitePermission.allowedBusinessIds!.includes(b.id),
+      );
+
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
       <PageHeader
         title="Members"
-        description="Manage who has access to this business and their roles."
+        description="Manage who has access to this workspace and their roles."
         actions={
           <div className="flex flex-wrap items-center gap-2 xl:justify-end">
             {view.invites.length > 0 ? (
               <PendingInvitesDialog
-                businessSlug={businessSlug}
+                workspaceId={workspaceId}
                 cancelInviteAction={cancelInviteAction}
                 copyInviteLinkAction={copyInviteLinkAction}
                 invites={view.invites}
               />
             ) : null}
-            <InviteMemberDialog
-              action={createInviteAction}
-              businessSlug={businessSlug}
-            />
+            {invitePermission.canInvite ? (
+              <InviteMemberDialog
+                action={createInviteAction}
+                businesses={inviteBusinesses}
+                maxWorkspaceRole={invitePermission.maxAssignableWorkspaceRole}
+                preselectedBusinessId={preselectedBusinessId}
+                workspaceId={workspaceId}
+              />
+            ) : null}
           </div>
         }
       />
@@ -174,7 +183,7 @@ export function BusinessMembersManager({
                   )}
                 >
                   <MemberRow
-                    businessSlug={businessSlug}
+                    workspaceId={workspaceId}
                     member={member}
                     removeAction={removeMemberAction.bind(null, member.membershipId)}
                     updateRoleAction={updateRoleAction.bind(null, member.membershipId)}
@@ -200,129 +209,30 @@ export function BusinessMembersManager({
   );
 }
 
-/* ─── Invite member dialog ─── */
 
-function InviteMemberDialog({
-  businessSlug,
-  action,
-}: {
-  businessSlug: string;
-  action: BusinessMembersManagerProps["createInviteAction"];
-}) {
-  const [selectedRole, setSelectedRole] = useState<BusinessMemberAssignableRole>(
-    "manager",
-  );
-  const [state, formAction, isPending] = useActionStateWithSonner(
-    action,
-    initialInviteState,
-  );
-  const emailError = state.fieldErrors?.email?.[0];
-  const roleError = state.fieldErrors?.role?.[0];
-  const selectedRoleMeta = businessMemberRoleMeta[selectedRole];
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus data-icon="inline-start" />
-          Invite member
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Invite member</DialogTitle>
-          <DialogDescription>
-            Send an invite to join this business.
-          </DialogDescription>
-        </DialogHeader>
-        <form action={formAction}>
-          <input name="businessSlug" type="hidden" value={businessSlug} />
-          <input name="role" type="hidden" value={selectedRole} />
-          <DialogBody className="flex flex-col gap-4">
-            <Field data-invalid={Boolean(emailError) || undefined}>
-              <FieldLabel htmlFor="member-email">Email address</FieldLabel>
-              <FieldContent>
-                <Input
-                  autoComplete="email"
-                  disabled={isPending}
-                  id="member-email"
-                  name="email"
-                  placeholder="teammate@example.com"
-                  required
-                  type="email"
-                />
-                <FieldError errors={emailError ? [{ message: emailError }] : undefined} />
-              </FieldContent>
-            </Field>
-
-            <Field data-invalid={Boolean(roleError) || undefined}>
-              <FieldLabel htmlFor="member-role">Role</FieldLabel>
-              <FieldContent>
-                <Combobox
-                  disabled={isPending}
-                  id="member-role"
-                  onValueChange={(value) =>
-                    setSelectedRole(value as BusinessMemberAssignableRole)
-                  }
-                  options={roleOptions}
-                  placeholder="Choose a role"
-                  renderOption={(option) => (
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{option.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {businessMemberRoleMeta[option.value].description}
-                      </p>
-                    </div>
-                  )}
-                  searchPlaceholder="Search role"
-                  value={selectedRole}
-                />
-                <FieldDescription>{selectedRoleMeta.description}</FieldDescription>
-                <FieldError errors={roleError ? [{ message: roleError }] : undefined} />
-              </FieldContent>
-            </Field>
-          </DialogBody>
-          <DialogFooter>
-            <Button disabled={isPending} type="submit">
-              {isPending ? (
-                <>
-                  <Spinner aria-hidden="true" data-icon="inline-start" />
-                  Sending...
-                </>
-              ) : (
-                "Send invite"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 /* ─── Member row ─── */
 
 function MemberRow({
-  businessSlug,
+  workspaceId,
   member,
   updateRoleAction,
   removeAction,
 }: {
-  businessSlug: string;
-  member: BusinessMembersSettingsView["members"][number];
+  workspaceId: string;
+  member: WorkspaceMembersSettingsView["members"][number];
   updateRoleAction: (
-    state: BusinessMemberRoleActionState,
+    state: WorkspaceMemberRoleActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRoleActionState>;
+  ) => Promise<WorkspaceMemberRoleActionState>;
   removeAction: (
-    state: BusinessMemberRemoveActionState,
+    state: WorkspaceMemberRemoveActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRemoveActionState>;
+  ) => Promise<WorkspaceMemberRemoveActionState>;
 }) {
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const isEditable = member.role !== "owner" && !member.isCurrentUser;
-  const editableRole = member.role === "owner" ? null : member.role;
 
   return (
     <>
@@ -339,7 +249,7 @@ function MemberRow({
                 {member.name}
               </p>
               <Badge variant={member.role === "owner" ? "secondary" : "outline"}>
-                {businessMemberRoleMeta[member.role].label}
+                {workspaceMemberRoleMeta[member.role].label}
               </Badge>
               {member.isCurrentUser ? <Badge variant="outline">You</Badge> : null}
             </div>
@@ -359,7 +269,7 @@ function MemberRow({
                 <DropdownMenuItem onSelect={() => setShowRoleDialog(true)}>
                   Change role
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onSelect={() => setShowRemoveDialog(true)}
                   className="text-destructive focus:text-destructive"
                 >
@@ -374,15 +284,15 @@ function MemberRow({
       {isEditable ? (
         <>
           <ChangeRoleDialog
-            businessSlug={businessSlug}
-            currentRole={editableRole!}
+            workspaceId={workspaceId}
+            currentRole={member.role as WorkspaceMemberAssignableRole}
             memberName={member.name}
             updateRoleAction={updateRoleAction}
             open={showRoleDialog}
             onOpenChange={setShowRoleDialog}
           />
           <RemoveMemberDialog
-            businessSlug={businessSlug}
+            workspaceId={workspaceId}
             memberName={member.name}
             removeAction={removeAction}
             open={showRemoveDialog}
@@ -397,24 +307,24 @@ function MemberRow({
 /* ─── Change role dialog ─── */
 
 function ChangeRoleDialog({
-  businessSlug,
+  workspaceId,
   currentRole,
   updateRoleAction,
   memberName,
   open,
   onOpenChange,
 }: {
-  businessSlug: string;
-  currentRole: BusinessMemberAssignableRole;
+  workspaceId: string;
+  currentRole: WorkspaceMemberAssignableRole;
   updateRoleAction: (
-    state: BusinessMemberRoleActionState,
+    state: WorkspaceMemberRoleActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRoleActionState>;
+  ) => Promise<WorkspaceMemberRoleActionState>;
   memberName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [selectedRole, setSelectedRole] = useState<BusinessMemberAssignableRole>(
+  const [selectedRole, setSelectedRole] = useState<WorkspaceMemberAssignableRole>(
     currentRole,
   );
   const [roleState, roleFormAction, isRolePending] = useActionStateWithSonner(
@@ -437,7 +347,7 @@ function ChangeRoleDialog({
             onOpenChange(false);
           }}
         >
-          <input name="businessSlug" type="hidden" value={businessSlug} />
+          <input name="workspaceId" type="hidden" value={workspaceId} />
           <input name="role" type="hidden" value={selectedRole} />
           <DialogBody>
             <Field>
@@ -447,15 +357,15 @@ function ChangeRoleDialog({
                   disabled={isRolePending}
                   id={`member-role-${currentRole}`}
                   onValueChange={(value) =>
-                    setSelectedRole(value as BusinessMemberAssignableRole)
+                    setSelectedRole(value as WorkspaceMemberAssignableRole)
                   }
-                  options={roleOptions}
+                  options={workspaceRoleOptions}
                   placeholder="Role"
                   renderOption={(option) => (
                     <div className="min-w-0">
                       <p className="truncate font-medium">{option.label}</p>
                       <p className="text-xs text-muted-foreground">
-                        {businessMemberRoleMeta[option.value].description}
+                        {workspaceMemberRoleMeta[option.value].description}
                       </p>
                     </div>
                   )}
@@ -501,17 +411,17 @@ function ChangeRoleDialog({
 /* ─── Remove member dialog ─── */
 
 function RemoveMemberDialog({
-  businessSlug,
+  workspaceId,
   removeAction,
   memberName,
   open,
   onOpenChange,
 }: {
-  businessSlug: string;
+  workspaceId: string;
   removeAction: (
-    state: BusinessMemberRemoveActionState,
+    state: WorkspaceMemberRemoveActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRemoveActionState>;
+  ) => Promise<WorkspaceMemberRemoveActionState>;
   memberName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -527,11 +437,12 @@ function RemoveMemberDialog({
         <DialogHeader>
           <DialogTitle>Remove {memberName}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to remove this member from the business? They will lose all access immediately.
+            Are you sure you want to remove this member from the workspace? They
+            will lose access to all businesses in this workspace immediately.
           </DialogDescription>
         </DialogHeader>
         <form action={removeFormAction}>
-          <input name="businessSlug" type="hidden" value={businessSlug} />
+          <input name="workspaceId" type="hidden" value={workspaceId} />
           <DialogFooter>
             <Button
               disabled={isRemovePending}
@@ -561,15 +472,15 @@ function RemoveMemberDialog({
 /* ─── Pending invites dialog ─── */
 
 function PendingInvitesDialog({
-  businessSlug,
+  workspaceId,
   invites,
   cancelInviteAction,
   copyInviteLinkAction,
 }: {
-  businessSlug: string;
-  invites: BusinessMembersSettingsView["invites"];
-  cancelInviteAction: BusinessMembersManagerProps["cancelInviteAction"];
-  copyInviteLinkAction: BusinessMembersManagerProps["copyInviteLinkAction"];
+  workspaceId: string;
+  invites: WorkspaceMembersSettingsView["invites"];
+  cancelInviteAction: WorkspaceMembersManagerProps["cancelInviteAction"];
+  copyInviteLinkAction: WorkspaceMembersManagerProps["copyInviteLinkAction"];
 }) {
   return (
     <Dialog>
@@ -590,7 +501,7 @@ function PendingInvitesDialog({
           <div className="flex flex-col gap-2">
             {invites.map((invite) => (
               <InviteRow
-                businessSlug={businessSlug}
+                workspaceId={workspaceId}
                 cancelAction={cancelInviteAction.bind(null, invite.inviteId)}
                 copyInviteLinkAction={copyInviteLinkAction}
                 invite={invite}
@@ -607,18 +518,18 @@ function PendingInvitesDialog({
 /* ─── Invite row (inside pending dialog) ─── */
 
 function InviteRow({
-  businessSlug,
+  workspaceId,
   invite,
   cancelAction,
   copyInviteLinkAction,
 }: {
-  businessSlug: string;
-  invite: BusinessMembersSettingsView["invites"][number];
+  workspaceId: string;
+  invite: WorkspaceMembersSettingsView["invites"][number];
   cancelAction: (
-    state: BusinessMemberRemoveActionState,
+    state: WorkspaceMemberRemoveActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberRemoveActionState>;
-  copyInviteLinkAction: BusinessMembersManagerProps["copyInviteLinkAction"];
+  ) => Promise<WorkspaceMemberRemoveActionState>;
+  copyInviteLinkAction: WorkspaceMembersManagerProps["copyInviteLinkAction"];
 }) {
   const [, cancelFormAction, isPending] = useActionStateWithSonner(
     cancelAction,
@@ -637,19 +548,19 @@ function InviteRow({
             {invite.email}
           </p>
           <Badge variant="outline">
-            {businessMemberRoleMeta[invite.role].label}
+            {workspaceMemberRoleMeta[invite.workspaceRole].label}
           </Badge>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        <CopyBusinessInviteLinkButton
-          businessSlug={businessSlug}
+        <CopyWorkspaceInviteLinkButton
+          workspaceId={workspaceId}
           copyInviteLinkAction={copyInviteLinkAction}
           inviteId={invite.inviteId}
         />
         <form action={cancelFormAction}>
-          <input name="businessSlug" type="hidden" value={businessSlug} />
+          <input name="workspaceId" type="hidden" value={workspaceId} />
           <Button disabled={isPending} size="sm" type="submit" variant="ghost">
             {isPending ? (
               <Spinner aria-hidden="true" />

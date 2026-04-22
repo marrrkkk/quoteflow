@@ -3,32 +3,32 @@
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
-import type { BusinessMemberInviteAcceptActionState } from "@/features/business-members/types";
+import type { WorkspaceMemberInviteAcceptActionState } from "@/features/workspace-members/types";
 
-type BusinessMemberInviteAcceptFormProps = {
+type WorkspaceMemberInviteAcceptFormProps = {
   acceptAction: (
-    state: BusinessMemberInviteAcceptActionState,
+    state: WorkspaceMemberInviteAcceptActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberInviteAcceptActionState>;
+  ) => Promise<WorkspaceMemberInviteAcceptActionState>;
   declineAction?: (
-    state: BusinessMemberInviteAcceptActionState,
+    state: WorkspaceMemberInviteAcceptActionState,
     formData: FormData,
-  ) => Promise<BusinessMemberInviteAcceptActionState>;
+  ) => Promise<WorkspaceMemberInviteAcceptActionState>;
   submitLabel: string;
 };
 
-const initialState: BusinessMemberInviteAcceptActionState = {};
+const initialState: WorkspaceMemberInviteAcceptActionState = {};
 
-export function BusinessMemberInviteAcceptForm({
+export function WorkspaceMemberInviteAcceptForm({
   acceptAction,
   declineAction,
   submitLabel,
-}: BusinessMemberInviteAcceptFormProps) {
+}: WorkspaceMemberInviteAcceptFormProps) {
   const [, acceptFormAction, isAcceptPending] = useActionStateWithSonner(
     acceptAction,
     initialState,
   );
-  
+
   const [, declineFormAction, isDeclinePending] = useActionStateWithSonner(
     declineAction || (async () => initialState),
     initialState,
@@ -50,7 +50,7 @@ export function BusinessMemberInviteAcceptForm({
           )}
         </Button>
       </form>
-      
+
       {declineAction && (
         <form action={declineFormAction}>
           <Button disabled={isPending} size="lg" type="submit" variant="outline">

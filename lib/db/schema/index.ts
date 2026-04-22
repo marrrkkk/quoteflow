@@ -12,5 +12,6 @@ export * from "./business-inquiry-forms";
 export * from "./businesses";
 export * from "./google-calendar";
 export * from "./workspaces";
+export * from "./workspace-member-invites";
 export * from "./memories";
 export * from "./subscriptions";
