@@ -111,11 +111,12 @@ export default async function QuoteDetailPage({
   const restoreArchivedAction = restoreArchivedQuoteAction.bind(null, quote.id);
   const sendAction = sendQuoteAction.bind(null, quote.id);
   const voidAction = voidQuoteAction.bind(null, quote.id);
-  const customerQuotePath = getPublicQuoteUrl(quote.publicToken);
-  const customerQuoteUrl = new URL(
-    customerQuotePath,
-    env.BETTER_AUTH_URL,
-  ).toString();
+  const customerQuotePath = quote.publicToken
+    ? getPublicQuoteUrl(quote.publicToken)
+    : null;
+  const customerQuoteUrl = customerQuotePath
+    ? new URL(customerQuotePath, env.BETTER_AUTH_URL).toString()
+    : null;
   const customerHistory = await getCustomerHistoryForBusiness({
     businessId: businessContext.business.id,
     customerEmail: quote.customerEmail,
@@ -134,6 +135,7 @@ export default async function QuoteDetailPage({
   ]);
 
   const calendarPrefill = isGoogleCalendarConfigured
+    && quote.publicToken
     ? (quote.status === "accepted"
         ? prefillFromAcceptedQuote
         : prefillFromQuote)(
@@ -446,26 +448,38 @@ export default async function QuoteDetailPage({
               description="Share and track the public quote."
               title="Customer view"
             >
-              <div className="soft-panel px-4 py-4 shadow-none">
-                <p className="text-sm font-medium text-foreground">
-                  {customerViewCopy.title}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {customerViewCopy.description}
-                </p>
-                {quote.sentAt ? (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Sent on {formatQuoteDateTime(quote.sentAt)}.
-                  </p>
-                ) : null}
-              </div>
+              {customerQuoteUrl ? (
+                <>
+                  <div className="soft-panel px-4 py-4 shadow-none">
+                    <p className="text-sm font-medium text-foreground">
+                      {customerViewCopy.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {customerViewCopy.description}
+                    </p>
+                    {quote.sentAt ? (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Sent on {formatQuoteDateTime(quote.sentAt)}.
+                      </p>
+                    ) : null}
+                  </div>
 
-              <div className="soft-panel px-4 py-4 shadow-none">
-                <p className="meta-label">Public quote URL</p>
-                <p className="mt-2 break-all text-sm text-muted-foreground">
-                  {customerQuoteUrl}
-                </p>
-              </div>
+                  <div className="soft-panel px-4 py-4 shadow-none">
+                    <p className="meta-label">Public quote URL</p>
+                    <p className="mt-2 break-all text-sm text-muted-foreground">
+                      {customerQuoteUrl}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <Alert>
+                  <AlertTitle>Customer link unavailable</AlertTitle>
+                  <AlertDescription>
+                    Requo couldn&apos;t recover the secure customer link for this quote,
+                    so public sharing is temporarily unavailable.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <InfoTile
@@ -503,15 +517,17 @@ export default async function QuoteDetailPage({
                 </div>
               ) : null}
 
-              <div className="dashboard-actions [&>*]:w-full sm:[&>*]:w-auto">
-                <CopyQuoteLinkButton url={customerQuoteUrl} />
-                <Button asChild variant="outline">
-                  <Link href={customerQuotePath} prefetch={false} target="_blank">
-                    Open customer view
-                    <ExternalLink data-icon="inline-end" />
-                  </Link>
-                </Button>
-              </div>
+              {customerQuoteUrl && customerQuotePath ? (
+                <div className="dashboard-actions [&>*]:w-full sm:[&>*]:w-auto">
+                  <CopyQuoteLinkButton url={customerQuoteUrl} />
+                  <Button asChild variant="outline">
+                    <Link href={customerQuotePath} prefetch={false} target="_blank">
+                      Open customer view
+                      <ExternalLink data-icon="inline-end" />
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
             </DashboardSection>
 
             {quote.status === "accepted" ? (

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/shell/dashboard-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeButton } from "@/features/billing/components/upgrade-button";
+import { WorkspaceCheckoutProvider } from "@/features/billing/components/workspace-checkout-provider";
 import { getAccountProfileForUser } from "@/features/account/queries";
 import { resolveUserAvatarSrc } from "@/features/account/utils";
 import { getThemePreferenceForUser } from "@/features/theme/queries";
@@ -34,10 +35,11 @@ export default async function BusinessDashboardLayout({
   }
 
   // Core shell data — needed synchronously for sidebar nav, user menu, business switcher
-  const [themePreference, businessMemberships, profile] = await Promise.all([
+  const [themePreference, businessMemberships, profile, billing] = await Promise.all([
     getThemePreferenceForUser(session.user.id),
     getBusinessMembershipsForUser(session.user.id),
     getAccountProfileForUser(session.user.id),
+    getWorkspaceBillingOverview(businessContext.business.workspaceId),
   ]);
 
   const avatarSrc = resolveUserAvatarSrc({
@@ -59,16 +61,22 @@ export default async function BusinessDashboardLayout({
     </Suspense>
   );
 
-  const upgradeSlot = (
-    <Suspense fallback={null}>
-      <UpgradeButtonStreamedSection
-        workspaceId={businessContext.business.workspaceId}
-        workspaceSlug={businessContext.business.workspaceSlug}
-      />
-    </Suspense>
-  );
+  const upgradeSlot =
+    billing && billing.currentPlan !== "business" ? (
+      <div className="shrink-0">
+        <UpgradeButton
+          className="whitespace-nowrap"
+          currentPlan={billing.currentPlan}
+          defaultCurrency={billing.defaultCurrency}
+          region={billing.region}
+          size="sm"
+          workspaceId={billing.workspaceId}
+          workspaceSlug={billing.workspaceSlug}
+        />
+      </div>
+    ) : null;
 
-  return (
+  const shell = (
     <DashboardShell
       themePreference={themePreference}
       user={{
@@ -84,6 +92,16 @@ export default async function BusinessDashboardLayout({
     >
       {children}
     </DashboardShell>
+  );
+
+  if (!billing) {
+    return shell;
+  }
+
+  return (
+    <WorkspaceCheckoutProvider billing={billing}>
+      {shell}
+    </WorkspaceCheckoutProvider>
   );
 }
 
@@ -116,30 +134,3 @@ async function NotificationBellStreamedSection({
   );
 }
 
-async function UpgradeButtonStreamedSection({
-  workspaceId,
-  workspaceSlug,
-}: {
-  workspaceId: string;
-  workspaceSlug: string;
-}) {
-  const billing = await getWorkspaceBillingOverview(workspaceId);
-
-  if (!billing || billing.currentPlan !== "free") {
-    return null;
-  }
-
-  return (
-    <div className="shrink-0">
-      <UpgradeButton
-        className="whitespace-nowrap"
-        currentPlan={billing.currentPlan}
-        defaultCurrency={billing.defaultCurrency}
-        region={billing.region}
-        size="sm"
-        workspaceId={billing.workspaceId}
-        workspaceSlug={workspaceSlug}
-      />
-    </div>
-  );
-}
