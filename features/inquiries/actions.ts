@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidateTag, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 
 import { getValidationActionState } from "@/lib/action-state";
@@ -24,17 +25,20 @@ import {
   addInquiryNoteForBusiness,
   archiveInquiryForBusiness,
   changeInquiryStatusForBusiness,
+  createManualInquirySubmission,
   createPublicInquirySubmission,
   restoreInquiryFromTrashForBusiness,
   trashInquiryForBusiness,
   unarchiveInquiryForBusiness,
 } from "@/features/inquiries/mutations";
 import {
+  getInquiryEditorFormForBusiness,
   getPublicInquiryBusinessByFormSlug,
   getPublicInquiryBusinessBySlug,
   getBusinessOwnerNotificationEmails,
 } from "@/features/inquiries/queries";
 import {
+  inquiryFormSelectionSchema,
   inquiryNoteSchema,
   inquiryStatusChangeSchema,
   validatePublicInquirySubmission,
@@ -44,6 +48,7 @@ import type {
   InquiryRecordActionState,
   InquiryNoteActionState,
   InquiryStatusActionState,
+  ManualInquiryActionState,
   PublicInquiryFormState,
 } from "@/features/inquiries/types";
 import { getInquiryStatusLabel } from "@/features/inquiries/utils";
@@ -201,6 +206,117 @@ export async function submitPublicInquiryAction(
       error: "We couldn't submit your inquiry right now. Please try again.",
     };
   }
+}
+
+export async function createManualInquiryAction(
+  _prevState: ManualInquiryActionState,
+  formData: FormData,
+): Promise<ManualInquiryActionState> {
+  const ownerAccess = await getWorkspaceBusinessActionContext();
+
+  if (!ownerAccess.ok) {
+    return {
+      error: ownerAccess.error,
+    };
+  }
+
+  const { user, businessContext } = ownerAccess;
+  const formSelectionResult = inquiryFormSelectionSchema.safeParse({
+    formSlug: formData.get("formSlug"),
+  });
+
+  if (!formSelectionResult.success) {
+    return getValidationActionState(
+      formSelectionResult.error,
+      "Choose a request form.",
+    );
+  }
+
+  const selectedForm = await getInquiryEditorFormForBusiness({
+    businessId: businessContext.business.id,
+    formSlug: formSelectionResult.data.formSlug,
+  });
+
+  if (!selectedForm) {
+    return {
+      error: "That request form is unavailable.",
+      fieldErrors: {
+        formSlug: ["Choose an active request form."],
+      },
+    };
+  }
+
+  const inquiryAllowance = await checkUsageAllowance(
+    businessContext.business.workspaceId,
+    businessContext.business.workspacePlan,
+    "inquiriesPerMonth",
+  );
+
+  if (!inquiryAllowance.allowed) {
+    return {
+      error: `You've reached your plan's limit of ${inquiryAllowance.limit} requests this month. Upgrade your plan for unlimited usage.`,
+    };
+  }
+
+  const validationResult = validatePublicInquirySubmission(
+    selectedForm.inquiryFormConfig,
+    formData,
+  );
+
+  if (!validationResult.success) {
+    return getValidationActionState(
+      validationResult.error,
+      "Check the highlighted fields and try again.",
+    );
+  }
+
+  let inquiryPath: string | null = null;
+
+  try {
+    const createdInquiry = await createManualInquirySubmission({
+      business: {
+        id: businessContext.business.id,
+        name: businessContext.business.name,
+        slug: businessContext.business.slug,
+        form: {
+          id: selectedForm.id,
+          name: selectedForm.name,
+          slug: selectedForm.slug,
+          businessType: selectedForm.businessType,
+          isDefault: selectedForm.isDefault,
+          publicInquiryEnabled: selectedForm.publicInquiryEnabled,
+        },
+      },
+      submission: validationResult.data,
+      actorUserId: user.id,
+    });
+
+    updateCacheTags(
+      getInquiryMutationCacheTags(
+        businessContext.business.id,
+        createdInquiry.inquiryId,
+      ),
+    );
+
+    inquiryPath = getBusinessInquiryPath(
+      businessContext.business.slug,
+      createdInquiry.inquiryId,
+    );
+  } catch (error) {
+    console.error("Failed to create manual inquiry.", error);
+
+    return {
+      error: "We couldn't create that request right now.",
+    };
+  }
+
+  if (inquiryPath) {
+    redirect(inquiryPath);
+  }
+
+  return {
+    error: "We couldn't create that request right now.",
+  };
 }
 
 export async function addInquiryNoteAction(

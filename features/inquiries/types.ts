@@ -28,11 +28,17 @@ export const inquiryFilterableStatuses = [
   "overdue",
 ] as const;
 export const inquiryRecordViews = ["active", "archived", "trash"] as const;
+export const inquirySources = {
+  publicInquiryPage: "public-inquiry-page",
+  manualDashboard: "manual-dashboard",
+} as const;
 
 export type InquiryStatus = (typeof inquiryStatuses)[number];
 export type InquiryWorkflowStatus = (typeof inquiryWorkflowStatuses)[number];
 export type InquiryRecordView = (typeof inquiryRecordViews)[number];
 export type InquiryRecordState = InquiryRecordView;
+export type InquirySource =
+  (typeof inquirySources)[keyof typeof inquirySources];
 export const inquiryStatusFilterValues = [
   "all",
   ...inquiryFilterableStatuses,
@@ -143,6 +149,16 @@ export type BusinessInquiryFormSummary = {
   updatedAt: Date;
 };
 
+export type InquiryEditorForm = {
+  id: string;
+  name: string;
+  slug: string;
+  businessType: BusinessType;
+  isDefault: boolean;
+  publicInquiryEnabled: boolean;
+  inquiryFormConfig: InquiryFormConfig;
+};
+
 export type InquiryNoteFieldErrors = Partial<Record<"body", string[] | undefined>>;
 export type InquiryStatusFieldErrors = Partial<
   Record<"status", string[] | undefined>
@@ -194,4 +210,9 @@ export type PublicInquiryFormState = {
   success?: string;
   fieldErrors?: PublicInquiryFieldErrors;
   inquiryId?: string;
+};
+
+export type ManualInquiryActionState = {
+  error?: string;
+  fieldErrors?: PublicInquiryFieldErrors;
 };

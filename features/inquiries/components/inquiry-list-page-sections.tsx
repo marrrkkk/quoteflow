@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
 
 import { DashboardListResultsSkeleton } from "@/components/shared/dashboard-list-results-skeleton";
 import {
@@ -15,7 +15,10 @@ import type {
   DashboardInquiryListItem,
   InquiryListFilters,
 } from "@/features/inquiries/types";
-import { getBusinessInquiriesPath } from "@/features/businesses/routes";
+import {
+  getBusinessInquiriesPath,
+  getBusinessNewInquiryPath,
+} from "@/features/businesses/routes";
 
 type SearchParamsRecord = Record<string, string | string[] | undefined>;
 
@@ -85,6 +88,12 @@ export async function InquiryListControlsSection({
             formOptions={formOptions}
             resultCount={totalItems}
           />
+          <Button asChild>
+            <Link href={getBusinessNewInquiryPath(businessSlug)} prefetch={true}>
+              <Plus data-icon="inline-start" />
+              Create request
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -106,7 +115,6 @@ type InquiryListContentSectionProps = {
   pageDataPromise: Promise<InquiryListResultsData>;
   clearFiltersPath: string;
   hasNonViewFilters: boolean;
-  publicInquiryUrl: string;
 };
 
 export async function InquiryListContentSection({
@@ -117,7 +125,6 @@ export async function InquiryListContentSection({
   pageDataPromise,
   clearFiltersPath,
   hasNonViewFilters,
-  publicInquiryUrl,
 }: InquiryListContentSectionProps) {
   const totalItems = await totalItemsPromise;
 
@@ -148,8 +155,9 @@ export async function InquiryListContentSection({
           </Button>
         ) : (
           <Button asChild>
-            <Link href={publicInquiryUrl} prefetch={false}>
-              Preview inquiry page
+            <Link href={getBusinessNewInquiryPath(businessSlug)} prefetch={true}>
+              <Plus data-icon="inline-start" />
+              Create first request
             </Link>
           </Button>
         )
@@ -161,7 +169,7 @@ export async function InquiryListContentSection({
             ? "Archived requests stay here until you restore them."
             : filters.view === "trash"
               ? "Requests moved to trash stay here until you restore them."
-              : "New inquiries show up here."
+              : "Create a request manually or wait for new inquiries to arrive."
       }
       icon={Inbox}
       title={
@@ -186,6 +194,7 @@ export function InquiryListControlsFallback() {
 
         <div className="dashboard-actions w-full [&>*]:w-full sm:[&>*]:w-auto xl:w-auto xl:justify-end">
           <Skeleton className="h-10 w-full rounded-xl sm:w-36" />
+          <Skeleton className="h-10 w-full rounded-xl sm:w-40" />
         </div>
       </div>
 

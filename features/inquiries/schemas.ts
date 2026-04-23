@@ -652,6 +652,14 @@ export const inquiryListFiltersSchema = z.object({
   page: coercePositiveInteger("Page").catch(1),
 });
 
+export const inquiryFormSelectionSchema = z.object({
+  formSlug: z
+    .string()
+    .trim()
+    .min(1, "Choose a request form.")
+    .max(120),
+});
+
 export const inquiryNoteSchema = z.object({
   body: z
     .string()

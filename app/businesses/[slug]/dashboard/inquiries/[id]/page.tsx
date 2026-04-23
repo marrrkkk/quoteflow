@@ -1,5 +1,6 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import {
   AtSign,
   FileText,
@@ -63,7 +64,10 @@ import {
   formatInquiryDate,
   formatInquiryDateTime,
 } from "@/features/inquiries/utils";
-import type { InquiryWorkflowStatus } from "@/features/inquiries/types";
+import {
+  inquirySources,
+  type InquiryWorkflowStatus,
+} from "@/features/inquiries/types";
 import { formatQuoteMoney } from "@/features/quotes/utils";
 import { workspacesHubPath } from "@/features/workspaces/routes";
 import {
@@ -84,11 +88,17 @@ const InquiryAiPanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="section-panel mt-6 px-5 py-5 sm:px-6">
-        <p className="meta-label">AI assistant</p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Loading assistant tools...
-        </p>
+      <div className="fixed bottom-4 right-4 z-40 sm:bottom-5 sm:right-5">
+        <div className="flex size-14 items-center justify-center rounded-full border border-border/70 bg-[var(--surface-elevated-bg)] shadow-[var(--surface-shadow-lg)]">
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={34}
+            height={34}
+            className="size-[2.15rem] object-contain"
+          />
+          <span className="sr-only">Loading Requo assistant</span>
+        </div>
       </div>
     ),
   },
@@ -179,9 +189,7 @@ export default async function InquiryDetailPage({
       <DashboardDetailHeader
         eyebrow="Inquiry detail"
         title={inquiry.customerName}
-        description={`${inquiry.serviceCategory} inquiry received ${formatInquiryDate(
-          inquiry.submittedAt,
-        )}.`}
+        description={getInquiryHeaderDescription(inquiry)}
         meta={
           <>
             <InquiryStatusBadge status={inquiry.status} />
@@ -247,7 +255,7 @@ export default async function InquiryDetailPage({
         <DashboardSidebarStack>
           <DashboardSection
             contentClassName="flex flex-col gap-6"
-            description="Submitted through the public form."
+            description={getInquirySourceDescription(inquiry.source)}
             title="Summary"
           >
             <DashboardStatsGrid className="xl:grid-cols-4">
@@ -628,4 +636,27 @@ export default async function InquiryDetailPage({
       <InquiryAiPanel inquiryId={inquiry.id} userName={session.user.name || "You"} />
     </DashboardPage>
   );
+}
+
+function getInquiryHeaderDescription(inquiry: {
+  serviceCategory: string;
+  source: string | null;
+  submittedAt: Date;
+}) {
+  const eventLabel =
+    inquiry.source === inquirySources.manualDashboard
+      ? "request created"
+      : "inquiry received";
+
+  return `${inquiry.serviceCategory} ${eventLabel} ${formatInquiryDate(
+    inquiry.submittedAt,
+  )}.`;
+}
+
+function getInquirySourceDescription(source: string | null) {
+  if (source === inquirySources.manualDashboard) {
+    return "Created manually inside the dashboard.";
+  }
+
+  return "Submitted through the public form.";
 }

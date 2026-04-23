@@ -64,6 +64,7 @@ import {
 import type {
   DashboardInquiryDetail,
   DashboardInquiryListItem,
+  InquiryEditorForm,
   InquiryListQueryFilters,
   PublicInquiryBusiness,
 } from "@/features/inquiries/types";
@@ -789,6 +790,104 @@ export async function getBusinessInquiryFormOptionsForBusiness(
     .from(businessInquiryForms)
     .where(eq(businessInquiryForms.businessId, businessId))
     .orderBy(desc(businessInquiryForms.isDefault), asc(businessInquiryForms.name));
+}
+
+export async function getInquiryEditorFormsForBusiness(
+  businessId: string,
+): Promise<InquiryEditorForm[]> {
+  "use cache";
+
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessInquiryFormsCacheTags(businessId));
+
+  const forms = await db
+    .select({
+      id: businessInquiryForms.id,
+      name: businessInquiryForms.name,
+      slug: businessInquiryForms.slug,
+      businessType: businessInquiryForms.businessType,
+      isDefault: businessInquiryForms.isDefault,
+      publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+    })
+    .from(businessInquiryForms)
+    .where(
+      and(
+        eq(businessInquiryForms.businessId, businessId),
+        isNull(businessInquiryForms.archivedAt),
+      ),
+    )
+    .orderBy(desc(businessInquiryForms.isDefault), asc(businessInquiryForms.name));
+
+  return forms.map((form) => {
+    const businessType = normalizeBusinessType(form.businessType);
+
+    return {
+      id: form.id,
+      name: form.name,
+      slug: form.slug,
+      businessType,
+      isDefault: form.isDefault,
+      publicInquiryEnabled: form.publicInquiryEnabled,
+      inquiryFormConfig: getNormalizedInquiryFormConfig(form.inquiryFormConfig, {
+        businessType,
+      }),
+    } satisfies InquiryEditorForm;
+  });
+}
+
+export async function getInquiryEditorFormForBusiness({
+  businessId,
+  formSlug,
+}: {
+  businessId: string;
+  formSlug: string;
+}): Promise<InquiryEditorForm | null> {
+  "use cache";
+
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(
+    ...getBusinessInquiryFormsCacheTags(businessId),
+    ...getBusinessInquiryFormCacheTags(businessId, formSlug),
+  );
+
+  const [form] = await db
+    .select({
+      id: businessInquiryForms.id,
+      name: businessInquiryForms.name,
+      slug: businessInquiryForms.slug,
+      businessType: businessInquiryForms.businessType,
+      isDefault: businessInquiryForms.isDefault,
+      publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+    })
+    .from(businessInquiryForms)
+    .where(
+      and(
+        eq(businessInquiryForms.businessId, businessId),
+        eq(businessInquiryForms.slug, formSlug),
+        isNull(businessInquiryForms.archivedAt),
+      ),
+    )
+    .limit(1);
+
+  if (!form) {
+    return null;
+  }
+
+  const businessType = normalizeBusinessType(form.businessType);
+
+  return {
+    id: form.id,
+    name: form.name,
+    slug: form.slug,
+    businessType,
+    isDefault: form.isDefault,
+    publicInquiryEnabled: form.publicInquiryEnabled,
+    inquiryFormConfig: getNormalizedInquiryFormConfig(form.inquiryFormConfig, {
+      businessType,
+    }),
+  } satisfies InquiryEditorForm;
 }
 
 type GetInquiryAttachmentForBusinessInput = {

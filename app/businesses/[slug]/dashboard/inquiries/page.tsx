@@ -15,7 +15,6 @@ import {
   getInquiryListCountForBusiness,
   getInquiryListPageForBusiness,
 } from "@/features/inquiries/queries";
-import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import {
   getBusinessInquiriesPath,
 } from "@/features/businesses/routes";
@@ -148,7 +147,6 @@ export default async function InquiriesPage({
       ? `${getBusinessInquiriesPath(businessSlug)}?${params.toString()}`
       : getBusinessInquiriesPath(businessSlug);
   })();
-  const publicInquiryUrl = getBusinessPublicInquiryUrl(businessSlug);
 
   return (
     <DashboardPage>
@@ -174,7 +172,6 @@ export default async function InquiriesPage({
           filters={filters}
           hasNonViewFilters={hasNonViewFilters}
           pageDataPromise={inquiryPageDataPromise}
-          publicInquiryUrl={publicInquiryUrl}
           searchParams={resolvedSearchParams}
           totalItemsPromise={inquiryCountPromise}
         />

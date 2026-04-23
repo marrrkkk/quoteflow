@@ -24,13 +24,26 @@ import type {
   InquiryStatus,
   InquiryWorkflowStatus,
 } from "@/features/inquiries/types";
+import { inquirySources } from "@/features/inquiries/types";
 import { getInquiryStatusLabel } from "@/features/inquiries/utils";
 import type { PublicInquiryBusiness } from "@/features/inquiries/types";
 import { and, eq } from "drizzle-orm";
 
-type CreatePublicInquirySubmissionInput = {
-  business: PublicInquiryBusiness;
+type InquirySubmissionBusinessRef = Pick<
+  PublicInquiryBusiness,
+  "id" | "name" | "slug" | "form"
+>;
+
+type CreateInquirySubmissionInput = {
+  business: InquirySubmissionBusinessRef;
   submission: PublicInquirySubmissionInput;
+  actorUserId: string | null;
+  source: string;
+  activity: {
+    type: string;
+    summary: string;
+  };
+  notifyInAppOnNewInquiry: boolean;
 };
 
 type CreatePublicInquirySubmissionResult = {
@@ -54,10 +67,14 @@ function normalizeLegacyArchivedInquiryStatus(status: InquiryStatus) {
   return status === "archived" ? "waiting" : status;
 }
 
-export async function createPublicInquirySubmission({
+async function createInquirySubmission({
   business,
   submission,
-}: CreatePublicInquirySubmissionInput): Promise<CreatePublicInquirySubmissionResult> {
+  actorUserId,
+  source,
+  activity,
+  notifyInAppOnNewInquiry,
+}: CreateInquirySubmissionInput): Promise<CreatePublicInquirySubmissionResult> {
   const inquiryId = createId("inq");
   const activityId = createId("act");
   const now = new Date();
@@ -115,7 +132,7 @@ export async function createPublicInquirySubmission({
         budgetText: submission.budgetText ?? null,
         details: submission.details,
         submittedFieldSnapshot: submission.submittedFieldSnapshot,
-        source: "public-inquiry-page",
+        source,
         quoteRequested: true,
         submittedAt: now,
         createdAt: now,
@@ -140,11 +157,11 @@ export async function createPublicInquirySubmission({
         id: activityId,
         businessId: business.id,
         inquiryId,
-        actorUserId: null,
-        type: "inquiry.submitted_public",
-        summary: "Inquiry submitted through the public inquiry page.",
+        actorUserId,
+        type: activity.type,
+        summary: activity.summary,
         metadata: {
-          source: "public-inquiry-page",
+          source,
           businessSlug: business.slug,
           inquiryFormId: business.form.id,
           inquiryFormSlug: business.form.slug,
@@ -164,7 +181,7 @@ export async function createPublicInquirySubmission({
         .where(eq(businesses.id, business.id))
         .limit(1);
 
-      if (notificationSettings?.notifyInAppOnNewInquiry) {
+      if (notifyInAppOnNewInquiry && notificationSettings?.notifyInAppOnNewInquiry) {
         await insertBusinessNotification(tx, {
           businessId: business.id,
           inquiryId,
@@ -205,6 +222,48 @@ export async function createPublicInquirySubmission({
     inquiryId,
     attachmentName: preparedAttachment?.fileName ?? null,
   };
+}
+
+export async function createPublicInquirySubmission({
+  business,
+  submission,
+}: {
+  business: InquirySubmissionBusinessRef;
+  submission: PublicInquirySubmissionInput;
+}): Promise<CreatePublicInquirySubmissionResult> {
+  return createInquirySubmission({
+    business,
+    submission,
+    actorUserId: null,
+    source: inquirySources.publicInquiryPage,
+    activity: {
+      type: "inquiry.submitted_public",
+      summary: "Inquiry submitted through the public inquiry page.",
+    },
+    notifyInAppOnNewInquiry: true,
+  });
+}
+
+export async function createManualInquirySubmission({
+  business,
+  submission,
+  actorUserId,
+}: {
+  business: InquirySubmissionBusinessRef;
+  submission: PublicInquirySubmissionInput;
+  actorUserId: string;
+}): Promise<CreatePublicInquirySubmissionResult> {
+  return createInquirySubmission({
+    business,
+    submission,
+    actorUserId,
+    source: inquirySources.manualDashboard,
+    activity: {
+      type: "inquiry.created_manual",
+      summary: "Request created manually from the dashboard.",
+    },
+    notifyInAppOnNewInquiry: false,
+  });
 }
 
 type AddInquiryNoteForBusinessInput = {
