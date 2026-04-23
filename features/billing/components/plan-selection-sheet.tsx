@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Crown, Zap } from "lucide-react";
+import { ArrowUpRight, Crown, XIcon, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { getPlanPriceLabel } from "@/lib/billing/plans";
 import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { planMeta } from "@/lib/plans";
@@ -68,16 +68,30 @@ export function PlanSelectionSheet({
         : "pro";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[92vw] sm:max-w-xl" side="right">
-        <SheetHeader>
-          <SheetTitle>Choose a plan</SheetTitle>
-          <SheetDescription>
+    <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent
+        className="fixed inset-x-0 bottom-0 z-50 max-h-[88vh] w-full overflow-hidden rounded-t-2xl border border-border/70 border-b-0 bg-card/95 sm:mx-auto sm:w-[calc(100%-1.5rem)] sm:max-w-[52rem] lg:max-w-[68rem] xl:max-w-[76rem]"
+      >
+        <DrawerHeader className="border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
+          <DrawerTitle>Choose a plan</DrawerTitle>
+          <DrawerDescription>
             Compare Pro and Business, then continue to checkout with your preferred payment method.
-          </SheetDescription>
-        </SheetHeader>
-        <SheetBody className="gap-5">
-          <div className="grid gap-4">
+          </DrawerDescription>
+        </DrawerHeader>
+
+        <DrawerClose asChild>
+          <Button
+            className="absolute top-4 right-4 sm:top-5 sm:right-5"
+            size="icon-sm"
+            variant="ghost"
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </Button>
+        </DrawerClose>
+
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+          <div className="grid gap-5 md:grid-cols-2">
             {paidPlans.map((plan) => {
               const isCurrentPlan = currentPlan === plan;
               const isPreferredPlan = preferredPlan === plan && !isCurrentPlan;
@@ -86,7 +100,7 @@ export function PlanSelectionSheet({
               return (
                 <Card
                   className={cn(
-                    "border-border/70 bg-card/80",
+                    "flex h-full flex-col border-border/70 bg-card/80",
                     isPreferredPlan &&
                       "border-primary/30 bg-accent/20 shadow-[0_0_0_1px_hsl(var(--primary)/0.08)]",
                   )}
@@ -122,7 +136,7 @@ export function PlanSelectionSheet({
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex flex-col gap-4">
+                  <CardContent className="flex flex-1 flex-col gap-4">
                     <div className="flex items-end justify-between gap-3">
                       <div>
                         <p className="meta-label">Monthly starting price</p>
@@ -139,7 +153,7 @@ export function PlanSelectionSheet({
                       ))}
                     </div>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="mt-auto">
                     <Button
                       className="w-full"
                       disabled={isCurrentPlan}
@@ -166,8 +180,8 @@ export function PlanSelectionSheet({
               QR Ph checkout stays in PHP. Cards and more are billed in USD at checkout.
             </p>
           ) : null}
-        </SheetBody>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
