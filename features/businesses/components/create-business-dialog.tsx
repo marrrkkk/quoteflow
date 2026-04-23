@@ -14,11 +14,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
+import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
 import { CreateBusinessForm } from "@/features/businesses/components/create-business-form";
 import type { CreateBusinessActionState } from "@/features/businesses/types";
 import type { WorkspaceListItem } from "@/features/workspaces/types";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { BillingCurrency, BillingRegion } from "@/lib/billing/types";
+import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
 
 type CreateBusinessDialogProps = {
   action: (
@@ -44,6 +45,8 @@ export function CreateBusinessDialog({
 }: CreateBusinessDialogProps) {
   const [open, setOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [planSheetOpen, setPlanSheetOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
 
   if (isLocked && billingProps) {
     return (
@@ -68,7 +71,7 @@ export function CreateBusinessDialog({
               <Button
                 onClick={() => {
                   setOpen(false);
-                  setCheckoutOpen(true);
+                  setPlanSheetOpen(true);
                 }}
               >
                 <ArrowUpRight data-icon="inline-start" />
@@ -78,15 +81,30 @@ export function CreateBusinessDialog({
           </DialogContent>
         </Dialog>
 
-        <CheckoutDialog
-          open={checkoutOpen}
-          onOpenChange={setCheckoutOpen}
-          workspaceId={billingProps.workspaceId}
-          workspaceSlug={billingProps.workspaceSlug}
+        <PlanSelectionSheet
           currentPlan={billingProps.currentPlan}
-          region={billingProps.region}
           defaultCurrency={billingProps.defaultCurrency}
+          onOpenChange={setPlanSheetOpen}
+          onSelectPlan={(plan) => {
+            setSelectedPlan(plan);
+            setPlanSheetOpen(false);
+            setCheckoutOpen(true);
+          }}
+          open={planSheetOpen}
+          region={billingProps.region}
         />
+        {selectedPlan ? (
+          <CheckoutDialog
+            currentPlan={billingProps.currentPlan}
+            defaultCurrency={billingProps.defaultCurrency}
+            onOpenChange={setCheckoutOpen}
+            open={checkoutOpen}
+            plan={selectedPlan}
+            region={billingProps.region}
+            workspaceId={billingProps.workspaceId}
+            workspaceSlug={billingProps.workspaceSlug}
+          />
+        ) : null}
       </>
     );
   }

@@ -58,7 +58,9 @@ export function BusinessSettingsNav({ groups }: BusinessSettingsNavProps) {
   const pathname = usePathname();
   const router = useProgressRouter();
   const flatItems = groups.flatMap((group) => group.items);
-  const exactActiveItem = flatItems.find((item) => isActiveSettingsItem(pathname, item.href));
+  const exactActiveItem = flatItems
+    .filter((item) => isActiveSettingsItem(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0];
   const activeItem = exactActiveItem ?? flatItems[0];
   const comboboxGroups: ComboboxOptionGroup<SettingsNavComboboxOption>[] = groups.map((group) => ({
     heading: group.label,

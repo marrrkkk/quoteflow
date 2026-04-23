@@ -511,7 +511,7 @@ function BusinessSwitcher({
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <PlanBadge plan={business.workspacePlan} showIcon={false} />
+            <PlanBadge plan={business.workspacePlan} showIcon={true} />
             <Badge
               className="border-sidebar-border bg-background text-sidebar-foreground"
               variant="outline"

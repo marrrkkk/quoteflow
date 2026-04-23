@@ -31,7 +31,7 @@ export function BrandMark({
         size="lg"
         className="size-10 shrink-0 rounded-xl border border-border/70 bg-background/80 shadow-sm dark:border-white/8 dark:bg-card dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.2)]"
       >
-        <AvatarImage src="/logo.svg" alt="" className="rounded-xl object-contain p-1.5" />
+        <AvatarImage src="/logo.svg" alt="" className="rounded-none object-contain p-1.5" />
         <AvatarFallback className="rounded-xl font-heading text-sm font-semibold text-foreground">
           R
         </AvatarFallback>

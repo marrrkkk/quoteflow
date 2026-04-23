@@ -44,9 +44,9 @@ export function WorkspaceSettingsNav({ groups }: WorkspaceSettingsNavProps) {
   const pathname = usePathname();
   const router = useProgressRouter();
   const flatItems = groups.flatMap((group) => group.items);
-  const exactActiveItem = flatItems.find((item) =>
-    isActiveWorkspaceSettingsItem(pathname, item.href),
-  );
+  const exactActiveItem = flatItems
+    .filter((item) => isActiveWorkspaceSettingsItem(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0];
   const activeItem = exactActiveItem ?? flatItems[0];
   const comboboxGroups: ComboboxOptionGroup<WorkspaceSettingsOption>[] = groups.map(
     (group) => ({
