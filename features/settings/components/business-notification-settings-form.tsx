@@ -1,10 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Bell,
+  ChevronDown,
+  Inbox,
+  Mail,
+  MessageSquare,
+  Send,
+  Smartphone,
+  Timer,
+  UserCheck,
+} from "lucide-react";
 
 import { FormActions } from "@/components/shared/form-layout";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useProgressRouter } from "@/hooks/use-progress-router";
@@ -13,24 +29,172 @@ import type {
   BusinessSettingsView,
 } from "@/features/settings/types";
 
+/* ── Channel definitions ─────────────────────────────────────────────────── */
+
+type Channel = "email" | "inApp" | "push";
+
+const channelMeta: Record<Channel, { label: string; icon: React.ElementType }> =
+  {
+    push: { label: "Push", icon: Smartphone },
+    email: { label: "Email", icon: Mail },
+    inApp: { label: "In-app", icon: Bell },
+  };
+
+const channelOrder: Channel[] = ["push", "email", "inApp"];
+
+/* ── Notification event config ──────────────────────────────────────────── */
+
+type NotificationEventConfig = {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  channels: {
+    email?: string;
+    inApp?: string;
+    push?: string;
+  };
+};
+
+type NotificationGroup = {
+  label: string;
+  events: NotificationEventConfig[];
+};
+
+const notificationGroups: NotificationGroup[] = [
+  {
+    label: "Inquiries",
+    events: [
+      {
+        id: "newInquiry",
+        label: "New inquiry received",
+        description: "A customer submits an inquiry form.",
+        icon: Inbox,
+        channels: {
+          email: "notifyOnNewInquiry",
+          inApp: "notifyInAppOnNewInquiry",
+          push: "notifyPushOnNewInquiry",
+        },
+      },
+      {
+        id: "followUpReminder",
+        label: "Follow-up reminder",
+        description: "An inquiry hasn't had a response in a while.",
+        icon: Timer,
+        channels: {
+          email: "notifyOnFollowUpReminder",
+          inApp: "notifyInAppOnFollowUpReminder",
+        },
+      },
+    ],
+  },
+  {
+    label: "Quotes",
+    events: [
+      {
+        id: "quoteSent",
+        label: "Quote sent",
+        description: "A quote is sent to a customer.",
+        icon: Send,
+        channels: {
+          email: "notifyOnQuoteSent",
+          inApp: "notifyInAppOnQuoteSent",
+          push: "notifyPushOnQuoteSent",
+        },
+      },
+      {
+        id: "quoteResponse",
+        label: "Quote response",
+        description: "A customer accepts or declines a quote.",
+        icon: MessageSquare,
+        channels: {
+          email: "notifyOnQuoteResponse",
+          inApp: "notifyInAppOnQuoteResponse",
+          push: "notifyPushOnQuoteResponse",
+        },
+      },
+      {
+        id: "quoteExpiring",
+        label: "Quote expiring",
+        description: "A sent quote is about to expire.",
+        icon: Timer,
+        channels: {
+          email: "notifyOnQuoteExpiring",
+          inApp: "notifyInAppOnQuoteExpiring",
+        },
+      },
+    ],
+  },
+  {
+    label: "Team",
+    events: [
+      {
+        id: "memberInviteResponse",
+        label: "Member invite response",
+        description: "A team member accepts or declines an invite.",
+        icon: UserCheck,
+        channels: {
+          email: "notifyOnMemberInviteResponse",
+          inApp: "notifyInAppOnMemberInviteResponse",
+          push: "notifyPushOnMemberInviteResponse",
+        },
+      },
+    ],
+  },
+];
+
+/* ── All field keys ──────────────────────────────────────────────────────── */
+
+type NotificationFieldKey =
+  | "notifyOnNewInquiry"
+  | "notifyOnQuoteSent"
+  | "notifyOnQuoteResponse"
+  | "notifyOnMemberInviteResponse"
+  | "notifyInAppOnNewInquiry"
+  | "notifyInAppOnQuoteSent"
+  | "notifyInAppOnQuoteResponse"
+  | "notifyInAppOnMemberInviteResponse"
+  | "notifyPushOnNewInquiry"
+  | "notifyPushOnQuoteSent"
+  | "notifyPushOnQuoteResponse"
+  | "notifyPushOnMemberInviteResponse"
+  | "notifyOnFollowUpReminder"
+  | "notifyInAppOnFollowUpReminder"
+  | "notifyOnQuoteExpiring"
+  | "notifyInAppOnQuoteExpiring";
+
+const allFieldKeys: NotificationFieldKey[] = [
+  "notifyOnNewInquiry",
+  "notifyOnQuoteSent",
+  "notifyOnQuoteResponse",
+  "notifyOnMemberInviteResponse",
+  "notifyInAppOnNewInquiry",
+  "notifyInAppOnQuoteSent",
+  "notifyInAppOnQuoteResponse",
+  "notifyInAppOnMemberInviteResponse",
+  "notifyPushOnNewInquiry",
+  "notifyPushOnQuoteSent",
+  "notifyPushOnQuoteResponse",
+  "notifyPushOnMemberInviteResponse",
+  "notifyOnFollowUpReminder",
+  "notifyInAppOnFollowUpReminder",
+  "notifyOnQuoteExpiring",
+  "notifyInAppOnQuoteExpiring",
+];
+
+/* ── Props ───────────────────────────────────────────────────────────────── */
+
 type BusinessNotificationSettingsFormProps = {
   action: (
     state: BusinessNotificationSettingsActionState,
     formData: FormData,
   ) => Promise<BusinessNotificationSettingsActionState>;
-  settings: Pick<
-    BusinessSettingsView,
-    | "notifyOnNewInquiry"
-    | "notifyOnQuoteSent"
-    | "notifyOnQuoteResponse"
-    | "notifyOnMemberInviteResponse"
-    | "notifyInAppOnNewInquiry"
-    | "notifyInAppOnQuoteResponse"
-    | "notifyInAppOnMemberInviteResponse"
-  >;
+  settings: Pick<BusinessSettingsView, NotificationFieldKey>;
 };
 
 const initialState: BusinessNotificationSettingsActionState = {};
+
+/* ── Component ───────────────────────────────────────────────────────────── */
 
 export function BusinessNotificationSettingsForm({
   action,
@@ -41,35 +205,20 @@ export function BusinessNotificationSettingsForm({
     action,
     initialState,
   );
-  const [notifyOnNewInquiry, setNotifyOnNewInquiry] = useState(
-    settings.notifyOnNewInquiry,
+
+  const [values, setValues] = useState<Record<NotificationFieldKey, boolean>>(
+    () => {
+      const initial = {} as Record<NotificationFieldKey, boolean>;
+      for (const key of allFieldKeys) {
+        initial[key] = settings[key];
+      }
+      return initial;
+    },
   );
-  const [notifyOnQuoteSent, setNotifyOnQuoteSent] = useState(
-    settings.notifyOnQuoteSent,
+
+  const hasUnsavedChanges = allFieldKeys.some(
+    (key) => values[key] !== settings[key],
   );
-  const [notifyOnQuoteResponse, setNotifyOnQuoteResponse] = useState(
-    settings.notifyOnQuoteResponse,
-  );
-  const [notifyOnMemberInviteResponse, setNotifyOnMemberInviteResponse] = useState(
-    settings.notifyOnMemberInviteResponse,
-  );
-  const [notifyInAppOnNewInquiry, setNotifyInAppOnNewInquiry] = useState(
-    settings.notifyInAppOnNewInquiry,
-  );
-  const [notifyInAppOnQuoteResponse, setNotifyInAppOnQuoteResponse] = useState(
-    settings.notifyInAppOnQuoteResponse,
-  );
-  const [notifyInAppOnMemberInviteResponse, setNotifyInAppOnMemberInviteResponse] = useState(
-    settings.notifyInAppOnMemberInviteResponse,
-  );
-  const hasUnsavedChanges =
-    notifyOnNewInquiry !== settings.notifyOnNewInquiry ||
-    notifyOnQuoteSent !== settings.notifyOnQuoteSent ||
-    notifyOnQuoteResponse !== settings.notifyOnQuoteResponse ||
-    notifyOnMemberInviteResponse !== settings.notifyOnMemberInviteResponse ||
-    notifyInAppOnNewInquiry !== settings.notifyInAppOnNewInquiry ||
-    notifyInAppOnQuoteResponse !== settings.notifyInAppOnQuoteResponse ||
-    notifyInAppOnMemberInviteResponse !== settings.notifyInAppOnMemberInviteResponse;
 
   useEffect(() => {
     if (!state.success) {
@@ -79,132 +228,55 @@ export function BusinessNotificationSettingsForm({
     router.refresh();
   }, [router, state.success]);
 
+  function handleToggle(fieldKey: NotificationFieldKey, nextValue: boolean) {
+    setValues((prev) => ({ ...prev, [fieldKey]: nextValue }));
+  }
+
   function handleCancelChanges() {
-    setNotifyOnNewInquiry(settings.notifyOnNewInquiry);
-    setNotifyOnQuoteSent(settings.notifyOnQuoteSent);
-    setNotifyOnQuoteResponse(settings.notifyOnQuoteResponse);
-    setNotifyOnMemberInviteResponse(settings.notifyOnMemberInviteResponse);
-    setNotifyInAppOnNewInquiry(settings.notifyInAppOnNewInquiry);
-    setNotifyInAppOnQuoteResponse(settings.notifyInAppOnQuoteResponse);
-    setNotifyInAppOnMemberInviteResponse(settings.notifyInAppOnMemberInviteResponse);
+    const reset = {} as Record<NotificationFieldKey, boolean>;
+    for (const key of allFieldKeys) {
+      reset[key] = settings[key];
+    }
+    setValues(reset);
   }
 
   return (
     <form action={formAction} className="form-stack">
-      <input
-        name="notifyOnNewInquiry"
-        type="hidden"
-        value={String(notifyOnNewInquiry)}
-      />
-      <input
-        name="notifyOnQuoteSent"
-        type="hidden"
-        value={String(notifyOnQuoteSent)}
-      />
-      <input
-        name="notifyOnQuoteResponse"
-        type="hidden"
-        value={String(notifyOnQuoteResponse)}
-      />
-      <input
-        name="notifyOnMemberInviteResponse"
-        type="hidden"
-        value={String(notifyOnMemberInviteResponse)}
-      />
-      <input
-        name="notifyInAppOnNewInquiry"
-        type="hidden"
-        value={String(notifyInAppOnNewInquiry)}
-      />
-      <input
-        name="notifyInAppOnQuoteResponse"
-        type="hidden"
-        value={String(notifyInAppOnQuoteResponse)}
-      />
-      <input
-        name="notifyInAppOnMemberInviteResponse"
-        type="hidden"
-        value={String(notifyInAppOnMemberInviteResponse)}
-      />
+      {/* Hidden inputs for form submission */}
+      {allFieldKeys.map((key) => (
+        <input
+          key={key}
+          name={key}
+          type="hidden"
+          value={values[key] ? "on" : "off"}
+        />
+      ))}
 
-      <section className="section-panel p-6">
-        <div className="flex flex-col gap-5">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">
-              In dashboard
-            </h2>
-            <p className="text-sm text-muted-foreground">Alerts inside Requo.</p>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-border/70 bg-muted/15">
-            <NotificationSettingRow
-              checked={notifyInAppOnNewInquiry}
-              description="Show an alert when a new inquiry arrives."
-              disabled={isPending}
-              label="New inquiries"
-              onCheckedChange={setNotifyInAppOnNewInquiry}
-            />
-            <NotificationSettingRow
-              checked={notifyInAppOnQuoteResponse}
-              description="Show an alert when a quote is accepted or declined."
-              disabled={isPending}
-              label="Quote responses"
-              onCheckedChange={setNotifyInAppOnQuoteResponse}
-            />
-            <NotificationSettingRow
-              checked={notifyInAppOnMemberInviteResponse}
-              description="Show an alert when a member invite is accepted or declined."
-              disabled={isPending}
-              label="Invites"
-              onCheckedChange={setNotifyInAppOnMemberInviteResponse}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="section-panel p-6">
-        <div className="flex flex-col gap-5">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">
-              Email notifications
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Messages sent to the owner.
-            </p>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-border/70 bg-muted/15">
-            <NotificationSettingRow
-              checked={notifyOnNewInquiry}
-              description="Email the owner when a new inquiry arrives."
-              disabled={isPending}
-              label="New inquiries"
-              onCheckedChange={setNotifyOnNewInquiry}
-            />
-            <NotificationSettingRow
-              checked={notifyOnQuoteSent}
-              description="Email the owner after a quote is sent."
-              disabled={isPending}
-              label="Quote sent"
-              onCheckedChange={setNotifyOnQuoteSent}
-            />
-            <NotificationSettingRow
-              checked={notifyOnQuoteResponse}
-              description="Email the owner when a quote is accepted or declined."
-              disabled={isPending}
-              label="Quote responses"
-              onCheckedChange={setNotifyOnQuoteResponse}
-            />
-            <NotificationSettingRow
-              checked={notifyOnMemberInviteResponse}
-              description="Email the owner when a member invite is accepted or declined."
-              disabled={isPending}
-              label="Invites"
-              onCheckedChange={setNotifyOnMemberInviteResponse}
-            />
-          </div>
-        </div>
-      </section>
+      <div className="flex flex-col">
+        {notificationGroups.map((group, groupIndex) => (
+          <section key={group.label}>
+            {groupIndex > 0 ? (
+              <div className="border-t border-border/60" />
+            ) : null}
+            <div className="px-1 pb-2 pt-6">
+              <h3 className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {group.label}
+              </h3>
+            </div>
+            <div className="flex flex-col">
+              {group.events.map((event) => (
+                <NotificationEventRow
+                  key={event.id}
+                  event={event}
+                  values={values}
+                  disabled={isPending}
+                  onToggle={handleToggle}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       <FormActions>
         <Button
@@ -230,30 +302,91 @@ export function BusinessNotificationSettingsForm({
   );
 }
 
-function NotificationSettingRow({
-  checked,
-  description,
+/* ── Event Row ───────────────────────────────────────────────────────────── */
+
+function NotificationEventRow({
+  event,
+  values,
   disabled,
-  label,
-  onCheckedChange,
+  onToggle,
 }: {
-  checked: boolean;
-  description: string;
+  event: NotificationEventConfig;
+  values: Record<NotificationFieldKey, boolean>;
   disabled: boolean;
-  label: string;
-  onCheckedChange: (nextValue: boolean) => void;
+  onToggle: (key: NotificationFieldKey, value: boolean) => void;
 }) {
+  const availableChannels = channelOrder.filter(
+    (ch) => event.channels[ch] !== undefined,
+  );
+  const enabledChannels = availableChannels.filter((ch) => {
+    const key = event.channels[ch];
+    return key ? values[key as NotificationFieldKey] : false;
+  });
+
+  const summaryLabel =
+    enabledChannels.length === 0
+      ? "None"
+      : enabledChannels.map((ch) => channelMeta[ch].label).join(", ");
+
+  const Icon = event.icon;
+
   return (
-    <label className="grid gap-4 border-b border-border/70 px-4 py-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5">
-      <div className="min-w-0 space-y-1">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+    <div className="flex items-start justify-between gap-4 rounded-xl px-1 py-4">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/30 text-muted-foreground">
+          <Icon className="size-4" />
+        </div>
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-sm font-medium text-foreground">{event.label}</p>
+          <p className="text-[0.8rem] leading-relaxed text-muted-foreground">
+            {event.description}
+          </p>
+        </div>
       </div>
-      <Switch
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={onCheckedChange}
-      />
-    </label>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            className="shrink-0 gap-1.5 text-muted-foreground"
+            disabled={disabled}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <span className="text-[0.8rem]">{summaryLabel}</span>
+            <ChevronDown className="size-3.5 opacity-60" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-48 rounded-xl p-2">
+          <div className="flex flex-col gap-1">
+            {availableChannels.map((ch) => {
+              const fieldKey = event.channels[ch] as NotificationFieldKey;
+              const meta = channelMeta[ch];
+              const ChannelIcon = meta.icon;
+              const isChecked = values[fieldKey];
+
+              return (
+                <label
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-muted/50"
+                  key={ch}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ChannelIcon className="size-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
+                      {meta.label}
+                    </span>
+                  </div>
+                  <Switch
+                    checked={isChecked}
+                    disabled={disabled}
+                    onCheckedChange={(next) => onToggle(fieldKey, next)}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

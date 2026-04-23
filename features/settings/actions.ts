@@ -223,8 +223,17 @@ export async function updateBusinessNotificationSettingsAction(
     notifyOnQuoteResponse: formData.get("notifyOnQuoteResponse") === "on",
     notifyOnMemberInviteResponse: formData.get("notifyOnMemberInviteResponse") === "on",
     notifyInAppOnNewInquiry: formData.get("notifyInAppOnNewInquiry") === "on",
+    notifyInAppOnQuoteSent: formData.get("notifyInAppOnQuoteSent") === "on",
     notifyInAppOnQuoteResponse: formData.get("notifyInAppOnQuoteResponse") === "on",
     notifyInAppOnMemberInviteResponse: formData.get("notifyInAppOnMemberInviteResponse") === "on",
+    notifyPushOnNewInquiry: formData.get("notifyPushOnNewInquiry") === "on",
+    notifyPushOnQuoteSent: formData.get("notifyPushOnQuoteSent") === "on",
+    notifyPushOnQuoteResponse: formData.get("notifyPushOnQuoteResponse") === "on",
+    notifyPushOnMemberInviteResponse: formData.get("notifyPushOnMemberInviteResponse") === "on",
+    notifyOnFollowUpReminder: formData.get("notifyOnFollowUpReminder") === "on",
+    notifyInAppOnFollowUpReminder: formData.get("notifyInAppOnFollowUpReminder") === "on",
+    notifyOnQuoteExpiring: formData.get("notifyOnQuoteExpiring") === "on",
+    notifyInAppOnQuoteExpiring: formData.get("notifyInAppOnQuoteExpiring") === "on",
   });
 
   if (!validationResult.success) {
