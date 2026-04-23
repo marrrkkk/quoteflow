@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
+import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 import { CreateBusinessForm } from "@/features/businesses/components/create-business-form";
 import type { CreateBusinessActionState } from "@/features/businesses/types";
 import type { WorkspaceListItem } from "@/features/workspaces/types";
@@ -43,10 +44,16 @@ export function CreateBusinessDialog({
   isLocked,
   billingProps,
 }: CreateBusinessDialogProps) {
+  const workspaceCheckout = useWorkspaceCheckout();
   const [open, setOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
+  const useSharedCheckout = Boolean(
+    workspaceCheckout &&
+      billingProps &&
+      workspaceCheckout.workspaceId === billingProps.workspaceId,
+  );
 
   if (isLocked && billingProps) {
     return (
@@ -71,6 +78,16 @@ export function CreateBusinessDialog({
               <Button
                 onClick={() => {
                   setOpen(false);
+                  if (useSharedCheckout && workspaceCheckout) {
+                    if (workspaceCheckout.pendingCheckout) {
+                      workspaceCheckout.continueCheckout();
+                      return;
+                    }
+
+                    workspaceCheckout.openPlanSelection();
+                    return;
+                  }
+
                   setPlanSheetOpen(true);
                 }}
               >
@@ -81,29 +98,33 @@ export function CreateBusinessDialog({
           </DialogContent>
         </Dialog>
 
-        <PlanSelectionSheet
-          currentPlan={billingProps.currentPlan}
-          defaultCurrency={billingProps.defaultCurrency}
-          onOpenChange={setPlanSheetOpen}
-          onSelectPlan={(plan) => {
-            setSelectedPlan(plan);
-            setPlanSheetOpen(false);
-            setCheckoutOpen(true);
-          }}
-          open={planSheetOpen}
-          region={billingProps.region}
-        />
-        {selectedPlan ? (
-          <CheckoutDialog
-            currentPlan={billingProps.currentPlan}
-            defaultCurrency={billingProps.defaultCurrency}
-            onOpenChange={setCheckoutOpen}
-            open={checkoutOpen}
-            plan={selectedPlan}
-            region={billingProps.region}
-            workspaceId={billingProps.workspaceId}
-            workspaceSlug={billingProps.workspaceSlug}
-          />
+        {!useSharedCheckout ? (
+          <>
+            <PlanSelectionSheet
+              currentPlan={billingProps.currentPlan}
+              defaultCurrency={billingProps.defaultCurrency}
+              onOpenChange={setPlanSheetOpen}
+              onSelectPlan={(plan) => {
+                setSelectedPlan(plan);
+                setPlanSheetOpen(false);
+                setCheckoutOpen(true);
+              }}
+              open={planSheetOpen}
+              region={billingProps.region}
+            />
+            {selectedPlan ? (
+              <CheckoutDialog
+                currentPlan={billingProps.currentPlan}
+                defaultCurrency={billingProps.defaultCurrency}
+                onOpenChange={setCheckoutOpen}
+                open={checkoutOpen}
+                plan={selectedPlan}
+                region={billingProps.region}
+                workspaceId={billingProps.workspaceId}
+                workspaceSlug={billingProps.workspaceSlug}
+              />
+            ) : null}
+          </>
         ) : null}
       </>
     );
