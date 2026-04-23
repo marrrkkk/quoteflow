@@ -6,17 +6,207 @@ import { requireUser } from "@/lib/auth/session";
 import { writeAuditLog } from "@/features/audit/mutations";
 import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
 import { isPayMongoConfigured, isPaddleConfigured } from "@/lib/env";
+import { getPlanPrice } from "@/lib/billing/plans";
 import { getProviderForCurrency } from "@/lib/billing/region";
 import { createPendingSubscription, getWorkspaceSubscription } from "@/lib/billing/subscription-service";
 import { recordPaymentAttempt } from "@/lib/billing/webhook-processor";
 import type {
   CancelActionState,
   CancelPendingQrCheckoutResult,
+  CheckoutStatusSnapshot,
   CheckoutActionState,
+  PendingCheckoutState,
   PendingQrPhData,
 } from "@/features/billing/types";
 import type { BillingCurrency, BillingInterval, PaidPlan } from "@/lib/billing/types";
 import { getWorkspacePath } from "@/features/workspaces/routes";
+
+async function getLatestPendingPaymentAttempt(
+  workspaceId: string,
+  provider: "paymongo" | "paddle",
+) {
+  const { db } = await import("@/lib/db/client");
+  const { paymentAttempts } = await import("@/lib/db/schema/subscriptions");
+  const { and, desc, eq } = await import("drizzle-orm");
+
+  const [latestAttempt] = await db
+    .select()
+    .from(paymentAttempts)
+    .where(
+      and(
+        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.provider, provider),
+        eq(paymentAttempts.status, "pending"),
+      ),
+    )
+    .orderBy(desc(paymentAttempts.createdAt))
+    .limit(1);
+
+  return latestAttempt ?? null;
+}
+
+async function getLatestPaymentAttemptForCheckout(
+  workspaceId: string,
+  providerPaymentId: string,
+) {
+  const { db } = await import("@/lib/db/client");
+  const { paymentAttempts } = await import("@/lib/db/schema/subscriptions");
+  const { and, desc, eq } = await import("drizzle-orm");
+
+  const [latestAttempt] = await db
+    .select({
+      providerPaymentId: paymentAttempts.providerPaymentId,
+      status: paymentAttempts.status,
+    })
+    .from(paymentAttempts)
+    .where(
+      and(
+        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.providerPaymentId, providerPaymentId),
+      ),
+    )
+    .orderBy(desc(paymentAttempts.createdAt))
+    .limit(1);
+
+  return latestAttempt ?? null;
+}
+
+async function getPendingPaymongoCheckoutForWorkspace(
+  workspaceId: string,
+): Promise<PendingCheckoutState | null> {
+  const subscription = await getWorkspaceSubscription(workspaceId);
+
+  if (
+    !subscription ||
+    subscription.status !== "pending" ||
+    subscription.billingProvider !== "paymongo"
+  ) {
+    return null;
+  }
+
+  const latestAttempt = await getLatestPendingPaymentAttempt(workspaceId, "paymongo");
+
+  if (!latestAttempt) {
+    return null;
+  }
+
+  const { getPaymentIntent } = await import(
+    "@/lib/billing/providers/paymongo"
+  );
+  const paymentIntent = await getPaymentIntent(latestAttempt.providerPaymentId);
+
+  if (!paymentIntent) {
+    const { updateSubscriptionStatus } = await import(
+      "@/lib/billing/subscription-service"
+    );
+    const { updatePaymentAttemptStatus } = await import(
+      "@/lib/billing/webhook-processor"
+    );
+
+    await Promise.all([
+      updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "expired"),
+      updateSubscriptionStatus(workspaceId, "expired"),
+    ]);
+
+    return null;
+  }
+
+  const paymentIntentStatus = paymentIntent.attributes.status;
+  const qrCodeData =
+    paymentIntent.attributes.next_action?.redirect?.url ??
+    paymentIntent.attributes.next_action?.code?.url ??
+    paymentIntent.attributes.next_action?.code?.test_url;
+
+  if (paymentIntentStatus === "awaiting_next_action" && qrCodeData) {
+    return {
+      amount: paymentIntent.attributes.amount,
+      currency: "PHP",
+      expiresAt: new Date(
+        ((paymentIntent.attributes.created_at ?? Math.floor(Date.now() / 1000)) +
+          30 * 60) *
+          1000,
+      ).toISOString(),
+      paymentIntentId: paymentIntent.id,
+      plan: subscription.plan as PaidPlan,
+      provider: "paymongo",
+      qrCodeData,
+    };
+  }
+
+  if (
+    paymentIntentStatus === "processing" ||
+    paymentIntentStatus === "succeeded"
+  ) {
+    return null;
+  }
+
+  if (paymentIntentStatus !== "awaiting_payment_method") {
+    return null;
+  }
+
+  const { updateSubscriptionStatus } = await import(
+    "@/lib/billing/subscription-service"
+  );
+  const { updatePaymentAttemptStatus } = await import(
+    "@/lib/billing/webhook-processor"
+  );
+
+  await Promise.all([
+    updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "expired"),
+    updateSubscriptionStatus(workspaceId, "expired"),
+  ]);
+
+  return null;
+}
+
+async function getPendingPaddleCheckoutForWorkspace(
+  workspaceId: string,
+): Promise<PendingCheckoutState | null> {
+  const latestAttempt = await getLatestPendingPaymentAttempt(workspaceId, "paddle");
+
+  if (!latestAttempt) {
+    return null;
+  }
+
+  const { getPaddleTransaction } = await import("@/lib/billing/providers/paddle");
+  const transaction = await getPaddleTransaction(latestAttempt.providerPaymentId);
+
+  if (!transaction) {
+    const { updatePaymentAttemptStatus } = await import(
+      "@/lib/billing/webhook-processor"
+    );
+
+    await updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "failed");
+    return null;
+  }
+
+  if (
+    transaction.status === "canceled" ||
+    transaction.status === "past_due"
+  ) {
+    const { updatePaymentAttemptStatus } = await import(
+      "@/lib/billing/webhook-processor"
+    );
+
+    await updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "failed");
+    return null;
+  }
+
+  const interval =
+    transaction.custom_data?.interval === "yearly" ? "yearly" : "monthly";
+  const amount = transaction.details?.totals?.total
+    ? Number.parseInt(transaction.details.totals.total, 10)
+    : getPlanPrice(latestAttempt.plan as PaidPlan, "USD", interval);
+
+  return {
+    amount,
+    currency: "USD",
+    interval,
+    plan: latestAttempt.plan as PaidPlan,
+    provider: "paddle",
+    transactionId: latestAttempt.providerPaymentId,
+  };
+}
 
 /**
  * Creates a checkout session for a workspace upgrade.
@@ -78,6 +268,22 @@ export async function createCheckoutAction(
       return { error: "QRPh payments are not yet configured. Please try card payment instead." };
     }
 
+    const existingPendingCheckout = await getPendingPaymongoCheckoutForWorkspace(
+      workspaceId,
+    );
+
+    if (existingPendingCheckout?.provider === "paymongo") {
+      return {
+        qrData: {
+          amount: existingPendingCheckout.amount,
+          currency: "PHP",
+          expiresAt: existingPendingCheckout.expiresAt,
+          paymentIntentId: existingPendingCheckout.paymentIntentId,
+          qrCodeData: existingPendingCheckout.qrCodeData,
+        },
+      };
+    }
+
     const { createQrPhCheckout } = await import(
       "@/lib/billing/providers/paymongo"
     );
@@ -131,6 +337,14 @@ export async function createCheckoutAction(
     return { error: "Card payments are not yet configured. Please try QRPh payment instead." };
   }
 
+  const existingPendingCheckout = await getPendingPaddleCheckoutForWorkspace(
+    workspaceId,
+  );
+
+  if (existingPendingCheckout?.provider === "paddle") {
+    return { paddleTransactionId: existingPendingCheckout.transactionId };
+  }
+
   const { createPaddleTransaction } = await import(
     "@/lib/billing/providers/paddle"
   );
@@ -148,7 +362,16 @@ export async function createCheckoutAction(
   }
 
   if (result.type === "redirect") {
-    // result.url contains the Paddle transaction ID for overlay checkout
+    await recordPaymentAttempt({
+      amount: getPlanPrice(typedPlan, "USD", typedInterval),
+      currency: "USD",
+      plan: typedPlan,
+      provider: "paddle",
+      providerPaymentId: result.url,
+      status: "pending",
+      workspaceId,
+    });
+
     return { paddleTransactionId: result.url };
   }
 
@@ -272,6 +495,62 @@ export async function cancelSubscriptionAction(
   return { success: "Subscription canceled. You\u2019ll keep access until the end of your billing period." };
 }
 
+export async function getPendingCheckoutAction(
+  workspaceId: string,
+): Promise<PendingCheckoutState | null> {
+  const user = await requireUser();
+  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+
+  if (!workspace || workspace.memberRole !== "owner") {
+    return null;
+  }
+
+  const [pendingPaymongoCheckout, pendingPaddleCheckout] = await Promise.all([
+    getPendingPaymongoCheckoutForWorkspace(workspaceId),
+    getPendingPaddleCheckoutForWorkspace(workspaceId),
+  ]);
+
+  if (pendingPaymongoCheckout) {
+    return pendingPaymongoCheckout;
+  }
+
+  return pendingPaddleCheckout;
+}
+
+export async function getCheckoutStatusAction(
+  workspaceId: string,
+  providerPaymentId?: string | null,
+): Promise<CheckoutStatusSnapshot | null> {
+  const user = await requireUser();
+  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+
+  if (!workspace || workspace.memberRole !== "owner") {
+    return null;
+  }
+
+  const [subscription, paymentAttempt] = await Promise.all([
+    getWorkspaceSubscription(workspaceId),
+    providerPaymentId
+      ? getLatestPaymentAttemptForCheckout(workspaceId, providerPaymentId)
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    subscription: subscription
+      ? {
+          plan: subscription.plan,
+          status: subscription.status,
+        }
+      : null,
+    paymentAttempt: paymentAttempt
+      ? {
+          providerPaymentId: paymentAttempt.providerPaymentId,
+          status: paymentAttempt.status,
+        }
+      : null,
+  };
+}
+
 /**
  * Retrieves pending QRPh checkout data for a workspace.
  *
@@ -282,43 +561,23 @@ export async function cancelSubscriptionAction(
 export async function getPendingQrPhCheckoutAction(
   workspaceId: string,
 ): Promise<PendingQrPhData | null> {
-  const user = await requireUser();
+  const pendingCheckout = await getPendingCheckoutAction(workspaceId);
 
-  // Verify workspace ownership
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
-
-  if (!workspace || workspace.memberRole !== "owner") {
+  if (!pendingCheckout || pendingCheckout.provider !== "paymongo") {
     return null;
   }
 
-  // Check for pending subscription with PayMongo
-  const subscription = await getWorkspaceSubscription(workspaceId);
+  return {
+    amount: pendingCheckout.amount,
+    currency: "PHP",
+    expiresAt: pendingCheckout.expiresAt,
+    paymentIntentId: pendingCheckout.paymentIntentId,
+    plan: pendingCheckout.plan,
+    qrCodeData: pendingCheckout.qrCodeData,
+  };
+  /*
 
-  if (
-    !subscription ||
-    subscription.status !== "pending" ||
-    subscription.billingProvider !== "paymongo"
-  ) {
-    return null;
-  }
-
-  // Find the most recent pending payment attempt
-  const { db } = await import("@/lib/db/client");
-  const { paymentAttempts } = await import("@/lib/db/schema/subscriptions");
-  const { eq, and, desc } = await import("drizzle-orm");
-
-  const [latestAttempt] = await db
-    .select()
-    .from(paymentAttempts)
-    .where(
-      and(
-        eq(paymentAttempts.workspaceId, workspaceId),
-        eq(paymentAttempts.provider, "paymongo"),
-        eq(paymentAttempts.status, "pending"),
-      ),
-    )
-    .orderBy(desc(paymentAttempts.createdAt))
-    .limit(1);
+  
 
   if (!latestAttempt) {
     return null;
@@ -346,14 +605,7 @@ export async function getPendingQrPhCheckoutAction(
     return null;
   }
 
-  return {
-    qrCodeData: qrData.qrCodeData,
-    paymentIntentId: qrData.paymentIntentId,
-    expiresAt: qrData.expiresAt,
-    amount: qrData.amount,
-    currency: "PHP",
-    plan: subscription.plan,
-  };
+  */
 }
 
 /**
@@ -382,11 +634,21 @@ export async function cleanupExpiredPendingAction(
   const { expireSubscription } = await import(
     "@/lib/billing/subscription-service"
   );
-  await expireSubscription(workspaceId);
+  const pendingAttempt = await getLatestPendingPaymentAttempt(workspaceId, "paymongo");
+  const { updatePaymentAttemptStatus } = await import(
+    "@/lib/billing/webhook-processor"
+  );
+
+  await Promise.all([
+    expireSubscription(workspaceId),
+    pendingAttempt
+      ? updatePaymentAttemptStatus(pendingAttempt.providerPaymentId, "expired")
+      : Promise.resolve(false),
+  ]);
 }
 
 /**
- * Cancels an active QRPh checkout when the user closes the checkout modal.
+ * Cancels an active QRPh checkout from the explicit cancel action in the QR view.
  */
 export async function cancelPendingQrCheckoutAction(
   workspaceId: string,
