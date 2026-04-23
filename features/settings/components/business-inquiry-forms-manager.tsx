@@ -71,6 +71,7 @@ import type { WorkspacePlan } from "@/lib/plans/plans";
 import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
+import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 
 type BusinessInquiryFormsManagerProps = {
   settings: BusinessInquiryFormsSettingsView;
@@ -101,6 +102,7 @@ export function BusinessInquiryFormsManager({
   workspacePlan,
   billingProps,
 }: BusinessInquiryFormsManagerProps) {
+  const workspaceCheckout = useWorkspaceCheckout();
   const [createState, createFormAction, isCreatePending] = useActionStateWithSonner(
     createAction,
     initialState,
@@ -124,6 +126,11 @@ export function BusinessInquiryFormsManager({
   const archivedForms = settings.forms.filter((form) => form.archivedAt);
   const canCreateAdditionalForms =
     hasFeatureAccess(workspacePlan, "multipleForms") || activeForms.length === 0;
+  const useSharedCheckout = Boolean(
+    workspaceCheckout &&
+      billingProps &&
+      workspaceCheckout.workspaceId === billingProps.workspaceId,
+  );
 
   return (
     <TooltipProvider>
@@ -311,6 +318,16 @@ export function BusinessInquiryFormsManager({
                     <Button
                       onClick={() => {
                         setIsUpgradeDialogOpen(false);
+                        if (useSharedCheckout && workspaceCheckout) {
+                          if (workspaceCheckout.pendingCheckout) {
+                            workspaceCheckout.continueCheckout();
+                            return;
+                          }
+
+                          workspaceCheckout.openPlanSelection("pro");
+                          return;
+                        }
+
                         setIsPlanSheetOpen(true);
                       }}
                       type="button"
@@ -321,7 +338,7 @@ export function BusinessInquiryFormsManager({
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              {billingProps ? (
+              {billingProps && !useSharedCheckout ? (
                 <>
                   <PlanSelectionSheet
                     currentPlan={billingProps.currentPlan}

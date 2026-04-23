@@ -11,6 +11,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
+import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 import type { WorkspacePlan } from "@/lib/plans/plans";
 import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { cn } from "@/lib/utils";
@@ -40,12 +41,44 @@ export function UpgradeButton({
   className,
   children,
 }: UpgradeButtonProps) {
+  const workspaceCheckout = useWorkspaceCheckout();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
 
   if (currentPlan === "business") {
     return null; // Already on highest plan
+  }
+
+  if (workspaceCheckout && workspaceCheckout.workspaceId === workspaceId) {
+    const hasPendingCheckout = Boolean(workspaceCheckout.pendingCheckout);
+
+    return (
+      <Button
+        className={cn(className)}
+        onClick={() => {
+          if (hasPendingCheckout) {
+            workspaceCheckout.continueCheckout();
+            return;
+          }
+
+          workspaceCheckout.openPlanSelection(targetPlan);
+        }}
+        size={size}
+        variant={variant}
+      >
+        {hasPendingCheckout ? (
+          "Continue"
+        ) : (
+          children ?? (
+            <>
+              <ArrowUpRight data-icon="inline-start" />
+              {currentPlan === "free" ? "Upgrade to Pro" : "Upgrade to Business"}
+            </>
+          )
+        )}
+      </Button>
+    );
   }
 
   return (
