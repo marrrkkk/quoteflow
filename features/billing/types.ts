@@ -1,7 +1,6 @@
 import type { WorkspacePlan } from "@/lib/plans/plans";
 import type {
   BillingCurrency,
-  BillingInterval,
   BillingProvider,
   BillingRegion,
   PaymentAttemptStatus,
@@ -64,21 +63,9 @@ export type PendingQrPhData = {
   plan: PaidPlan;
 };
 
-export type PendingPaddleCheckoutData = {
-  amount: number;
-  currency: "USD";
-  interval: BillingInterval;
-  plan: PaidPlan;
-  transactionId: string;
-};
-
-export type PendingCheckoutState =
-  | ({
-      provider: "paymongo";
-    } & PendingQrPhData)
-  | ({
-      provider: "paddle";
-    } & PendingPaddleCheckoutData);
+export type PendingCheckoutState = {
+  provider: "paymongo";
+} & PendingQrPhData;
 
 export type CancelPendingQrCheckoutResult =
   | {

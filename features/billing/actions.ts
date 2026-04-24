@@ -159,55 +159,6 @@ async function getPendingPaymongoCheckoutForWorkspace(
   return null;
 }
 
-async function getPendingPaddleCheckoutForWorkspace(
-  workspaceId: string,
-): Promise<PendingCheckoutState | null> {
-  const latestAttempt = await getLatestPendingPaymentAttempt(workspaceId, "paddle");
-
-  if (!latestAttempt) {
-    return null;
-  }
-
-  const { getPaddleTransaction } = await import("@/lib/billing/providers/paddle");
-  const transaction = await getPaddleTransaction(latestAttempt.providerPaymentId);
-
-  if (!transaction) {
-    const { updatePaymentAttemptStatus } = await import(
-      "@/lib/billing/webhook-processor"
-    );
-
-    await updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "failed");
-    return null;
-  }
-
-  if (
-    transaction.status === "canceled" ||
-    transaction.status === "past_due"
-  ) {
-    const { updatePaymentAttemptStatus } = await import(
-      "@/lib/billing/webhook-processor"
-    );
-
-    await updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "failed");
-    return null;
-  }
-
-  const interval =
-    transaction.custom_data?.interval === "yearly" ? "yearly" : "monthly";
-  const amount = transaction.details?.totals?.total
-    ? Number.parseInt(transaction.details.totals.total, 10)
-    : getPlanPrice(latestAttempt.plan as PaidPlan, "USD", interval);
-
-  return {
-    amount,
-    currency: "USD",
-    interval,
-    plan: latestAttempt.plan as PaidPlan,
-    provider: "paddle",
-    transactionId: latestAttempt.providerPaymentId,
-  };
-}
-
 /**
  * Creates a checkout session for a workspace upgrade.
  * Selects the provider based on the billing currency.
@@ -335,14 +286,6 @@ export async function createCheckoutAction(
   // Paddle
   if (!isPaddleConfigured) {
     return { error: "Card payments are not yet configured. Please try QRPh payment instead." };
-  }
-
-  const existingPendingCheckout = await getPendingPaddleCheckoutForWorkspace(
-    workspaceId,
-  );
-
-  if (existingPendingCheckout?.provider === "paddle") {
-    return { paddleTransactionId: existingPendingCheckout.transactionId };
   }
 
   const { createPaddleTransaction } = await import(
@@ -505,16 +448,7 @@ export async function getPendingCheckoutAction(
     return null;
   }
 
-  const [pendingPaymongoCheckout, pendingPaddleCheckout] = await Promise.all([
-    getPendingPaymongoCheckoutForWorkspace(workspaceId),
-    getPendingPaddleCheckoutForWorkspace(workspaceId),
-  ]);
-
-  if (pendingPaymongoCheckout) {
-    return pendingPaymongoCheckout;
-  }
-
-  return pendingPaddleCheckout;
+  return getPendingPaymongoCheckoutForWorkspace(workspaceId);
 }
 
 export async function getCheckoutStatusAction(

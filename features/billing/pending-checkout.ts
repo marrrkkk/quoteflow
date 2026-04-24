@@ -1,8 +1,6 @@
 "use client";
 
 import type {
-  BillingCurrency,
-  BillingInterval,
   BillingProvider,
   PaidPlan,
 } from "@/lib/billing/types";
@@ -17,18 +15,7 @@ export type PendingPaymongoCheckout = {
   qrCodeData: string;
 };
 
-export type PendingPaddleCheckout = {
-  provider: "paddle";
-  plan: PaidPlan;
-  amount: number;
-  currency: Extract<BillingCurrency, "USD">;
-  interval: BillingInterval;
-  transactionId: string;
-};
-
-export type PersistedPendingCheckout =
-  | PendingPaymongoCheckout
-  | PendingPaddleCheckout;
+export type PersistedPendingCheckout = PendingPaymongoCheckout;
 
 const PENDING_CHECKOUT_KEY = "requo:pending-checkout";
 const PENDING_QR_LEGACY_KEY = "requo:pending-qrph";
@@ -70,29 +57,10 @@ function isPendingPaymongoCheckout(
   );
 }
 
-function isPendingPaddleCheckout(
-  value: unknown,
-): value is PendingPaddleCheckout {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-
-  return (
-    candidate.provider === "paddle" &&
-    isPaidPlan(candidate.plan) &&
-    typeof candidate.amount === "number" &&
-    candidate.currency === "USD" &&
-    (candidate.interval === "monthly" || candidate.interval === "yearly") &&
-    typeof candidate.transactionId === "string"
-  );
-}
-
 function isPersistedPendingCheckout(
   value: unknown,
 ): value is PersistedPendingCheckout {
-  return isPendingPaymongoCheckout(value) || isPendingPaddleCheckout(value);
+  return isPendingPaymongoCheckout(value);
 }
 
 function dispatchPendingCheckoutChange(workspaceId: string) {
