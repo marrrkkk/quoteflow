@@ -30,17 +30,8 @@ const envSchema = z.object({
   RESEND_FROM_EMAIL: emptyToUndefined(z.email()),
   RESEND_REPLY_TO_EMAIL: emptyToUndefined(z.email()),
   GROQ_API_KEY: emptyToUndefined(z.string().min(1)),
-  GROQ_DEFAULT_MODEL: emptyToUndefined(z.string().min(1)).default(
-    "llama-3.3-70b-versatile",
-  ),
   GEMINI_API_KEY: emptyToUndefined(z.string().min(1)),
-  GEMINI_DEFAULT_MODEL: emptyToUndefined(z.string().min(1)).default(
-    "gemini-2.0-flash",
-  ),
   OPENROUTER_API_KEY: emptyToUndefined(z.string().min(1)),
-  OPENROUTER_DEFAULT_MODEL: emptyToUndefined(z.string().min(1)).default(
-    "openai/gpt-5-mini",
-  ),
   PAYMONGO_SECRET_KEY: emptyToUndefined(z.string().min(1)),
   PAYMONGO_PUBLIC_KEY: emptyToUndefined(z.string().min(1)),
   PAYMONGO_WEBHOOK_SECRET: emptyToUndefined(z.string().min(1)),

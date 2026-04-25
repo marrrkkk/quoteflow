@@ -182,6 +182,7 @@ export function buildAiAssistantInstructions(intent: AiAssistantIntent) {
     "Never fabricate exact pricing, turnaround times, policies, guarantees, or availability unless they are explicitly present in the provided context.",
     "If something needed for a good answer is missing, state the missing information clearly.",
     "Keep outputs concise, practical, and ready for real business use.",
+    "Do not include any <think> or <thinking> tags, internal thought process, or reasoning blocks.",
     "Do not mention that you are an AI assistant.",
     "Do not output markdown tables.",
     "",

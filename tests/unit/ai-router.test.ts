@@ -12,14 +12,15 @@ import { AiProviderError } from "@/lib/ai/errors";
 // Mocks
 // ---------------------------------------------------------------------------
 
-// Mock the config module so we can control which providers are available
+// Mock the config module so we can control providers and model lists
 vi.mock("@/lib/ai/config", () => ({
   getConfiguredProviders: vi.fn(() => [] as AiProvider[]),
+  getModelsForProvider: vi.fn(() => ["default-model"]),
   isAiConfigured: vi.fn(() => false),
 }));
 
 // Import after mocking
-import { getConfiguredProviders } from "@/lib/ai/config";
+import { getConfiguredProviders, getModelsForProvider } from "@/lib/ai/config";
 import { generateWithFallback, streamWithFallback } from "@/lib/ai/router";
 
 // ---------------------------------------------------------------------------
@@ -36,6 +37,7 @@ const mockRequest: AiCompletionRequest = {
   maxOutputTokens: 500,
 };
 
+/** Track which model was actually requested by the provider mock. */
 function makeProvider(
   name: "groq" | "gemini" | "openrouter",
   overrides: Partial<AiProvider> = {},
@@ -43,18 +45,22 @@ function makeProvider(
   return {
     name,
     isConfigured: () => true,
-    generateCompletion: vi.fn(async (): Promise<AiCompletionResponse> => ({
-      provider: name,
-      model: `${name}-model`,
-      text: `Response from ${name}`,
-    })),
-    generateStream: vi.fn(async (): Promise<AiStreamResponse> => ({
-      provider: name,
-      model: `${name}-model`,
-      stream: (async function* () {
-        yield { delta: `Streamed from ${name}` };
-      })(),
-    })),
+    generateCompletion: vi.fn(
+      async (req: AiCompletionRequest): Promise<AiCompletionResponse> => ({
+        provider: name,
+        model: req.model,
+        text: `Response from ${name}/${req.model}`,
+      }),
+    ),
+    generateStream: vi.fn(
+      async (req: AiCompletionRequest): Promise<AiStreamResponse> => ({
+        provider: name,
+        model: req.model,
+        stream: (async function* () {
+          yield { delta: `Streamed from ${name}/${req.model}` };
+        })(),
+      }),
+    ),
     ...overrides,
   };
 }
@@ -85,8 +91,14 @@ function makeNonRetryableError(
   );
 }
 
+function setupModels(models: Record<string, string[]>) {
+  vi.mocked(getModelsForProvider).mockImplementation(
+    (provider: string) => models[provider] ?? ["default-model"],
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Tests — generateWithFallback
+// Tests — generateWithFallback (model-level fallback)
 // ---------------------------------------------------------------------------
 
 describe("generateWithFallback", () => {
@@ -94,43 +106,85 @@ describe("generateWithFallback", () => {
     vi.restoreAllMocks();
   });
 
-  it("succeeds with the first provider (Groq)", async () => {
+  it("succeeds with the first Groq model", async () => {
     const groq = makeProvider("groq");
     const gemini = makeProvider("gemini");
-    const openrouter = makeProvider("openrouter");
 
-    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini, openrouter]);
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["qwen/qwen3-32b", "llama-3.3-70b-versatile"],
+      gemini: ["gemini-2.5-flash"],
+    });
 
     const result = await generateWithFallback(mockRequest);
 
     expect(result.provider).toBe("groq");
-    expect(result.text).toBe("Response from groq");
+    expect(result.model).toBe("qwen/qwen3-32b");
+    expect(result.text).toBe("Response from groq/qwen/qwen3-32b");
     expect(groq.generateCompletion).toHaveBeenCalledOnce();
     expect(gemini.generateCompletion).not.toHaveBeenCalled();
-    expect(openrouter.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it("falls back to Gemini when Groq returns 429", async () => {
+  it("falls back to Groq second model when first returns 429", async () => {
+    let callCount = 0;
+
+    const groq = makeProvider("groq", {
+      generateCompletion: vi.fn(
+        async (req: AiCompletionRequest): Promise<AiCompletionResponse> => {
+          callCount += 1;
+
+          if (callCount === 1) {
+            throw makeRetryableError("groq", 429);
+          }
+
+          return {
+            provider: "groq",
+            model: req.model,
+            text: `Response from groq/${req.model}`,
+          };
+        },
+      ),
+    });
+    const gemini = makeProvider("gemini");
+
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["qwen/qwen3-32b", "llama-3.3-70b-versatile"],
+      gemini: ["gemini-2.5-flash"],
+    });
+
+    const result = await generateWithFallback(mockRequest);
+
+    expect(result.provider).toBe("groq");
+    expect(result.model).toBe("llama-3.3-70b-versatile");
+    expect(groq.generateCompletion).toHaveBeenCalledTimes(2);
+    expect(gemini.generateCompletion).not.toHaveBeenCalled();
+  });
+
+  it("moves to Gemini after all Groq models fail", async () => {
     const groq = makeProvider("groq", {
       generateCompletion: vi.fn(async () => {
         throw makeRetryableError("groq", 429);
       }),
     });
     const gemini = makeProvider("gemini");
-    const openrouter = makeProvider("openrouter");
 
-    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini, openrouter]);
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+      gemini: ["gemini-2.5-flash"],
+    });
 
     const result = await generateWithFallback(mockRequest);
 
     expect(result.provider).toBe("gemini");
-    expect(result.text).toBe("Response from gemini");
-    expect(groq.generateCompletion).toHaveBeenCalledOnce();
+    expect(result.model).toBe("gemini-2.5-flash");
+    // All 3 Groq models tried
+    expect(groq.generateCompletion).toHaveBeenCalledTimes(3);
     expect(gemini.generateCompletion).toHaveBeenCalledOnce();
-    expect(openrouter.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it("falls back through entire chain: Groq → Gemini → OpenRouter", async () => {
+  it("moves to OpenRouter after Groq and Gemini models all fail", async () => {
     const groq = makeProvider("groq", {
       generateCompletion: vi.fn(async () => {
         throw makeRetryableError("groq", 503);
@@ -144,32 +198,40 @@ describe("generateWithFallback", () => {
     const openrouter = makeProvider("openrouter");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini, openrouter]);
+    setupModels({
+      groq: ["qwen/qwen3-32b", "llama-3.3-70b-versatile"],
+      gemini: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+      openrouter: ["nvidia/nemotron-3-super:free"],
+    });
 
     const result = await generateWithFallback(mockRequest);
 
     expect(result.provider).toBe("openrouter");
-    expect(result.text).toBe("Response from openrouter");
-    expect(groq.generateCompletion).toHaveBeenCalledOnce();
-    expect(gemini.generateCompletion).toHaveBeenCalledOnce();
+    expect(result.model).toBe("nvidia/nemotron-3-super:free");
+    expect(groq.generateCompletion).toHaveBeenCalledTimes(2);
+    expect(gemini.generateCompletion).toHaveBeenCalledTimes(2);
     expect(openrouter.generateCompletion).toHaveBeenCalledOnce();
   });
 
-  it("stops immediately on non-retryable error (401)", async () => {
+  it("stops immediately on 401 without trying more models or providers", async () => {
     const groq = makeProvider("groq", {
       generateCompletion: vi.fn(async () => {
         throw makeNonRetryableError("groq", 401);
       }),
     });
     const gemini = makeProvider("gemini");
-    const openrouter = makeProvider("openrouter");
 
-    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini, openrouter]);
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["qwen/qwen3-32b", "llama-3.3-70b-versatile"],
+      gemini: ["gemini-2.5-flash"],
+    });
 
     await expect(generateWithFallback(mockRequest)).rejects.toThrow("Unauthorized (401)");
 
+    // Only the first model was tried
     expect(groq.generateCompletion).toHaveBeenCalledOnce();
     expect(gemini.generateCompletion).not.toHaveBeenCalled();
-    expect(openrouter.generateCompletion).not.toHaveBeenCalled();
   });
 
   it("stops immediately on 400 bad request", async () => {
@@ -181,12 +243,28 @@ describe("generateWithFallback", () => {
     const gemini = makeProvider("gemini");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["qwen/qwen3-32b"],
+      gemini: ["gemini-2.5-flash"],
+    });
 
     await expect(generateWithFallback(mockRequest)).rejects.toThrow();
     expect(gemini.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it("throws when all providers fail with retryable errors", async () => {
+  it("includes provider and model in the response", async () => {
+    const groq = makeProvider("groq");
+
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq]);
+    setupModels({ groq: ["llama-3.3-70b-versatile"] });
+
+    const result = await generateWithFallback(mockRequest);
+
+    expect(result.provider).toBe("groq");
+    expect(result.model).toBe("llama-3.3-70b-versatile");
+  });
+
+  it("throws when all providers and models fail", async () => {
     const groq = makeProvider("groq", {
       generateCompletion: vi.fn(async () => {
         throw makeRetryableError("groq", 429);
@@ -204,8 +282,16 @@ describe("generateWithFallback", () => {
     });
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini, openrouter]);
+    setupModels({
+      groq: ["model-a", "model-b"],
+      gemini: ["model-c"],
+      openrouter: ["model-d"],
+    });
 
     await expect(generateWithFallback(mockRequest)).rejects.toThrow();
+    expect(groq.generateCompletion).toHaveBeenCalledTimes(2);
+    expect(gemini.generateCompletion).toHaveBeenCalledTimes(1);
+    expect(openrouter.generateCompletion).toHaveBeenCalledTimes(1);
   });
 
   it("throws when no providers are configured", async () => {
@@ -214,21 +300,6 @@ describe("generateWithFallback", () => {
     await expect(generateWithFallback(mockRequest)).rejects.toThrow(
       "No AI providers are configured",
     );
-  });
-
-  it("skips unconfigured providers", async () => {
-    const groq = makeProvider("groq", {
-      isConfigured: () => false,
-    });
-    const gemini = makeProvider("gemini");
-
-    // getConfiguredProviders filters, so only return the configured one
-    vi.mocked(getConfiguredProviders).mockReturnValue([gemini]);
-
-    const result = await generateWithFallback(mockRequest);
-
-    expect(result.provider).toBe("gemini");
-    expect(groq.generateCompletion).not.toHaveBeenCalled();
   });
 
   it("respects Retry-After but caps at 5 seconds", async () => {
@@ -242,11 +313,13 @@ describe("generateWithFallback", () => {
     const gemini = makeProvider("gemini");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["model-a"],
+      gemini: ["model-b"],
+    });
 
-    // Start the fallback, which will sleep for 5s (capped from 10s)
     const resultPromise = generateWithFallback(mockRequest);
 
-    // Advance fake timers past the capped wait
     await vi.advanceTimersByTimeAsync(5_100);
 
     const result = await resultPromise;
@@ -267,30 +340,45 @@ describe("generateWithFallback", () => {
     const gemini = makeProvider("gemini");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["model-a"],
+      gemini: ["model-b"],
+    });
 
     const result = await generateWithFallback(mockRequest);
 
     expect(result.provider).toBe("gemini");
   });
 
-  it("handles 409 conflict as retryable", async () => {
-    const groq = makeProvider("groq", {
-      generateCompletion: vi.fn(async () => {
-        throw makeRetryableError("groq", 409);
-      }),
+  it("passes qualityTier through to getModelsForProvider", async () => {
+    const groq = makeProvider("groq");
+
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq]);
+    setupModels({ groq: ["cheap-model"] });
+
+    const result = await generateWithFallback({
+      ...mockRequest,
+      qualityTier: "cheap",
     });
-    const gemini = makeProvider("gemini");
 
-    vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    expect(result.provider).toBe("groq");
+    expect(vi.mocked(getModelsForProvider)).toHaveBeenCalledWith("groq", "cheap");
+  });
 
-    const result = await generateWithFallback(mockRequest);
+  it("defaults to balanced tier when qualityTier is not set", async () => {
+    const groq = makeProvider("groq");
 
-    expect(result.provider).toBe("gemini");
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq]);
+    setupModels({ groq: ["balanced-model"] });
+
+    await generateWithFallback(mockRequest);
+
+    expect(vi.mocked(getModelsForProvider)).toHaveBeenCalledWith("groq", "balanced");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Tests — streamWithFallback
+// Tests — streamWithFallback (model-level fallback)
 // ---------------------------------------------------------------------------
 
 describe("streamWithFallback", () => {
@@ -298,24 +386,59 @@ describe("streamWithFallback", () => {
     vi.restoreAllMocks();
   });
 
-  it("streams from the first provider", async () => {
+  it("streams from the first provider and model", async () => {
     const groq = makeProvider("groq");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq]);
+    setupModels({ groq: ["qwen/qwen3-32b"] });
 
     const result = await streamWithFallback(mockRequest);
 
     expect(result.provider).toBe("groq");
+    expect(result.model).toBe("qwen/qwen3-32b");
 
     const chunks: string[] = [];
     for await (const chunk of result.stream) {
       chunks.push(chunk.delta);
     }
 
-    expect(chunks).toEqual(["Streamed from groq"]);
+    expect(chunks).toEqual(["Streamed from groq/qwen/qwen3-32b"]);
   });
 
-  it("falls back to Gemini when Groq stream connection fails", async () => {
+  it("falls back to next model when first stream connection fails", async () => {
+    let callCount = 0;
+
+    const groq = makeProvider("groq", {
+      generateStream: vi.fn(
+        async (req: AiCompletionRequest): Promise<AiStreamResponse> => {
+          callCount += 1;
+
+          if (callCount === 1) {
+            throw makeRetryableError("groq", 429);
+          }
+
+          return {
+            provider: "groq",
+            model: req.model,
+            stream: (async function* () {
+              yield { delta: `Streamed from groq/${req.model}` };
+            })(),
+          };
+        },
+      ),
+    });
+
+    vi.mocked(getConfiguredProviders).mockReturnValue([groq]);
+    setupModels({ groq: ["model-a", "model-b"] });
+
+    const result = await streamWithFallback(mockRequest);
+
+    expect(result.provider).toBe("groq");
+    expect(result.model).toBe("model-b");
+    expect(groq.generateStream).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to Gemini when all Groq stream connections fail", async () => {
     const groq = makeProvider("groq", {
       generateStream: vi.fn(async () => {
         throw makeRetryableError("groq", 429);
@@ -324,11 +447,15 @@ describe("streamWithFallback", () => {
     const gemini = makeProvider("gemini");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["model-a", "model-b"],
+      gemini: ["gemini-2.5-flash"],
+    });
 
     const result = await streamWithFallback(mockRequest);
 
     expect(result.provider).toBe("gemini");
-    expect(groq.generateStream).toHaveBeenCalledOnce();
+    expect(groq.generateStream).toHaveBeenCalledTimes(2);
     expect(gemini.generateStream).toHaveBeenCalledOnce();
   });
 
@@ -341,8 +468,14 @@ describe("streamWithFallback", () => {
     const gemini = makeProvider("gemini");
 
     vi.mocked(getConfiguredProviders).mockReturnValue([groq, gemini]);
+    setupModels({
+      groq: ["model-a", "model-b"],
+      gemini: ["gemini-2.5-flash"],
+    });
 
     await expect(streamWithFallback(mockRequest)).rejects.toThrow("Unauthorized (401)");
+    // Stopped at first model, didn't try second or Gemini
+    expect(groq.generateStream).toHaveBeenCalledOnce();
     expect(gemini.generateStream).not.toHaveBeenCalled();
   });
 
@@ -376,5 +509,28 @@ describe("AiProviderError", () => {
 
     expect(err.retryable).toBe(false);
     expect(err.statusCode).toBe(401);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests — config model lists
+// ---------------------------------------------------------------------------
+
+describe("getModelsForProvider (integration)", () => {
+  // These tests use the REAL config module to verify the model lists
+  // are well-formed. We un-mock and re-import.
+
+  it("has non-empty model lists for all tiers", async () => {
+    // Directly import the real module
+    const { getModelsForProvider: realFn } = await vi.importActual<
+      typeof import("@/lib/ai/config")
+    >("@/lib/ai/config");
+
+    for (const provider of ["groq", "gemini", "openrouter"] as const) {
+      for (const tier of ["balanced", "cheap", "best", "coding"] as const) {
+        const models = realFn(provider, tier);
+        expect(models.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

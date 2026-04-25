@@ -1380,6 +1380,104 @@ html[data-reload-loading="true"] [data-reload-loading-overlay] {
   .meta-label {
     @apply text-[0.68rem] font-medium uppercase tracking-[0.14em] text-muted-foreground;
   }
+
+  /* ── AI chat markdown prose ── */
+
+  .ai-prose > *:first-child {
+    margin-top: 0;
+  }
+
+  .ai-prose > *:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-prose h1,
+  .ai-prose h2,
+  .ai-prose h3,
+  .ai-prose h4 {
+    @apply font-heading font-semibold text-foreground;
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+    line-height: 1.35;
+  }
+
+  .ai-prose h1 { font-size: 1.1em; }
+  .ai-prose h2 { font-size: 1.05em; }
+  .ai-prose h3 { font-size: 1em; }
+  .ai-prose h4 { font-size: 0.95em; }
+
+  .ai-prose p {
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+  }
+
+  .ai-prose ul,
+  .ai-prose ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+  }
+
+  .ai-prose ul { list-style-type: disc; }
+  .ai-prose ol { list-style-type: decimal; }
+
+  .ai-prose li {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+  }
+
+  .ai-prose li > ul,
+  .ai-prose li > ol {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+  }
+
+  .ai-prose strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .ai-prose a {
+    @apply text-primary underline underline-offset-3 transition-colors hover:text-primary/80;
+  }
+
+  .ai-prose blockquote {
+    @apply border-l-2 border-border/80 pl-3 italic text-muted-foreground;
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+  }
+
+  .ai-prose code {
+    @apply rounded bg-secondary px-1.5 py-0.5 text-[0.82em] font-mono text-foreground;
+  }
+
+  .ai-prose pre {
+    @apply overflow-x-auto rounded-lg border border-border/70 bg-secondary/80 px-3.5 py-3 text-[0.82em] leading-6;
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+  }
+
+  .ai-prose pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .ai-prose hr {
+    @apply my-3 border-border/60;
+  }
+
+  .ai-prose table {
+    @apply w-full border-collapse text-[0.9em];
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+  }
+
+  .ai-prose th,
+  .ai-prose td {
+    @apply border border-border/70 px-2.5 py-1.5 text-left;
+  }
+
+  .ai-prose th {
+    @apply bg-secondary/60 font-semibold;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

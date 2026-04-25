@@ -8,6 +8,8 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Check,
   Copy,
@@ -405,18 +407,26 @@ function TranscriptMessage({
                 </div>
               ) : null}
 
-              <p
-                className={cn(
-                  "whitespace-pre-wrap text-sm leading-7",
-                  isUser
-                    ? "text-primary-foreground"
-                    : message.isError
+              {isUser ? (
+                <p
+                  className="whitespace-pre-wrap text-sm leading-7 text-primary-foreground"
+                >
+                  {message.content}
+                </p>
+              ) : (
+                <div
+                  className={cn(
+                    "ai-prose text-sm leading-7",
+                    message.isError
                       ? "text-destructive"
                       : "text-foreground",
-                )}
-              >
-                {message.content}
-              </p>
+                  )}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              )}
 
               {message.pending && !isUser ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

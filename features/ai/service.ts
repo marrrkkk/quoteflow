@@ -29,6 +29,35 @@ import type { AiCompletionRequest } from "@/lib/ai";
 // See lib/ai/router.ts for details.
 // ---------------------------------------------------------------------------
 
+/**
+ * Remove complete `<thinking>…</thinking>` and `<think>…</think>` blocks
+ * from text. Different models use different tag names.
+ */
+function stripThinkingBlocks(text: string): string {
+  return text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/g, "").trim();
+}
+
+/**
+ * Return the portion of accumulated text that is safe to show.
+ *
+ * - Complete thinking blocks are removed.
+ * - If an unclosed `<think>` or `<thinking>` tag exists, everything from
+ *   it onward is hidden until the closing tag arrives.
+ */
+function getVisibleText(text: string): string {
+  // Remove fully closed thinking blocks
+  let result = text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/g, "");
+
+  // Hide any unclosed thinking block (still streaming)
+  const openMatch = result.match(/<think(?:ing)?>/);
+
+  if (openMatch && openMatch.index !== undefined) {
+    result = result.slice(0, openMatch.index);
+  }
+
+  return result;
+}
+
 function getErrorMessage(error: unknown) {
   if (
     typeof error === "object" &&
@@ -100,12 +129,14 @@ async function generateTextWithFallback(params: {
   const completionRequest = createCompletionRequest(params);
   const response = await generateWithFallback(completionRequest);
 
-  if (!response.text.trim()) {
+  const cleanedText = stripThinkingBlocks(response.text);
+
+  if (!cleanedText) {
     throw new Error("The AI assistant returned an empty response.");
   }
 
   return {
-    text: response.text.trim(),
+    text: cleanedText,
     model: response.model,
     provider: response.provider,
   };
@@ -151,6 +182,7 @@ export async function* createInquiryAssistantStream(input: {
 
   try {
     let streamedText = "";
+    let lastVisibleLength = 0;
     let truncated = false;
 
     for await (const chunk of streamResponse.stream) {
@@ -164,13 +196,20 @@ export async function* createInquiryAssistantStream(input: {
 
       streamedText += chunk.delta;
 
-      yield {
-        type: "delta",
-        value: chunk.delta,
-      };
+      // Compute visible text (thinking blocks stripped) and emit only
+      // the newly visible portion so the client never sees thinking content.
+      const visible = getVisibleText(streamedText);
+
+      if (visible.length > lastVisibleLength) {
+        yield {
+          type: "delta",
+          value: visible.slice(lastVisibleLength),
+        };
+        lastVisibleLength = visible.length;
+      }
     }
 
-    if (!streamedText.trim()) {
+    if (!getVisibleText(streamedText).trim()) {
       throw new Error("The AI assistant returned an empty response.");
     }
 
