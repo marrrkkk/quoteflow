@@ -15,7 +15,6 @@ import {
   Building2,
   QrCode,
   ShoppingCart,
-  Wallet,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 
@@ -636,9 +635,6 @@ function CheckoutDialogInner({
                       >
                         <div className="min-w-0 flex-1">
                           <QrPhBrandMark />
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Generate a QR code and pay from a banking app.
-                          </p>
                         </div>
                         {paymentMethod === "qrph" ? (
                           <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
@@ -663,21 +659,13 @@ function CheckoutDialogInner({
                       type="button"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="flex size-8 items-center justify-center rounded-lg border border-border/70 bg-background">
-                            <Wallet className="size-4 text-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              Cards and more
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Card, PayPal, and Google Pay
-                              {isPH ? " billed in USD" : ""}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-3">
+                        <p className="text-sm font-medium text-foreground">
+                          Card, PayPal, and more
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {isPH ? "Billed in USD via Paddle" : "Visa, Mastercard, PayPal, Google Pay"}
+                        </p>
+                        <div className="mt-2.5">
                           <CardAndMoreBrandMarks />
                         </div>
                       </div>
@@ -699,11 +687,7 @@ function CheckoutDialogInner({
                       {getMonthlyEquivalentLabel(plan, currency)} billed yearly.
                     </p>
                   ) : null}
-                  {paymentMethod === "card" && isPH ? (
-                    <p className="px-1 text-xs text-muted-foreground">
-                      Cards and more are billed in USD through Paddle.
-                    </p>
-                  ) : null}
+
                 </div>
               </div>
             </DialogBody>
