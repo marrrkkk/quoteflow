@@ -99,6 +99,16 @@ const CommandMenu = dynamic(
   },
 );
 
+const DashboardAiPanel = dynamic(
+  () =>
+    import("@/features/ai/components/dashboard-ai-panel").then(
+      (module) => module.DashboardAiPanel,
+    ),
+  {
+    loading: () => null,
+  },
+);
+
 type DashboardShellProps = {
   children: ReactNode;
   themePreference: ThemePreference;
@@ -250,6 +260,11 @@ export function DashboardShell({
             <div className="dashboard-content">{children}</div>
           </main>
         </div>
+        <DashboardAiPanel
+          businessId={business.id}
+          businessSlug={business.slug}
+          userName={user.name || "You"}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

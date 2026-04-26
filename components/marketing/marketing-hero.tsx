@@ -96,7 +96,7 @@ export function MarketingHero() {
                 Turn inquiries into quotes without the mess.
               </h1>
               <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-                Requo helps service businesses collect new requests, send clear
+                Requo helps service businesses collect new inquiries, send clear
                 quotes, and keep follow-up visible from the first message to
                 the customer&apos;s reply.
               </p>
@@ -134,7 +134,7 @@ export function MarketingHero() {
             Most leads get scattered before the quote goes out.
           </h2>
           <p className="max-w-xl text-sm leading-8 text-muted-foreground sm:text-lg">
-            The request comes in, notes start piling up, the quote gets drafted
+            The inquiry comes in, notes start piling up, the quote gets drafted
             somewhere else, and follow-up depends on memory. Requo keeps that
             middle part together.
           </p>
@@ -144,7 +144,7 @@ export function MarketingHero() {
           <div className="border-b border-border/70 px-5 py-4 sm:px-6">
             <p className="meta-label">What stays connected</p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              One request. One quote. One next step to keep moving.
+              One inquiry. One quote. One next step to keep moving.
             </p>
           </div>
 
@@ -179,7 +179,7 @@ export function MarketingHero() {
         <InViewReveal className="mx-auto flex max-w-3xl flex-col items-center gap-4 border-b border-border/70 px-5 py-8 text-center sm:px-6 sm:py-10">
           <p className="eyebrow">How it works</p>
           <h2 className="max-w-3xl font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            A simple flow from new request to sent quote.
+            A simple flow from new inquiry to sent quote.
           </h2>
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
             Requo follows the steps most service businesses already use. It
@@ -289,7 +289,7 @@ export function MarketingHero() {
               <p className="text-sm leading-7 text-muted-foreground">
                 Requo helps owner-led service businesses capture better
                 inquiries, send clearer quotes, and keep follow-up visible from
-                first request to customer response.
+                first inquiry to customer response.
               </p>
             </div>
 

@@ -146,7 +146,7 @@ export function CommandMenu({ businessSlug, role, workspaceSlug }: CommandMenuPr
                   }
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  <span>New request</span>
+                  <span>New inquiry</span>
                 </CommandItem>
                 <CommandItem
                   onSelect={() =>
@@ -179,7 +179,7 @@ export function CommandMenu({ businessSlug, role, workspaceSlug }: CommandMenuPr
                   }
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  <span>Download requests (CSV)</span>
+                  <span>Download inquiries (CSV)</span>
                 </CommandItem>
               </CommandGroup>
 

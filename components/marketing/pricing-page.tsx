@@ -21,8 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
-  type WorkspacePlan,
-  planMeta,
   getUsageLimit,
   planFeatureLabels,
 } from "@/lib/plans";
@@ -43,6 +41,8 @@ type PricingFeatureRow = {
 const pricingFeatures: PricingFeatureRow[] = [
   { label: "Inquiry capture", free: true, pro: true, business: true },
   { label: "Quote workflow", free: true, pro: true, business: true },
+  { label: "Follow-up reminders", free: true, pro: true, business: true },
+  { label: "Viewed, accepted, and rejected quote tracking", free: true, pro: true, business: true },
   { label: "Public inquiry pages", free: true, pro: true, business: true },
   { label: "Public quote pages", free: true, pro: true, business: true },
   { label: "Dashboard & overview", free: true, pro: true, business: true },
@@ -179,11 +179,12 @@ export function PricingPage({ currency }: { currency: BillingCurrency }) {
           </Badge>
           <div className="flex flex-col items-center gap-4">
             <h1 className="max-w-3xl font-heading text-4xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-5xl xl:text-[3.5rem]">
-              Start free, upgrade as you grow.
+              Run the full inquiry-to-quote workflow from day one.
             </h1>
             <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-              Simple, transparent plans for owner-led service businesses. No
-              hidden fees — upgrade when you need more tools and capacity.
+              Capture inquiries, create quotes, share them with customers,
+              follow up on time, and track outcomes. Start free, then upgrade
+              when you need more capacity and workflow tools.
             </p>
           </div>
         </div>
@@ -240,11 +241,11 @@ export function PricingPage({ currency }: { currency: BillingCurrency }) {
         <div className="flex flex-col gap-6 px-5 py-6 sm:px-6 sm:py-7 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex max-w-2xl flex-col gap-3">
             <h2 className="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
-              Ready to get organized?
+              Ready to stop losing inquiries?
             </h2>
             <p className="text-sm leading-7 text-muted-foreground sm:text-base">
               Start with the Free plan today. Upgrade to Pro or Business when
-              your workflow demands it.
+              you need unlimited inquiries, quote capacity, and advanced tools.
             </p>
           </div>
 
@@ -315,6 +316,7 @@ function PricingCell({
     </td>
   );
 }
+
 
 
 
