@@ -16,7 +16,7 @@ import {
   generateWithFallback,
   streamWithFallback,
 } from "@/lib/ai";
-import type { AiCompletionRequest } from "@/lib/ai";
+import type { AiChatMessage, AiCompletionRequest } from "@/lib/ai";
 
 // ---------------------------------------------------------------------------
 // AI service for inquiry assistant features
@@ -93,6 +93,7 @@ function getAiAssistantMaxOutputTokens(intent: AiAssistantRequestInput["intent"]
 function createCompletionRequest(input: {
   context: InquiryAssistantContext;
   request: AiAssistantRequestInput;
+  history?: AiChatMessage[];
 }): AiCompletionRequest {
   return {
     model: "",
@@ -101,6 +102,7 @@ function createCompletionRequest(input: {
         role: "system",
         content: buildAiAssistantInstructions(input.request.intent),
       },
+      ...(input.history ?? []),
       {
         role: "user",
         content: buildAiAssistantInput(input.context, input.request),
@@ -125,6 +127,7 @@ function isChatCompletionTruncated(finishReason: unknown) {
 async function generateTextWithFallback(params: {
   context: InquiryAssistantContext;
   request: AiAssistantRequestInput;
+  history?: AiChatMessage[];
 }) {
   const completionRequest = createCompletionRequest(params);
   const response = await generateWithFallback(completionRequest);
@@ -151,6 +154,7 @@ async function generateTextWithFallback(params: {
 export async function* createInquiryAssistantStream(input: {
   context: InquiryAssistantContext;
   request: AiAssistantRequestInput;
+  history?: AiChatMessage[];
 }): AsyncGenerator<AiAssistantStreamEvent> {
   const title = getAiAssistantTitle(input.request.intent);
   const completionRequest = createCompletionRequest(input);
@@ -178,6 +182,8 @@ export async function* createInquiryAssistantStream(input: {
     type: "meta",
     title,
     model: `${streamResponse.provider}/${streamResponse.model}`,
+    provider: streamResponse.provider,
+    providerModel: streamResponse.model,
   };
 
   try {
@@ -232,6 +238,7 @@ export async function* createInquiryAssistantStream(input: {
 export async function generateInquiryAssistantResult(input: {
   context: InquiryAssistantContext;
   request: AiAssistantRequestInput;
+  history?: AiChatMessage[];
 }): Promise<AiAssistantResult> {
   const title = getAiAssistantTitle(input.request.intent);
   const { text, model, provider } = await generateTextWithFallback(input);

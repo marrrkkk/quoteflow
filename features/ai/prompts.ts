@@ -5,6 +5,7 @@ import type {
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import type { AiAssistantRequestInput } from "@/features/ai/schemas";
 import { formatInquiryDateTime } from "@/features/inquiries/utils";
+import { formatQuoteMoney } from "@/features/quotes/utils";
 
 const replyLikeIntents = new Set<AiAssistantIntent>([
   "draft-first-reply",
@@ -20,6 +21,26 @@ function truncateText(value: string, maxLength: number) {
   }
 
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
+}
+
+function truncateOptionalText(value: string | null | undefined, maxLength: number) {
+  return value?.trim() ? truncateText(value, maxLength) : "Not set";
+}
+
+function formatOptionalDate(value: Date | null | undefined) {
+  return value ? formatInquiryDateTime(value) : "Not set";
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatMemoryContext(context: InquiryAssistantContext["memory"]) {
@@ -48,6 +69,115 @@ function formatNotesContext(notes: InquiryAssistantContext["notes"]) {
           note.createdAt,
         )}: ${truncateText(note.body, 320)}`,
     )
+    .join("\n");
+}
+
+function formatAttachmentsContext(attachments: InquiryAssistantContext["attachments"]) {
+  if (!attachments.length) {
+    return "- No attachments.";
+  }
+
+  return attachments
+    .map(
+      (attachment) =>
+        `- ${attachment.fileName}; ${attachment.contentType}; ${formatFileSize(
+          attachment.fileSize,
+        )}; uploaded ${formatInquiryDateTime(attachment.createdAt)}`,
+    )
+    .join("\n");
+}
+
+function formatActivityContext(activities: InquiryAssistantContext["activities"]) {
+  if (!activities.length) {
+    return "- No activity yet.";
+  }
+
+  return activities
+    .map(
+      (activity) =>
+        `- ${formatInquiryDateTime(activity.createdAt)}; ${activity.type}; ${activity.summary}; actor ${activity.actorName ?? "system"}`,
+    )
+    .join("\n");
+}
+
+function formatFollowUpsContext(followUps: InquiryAssistantContext["followUps"]) {
+  if (!followUps.length) {
+    return "- No follow-ups linked to this inquiry or its quotes.";
+  }
+
+  return followUps
+    .map((followUp) => {
+      const relatedQuote = followUp.quoteId
+        ? `; related quote ${followUp.quoteNumber ?? followUp.quoteTitle ?? followUp.quoteId}`
+        : "";
+      const outcome =
+        followUp.status === "completed"
+          ? `; completed ${formatOptionalDate(followUp.completedAt)}`
+          : followUp.status === "skipped"
+            ? `; skipped ${formatOptionalDate(followUp.skippedAt)}`
+            : "";
+
+      return `- ${followUp.title}; status ${followUp.status}; due ${formatInquiryDateTime(
+        followUp.dueAt,
+      )}; channel ${followUp.channel}${relatedQuote}; reason ${truncateText(
+        followUp.reason,
+        260,
+      )}${outcome}`;
+    })
+    .join("\n");
+}
+
+function formatRelatedQuotesContext(
+  relatedQuotes: InquiryAssistantContext["relatedQuotes"],
+) {
+  if (!relatedQuotes.length) {
+    return "- No quotes linked to this inquiry yet.";
+  }
+
+  return relatedQuotes
+    .map((quote) => {
+      const lineItems = quote.items.length
+        ? quote.items
+            .map(
+              (item) =>
+                `  - ${item.description}; quantity ${item.quantity}; unit ${formatQuoteMoney(
+                  item.unitPriceInCents,
+                  quote.currency,
+                )}; total ${formatQuoteMoney(item.lineTotalInCents, quote.currency)}`,
+            )
+            .join("\n")
+        : "  - No line items.";
+      const quoteActivity = quote.activities.length
+        ? quote.activities
+            .slice(0, 8)
+            .map(
+              (activity) =>
+                `  - ${formatInquiryDateTime(activity.createdAt)}; ${activity.summary}; actor ${activity.actorName ?? "system"}`,
+            )
+            .join("\n")
+        : "  - No quote activity.";
+
+      return [
+        `- ${quote.quoteNumber}; ${quote.title}; status ${quote.status}; total ${formatQuoteMoney(
+          quote.totalInCents,
+          quote.currency,
+        )}; valid until ${quote.validUntil}`,
+        `  Tracking: sent ${formatOptionalDate(quote.sentAt)}; viewed ${formatOptionalDate(
+          quote.publicViewedAt,
+        )}; accepted ${formatOptionalDate(
+          quote.acceptedAt,
+        )}; customer responded ${formatOptionalDate(quote.customerRespondedAt)}`,
+        `  Customer response: ${truncateOptionalText(
+          quote.customerResponseMessage,
+          400,
+        )}`,
+        `  Notes: ${truncateOptionalText(quote.notes, 700)}`,
+        "  Line items",
+        lineItems,
+        "  Quote activity",
+        quoteActivity,
+      ].join("\n");
+    })
     .join("\n");
 }
 
@@ -99,6 +229,18 @@ function buildContextBlock(context: InquiryAssistantContext) {
     "",
     "Internal notes",
     formatNotesContext(context.notes),
+    "",
+    "Attachments",
+    formatAttachmentsContext(context.attachments),
+    "",
+    "Follow-ups",
+    formatFollowUpsContext(context.followUps),
+    "",
+    "Related quotes",
+    formatRelatedQuotesContext(context.relatedQuotes),
+    "",
+    "Inquiry activity timeline",
+    formatActivityContext(context.activities),
     "",
     formatMemoryContext(context.memory),
   ].join("\n");
@@ -178,7 +320,7 @@ function getIntentInstructions(intent: AiAssistantIntent) {
 export function buildAiAssistantInstructions(intent: AiAssistantIntent) {
   return [
     "You are Requo's internal AI assistant for a small service business owner.",
-    "Use only the provided business, inquiry, notes, FAQ, and knowledge context.",
+    "Use only the provided business, inquiry, notes, follow-ups, related quotes, activity, attachments, FAQ, and knowledge context.",
     "Never fabricate exact pricing, turnaround times, policies, guarantees, or availability unless they are explicitly present in the provided context.",
     "If something needed for a good answer is missing, state the missing information clearly.",
     "Keep outputs concise, practical, and ready for real business use.",

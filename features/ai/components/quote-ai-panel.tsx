@@ -2,23 +2,23 @@
 
 import { AIChatPopover } from "@/features/ai/components/ai-chat-popover";
 
-type InquiryAiPanelProps = {
+type QuoteAiPanelProps = {
   businessSlug: string;
-  inquiryId: string;
+  quoteId: string;
   userName: string;
 };
 
-export function InquiryAiPanel({
+export function QuoteAiPanel({
   businessSlug,
-  inquiryId,
+  quoteId,
   userName,
-}: InquiryAiPanelProps) {
+}: QuoteAiPanelProps) {
   return (
     <AIChatPopover
       businessSlug={businessSlug}
-      entityId={inquiryId}
-      surface="inquiry"
-      title="Inquiry Assistant"
+      entityId={quoteId}
+      surface="quote"
+      title="Quote Assistant"
       userName={userName}
     />
   );
