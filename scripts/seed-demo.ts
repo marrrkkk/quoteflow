@@ -424,39 +424,60 @@ async function resetDatabase() {
 
   console.log("🗑  Resetting database...");
 
-  await db.execute(sql`
-    TRUNCATE TABLE
-      "user",
-      "session",
-      "account",
-      "verification",
-      "profiles",
-      "workspaces",
-      "workspace_members",
-      "workspace_subscriptions",
-      "billing_events",
-      "payment_attempts",
-      "businesses",
-      "business_members",
-      "business_member_invites",
-      "business_inquiry_forms",
-      "inquiries",
-      "inquiry_attachments",
-      "inquiry_notes",
-      "quotes",
-      "quote_items",
-      "activity_logs",
-      "business_notifications",
-      "business_notification_states",
-      "reply_snippets",
-      "business_memories",
-      "quote_library_entries",
-      "quote_library_entry_items",
-      "google_calendar_connections",
-      "calendar_events",
-      "public_action_events"
-    CASCADE
-  `);
+  const tablesToReset = [
+    "user",
+    "session",
+    "account",
+    "verification",
+    "profiles",
+    "workspaces",
+    "workspace_members",
+    "workspace_subscriptions",
+    "billing_events",
+    "payment_attempts",
+    "businesses",
+    "business_members",
+    "business_member_invites",
+    "business_inquiry_forms",
+    "inquiries",
+    "inquiry_attachments",
+    "inquiry_notes",
+    "quotes",
+    "quote_items",
+    "activity_logs",
+    "business_notifications",
+    "business_notification_states",
+    "reply_snippets",
+    "business_memories",
+    "quote_library_entries",
+    "quote_library_entry_items",
+    "google_calendar_connections",
+    "calendar_events",
+    "public_action_events",
+  ];
+  const resetTableArray = tablesToReset
+    .map((tableName) => `'${tableName}'`)
+    .join(", ");
+
+  await db.execute(
+    sql.raw(`
+      DO $$
+      DECLARE
+        existing_tables text;
+      BEGIN
+        SELECT string_agg(format('%I', tablename), ', ')
+        INTO existing_tables
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename = ANY(ARRAY[${resetTableArray}]);
+
+        IF existing_tables IS NOT NULL THEN
+          EXECUTE 'TRUNCATE TABLE ' || existing_tables || ' CASCADE';
+        END IF;
+      END
+      $$;
+    `),
+  );
 
   console.log("   Done.\n");
 }
