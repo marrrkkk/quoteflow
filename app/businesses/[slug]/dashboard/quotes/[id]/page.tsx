@@ -1,5 +1,7 @@
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Mail, Printer } from "lucide-react";
+import { ExternalLink, Printer } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -22,6 +24,7 @@ import { getCalendarConnectionForUser, getCalendarEventsForQuote } from "@/featu
 import {
   archiveQuoteAction,
   deleteDraftQuoteAction,
+  logQuoteSendEventAction,
   restoreArchivedQuoteAction,
   sendQuoteAction,
   updateQuotePostAcceptanceStatusAction,
@@ -29,6 +32,8 @@ import {
   voidQuoteAction,
 } from "@/features/quotes/actions";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
+import { createQuoteFollowUpAction } from "@/features/follow-ups/actions";
+import { FollowUpPanel } from "@/features/follow-ups/components/follow-up-panel";
 import { InquiryRecordStateBadge } from "@/features/inquiries/components/inquiry-record-state-badge";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
 import { QuoteActivityPanel } from "@/features/quotes/components/quote-activity-panel";
@@ -42,8 +47,9 @@ import { QuotePostAcceptanceForm } from "@/features/quotes/components/quote-post
 import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import { QuoteRecordStateBadge } from "@/features/quotes/components/quote-record-state-badge";
 import { QuoteReminderBadge } from "@/features/quotes/components/quote-reminder-badge";
-import { QuoteSendForm } from "@/features/quotes/components/quote-send-form";
+import { SendQuoteDialog } from "@/features/quotes/components/send-quote-dialog";
 import { QuoteStatusBadge } from "@/features/quotes/components/quote-status-badge";
+import { getFollowUpsForQuote } from "@/features/follow-ups/queries";
 import { getQuoteLibraryForBusiness } from "@/features/quotes/quote-library-queries";
 import { getQuoteDetailForBusiness } from "@/features/quotes/queries";
 import { quoteRouteParamsSchema } from "@/features/quotes/schemas";
@@ -61,10 +67,33 @@ import {
   getBusinessQuotesPath,
 } from "@/features/businesses/routes";
 import { workspacesHubPath } from "@/features/workspaces/routes";
-import { env, isGoogleCalendarConfigured } from "@/lib/env";
+import { env, isGoogleCalendarConfigured, isResendConfigured } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
+
+const QuoteAiPanel = dynamic(
+  () =>
+    import("@/features/ai/components/quote-ai-panel").then(
+      (module) => module.QuoteAiPanel,
+    ),
+  {
+    loading: () => (
+      <div className="fixed bottom-4 right-4 z-40 sm:bottom-5 sm:right-5">
+        <div className="flex size-14 items-center justify-center rounded-full border border-border/70 bg-[var(--surface-elevated-bg)] shadow-[var(--surface-shadow-lg)]">
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={34}
+            height={34}
+            className="size-[2.15rem] object-contain"
+          />
+          <span className="sr-only">Loading Requo assistant</span>
+        </div>
+      </div>
+    ),
+  },
+);
 
 type QuoteDetailPageProps = {
   params: Promise<{ slug: string; id: string }>;
@@ -110,6 +139,8 @@ export default async function QuoteDetailPage({
   );
   const restoreArchivedAction = restoreArchivedQuoteAction.bind(null, quote.id);
   const sendAction = sendQuoteAction.bind(null, quote.id);
+  const logEventAction = logQuoteSendEventAction.bind(null, quote.id);
+  const createFollowUpAction = createQuoteFollowUpAction.bind(null, quote.id);
   const voidAction = voidQuoteAction.bind(null, quote.id);
   const customerQuotePath = quote.publicToken
     ? getPublicQuoteUrl(quote.publicToken)
@@ -117,13 +148,19 @@ export default async function QuoteDetailPage({
   const customerQuoteUrl = customerQuotePath
     ? new URL(customerQuotePath, env.BETTER_AUTH_URL).toString()
     : null;
-  const customerHistory = await getCustomerHistoryForBusiness({
-    businessId: businessContext.business.id,
-    customerEmail: quote.customerEmail,
-    customerContactHandle: quote.customerContactHandle,
-    excludeInquiryId: quote.inquiryId,
-    excludeQuoteId: quote.id,
-  });
+  const [customerHistory, followUps] = await Promise.all([
+    getCustomerHistoryForBusiness({
+      businessId: businessContext.business.id,
+      customerEmail: quote.customerEmail,
+      customerContactHandle: quote.customerContactHandle,
+      excludeInquiryId: quote.inquiryId,
+      excludeQuoteId: quote.id,
+    }),
+    getFollowUpsForQuote({
+      businessId: businessContext.business.id,
+      quoteId: quote.id,
+    }),
+  ]);
 
   const [calendarConnection, calendarEvents] = await Promise.all([
     isGoogleCalendarConfigured
@@ -166,6 +203,51 @@ export default async function QuoteDetailPage({
       }
     : null;
   const isArchived = quote.archivedAt !== null;
+  const hasPendingFollowUp = followUps.some(
+    (followUp) => followUp.status === "pending",
+  );
+  const viewedWithoutResponse = Boolean(
+    quote.status === "sent" &&
+      quote.publicViewedAt &&
+      !quote.customerRespondedAt,
+  );
+  const visibleQuoteReminders = quote.reminders.filter(
+    (reminder) => reminder !== "follow_up_due",
+  );
+  const quoteNextAction =
+    isArchived
+      ? null
+      : quote.status === "draft"
+        ? {
+            title: "Next: send this quote",
+            description:
+              "Finish any edits, then share the customer quote page and set a follow-up reminder.",
+          }
+        : viewedWithoutResponse && !hasPendingFollowUp
+          ? {
+              title: "Next: follow up on the viewed quote",
+              description:
+                "The customer viewed this quote but has not accepted or rejected it. Set a follow-up reminder before it goes cold.",
+            }
+          : quote.status === "sent" && !hasPendingFollowUp
+            ? {
+                title: "Next: set a follow-up reminder",
+                description:
+                  "This quote is shared and waiting for a response. Schedule the next customer touchpoint.",
+              }
+            : quote.status === "sent"
+              ? {
+                  title: "Next: work the scheduled follow-up",
+                  description:
+                    "A follow-up is already planned. Keep the quote open until the customer responds.",
+                }
+              : quote.status === "accepted"
+                ? {
+                    title: "Next: schedule or book the work",
+                    description:
+                      "The customer accepted this quote. Track the handoff so the job does not stall.",
+                  }
+                : null;
 
   const customerViewCopy =
     quote.status === "sent"
@@ -244,7 +326,7 @@ export default async function QuoteDetailPage({
   );
 
   return (
-    <DashboardPage>
+    <DashboardPage className="pb-24">
       <DashboardDetailHeader
         eyebrow="Quote detail"
         title={quote.title}
@@ -289,15 +371,26 @@ export default async function QuoteDetailPage({
                 Print
               </Link>
             </Button>
-            <Button asChild>
-              <a href={`mailto:${quote.customerEmail}`}>
-                <Mail data-icon="inline-start" />
-                Email customer
-              </a>
-            </Button>
+            <SendQuoteDialog
+              sendAction={sendAction}
+              logEventAction={logEventAction}
+              createFollowUpAction={createFollowUpAction}
+              quote={quote}
+              customerQuoteUrl={customerQuoteUrl}
+              businessName={businessContext.business.name}
+              isRequoEmailAvailable={isResendConfigured && quote.customerContactMethod === "email" && !!quote.customerEmail}
+              pdfExportHref={getBusinessQuoteExportPath(businessSlug, quote.id, "pdf")}
+            />
           </div>
         }
       />
+
+      {quoteNextAction ? (
+        <Alert>
+          <AlertTitle>{quoteNextAction.title}</AlertTitle>
+          <AlertDescription>{quoteNextAction.description}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {quote.status === "draft" ? (
         <>
@@ -327,15 +420,31 @@ export default async function QuoteDetailPage({
 
             <DashboardSidebarStack>
               <DashboardSection
-                description="Send the finished draft with Requo or share the customer link yourself."
+                description="Send the finished draft to your customer."
                 title="Send quote"
               >
-                <QuoteSendForm
-                  action={sendAction}
+                <SendQuoteDialog
+                  sendAction={sendAction}
+                  logEventAction={logEventAction}
+                  createFollowUpAction={createFollowUpAction}
+                  quote={quote}
                   customerQuoteUrl={customerQuoteUrl}
-                  customerContactMethod={quote.customerContactMethod}
+                  businessName={businessContext.business.name}
+                  isRequoEmailAvailable={isResendConfigured && quote.customerContactMethod === "email" && !!quote.customerEmail}
+                  pdfExportHref={getBusinessQuoteExportPath(businessSlug, quote.id, "pdf")}
                 />
               </DashboardSection>
+
+              <FollowUpPanel
+                businessSlug={businessSlug}
+                createAction={createFollowUpAction}
+                ctaDescription="Set a reminder to check back after sharing this quote."
+                defaultChannel={quote.customerContactMethod}
+                defaultReason="Follow up with the customer about this quote if they have not responded."
+                defaultTitle={`Follow up on quote ${quote.quoteNumber}`}
+                followUps={followUps}
+                sharedQuoteWithoutFollowUp={false}
+              />
 
               <DashboardSection
                 contentClassName="grid gap-3 sm:grid-cols-2"
@@ -374,16 +483,16 @@ export default async function QuoteDetailPage({
       ) : (
         <DashboardDetailLayout className="xl:grid-cols-[minmax(0,1.05fr)_0.95fr]">
           <DashboardSidebarStack>
-            {quote.reminders.includes("follow_up_due") ? (
+            {viewedWithoutResponse && !hasPendingFollowUp ? (
               <Alert>
-                <AlertTitle>Follow up due</AlertTitle>
+                <AlertTitle>Viewed, no response</AlertTitle>
                 <AlertDescription>
-                  This sent quote has been waiting at least 3 days without a customer response.
+                  This customer has opened the quote but has not accepted or rejected it yet. Set a follow-up reminder in the panel on the right.
                 </AlertDescription>
               </Alert>
             ) : null}
 
-            {quote.reminders.includes("expiring_soon") ? (
+            {visibleQuoteReminders.includes("expiring_soon") ? (
               <Alert>
                 <AlertTitle>Quote expiring soon</AlertTitle>
                 <AlertDescription>
@@ -500,9 +609,9 @@ export default async function QuoteDetailPage({
                 />
               </div>
 
-              {quote.reminders.length ? (
+              {visibleQuoteReminders.length ? (
                 <div className="flex flex-wrap gap-2">
-                  {quote.reminders.map((reminder) => (
+                  {visibleQuoteReminders.map((reminder) => (
                     <QuoteReminderBadge key={reminder} kind={reminder} />
                   ))}
                 </div>
@@ -529,6 +638,25 @@ export default async function QuoteDetailPage({
                 </div>
               ) : null}
             </DashboardSection>
+
+            <FollowUpPanel
+              businessSlug={businessSlug}
+              createAction={createFollowUpAction}
+              ctaDescription={
+                viewedWithoutResponse
+                  ? "Set a reminder to follow up now that the customer has viewed this quote."
+                  : "Set a reminder to check back after sharing this quote."
+              }
+              defaultChannel={quote.customerContactMethod}
+              defaultReason={
+                viewedWithoutResponse
+                  ? "Follow up because the customer viewed this quote but has not responded."
+                  : "Follow up with the customer about this quote if they have not responded."
+              }
+              defaultTitle={`Follow up on quote ${quote.quoteNumber}`}
+              followUps={followUps}
+              sharedQuoteWithoutFollowUp={quote.status === "sent" && !hasPendingFollowUp}
+            />
 
             {quote.status === "accepted" ? (
               <DashboardSection
@@ -564,6 +692,11 @@ export default async function QuoteDetailPage({
           </DashboardSidebarStack>
         </DashboardDetailLayout>
       )}
+      <QuoteAiPanel
+        businessSlug={businessSlug}
+        quoteId={quote.id}
+        userName={session.user.name || "You"}
+      />
     </DashboardPage>
   );
 }

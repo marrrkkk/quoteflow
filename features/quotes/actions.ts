@@ -33,6 +33,7 @@ import {
   archiveQuoteForBusiness,
   createQuoteForBusiness,
   deleteDraftQuoteForBusiness,
+  logQuoteSendEvent,
   markQuoteSentForBusiness,
   respondToPublicQuoteByToken,
   restoreArchivedQuoteForBusiness,
@@ -638,6 +639,41 @@ export async function sendQuoteAction(
         getResendSendFailureMessage(error) ??
         "We couldn't send that quote right now.",
     };
+  }
+}
+
+export async function logQuoteSendEventAction(
+  quoteId: string,
+  eventType: string,
+  channel?: string,
+): Promise<{ error?: string }> {
+  const ownerAccess = await getWorkspaceBusinessActionContext();
+
+  if (!ownerAccess.ok) {
+    return { error: ownerAccess.error };
+  }
+
+  const { user, businessContext } = ownerAccess;
+
+  try {
+    await logQuoteSendEvent({
+      businessId: businessContext.business.id,
+      quoteId,
+      inquiryId: null,
+      actorUserId: user.id,
+      eventType,
+      channel,
+    });
+
+    updateCacheTags(
+      getQuoteMutationCacheTags(businessContext.business.id, quoteId),
+    );
+
+    return {};
+  } catch (error) {
+    console.error("Failed to log quote send event.", error);
+
+    return { error: "We couldn't log that action right now." };
   }
 }
 

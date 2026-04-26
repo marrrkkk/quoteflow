@@ -6,6 +6,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  formatFollowUpDate,
+  getFollowUpDueBucket,
+} from "@/features/follow-ups/utils";
 import { QuotePostAcceptanceStatusBadge } from "@/features/quotes/components/quote-post-acceptance-status-badge";
 import { QuoteRecordStateBadge } from "@/features/quotes/components/quote-record-state-badge";
 import { QuoteReminderBadge } from "@/features/quotes/components/quote-reminder-badge";
@@ -28,78 +33,123 @@ export function QuoteListCards({
 }: QuoteListCardsProps) {
   return (
     <div className="data-list-mobile-grid">
-      {quotes.map((quote) => (
-        <Link
-          className="block"
-          href={getBusinessQuotePath(businessSlug, quote.id)}
-          key={quote.id}
-          prefetch={true}
-        >
-          <Card className="data-list-card transition-colors hover:bg-accent/20">
-            <CardHeader className="data-list-card-header">
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <div className="min-w-0 flex flex-1 flex-col gap-1">
-                  <CardTitle className="min-w-0 text-lg leading-tight">
-                    <span className="block truncate">{quote.quoteNumber}</span>
-                  </CardTitle>
-                  <CardDescription className="truncate text-sm">
-                    {quote.title}
-                  </CardDescription>
-                  {quote.reminders.length || quote.postAcceptanceStatus !== "none" ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {quote.reminders.map((reminder) => (
-                        <QuoteReminderBadge key={reminder} kind={reminder} />
-                      ))}
-                      {quote.postAcceptanceStatus !== "none" ? (
-                        <QuotePostAcceptanceStatusBadge
-                          status={quote.postAcceptanceStatus}
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
+      {quotes.map((quote) => {
+        const reminders = quote.reminders.filter(
+          (reminder) => reminder !== "follow_up_due",
+        );
+
+        return (
+          <Link
+            className="block"
+            href={getBusinessQuotePath(businessSlug, quote.id)}
+            key={quote.id}
+            prefetch={true}
+          >
+            <Card className="data-list-card transition-colors hover:bg-accent/20">
+              <CardHeader className="data-list-card-header">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex flex-1 flex-col gap-1">
+                    <CardTitle className="min-w-0 text-lg leading-tight">
+                      <span className="block truncate">{quote.quoteNumber}</span>
+                    </CardTitle>
+                    <CardDescription className="truncate text-sm">
+                      {quote.title}
+                    </CardDescription>
+                    {reminders.length ||
+                    quote.postAcceptanceStatus !== "none" ||
+                    quote.pendingFollowUpCount > 0 ||
+                    isViewedWithoutResponse(quote) ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {reminders.map((reminder) => (
+                          <QuoteReminderBadge key={reminder} kind={reminder} />
+                        ))}
+                        {quote.postAcceptanceStatus !== "none" ? (
+                          <QuotePostAcceptanceStatusBadge
+                            status={quote.postAcceptanceStatus}
+                          />
+                        ) : null}
+                        <QuoteFollowUpBadge quote={quote} />
+                        {isViewedWithoutResponse(quote) ? (
+                          <Badge variant="secondary">Viewed, no response</Badge>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0 space-y-2">
+                    <QuoteStatusBadge status={quote.status} />
+                    {quote.archivedAt ? (
+                      <QuoteRecordStateBadge state="archived" />
+                    ) : null}
+                  </div>
                 </div>
-                <div className="shrink-0 space-y-2">
-                  <QuoteStatusBadge status={quote.status} />
-                  {quote.archivedAt ? (
-                    <QuoteRecordStateBadge state="archived" />
-                  ) : null}
+              </CardHeader>
+              <CardContent className="grid gap-3 pt-0 sm:grid-cols-2">
+                <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
+                  <span className="meta-label">Customer</span>
+                  <div className="mt-2 min-w-0 flex flex-col gap-1">
+                    <p
+                      className="truncate text-sm font-medium text-foreground"
+                      title={quote.customerName}
+                    >
+                      {quote.customerName}
+                    </p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {quote.customerEmail}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="grid gap-3 pt-0 sm:grid-cols-2">
-              <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
-                <span className="meta-label">
-                  Customer
-                </span>
-                <div className="mt-2 min-w-0 flex flex-col gap-1">
-                  <p className="truncate text-sm font-medium text-foreground" title={quote.customerName}>
-                    {quote.customerName}
+                <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
+                  <span className="meta-label">Valid until</span>
+                  <p className="mt-2 truncate text-sm text-foreground">
+                    {formatQuoteDate(quote.validUntil)}
                   </p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {quote.customerEmail}
+                </div>
+                <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
+                  <span className="meta-label">Total</span>
+                  <p className="mt-2 truncate text-sm font-semibold text-foreground">
+                    {formatQuoteMoney(quote.totalInCents, quote.currency)}
                   </p>
                 </div>
-              </div>
-              <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
-                <span className="meta-label">
-                  Valid until
-                </span>
-                <p className="mt-2 truncate text-sm text-foreground">
-                  {formatQuoteDate(quote.validUntil)}
-                </p>
-              </div>
-              <div className="info-tile min-w-0 h-full px-3.5 py-3 shadow-none">
-                <span className="meta-label">
-                  Total
-                </span>
-                <p className="mt-2 truncate text-sm font-semibold text-foreground">
-                  {formatQuoteMoney(quote.totalInCents, quote.currency)}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              </CardContent>
+            </Card>
+          </Link>
+        );
+      })}
     </div>
   );
+}
+
+function isViewedWithoutResponse(quote: DashboardQuoteListItem) {
+  return Boolean(
+    quote.status === "sent" &&
+      quote.publicViewedAt &&
+      !quote.customerRespondedAt,
+  );
+}
+
+function QuoteFollowUpBadge({
+  quote,
+}: {
+  quote: DashboardQuoteListItem;
+}) {
+  if (quote.pendingFollowUpCount > 0 && quote.nextFollowUpDueAt) {
+    const dueBucket = getFollowUpDueBucket({
+      status: "pending",
+      dueAt: quote.nextFollowUpDueAt,
+    });
+    const label =
+      dueBucket === "overdue"
+        ? "Follow-up overdue"
+        : dueBucket === "today"
+          ? "Follow-up today"
+          : `Follow-up ${formatFollowUpDate(quote.nextFollowUpDueAt)}`;
+
+    return <Badge variant="secondary">{label}</Badge>;
+  }
+
+  if (quote.status === "sent" && !quote.customerRespondedAt) {
+    return <Badge variant="outline">No follow-up</Badge>;
+  }
+
+  return null;
 }

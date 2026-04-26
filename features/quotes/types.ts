@@ -18,6 +18,23 @@ export const quotePostAcceptanceStatuses = [
   "scheduled",
 ] as const;
 export const quoteDeliveryMethods = ["requo", "manual"] as const;
+export const quoteSendChannels = [
+  "email",
+  "sms",
+  "whatsapp",
+  "messenger",
+  "instagram",
+  "phone",
+  "other",
+] as const;
+export type QuoteSendChannel = (typeof quoteSendChannels)[number];
+export const quoteSendEventTypes = [
+  "copied_link",
+  "copied_message",
+  "opened_email_app",
+  "copied_followup",
+] as const;
+export type QuoteSendEventType = (typeof quoteSendEventTypes)[number];
 export type QuotePostAcceptanceStatus =
   (typeof quotePostAcceptanceStatuses)[number];
 export type QuoteDeliveryMethod = (typeof quoteDeliveryMethods)[number];
@@ -57,7 +74,10 @@ export type DashboardQuoteListItem = {
   archivedAt: Date | null;
   postAcceptanceStatus: QuotePostAcceptanceStatus;
   sentAt: Date | null;
+  publicViewedAt: Date | null;
   customerRespondedAt: Date | null;
+  pendingFollowUpCount: number;
+  nextFollowUpDueAt: Date | null;
   reminders: QuoteReminderKind[];
 };
 

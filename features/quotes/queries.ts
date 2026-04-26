@@ -21,6 +21,7 @@ import { cache } from "react";
 import { db } from "@/lib/db/client";
 import {
   activityLogs,
+  followUps,
   inquiries,
   quoteItems,
   quotes,
@@ -233,7 +234,22 @@ async function getCachedQuoteListPageForBusiness({
       archivedAt: quotes.archivedAt,
       postAcceptanceStatus: quotes.postAcceptanceStatus,
       sentAt: quotes.sentAt,
+      publicViewedAt: quotes.publicViewedAt,
       customerRespondedAt: quotes.customerRespondedAt,
+      pendingFollowUpCount: sql<number>`(
+        select count(*)::int
+        from ${followUps}
+        where ${followUps.businessId} = ${quotes.businessId}
+          and ${followUps.quoteId} = ${quotes.id}
+          and ${followUps.status} = 'pending'
+      )`,
+      nextFollowUpDueAt: sql<Date | null>`(
+        select min(${followUps.dueAt})
+        from ${followUps}
+        where ${followUps.businessId} = ${quotes.businessId}
+          and ${followUps.quoteId} = ${quotes.id}
+          and ${followUps.status} = 'pending'
+      )`,
     })
     .from(quotes)
     .where(and(...conditions))
@@ -250,7 +266,10 @@ async function getCachedQuoteListPageForBusiness({
       customerName: row.customerName,
       customerRespondedAt: row.customerRespondedAt,
       id: row.id,
+      nextFollowUpDueAt: row.nextFollowUpDueAt,
+      pendingFollowUpCount: row.pendingFollowUpCount,
       postAcceptanceStatus: row.postAcceptanceStatus,
+      publicViewedAt: row.publicViewedAt,
       quoteNumber: row.quoteNumber,
       reminders: getQuoteReminderKinds({
         status: row.status,

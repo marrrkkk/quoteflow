@@ -1044,6 +1044,53 @@ export async function markQuoteSentForBusiness({
   });
 }
 
+type LogQuoteSendEventInput = {
+  businessId: string;
+  quoteId: string;
+  inquiryId: string | null;
+  actorUserId: string;
+  eventType: string;
+  channel?: string;
+};
+
+const sendEventSummaries: Record<string, string> = {
+  copied_link: "Quote link copied",
+  copied_message: "Quote message copied",
+  opened_email_app: "Email compose opened",
+  copied_followup: "Follow-up message copied",
+};
+
+export async function logQuoteSendEvent({
+  businessId,
+  quoteId,
+  inquiryId,
+  actorUserId,
+  eventType,
+  channel,
+}: LogQuoteSendEventInput) {
+  const now = new Date();
+  const channelLabel = channel ? ` via ${channel}` : "";
+  const baseSummary =
+    sendEventSummaries[eventType] ?? "Quote send action recorded";
+  const summary = `${baseSummary}${channelLabel}.`;
+
+  await db.transaction(async (tx) => {
+    await insertQuoteActivity(tx, {
+      businessId,
+      inquiryId,
+      quoteId,
+      actorUserId,
+      type: `quote.send.${eventType}`,
+      summary,
+      metadata: {
+        eventType,
+        ...(channel ? { channel } : {}),
+      },
+      now,
+    });
+  });
+}
+
 export async function recordQuotePublicViewAt(quoteId: string) {
   const now = new Date();
 
