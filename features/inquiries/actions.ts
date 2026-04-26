@@ -41,6 +41,7 @@ import {
   inquiryFormSelectionSchema,
   inquiryNoteSchema,
   inquiryStatusChangeSchema,
+  validateManualQuickInquirySubmission,
   validatePublicInquirySubmission,
 } from "@/features/inquiries/schemas";
 import { getBusinessInquiryPath } from "@/features/businesses/routes";
@@ -240,7 +241,7 @@ export async function createManualInquiryAction(
   if (!formSelectionResult.success) {
     return getValidationActionState(
       formSelectionResult.error,
-      "Choose a request form.",
+      "Choose an inquiry form.",
     );
   }
 
@@ -251,9 +252,9 @@ export async function createManualInquiryAction(
 
   if (!selectedForm) {
     return {
-      error: "That request form is unavailable.",
+      error: "That inquiry form is unavailable.",
       fieldErrors: {
-        formSlug: ["Choose an active request form."],
+        formSlug: ["Choose an active inquiry form."],
       },
     };
   }
@@ -266,11 +267,11 @@ export async function createManualInquiryAction(
 
   if (!inquiryAllowance.allowed) {
     return {
-      error: `You've reached your plan's limit of ${inquiryAllowance.limit} requests this month. Upgrade your plan for unlimited usage.`,
+      error: `You've reached your plan's limit of ${inquiryAllowance.limit} inquiries this month. Upgrade your plan for unlimited usage.`,
     };
   }
 
-  const validationResult = validatePublicInquirySubmission(
+  const validationResult = validateManualQuickInquirySubmission(
     selectedForm.inquiryFormConfig,
     formData,
   );
@@ -318,7 +319,7 @@ export async function createManualInquiryAction(
     console.error("Failed to create manual inquiry.", error);
 
     return {
-      error: "We couldn't create that request right now.",
+      error: "We couldn't create that inquiry right now.",
     };
   }
 
@@ -327,7 +328,7 @@ export async function createManualInquiryAction(
   }
 
   return {
-    error: "We couldn't create that request right now.",
+    error: "We couldn't create that inquiry right now.",
   };
 }
 
@@ -423,8 +424,8 @@ export async function changeInquiryStatusAction(
       return {
         error:
           result.lockedReason === "trash"
-            ? "Restore this request from trash before updating its workflow status."
-            : "Unarchive this request before updating its workflow status.",
+            ? "Restore this inquiry from trash before updating its workflow status."
+            : "Unarchive this inquiry before updating its workflow status.",
       };
     }
 
@@ -488,7 +489,7 @@ async function runInquiryRecordAction(
 
     if (!result) {
       return {
-        error: messages.missing ?? "That request could not be found.",
+        error: messages.missing ?? "That inquiry could not be found.",
       };
     }
 
@@ -498,8 +499,8 @@ async function runInquiryRecordAction(
       return {
         error:
           result.lockedReason === "trash"
-            ? messages.trashLocked ?? "Restore this request from trash first."
-            : messages.archivedLocked ?? "Unarchive this request first.",
+            ? messages.trashLocked ?? "Restore this inquiry from trash first."
+            : messages.archivedLocked ?? "Unarchive this inquiry first.",
       };
     }
 
@@ -510,7 +511,7 @@ async function runInquiryRecordAction(
     console.error(messages.fallbackError, error);
 
     return {
-      error: "We couldn't update that request right now.",
+      error: "We couldn't update that inquiry right now.",
     };
   }
 }
@@ -524,9 +525,9 @@ export async function archiveInquiryAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, archiveInquiryForBusiness, {
-    success: "Request archived.",
-    unchanged: "Request is already archived.",
-    trashLocked: "Restore this request from trash before archiving it.",
+    success: "Inquiry archived.",
+    unchanged: "Inquiry is already archived.",
+    trashLocked: "Restore this inquiry from trash before archiving it.",
     fallbackError: "Failed to archive inquiry.",
   });
 }
@@ -540,9 +541,9 @@ export async function unarchiveInquiryAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, unarchiveInquiryForBusiness, {
-    success: "Request restored to active.",
-    unchanged: "Request is already active.",
-    trashLocked: "Restore this request from trash instead.",
+    success: "Inquiry restored to active.",
+    unchanged: "Inquiry is already active.",
+    trashLocked: "Restore this inquiry from trash instead.",
     fallbackError: "Failed to unarchive inquiry.",
   });
 }
@@ -556,8 +557,8 @@ export async function trashInquiryAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, trashInquiryForBusiness, {
-    success: "Request moved to trash.",
-    unchanged: "Request is already in trash.",
+    success: "Inquiry moved to trash.",
+    unchanged: "Inquiry is already in trash.",
     fallbackError: "Failed to move inquiry to trash.",
   });
 }
@@ -571,8 +572,8 @@ export async function restoreInquiryFromTrashAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, restoreInquiryFromTrashForBusiness, {
-    success: "Request restored from trash.",
-    unchanged: "Request is already active.",
+    success: "Inquiry restored from trash.",
+    unchanged: "Inquiry is already active.",
     fallbackError: "Failed to restore inquiry from trash.",
   });
 }

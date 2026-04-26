@@ -52,9 +52,9 @@ export default async function NewInquiryPage({
   return (
     <DashboardPage>
       <PageHeader
-        eyebrow="New request"
-        title="Create a request"
-        description="Log a request manually, choose the matching inquiry form, and review the preview before saving."
+        eyebrow="New inquiry"
+        title="Quick-add inquiry"
+        description="Capture the essentials from a call, chat, walk-in, or forwarded message. You can add deeper form details later."
       />
 
       {initialFormSlug ? (
@@ -73,9 +73,9 @@ export default async function NewInquiryPage({
               </Link>
             </Button>
           }
-          description="Create or restore an active inquiry form first, then come back here to log requests manually."
+          description="Create or restore an active inquiry form first, then come back here to add inquiries manually."
           icon={FormInput}
-          title="No active request forms"
+          title="No active inquiry forms"
           variant="page"
         />
       )}

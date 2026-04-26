@@ -33,7 +33,10 @@ import {
   type InquiryFormFieldDefinition,
   type InquiryFormSystemFieldDefinition,
 } from "@/features/inquiries/form-config";
-import { publicInquiryAttachmentAccept } from "@/features/inquiries/schemas";
+import {
+  createManualQuickInquiryFormConfig,
+  publicInquiryAttachmentAccept,
+} from "@/features/inquiries/schemas";
 import type {
   InquiryEditorForm,
   ManualInquiryActionState,
@@ -100,6 +103,10 @@ export function ManualInquiryEditor({
     () => forms.find((form) => form.slug === selectedFormSlug) ?? forms[0],
     [forms, selectedFormSlug],
   );
+  const quickInquiryFormConfig = useMemo(
+    () => createManualQuickInquiryFormConfig(selectedForm.inquiryFormConfig),
+    [selectedForm],
+  );
   const formOptions = useMemo(
     () =>
       forms.map((form) => ({
@@ -111,24 +118,24 @@ export function ManualInquiryEditor({
   );
   const projectFields = useMemo(
     () =>
-      selectedForm.inquiryFormConfig.projectFields.filter(
+      quickInquiryFormConfig.projectFields.filter(
         (field) =>
           field.kind === "custom" ||
           (field.kind === "system" &&
             field.enabled &&
             field.key !== "attachment"),
       ),
-    [selectedForm],
+    [quickInquiryFormConfig],
   );
   const attachmentField = useMemo(
     () =>
-      selectedForm.inquiryFormConfig.projectFields.find(
+      quickInquiryFormConfig.projectFields.find(
         (field): field is InquiryFormSystemFieldDefinition =>
           field.kind === "system" &&
           field.key === "attachment" &&
           field.enabled,
       ) ?? null,
-    [selectedForm],
+    [quickInquiryFormConfig],
   );
   function getFieldMessage(fieldName: string) {
     return state.fieldErrors?.[fieldName]?.[0];
@@ -164,15 +171,15 @@ export function ManualInquiryEditor({
           action={
             <>
               <DashboardMetaPill>{selectedForm.slug}</DashboardMetaPill>
-              <DashboardMetaPill>New request</DashboardMetaPill>
+              <DashboardMetaPill>New inquiry</DashboardMetaPill>
             </>
           }
           contentClassName="flex flex-col gap-5"
-          description="Choose the inquiry form that should shape the request fields."
-          title="Request setup"
+          description="Choose the inquiry form this quick-add should belong to. Only the essentials are required here."
+          title="Quick-add setup"
         >
           <Field data-invalid={Boolean(getFieldMessage("formSlug")) || undefined}>
-            <FieldLabel htmlFor="manual-inquiry-form">Request form</FieldLabel>
+            <FieldLabel htmlFor="manual-inquiry-form">Inquiry form</FieldLabel>
             <FieldContent>
               <Combobox
                 aria-invalid={Boolean(getFieldMessage("formSlug"))}
@@ -180,13 +187,13 @@ export function ManualInquiryEditor({
                 id="manual-inquiry-form"
                 onValueChange={(value) => handleFormChange(value)}
                 options={formOptions}
-                placeholder="Choose a request form"
+                placeholder="Choose an inquiry form"
                 searchable
                 searchPlaceholder="Search forms"
                 value={selectedForm.slug}
               />
               <FieldDescription>
-                Switch forms to reuse the right intake fields for this request.
+                Switch forms if this inquiry belongs to a different intake flow.
               </FieldDescription>
               <FieldError
                 errors={
@@ -313,8 +320,8 @@ export function ManualInquiryEditor({
 
         <DashboardSection
           contentClassName="flex flex-col gap-5"
-          description="Fill out the request using the selected inquiry form."
-          title={selectedForm.inquiryFormConfig.groupLabels.project}
+          description="Add enough context to decide the next step or start a quote. Detailed form customization stays in Forms."
+          title="Inquiry basics"
         >
           <FieldGroup>
             <div className="grid gap-5 sm:grid-cols-2">
@@ -353,7 +360,7 @@ export function ManualInquiryEditor({
         {attachmentField ? (
           <DashboardSection
             contentClassName="flex flex-col gap-5"
-            description="Optional files or references that belong with this request."
+            description="Optional files or references that belong with this inquiry."
             title={attachmentField.label}
           >
             <Field data-invalid={Boolean(getFieldMessage("attachment")) || undefined}>
@@ -398,22 +405,22 @@ export function ManualInquiryEditor({
               {isPending ? (
                 <>
                   <Spinner data-icon="inline-start" aria-hidden="true" />
-                  Creating request...
+                  Creating inquiry...
                 </>
               ) : (
-                "Create request"
+                "Create inquiry"
               )}
             </Button>
           }
           footerClassName="w-full sm:justify-between"
-          title="Save request"
+          title="Save inquiry"
         >
           <div className="soft-panel flex flex-col gap-3 px-4 py-4 shadow-none">
             <p className="text-sm font-medium text-foreground">
-              This request will be saved as a new request in {businessName}.
+              This will be saved as a new inquiry in {businessName}.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
-              Use this when a request arrives through phone, chat, walk-ins, or
+              Use this when an inquiry arrives through phone, chat, walk-ins, or
               any channel outside your public inquiry page.
             </p>
           </div>
@@ -863,9 +870,9 @@ function ManualInquiryPreview({
         <div className="flex flex-col gap-4 border-b border-border/80 pb-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-2">
-              <p className="meta-label">Request preview</p>
+              <p className="meta-label">Inquiry preview</p>
               <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-                {serviceCategory !== "Not provided" ? serviceCategory : "New request"}
+                {serviceCategory !== "Not provided" ? serviceCategory : "New inquiry"}
               </h2>
               <p className="text-sm leading-6 text-muted-foreground">
                 Saved with the {selectedForm.name} form.
@@ -873,7 +880,7 @@ function ManualInquiryPreview({
             </div>
             <div className="soft-panel flex min-w-[12rem] flex-col gap-2 px-4 py-4 shadow-none">
               <p className="meta-label">Workflow</p>
-              <p className="text-sm font-medium text-foreground">New request</p>
+              <p className="text-sm font-medium text-foreground">New inquiry</p>
               <p className="text-sm leading-6 text-muted-foreground">
                 Created manually from the dashboard.
               </p>
@@ -910,12 +917,12 @@ function ManualInquiryPreview({
 
         <div className="soft-panel px-4 py-4 shadow-none">
           <p className="meta-label">
-            {detailsField?.label ?? "Request details"}
+            {detailsField?.label ?? "Inquiry details"}
           </p>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
             {details !== "Not provided"
               ? details
-              : "Add the main scope, context, and anything needed before pricing or follow-up."}
+              : "Add the main scope, context, and anything needed before quoting or following up."}
           </p>
         </div>
 

@@ -44,7 +44,7 @@ export function InquiryRecordActions({
         <ServerActionButton
           action={restoreAction}
           icon={RotateCcw}
-          label="Restore request"
+          label="Restore inquiry"
           pendingLabel="Restoring..."
         />
       </div>
@@ -64,7 +64,7 @@ export function InquiryRecordActions({
         <ServerActionButton
           action={archiveAction}
           icon={Archive}
-          label="Archive request"
+          label="Archive inquiry"
           pendingLabel="Archiving..."
         />
       )}
@@ -72,7 +72,7 @@ export function InquiryRecordActions({
         action={trashAction}
         confirmLabel="Move to trash"
         confirmPendingLabel="Moving..."
-        description="This hides the request from active work queues, but you can restore it later from trash."
+        description="This hides the inquiry from active work queues, but you can restore it later from trash."
         icon={Trash2}
         title="Move to trash?"
         triggerLabel="Move to trash"

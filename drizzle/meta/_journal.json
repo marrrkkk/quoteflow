@@ -309,6 +309,34 @@
       "when": 1776993200000,
       "tag": "0045_realtime_payment_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1776993300000,
+      "tag": "0046_inquiry_ai_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1776993400000,
+      "tag": "0047_ai_conversations",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1776993500000,
+      "tag": "0048_follow_ups",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1776993600000,
+      "tag": "0049_drop_ai_pending_actions",
+      "breakpoints": true
     }
   ]
 }

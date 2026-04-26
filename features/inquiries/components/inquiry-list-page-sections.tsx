@@ -91,7 +91,7 @@ export async function InquiryListControlsSection({
           <Button asChild>
             <Link href={getBusinessNewInquiryPath(businessSlug)} prefetch={true}>
               <Plus data-icon="inline-start" />
-              Create request
+              Quick-add inquiry
             </Link>
           </Button>
         </div>
@@ -150,14 +150,14 @@ export async function InquiryListContentSection({
         ) : filters.view !== "active" ? (
           <Button asChild variant="outline">
             <Link href={getBusinessInquiriesPath(businessSlug)} prefetch={true}>
-              View active requests
+              View active inquiries
             </Link>
           </Button>
         ) : (
           <Button asChild>
             <Link href={getBusinessNewInquiryPath(businessSlug)} prefetch={true}>
               <Plus data-icon="inline-start" />
-              Create first request
+              Quick-add first inquiry
             </Link>
           </Button>
         )
@@ -166,17 +166,17 @@ export async function InquiryListContentSection({
         hasNonViewFilters
           ? "Try another search or status."
           : filters.view === "archived"
-            ? "Archived requests stay here until you restore them."
+            ? "Archived inquiries stay here until you restore them."
             : filters.view === "trash"
-              ? "Requests moved to trash stay here until you restore them."
-              : "Create a request manually or wait for new inquiries to arrive."
+              ? "Inquiries moved to trash stay here until you restore them."
+              : "Quick-add an inquiry manually or wait for new inquiries to arrive."
       }
       icon={Inbox}
       title={
         hasNonViewFilters
-          ? "No requests match these filters."
+          ? "No inquiries match these filters."
           : filters.view === "archived"
-            ? "No archived requests"
+            ? "No archived inquiries"
             : filters.view === "trash"
               ? "Trash is empty"
               : "Your inquiry inbox is still empty."

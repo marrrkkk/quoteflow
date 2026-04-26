@@ -27,6 +27,18 @@ export const inquiryStatusEnum = pgEnum("inquiry_status", [
   "overdue",
 ]);
 
+export const inquiryMessageRoleEnum = pgEnum("inquiry_message_role", [
+  "user",
+  "assistant",
+  "system",
+]);
+
+export const inquiryMessageStatusEnum = pgEnum("inquiry_message_status", [
+  "completed",
+  "generating",
+  "failed",
+]);
+
 export const inquiries = pgTable(
   "inquiries",
   {
@@ -98,6 +110,45 @@ export const inquiries = pgTable(
     index("inquiries_business_service_category_idx").on(
       table.businessId,
       table.serviceCategory,
+    ),
+  ],
+);
+
+export const inquiryMessages = pgTable(
+  "inquiry_messages",
+  {
+    id: text("id").primaryKey(),
+    inquiryId: text("inquiry_id")
+      .notNull()
+      .references(() => inquiries.id, { onDelete: "cascade" }),
+    role: inquiryMessageRoleEnum("role").notNull(),
+    content: text("content").notNull(),
+    provider: text("provider"),
+    model: text("model"),
+    status: inquiryMessageStatusEnum("status")
+      .notNull()
+      .default("completed"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default(
+      sql`'{}'::jsonb`,
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("inquiry_messages_inquiry_id_idx").on(table.inquiryId),
+    index("inquiry_messages_created_at_idx").on(table.createdAt),
+    index("inquiry_messages_inquiry_created_at_idx").on(
+      table.inquiryId,
+      table.createdAt,
+    ),
+    index("inquiry_messages_inquiry_created_at_id_idx").on(
+      table.inquiryId,
+      table.createdAt,
+      table.id,
     ),
   ],
 );

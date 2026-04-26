@@ -33,7 +33,7 @@ function drawField(report: PdfReport, label: string, value: string) {
 }
 
 export async function createInquiryPdf(data: InquiryDocumentData) {
-  const report = await PdfReport.create(`${data.referenceId} request`);
+  const report = await PdfReport.create(`${data.referenceId} inquiry`);
   const fields = data.additionalFields.slice(0, MAX_PDF_FIELDS);
   const hiddenFieldsCount = Math.max(0, data.additionalFields.length - fields.length);
   const attachments = data.attachments.slice(0, MAX_PDF_ATTACHMENTS);
@@ -57,7 +57,7 @@ export async function createInquiryPdf(data: InquiryDocumentData) {
     size: 16,
     gapAfter: 2,
   });
-  report.drawWrappedText(`Request ${data.referenceId}`, {
+  report.drawWrappedText(`Inquiry ${data.referenceId}`, {
     color: report.colors.muted,
     size: 10,
     gapAfter: 1,

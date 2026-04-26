@@ -144,7 +144,7 @@ export async function GET(
     headers: {
       "cache-control": "private, no-store",
       "content-disposition": buildContentDisposition(
-        `requests-${formatDateForExportFileName()}.csv`,
+        `inquiries-${formatDateForExportFileName()}.csv`,
       ),
       "content-type": "text/csv; charset=utf-8",
       "x-content-type-options": "nosniff",

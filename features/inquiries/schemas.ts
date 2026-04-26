@@ -7,6 +7,7 @@ import {
   type InquiryFormConfig,
   type InquiryFormCustomFieldDefinition,
   type InquiryFormFieldDefinition,
+  type InquiryFormSystemFieldDefinition,
   type InquirySubmittedFieldSnapshot,
   type InquirySubmittedFieldSnapshotField,
 } from "@/features/inquiries/form-config";
@@ -607,6 +608,56 @@ export function validatePublicInquirySubmission(
   };
 }
 
+const manualQuickInquiryFieldKeys = new Set([
+  "serviceCategory",
+  "requestedDeadline",
+  "budgetText",
+  "details",
+]);
+
+export function createManualQuickInquiryFormConfig(
+  config: InquiryFormConfig,
+): InquiryFormConfig {
+  const projectFields = config.projectFields
+    .filter(
+      (field): field is InquiryFormSystemFieldDefinition =>
+        field.kind === "system" && manualQuickInquiryFieldKeys.has(field.key),
+    )
+    .map((field) => ({
+      ...field,
+      enabled: true,
+      required: field.key === "serviceCategory" || field.key === "details",
+    }));
+
+  return {
+    ...config,
+    contactFields: {
+      ...config.contactFields,
+      customerName: {
+        ...config.contactFields.customerName,
+        enabled: true,
+        required: true,
+      },
+      preferredContact: {
+        ...config.contactFields.preferredContact,
+        enabled: true,
+        required: true,
+      },
+    },
+    projectFields,
+  };
+}
+
+export function validateManualQuickInquirySubmission(
+  config: InquiryFormConfig,
+  formData: FormData,
+) {
+  return validatePublicInquirySubmission(
+    createManualQuickInquiryFormConfig(config),
+    formData,
+  );
+}
+
 export const inquiryIdSchema = z.string().trim().min(1).max(128);
 
 export const inquiryRouteParamsSchema = z.object({
@@ -656,7 +707,7 @@ export const inquiryFormSelectionSchema = z.object({
   formSlug: z
     .string()
     .trim()
-    .min(1, "Choose a request form.")
+    .min(1, "Choose an inquiry form.")
     .max(120),
 });
 

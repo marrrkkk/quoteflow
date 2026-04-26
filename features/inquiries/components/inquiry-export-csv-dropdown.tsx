@@ -88,7 +88,7 @@ export function InquiryExportCsvDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[22rem] min-w-[22rem] p-0">
         <div className="space-y-0.5 border-b border-border/70 px-3 py-2.5">
-          <h2 className="text-sm font-medium">Export requests CSV</h2>
+          <h2 className="text-sm font-medium">Export inquiries CSV</h2>
           <p className="text-xs text-muted-foreground">
             Choose filters and date range for this export.
           </p>

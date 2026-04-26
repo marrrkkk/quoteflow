@@ -51,6 +51,7 @@ import {
 import { db } from "@/lib/db/client";
 import {
   activityLogs,
+  followUps,
   inquiries,
   inquiryAttachments,
   inquiryNotes,
@@ -528,6 +529,20 @@ export async function getInquiryListPageForBusiness({
       subject: inquiries.subject,
       archivedAt: inquiries.archivedAt,
       deletedAt: inquiries.deletedAt,
+      pendingFollowUpCount: sql<number>`(
+        select count(*)::int
+        from ${followUps}
+        where ${followUps.businessId} = ${inquiries.businessId}
+          and ${followUps.inquiryId} = ${inquiries.id}
+          and ${followUps.status} = 'pending'
+      )`,
+      nextFollowUpDueAt: sql<Date | null>`(
+        select min(${followUps.dueAt})
+        from ${followUps}
+        where ${followUps.businessId} = ${inquiries.businessId}
+          and ${followUps.inquiryId} = ${inquiries.id}
+          and ${followUps.status} = 'pending'
+      )`,
       submittedAt: inquiries.submittedAt,
       createdAt: inquiries.createdAt,
     })

@@ -59,6 +59,8 @@ export type DashboardInquiryListItem = {
   subject: string | null;
   archivedAt: Date | null;
   deletedAt: Date | null;
+  pendingFollowUpCount: number;
+  nextFollowUpDueAt: Date | null;
   submittedAt: Date;
   createdAt: Date;
 };

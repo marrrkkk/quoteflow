@@ -40,6 +40,9 @@ import { prefillFromInquiry } from "@/features/calendar/prefill";
 import { getCalendarConnectionForUser, getCalendarEventsForInquiry } from "@/features/calendar/queries";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
+import { createInquiryFollowUpAction } from "@/features/follow-ups/actions";
+import { FollowUpPanel } from "@/features/follow-ups/components/follow-up-panel";
+import { getFollowUpsForInquiry } from "@/features/follow-ups/queries";
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import {
   addInquiryNoteAction,
@@ -142,10 +145,11 @@ export default async function InquiryDetailPage({
   const unarchiveAction = unarchiveInquiryAction.bind(null, inquiry.id);
   const trashAction = trashInquiryAction.bind(null, inquiry.id);
   const restoreAction = restoreInquiryFromTrashAction.bind(null, inquiry.id);
+  const createFollowUpAction = createInquiryFollowUpAction.bind(null, inquiry.id);
   const additionalFields = getAdditionalInquirySubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
-  const [customerHistory, calendarConnection, calendarEvents] = await Promise.all([
+  const [customerHistory, calendarConnection, calendarEvents, followUps] = await Promise.all([
     getCustomerHistoryForBusiness({
       businessId: businessContext.business.id,
       customerEmail: inquiry.customerEmail,
@@ -159,6 +163,10 @@ export default async function InquiryDetailPage({
     isGoogleCalendarConfigured
       ? getCalendarEventsForInquiry(businessContext.business.id, inquiry.id)
       : Promise.resolve([]),
+    getFollowUpsForInquiry({
+      businessId: businessContext.business.id,
+      inquiryId: inquiry.id,
+    }),
   ]);
 
   const calendarPrefill = isGoogleCalendarConfigured
@@ -515,6 +523,16 @@ export default async function InquiryDetailPage({
               />
           </DashboardSection>
 
+          <FollowUpPanel
+            businessSlug={businessSlug}
+            createAction={createFollowUpAction}
+            ctaDescription="Set a reminder for the next customer touchpoint on this inquiry."
+            defaultChannel={inquiry.customerContactMethod}
+            defaultReason="Follow up with the customer to keep this inquiry moving."
+            defaultTitle={`Follow up with ${inquiry.customerName}`}
+            followUps={followUps}
+          />
+
           <DashboardSection
             contentClassName="flex flex-col gap-4"
             description="Open the linked quote or create one."
@@ -595,7 +613,7 @@ export default async function InquiryDetailPage({
           ) : null}
 
           <DashboardSection
-            description="Move the request through your workflow."
+            description="Move the inquiry through your workflow."
             title="Workflow"
           >
             {inquiry.recordState === "active" ? (
@@ -608,11 +626,11 @@ export default async function InquiryDetailPage({
               <Alert>
                 <AlertTitle>
                   {inquiry.recordState === "archived"
-                    ? "Restore this request to active first."
-                    : "Restore this request from trash first."}
+                    ? "Restore this inquiry to active first."
+                    : "Restore this inquiry from trash first."}
                 </AlertTitle>
                 <AlertDescription>
-                  Workflow status is locked while the request is{" "}
+                  Workflow status is locked while the inquiry is{" "}
                   {inquiry.recordState === "archived" ? "archived" : "in trash"}.
                 </AlertDescription>
               </Alert>
@@ -621,7 +639,7 @@ export default async function InquiryDetailPage({
 
           <DashboardSection
             description="Archive for safekeeping or move obvious junk to trash."
-            title="Manage request"
+            title="Manage inquiry"
           >
             <InquiryRecordActions
               archiveAction={archiveAction}
@@ -633,7 +651,11 @@ export default async function InquiryDetailPage({
           </DashboardSection>
         </DashboardSidebarStack>
       </DashboardDetailLayout>
-      <InquiryAiPanel inquiryId={inquiry.id} userName={session.user.name || "You"} />
+      <InquiryAiPanel
+        businessSlug={businessSlug}
+        inquiryId={inquiry.id}
+        userName={session.user.name || "You"}
+      />
     </DashboardPage>
   );
 }
@@ -645,7 +667,7 @@ function getInquiryHeaderDescription(inquiry: {
 }) {
   const eventLabel =
     inquiry.source === inquirySources.manualDashboard
-      ? "request created"
+      ? "inquiry created"
       : "inquiry received";
 
   return `${inquiry.serviceCategory} ${eventLabel} ${formatInquiryDate(

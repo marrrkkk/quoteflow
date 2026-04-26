@@ -151,7 +151,7 @@ export default async function InquiriesPage({
   return (
     <DashboardPage>
       <PageHeader
-        eyebrow="Requests"
+        eyebrow="Inquiries"
         title="Customer inquiries"
       />
 

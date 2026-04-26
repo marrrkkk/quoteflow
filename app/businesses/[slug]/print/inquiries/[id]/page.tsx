@@ -42,9 +42,9 @@ export default async function InquiryPrintPage({
   return (
     <PrintPageShell
       backHref={getBusinessInquiryPath(resolvedParams.slug, inquiry.id)}
-      backLabel="Back to request"
-      description="Submitted request content only. Internal notes, activity, AI, and status controls are intentionally omitted."
-      title={`Request ${inquiry.id}`}
+      backLabel="Back to inquiry"
+      description="Submitted inquiry content only. Internal notes, activity, AI, and status controls are intentionally omitted."
+      title={`Inquiry ${inquiry.id}`}
     >
       <InquiryPrintDocument
         businessCurrency={requestContext.businessContext.business.defaultCurrency}
