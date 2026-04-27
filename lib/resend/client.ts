@@ -2,6 +2,7 @@ import { Resend } from "resend";
 
 import type { QuoteEmailTemplateConfig } from "@/features/settings/email-templates";
 import { renderBusinessMemberInviteEmail } from "@/emails/templates/business-member-invite";
+import { renderWorkspaceMemberInviteEmail } from "@/emails/templates/workspace-member-invite";
 import { renderEmailVerificationEmail } from "@/emails/templates/email-verification";
 import { renderPasswordResetEmail } from "@/emails/templates/password-reset";
 import { renderPublicInquiryNotificationEmail } from "@/emails/templates/public-inquiry-notification";
@@ -10,6 +11,7 @@ import { renderQuoteResponseOwnerNotificationEmail } from "@/emails/templates/qu
 import { renderQuoteSentOwnerNotificationEmail } from "@/emails/templates/quote-sent-owner-notification";
 import { env, isResendConfigured } from "@/lib/env";
 import type { BusinessMemberAssignableRole } from "@/lib/business-members";
+import type { WorkspaceMemberAssignableRole } from "@/features/workspace-members/types";
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 const consumerMailboxProviderDomains = new Set([
@@ -64,9 +66,9 @@ type SendPublicInquiryNotificationEmailInput = {
   dashboardUrl: string;
   inquiryFormName: string;
   customerName: string;
-  customerEmail: string;
-  customerPhone?: string;
-  companyName?: string;
+  customerEmail?: string;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   deadline?: string;
   budget?: string;
@@ -83,7 +85,9 @@ type SendQuoteEmailInput = {
   updatedAt: Date;
   businessName: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod?: string;
+  customerContactHandle?: string;
   quoteNumber: string;
   title: string;
   publicQuoteUrl: string;
@@ -110,7 +114,9 @@ type SendQuoteSentOwnerNotificationEmailInput = {
   recipients: string[];
   businessName: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod?: string;
+  customerContactHandle?: string;
   quoteNumber: string;
   title: string;
   dashboardUrl: string;
@@ -123,7 +129,9 @@ type SendQuoteResponseOwnerNotificationEmailInput = {
   recipients: string[];
   businessName: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod?: string;
+  customerContactHandle?: string;
   customerMessage?: string | null;
   quoteNumber: string;
   title: string;
@@ -310,6 +318,69 @@ export async function sendBusinessMemberInviteEmail({
   return true;
 }
 
+type SendWorkspaceMemberInviteEmailInput = {
+  inviteId: string;
+  token: string;
+  email: string;
+  workspaceName: string;
+  inviterName: string;
+  workspaceRole: WorkspaceMemberAssignableRole;
+  inviteUrl: string;
+};
+
+export async function sendWorkspaceMemberInviteEmail({
+  inviteId,
+  token,
+  email,
+  workspaceName,
+  inviterName,
+  workspaceRole,
+  inviteUrl,
+}: SendWorkspaceMemberInviteEmailInput) {
+  if (!resend || !isResendConfigured || !env.RESEND_FROM_EMAIL) {
+    console.warn(
+      "Resend is not configured yet. Workspace member invite delivery was skipped.",
+    );
+    return false;
+  }
+
+  const senderConfigurationError = getResendFromEmailConfigurationError();
+
+  if (senderConfigurationError) {
+    console.warn(
+      `Resend sender is misconfigured. Workspace member invite delivery was skipped. ${senderConfigurationError}`,
+    );
+    return false;
+  }
+
+  const template = renderWorkspaceMemberInviteEmail({
+    workspaceName,
+    inviterName,
+    workspaceRole,
+    inviteUrl,
+  });
+
+  const { error } = await resend.emails.send(
+    {
+      from: env.RESEND_FROM_EMAIL,
+      to: [email],
+      replyTo: env.RESEND_REPLY_TO_EMAIL ? [env.RESEND_REPLY_TO_EMAIL] : undefined,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    },
+    {
+      idempotencyKey: `workspace-member-invite/${inviteId}/${token}`,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
+}
+
 export async function sendPublicInquiryNotificationEmail({
   inquiryId,
   recipients,
@@ -318,8 +389,8 @@ export async function sendPublicInquiryNotificationEmail({
   inquiryFormName,
   customerName,
   customerEmail,
-  customerPhone,
-  companyName,
+  customerContactMethod,
+  customerContactHandle,
   serviceCategory,
   deadline,
   budget,
@@ -353,8 +424,8 @@ export async function sendPublicInquiryNotificationEmail({
     inquiryFormName,
     customerName,
     customerEmail,
-    customerPhone,
-    companyName,
+    customerContactMethod,
+    customerContactHandle,
     serviceCategory,
     deadline,
     budget,
@@ -402,6 +473,10 @@ export async function sendQuoteEmail({
   templateOverrides,
   replyToEmail,
 }: SendQuoteEmailInput) {
+  if (!customerEmail) {
+    return;
+  }
+
   if (!resend || !isResendConfigured || !env.RESEND_FROM_EMAIL) {
     throw new Error("Quote delivery email is not configured yet.");
   }
@@ -487,7 +562,7 @@ export async function sendQuoteSentOwnerNotificationEmail({
   const template = renderQuoteSentOwnerNotificationEmail({
     businessName,
     customerName,
-    customerEmail,
+    customerEmail: customerEmail ?? "Not provided",
     quoteNumber,
     title,
     dashboardUrl,
@@ -549,7 +624,7 @@ export async function sendQuoteResponseOwnerNotificationEmail({
   const template = renderQuoteResponseOwnerNotificationEmail({
     businessName,
     customerName,
-    customerEmail,
+    customerEmail: customerEmail ?? "Not provided",
     customerMessage,
     quoteNumber,
     title,

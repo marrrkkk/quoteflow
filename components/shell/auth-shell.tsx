@@ -74,7 +74,7 @@ export function AuthShell({
                 Capture inquiries, qualify leads, and send quotes from one place.
               </h1>
               <p className="max-w-xl text-base leading-8 text-muted-foreground">
-                Requo keeps inbound requests, pricing, and follow-up organized
+                Requo keeps inbound inquiries, pricing, and follow-up organized
                 for owner-led service businesses and lean teams.
               </p>
             </div>

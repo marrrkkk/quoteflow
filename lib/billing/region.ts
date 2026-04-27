@@ -31,6 +31,11 @@ export function getBillingRegion(headers: Headers): BillingRegion {
     return cfCountry.toUpperCase() === "PH" ? "PH" : "INTL";
   }
 
+  // Force PH region in development so local testing works with PHP/PayMongo
+  if (process.env.NODE_ENV === "development") {
+    return "PH";
+  }
+
   return "INTL";
 }
 

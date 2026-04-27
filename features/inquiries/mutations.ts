@@ -24,13 +24,26 @@ import type {
   InquiryStatus,
   InquiryWorkflowStatus,
 } from "@/features/inquiries/types";
+import { inquirySources } from "@/features/inquiries/types";
 import { getInquiryStatusLabel } from "@/features/inquiries/utils";
 import type { PublicInquiryBusiness } from "@/features/inquiries/types";
 import { and, eq } from "drizzle-orm";
 
-type CreatePublicInquirySubmissionInput = {
-  business: PublicInquiryBusiness;
+type InquirySubmissionBusinessRef = Pick<
+  PublicInquiryBusiness,
+  "id" | "name" | "slug" | "form"
+>;
+
+type CreateInquirySubmissionInput = {
+  business: InquirySubmissionBusinessRef;
   submission: PublicInquirySubmissionInput;
+  actorUserId: string | null;
+  source: string;
+  activity: {
+    type: string;
+    summary: string;
+  };
+  notifyInAppOnNewInquiry: boolean;
 };
 
 type CreatePublicInquirySubmissionResult = {
@@ -54,10 +67,14 @@ function normalizeLegacyArchivedInquiryStatus(status: InquiryStatus) {
   return status === "archived" ? "waiting" : status;
 }
 
-export async function createPublicInquirySubmission({
+async function createInquirySubmission({
   business,
   submission,
-}: CreatePublicInquirySubmissionInput): Promise<CreatePublicInquirySubmissionResult> {
+  actorUserId,
+  source,
+  activity,
+  notifyInAppOnNewInquiry,
+}: CreateInquirySubmissionInput): Promise<CreatePublicInquirySubmissionResult> {
   const inquiryId = createId("inq");
   const activityId = createId("act");
   const now = new Date();
@@ -107,15 +124,15 @@ export async function createPublicInquirySubmission({
         status: "new",
         subject: submission.serviceCategory,
         customerName: submission.customerName,
-        customerEmail: submission.customerEmail,
-        customerPhone: submission.customerPhone ?? null,
-        companyName: submission.companyName ?? null,
+        customerEmail: submission.customerEmail ?? null,
+        customerContactMethod: submission.customerContactMethod,
+        customerContactHandle: submission.customerContactHandle,
         serviceCategory: submission.serviceCategory,
         requestedDeadline: submission.requestedDeadline ?? null,
         budgetText: submission.budgetText ?? null,
         details: submission.details,
         submittedFieldSnapshot: submission.submittedFieldSnapshot,
-        source: "public-inquiry-page",
+        source,
         quoteRequested: true,
         submittedAt: now,
         createdAt: now,
@@ -140,11 +157,11 @@ export async function createPublicInquirySubmission({
         id: activityId,
         businessId: business.id,
         inquiryId,
-        actorUserId: null,
-        type: "inquiry.submitted_public",
-        summary: "Inquiry submitted through the public inquiry page.",
+        actorUserId,
+        type: activity.type,
+        summary: activity.summary,
         metadata: {
-          source: "public-inquiry-page",
+          source,
           businessSlug: business.slug,
           inquiryFormId: business.form.id,
           inquiryFormSlug: business.form.slug,
@@ -164,7 +181,7 @@ export async function createPublicInquirySubmission({
         .where(eq(businesses.id, business.id))
         .limit(1);
 
-      if (notificationSettings?.notifyInAppOnNewInquiry) {
+      if (notifyInAppOnNewInquiry && notificationSettings?.notifyInAppOnNewInquiry) {
         await insertBusinessNotification(tx, {
           businessId: business.id,
           inquiryId,
@@ -205,6 +222,56 @@ export async function createPublicInquirySubmission({
     inquiryId,
     attachmentName: preparedAttachment?.fileName ?? null,
   };
+}
+
+export async function createPublicInquirySubmission({
+  business,
+  submission,
+}: {
+  business: InquirySubmissionBusinessRef;
+  submission: PublicInquirySubmissionInput;
+}): Promise<CreatePublicInquirySubmissionResult> {
+  return createInquirySubmission({
+    business,
+    submission,
+    actorUserId: null,
+    source: inquirySources.publicInquiryPage,
+    activity: {
+      type: "inquiry.submitted_public",
+      summary: "Inquiry submitted through the public inquiry page.",
+    },
+    notifyInAppOnNewInquiry: true,
+  });
+}
+
+export async function createManualInquirySubmission({
+  business,
+  submission,
+  actorUserId,
+  source = inquirySources.manualDashboard,
+}: {
+  business: InquirySubmissionBusinessRef;
+  submission: PublicInquirySubmissionInput;
+  actorUserId: string;
+  source?: string;
+}): Promise<CreatePublicInquirySubmissionResult> {
+  return createInquirySubmission({
+    business,
+    submission,
+    actorUserId,
+    source,
+    activity: {
+      type:
+        source === "ai"
+          ? "inquiry.created_ai"
+          : "inquiry.created_manual",
+      summary:
+        source === "ai"
+          ? "Inquiry created from an AI-confirmed action."
+          : "Inquiry created manually from the dashboard.",
+    },
+    notifyInAppOnNewInquiry: false,
+  });
 }
 
 type AddInquiryNoteForBusinessInput = {
@@ -364,6 +431,112 @@ export async function changeInquiryStatusForBusiness({
   });
 }
 
+type UpdateInquiryFieldsForBusinessInput = {
+  businessId: string;
+  inquiryId: string;
+  actorUserId: string;
+  fields: Partial<{
+    subject: string | null;
+    customerName: string;
+    customerEmail: string | null;
+    customerContactMethod: string;
+    customerContactHandle: string;
+    serviceCategory: string;
+    requestedDeadline: string | null;
+    budgetText: string | null;
+    details: string;
+  }>;
+};
+
+export async function updateInquiryFieldsForBusiness({
+  businessId,
+  inquiryId,
+  actorUserId,
+  fields,
+}: UpdateInquiryFieldsForBusinessInput) {
+  const now = new Date();
+  const cleanFields = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined),
+  ) as UpdateInquiryFieldsForBusinessInput["fields"];
+
+  if (!Object.keys(cleanFields).length) {
+    return {
+      updated: false,
+      locked: false,
+    } as const;
+  }
+
+  return db.transaction(async (tx) => {
+    const [existingInquiry] = await tx
+      .select({
+        id: inquiries.id,
+        archivedAt: inquiries.archivedAt,
+        deletedAt: inquiries.deletedAt,
+        workspaceId: businesses.workspaceId,
+        customerName: inquiries.customerName,
+        serviceCategory: inquiries.serviceCategory,
+      })
+      .from(inquiries)
+      .innerJoin(businesses, eq(inquiries.businessId, businesses.id))
+      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)))
+      .limit(1);
+
+    if (!existingInquiry) {
+      return null;
+    }
+
+    if (existingInquiry.deletedAt || existingInquiry.archivedAt) {
+      return {
+        updated: false,
+        locked: true,
+        lockedReason: existingInquiry.deletedAt ? "trash" : "archived",
+      } as const;
+    }
+
+    await tx
+      .update(inquiries)
+      .set({
+        ...cleanFields,
+        updatedAt: now,
+      })
+      .where(and(eq(inquiries.id, inquiryId), eq(inquiries.businessId, businessId)));
+
+    await tx.insert(activityLogs).values({
+      id: createId("act"),
+      businessId,
+      inquiryId,
+      actorUserId,
+      type: "inquiry.updated",
+      summary: "Inquiry details updated.",
+      metadata: {
+        changedFields: Object.keys(cleanFields),
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await writeAuditLog(tx, {
+      workspaceId: existingInquiry.workspaceId,
+      businessId,
+      actorUserId,
+      entityType: "request",
+      entityId: inquiryId,
+      action: "request.updated",
+      metadata: {
+        changedFields: Object.keys(cleanFields),
+        customerName: existingInquiry.customerName,
+        serviceCategory: existingInquiry.serviceCategory,
+      },
+      createdAt: now,
+    });
+
+    return {
+      updated: true,
+      locked: false,
+    } as const;
+  });
+}
+
 type UpdateInquiryRecordStateForBusinessInput = {
   businessId: string;
   inquiryId: string;
@@ -429,7 +602,7 @@ export async function archiveInquiryForBusiness({
       inquiryId,
       actorUserId,
       type: "inquiry.archived",
-      summary: "Request archived.",
+      summary: "Inquiry archived.",
       metadata: {
         previousStatus: existingInquiry.status,
       },
@@ -518,7 +691,7 @@ export async function unarchiveInquiryForBusiness({
       inquiryId,
       actorUserId,
       type: "inquiry.unarchived",
-      summary: "Request restored to active.",
+      summary: "Inquiry restored to active.",
       metadata: {
         previousStatus: existingInquiry.status,
         restoredStatus: nextStatus,
@@ -588,7 +761,7 @@ export async function trashInquiryForBusiness({
       inquiryId,
       actorUserId,
       type: "inquiry.trashed",
-      summary: "Request moved to trash.",
+      summary: "Inquiry moved to trash.",
       metadata: {
         previousStatus: existingInquiry.status,
         restoredStatus: nextStatus,
@@ -668,7 +841,7 @@ export async function restoreInquiryFromTrashForBusiness({
       inquiryId,
       actorUserId,
       type: "inquiry.restored_from_trash",
-      summary: "Request restored from trash.",
+      summary: "Inquiry restored from trash.",
       metadata: {
         previousStatus: existingInquiry.status,
         restoredStatus: nextStatus,

@@ -1,19 +1,33 @@
 import { describe, it, expect, afterAll, beforeAll, vi } from 'vitest';
 import { testDb, closeTestDb } from './db';
-import { user, workspaces, workspaceMembers, businesses, inquiries, businessInquiryForms, businessMembers } from '@/lib/db/schema';
+import {
+  businessInquiryForms,
+  businessMembers,
+  businesses,
+  inquiries,
+  user,
+  workspaceMembers,
+  workspaces,
+} from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 import {
   archiveInquiryAction,
   changeInquiryStatusAction,
+  createManualInquiryAction,
   restoreInquiryFromTrashAction,
   trashInquiryAction,
   unarchiveInquiryAction,
 } from '@/features/inquiries/actions';
+import { createInquiryFormConfigDefaults } from '@/features/inquiries/form-config';
+import { getBusinessInquiryPath } from '@/features/businesses/routes';
 import { hasFeatureAccess } from '@/lib/plans/entitlements';
 
 // Mock dependencies
 vi.mock('@/lib/db/client', () => ({ db: testDb }));
 vi.mock('next/cache', () => ({
+  cacheLife: vi.fn(),
+  cacheTag: vi.fn(),
   revalidateTag: vi.fn(),
   updateTag: vi.fn(),
 }));
@@ -24,6 +38,12 @@ vi.mock('next/headers', () => ({
   })
 }));
 
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn((path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  }),
+}));
+
 vi.mock('@/lib/auth/session', () => ({
   requireSession: vi.fn().mockResolvedValue({
     user: { id: 'test_user_w2' }
@@ -32,6 +52,8 @@ vi.mock('@/lib/auth/session', () => ({
 }));
 
 describe('features/inquiries/actions', () => {
+  const mockedRedirect = vi.mocked(redirect);
+
   beforeAll(async () => {
     await testDb.delete(inquiries).where(eq(inquiries.businessId, 'test_biz_w2'));
     await testDb.delete(businessInquiryForms).where(eq(businessInquiryForms.id, 'test_form_w2'));
@@ -96,8 +118,12 @@ describe('features/inquiries/actions', () => {
       businessId: 'test_biz_w2',
       name: 'Test Form',
       slug: 'test-form',
+      businessType: 'general_project_services',
       isDefault: true,
-      inquiryFormConfig: {},
+      publicInquiryEnabled: true,
+      inquiryFormConfig: createInquiryFormConfigDefaults({
+        businessType: 'general_project_services',
+      }),
       inquiryPageConfig: {},
       createdAt: new Date(),
       updatedAt: new Date()
@@ -140,6 +166,53 @@ describe('features/inquiries/actions', () => {
   }
 
   describe('request lifecycle actions', () => {
+    it('creates a manual request and redirects to the new request detail page', async () => {
+      mockedRedirect.mockClear();
+
+      const formData = new FormData();
+      formData.set('formSlug', 'test-form');
+      formData.set('customerName', 'Manual Request Customer');
+      formData.set('customerContactMethod', 'email');
+      formData.set('customerContactHandle', 'manual.request@example.com');
+      formData.set('serviceCategory', 'Vehicle wrap install');
+      formData.set(
+        'details',
+        'Customer called to request a site visit and pricing for a storefront wrap.',
+      );
+
+      await expect(createManualInquiryAction({}, formData)).rejects.toThrow(
+        /^NEXT_REDIRECT:/,
+      );
+
+      const [createdInquiry] = await testDb
+        .select()
+        .from(inquiries)
+        .where(eq(inquiries.customerEmail, 'manual.request@example.com'));
+
+      expect(createdInquiry).toBeDefined();
+      expect(createdInquiry.businessId).toBe('test_biz_w2');
+      expect(createdInquiry.businessInquiryFormId).toBe('test_form_w2');
+      expect(createdInquiry.customerName).toBe('Manual Request Customer');
+      expect(createdInquiry.source).toBe('manual-dashboard');
+      expect(createdInquiry.status).toBe('new');
+      expect(createdInquiry.submittedFieldSnapshot?.fields).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'serviceCategory',
+            displayValue: 'Vehicle wrap install',
+          }),
+          expect.objectContaining({
+            id: 'details',
+            displayValue:
+              'Customer called to request a site visit and pricing for a storefront wrap.',
+          }),
+        ]),
+      );
+      expect(mockedRedirect).toHaveBeenCalledWith(
+        getBusinessInquiryPath('action-business', createdInquiry.id),
+      );
+    });
+
     it('updates inquiry status successfully', async () => {
       const testInquiry = await createInquiryFixture('test_inquiry_1');
 
@@ -163,7 +236,7 @@ describe('features/inquiries/actions', () => {
       const archiveFn = archiveInquiryAction.bind(null, testInquiry.id);
       const archiveResult = await archiveFn({}, new FormData());
 
-      expect(archiveResult).toEqual({ success: 'Request archived.' });
+      expect(archiveResult).toEqual({ success: 'Inquiry archived.' });
 
       const workflowFormData = new FormData();
       workflowFormData.set("status", "quoted");
@@ -172,13 +245,13 @@ describe('features/inquiries/actions', () => {
       const lockedResult = await changeStatusFn({}, workflowFormData);
 
       expect(lockedResult).toEqual({
-        error: 'Unarchive this request before updating its workflow status.',
+        error: 'Unarchive this inquiry before updating its workflow status.',
       });
 
       const restoreFn = unarchiveInquiryAction.bind(null, testInquiry.id);
       const restoreResult = await restoreFn({}, new FormData());
 
-      expect(restoreResult).toEqual({ success: 'Request restored to active.' });
+      expect(restoreResult).toEqual({ success: 'Inquiry restored to active.' });
 
       const [restoredInquiry] = await testDb.select().from(inquiries).where(eq(inquiries.id, testInquiry.id));
       expect(restoredInquiry.archivedAt).toBeNull();
@@ -191,7 +264,7 @@ describe('features/inquiries/actions', () => {
       const trashFn = trashInquiryAction.bind(null, testInquiry.id);
       const trashResult = await trashFn({}, new FormData());
 
-      expect(trashResult).toEqual({ success: 'Request moved to trash.' });
+      expect(trashResult).toEqual({ success: 'Inquiry moved to trash.' });
 
       const [trashedInquiry] = await testDb.select().from(inquiries).where(eq(inquiries.id, testInquiry.id));
       expect(trashedInquiry.deletedAt).not.toBeNull();
@@ -199,7 +272,7 @@ describe('features/inquiries/actions', () => {
       const restoreFn = restoreInquiryFromTrashAction.bind(null, testInquiry.id);
       const restoreResult = await restoreFn({}, new FormData());
 
-      expect(restoreResult).toEqual({ success: 'Request restored from trash.' });
+      expect(restoreResult).toEqual({ success: 'Inquiry restored from trash.' });
 
       const [restoredInquiry] = await testDb.select().from(inquiries).where(eq(inquiries.id, testInquiry.id));
       expect(restoredInquiry.deletedAt).toBeNull();

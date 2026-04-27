@@ -112,6 +112,16 @@ export function getBusinessQuoteDetailCacheTags(
   ]);
 }
 
+export function getBusinessFollowUpListCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
+
+  return uniqueCacheTags([
+    scopeTag,
+    `${scopeTag}:dashboard`,
+    `${scopeTag}:follow-ups`,
+  ]);
+}
+
 export function getBusinessPricingCacheTags(businessId: string) {
   const scopeTag = getBusinessScopeTag(businessId);
 
@@ -164,5 +174,6 @@ export function getBusinessOverviewCacheTags(businessId: string) {
     `${scopeTag}:overview`,
     `${scopeTag}:inquiries`,
     `${scopeTag}:quotes`,
+    `${scopeTag}:follow-ups`,
   ]);
 }

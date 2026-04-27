@@ -68,8 +68,10 @@ import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { hasFeatureAccess } from "@/lib/plans";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { BillingCurrency, BillingRegion } from "@/lib/billing/types";
+import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
+import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
+import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 
 type BusinessInquiryFormsManagerProps = {
   settings: BusinessInquiryFormsSettingsView;
@@ -100,6 +102,7 @@ export function BusinessInquiryFormsManager({
   workspacePlan,
   billingProps,
 }: BusinessInquiryFormsManagerProps) {
+  const workspaceCheckout = useWorkspaceCheckout();
   const [createState, createFormAction, isCreatePending] = useActionStateWithSonner(
     createAction,
     initialState,
@@ -111,6 +114,8 @@ export function BusinessInquiryFormsManager({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isPlanSheetOpen, setIsPlanSheetOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
   const [/* unarchiveState */, unarchiveFormAction, isUnarchivePending] = useActionStateWithSonner(
     unarchiveAction,
     initialState,
@@ -121,6 +126,11 @@ export function BusinessInquiryFormsManager({
   const archivedForms = settings.forms.filter((form) => form.archivedAt);
   const canCreateAdditionalForms =
     hasFeatureAccess(workspacePlan, "multipleForms") || activeForms.length === 0;
+  const useSharedCheckout = Boolean(
+    workspaceCheckout &&
+      billingProps &&
+      workspaceCheckout.workspaceId === billingProps.workspaceId,
+  );
 
   return (
     <TooltipProvider>
@@ -308,7 +318,17 @@ export function BusinessInquiryFormsManager({
                     <Button
                       onClick={() => {
                         setIsUpgradeDialogOpen(false);
-                        setIsCheckoutOpen(true);
+                        if (useSharedCheckout && workspaceCheckout) {
+                          if (workspaceCheckout.pendingCheckout) {
+                            workspaceCheckout.continueCheckout();
+                            return;
+                          }
+
+                          workspaceCheckout.openPlanSelection("pro");
+                          return;
+                        }
+
+                        setIsPlanSheetOpen(true);
                       }}
                       type="button"
                     >
@@ -318,16 +338,33 @@ export function BusinessInquiryFormsManager({
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              {billingProps ? (
-                <CheckoutDialog
-                  currentPlan={billingProps.currentPlan}
-                  defaultCurrency={billingProps.defaultCurrency}
-                  onOpenChange={setIsCheckoutOpen}
-                  open={isCheckoutOpen}
-                  region={billingProps.region}
-                  workspaceId={billingProps.workspaceId}
-                  workspaceSlug={billingProps.workspaceSlug}
-                />
+              {billingProps && !useSharedCheckout ? (
+                <>
+                  <PlanSelectionSheet
+                    currentPlan={billingProps.currentPlan}
+                    defaultCurrency={billingProps.defaultCurrency}
+                    onOpenChange={setIsPlanSheetOpen}
+                    onSelectPlan={(plan) => {
+                      setSelectedPlan(plan);
+                      setIsPlanSheetOpen(false);
+                      setIsCheckoutOpen(true);
+                    }}
+                    open={isPlanSheetOpen}
+                    region={billingProps.region}
+                  />
+                  {selectedPlan ? (
+                    <CheckoutDialog
+                      currentPlan={billingProps.currentPlan}
+                      defaultCurrency={billingProps.defaultCurrency}
+                      onOpenChange={setIsCheckoutOpen}
+                      open={isCheckoutOpen}
+                      plan={selectedPlan}
+                      region={billingProps.region}
+                      workspaceId={billingProps.workspaceId}
+                      workspaceSlug={billingProps.workspaceSlug}
+                    />
+                  ) : null}
+                </>
               ) : null}
             </>
           )}
@@ -340,9 +377,6 @@ export function BusinessInquiryFormsManager({
                 <CardHeader className="gap-3">
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="flex w-0 min-w-0 flex-1 items-start gap-3">
-                      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background/90 text-sm font-semibold tracking-[0.16em] text-foreground">
-                        {getFormInitials(form.name)}
-                      </div>
                       <div className="w-0 min-w-0 flex-1">
                         <CardTitle>
                           <TruncatedWithTooltip text={form.name} />
@@ -415,7 +449,7 @@ export function BusinessInquiryFormsManager({
           <CardHeader>
             <CardTitle>No active forms</CardTitle>
             <CardDescription>
-              Create an inquiry form to publish a page for incoming requests.
+              Create an inquiry form to publish a page for incoming inquiries.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -457,14 +491,6 @@ function TruncatedWithTooltip({ text }: TruncatedWithTooltipProps) {
   );
 }
 
-function getFormInitials(value: string) {
-  return value
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((segment) => segment[0]?.toUpperCase())
-    .join("");
-}
 
 function FormShareDialog({
   settingsSlug,

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidateTag, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 
 import { getValidationActionState } from "@/lib/action-state";
@@ -24,19 +25,23 @@ import {
   addInquiryNoteForBusiness,
   archiveInquiryForBusiness,
   changeInquiryStatusForBusiness,
+  createManualInquirySubmission,
   createPublicInquirySubmission,
   restoreInquiryFromTrashForBusiness,
   trashInquiryForBusiness,
   unarchiveInquiryForBusiness,
 } from "@/features/inquiries/mutations";
 import {
+  getInquiryEditorFormForBusiness,
   getPublicInquiryBusinessByFormSlug,
   getPublicInquiryBusinessBySlug,
   getBusinessOwnerNotificationEmails,
 } from "@/features/inquiries/queries";
 import {
+  inquiryFormSelectionSchema,
   inquiryNoteSchema,
   inquiryStatusChangeSchema,
+  validateManualQuickInquirySubmission,
   validatePublicInquirySubmission,
 } from "@/features/inquiries/schemas";
 import { getBusinessInquiryPath } from "@/features/businesses/routes";
@@ -44,6 +49,7 @@ import type {
   InquiryRecordActionState,
   InquiryNoteActionState,
   InquiryStatusActionState,
+  ManualInquiryActionState,
   PublicInquiryFormState,
 } from "@/features/inquiries/types";
 import { getInquiryStatusLabel } from "@/features/inquiries/utils";
@@ -152,41 +158,53 @@ export async function submitPublicInquiryAction(
         getBusinessMessagingSettings(business.id),
       ]);
 
-      if (!businessSettings?.notifyOnNewInquiry || !recipients.length) {
-        return;
+      if (businessSettings?.notifyOnNewInquiry && recipients.length) {
+        try {
+          await sendPublicInquiryNotificationEmail({
+            inquiryId: createdInquiry.inquiryId,
+            recipients,
+            businessName: businessSettings.name,
+            dashboardUrl: new URL(
+              getBusinessInquiryPath(slug, createdInquiry.inquiryId),
+              env.BETTER_AUTH_URL,
+            ).toString(),
+            customerName: validationResult.data.customerName,
+            customerEmail: validationResult.data.customerEmail ?? undefined,
+            customerContactMethod: validationResult.data.customerContactMethod,
+            customerContactHandle: validationResult.data.customerContactHandle,
+            inquiryFormName: business.form.name,
+            serviceCategory: validationResult.data.serviceCategory,
+            deadline: validationResult.data.requestedDeadline,
+            budget: validationResult.data.budgetText,
+            details: validationResult.data.details,
+            attachmentName: createdInquiry.attachmentName,
+            additionalFields: getAdditionalInquirySubmittedFields(
+              validationResult.data.submittedFieldSnapshot,
+            ).map((field) => ({
+              label: field.label,
+              value: field.displayValue,
+            })),
+          });
+        } catch (error) {
+          console.error(
+            "The public inquiry was saved but the owner notification email failed to send.",
+            error,
+          );
+        }
       }
 
-      try {
-        await sendPublicInquiryNotificationEmail({
-          inquiryId: createdInquiry.inquiryId,
-          recipients,
-          businessName: businessSettings.name,
-          dashboardUrl: new URL(
-            getBusinessInquiryPath(slug, createdInquiry.inquiryId),
-            env.BETTER_AUTH_URL,
-          ).toString(),
-          customerName: validationResult.data.customerName,
-          customerEmail: validationResult.data.customerEmail,
-          customerPhone: validationResult.data.customerPhone,
-          companyName: validationResult.data.companyName,
-          inquiryFormName: business.form.name,
-          serviceCategory: validationResult.data.serviceCategory,
-          deadline: validationResult.data.requestedDeadline,
-          budget: validationResult.data.budgetText,
-          details: validationResult.data.details,
-          attachmentName: createdInquiry.attachmentName,
-          additionalFields: getAdditionalInquirySubmittedFields(
-            validationResult.data.submittedFieldSnapshot,
-          ).map((field) => ({
-            label: field.label,
-            value: field.displayValue,
-          })),
-        });
-      } catch (error) {
-        console.error(
-          "The public inquiry was saved but the owner notification email failed to send.",
-          error,
-        );
+      // Push notification
+      if (businessSettings?.notifyPushOnNewInquiry) {
+        try {
+          const { sendPushToBusinessSubscribers } = await import("@/lib/push/send");
+          await sendPushToBusinessSubscribers(business.id, {
+            title: "New inquiry received",
+            body: `${validationResult.data.customerName} submitted an inquiry.`,
+            url: getBusinessInquiryPath(slug, createdInquiry.inquiryId),
+          });
+        } catch (error) {
+          console.error("Push notification failed for new inquiry.", error);
+        }
       }
     });
 
@@ -201,6 +219,117 @@ export async function submitPublicInquiryAction(
       error: "We couldn't submit your inquiry right now. Please try again.",
     };
   }
+}
+
+export async function createManualInquiryAction(
+  _prevState: ManualInquiryActionState,
+  formData: FormData,
+): Promise<ManualInquiryActionState> {
+  const ownerAccess = await getWorkspaceBusinessActionContext();
+
+  if (!ownerAccess.ok) {
+    return {
+      error: ownerAccess.error,
+    };
+  }
+
+  const { user, businessContext } = ownerAccess;
+  const formSelectionResult = inquiryFormSelectionSchema.safeParse({
+    formSlug: formData.get("formSlug"),
+  });
+
+  if (!formSelectionResult.success) {
+    return getValidationActionState(
+      formSelectionResult.error,
+      "Choose an inquiry form.",
+    );
+  }
+
+  const selectedForm = await getInquiryEditorFormForBusiness({
+    businessId: businessContext.business.id,
+    formSlug: formSelectionResult.data.formSlug,
+  });
+
+  if (!selectedForm) {
+    return {
+      error: "That inquiry form is unavailable.",
+      fieldErrors: {
+        formSlug: ["Choose an active inquiry form."],
+      },
+    };
+  }
+
+  const inquiryAllowance = await checkUsageAllowance(
+    businessContext.business.workspaceId,
+    businessContext.business.workspacePlan,
+    "inquiriesPerMonth",
+  );
+
+  if (!inquiryAllowance.allowed) {
+    return {
+      error: `You've reached your plan's limit of ${inquiryAllowance.limit} inquiries this month. Upgrade your plan for unlimited usage.`,
+    };
+  }
+
+  const validationResult = validateManualQuickInquirySubmission(
+    selectedForm.inquiryFormConfig,
+    formData,
+  );
+
+  if (!validationResult.success) {
+    return getValidationActionState(
+      validationResult.error,
+      "Check the highlighted fields and try again.",
+    );
+  }
+
+  let inquiryPath: string | null = null;
+
+  try {
+    const createdInquiry = await createManualInquirySubmission({
+      business: {
+        id: businessContext.business.id,
+        name: businessContext.business.name,
+        slug: businessContext.business.slug,
+        form: {
+          id: selectedForm.id,
+          name: selectedForm.name,
+          slug: selectedForm.slug,
+          businessType: selectedForm.businessType,
+          isDefault: selectedForm.isDefault,
+          publicInquiryEnabled: selectedForm.publicInquiryEnabled,
+        },
+      },
+      submission: validationResult.data,
+      actorUserId: user.id,
+    });
+
+    updateCacheTags(
+      getInquiryMutationCacheTags(
+        businessContext.business.id,
+        createdInquiry.inquiryId,
+      ),
+    );
+
+    inquiryPath = getBusinessInquiryPath(
+      businessContext.business.slug,
+      createdInquiry.inquiryId,
+    );
+  } catch (error) {
+    console.error("Failed to create manual inquiry.", error);
+
+    return {
+      error: "We couldn't create that inquiry right now.",
+    };
+  }
+
+  if (inquiryPath) {
+    redirect(inquiryPath);
+  }
+
+  return {
+    error: "We couldn't create that inquiry right now.",
+  };
 }
 
 export async function addInquiryNoteAction(
@@ -295,8 +424,8 @@ export async function changeInquiryStatusAction(
       return {
         error:
           result.lockedReason === "trash"
-            ? "Restore this request from trash before updating its workflow status."
-            : "Unarchive this request before updating its workflow status.",
+            ? "Restore this inquiry from trash before updating its workflow status."
+            : "Unarchive this inquiry before updating its workflow status.",
       };
     }
 
@@ -360,7 +489,7 @@ async function runInquiryRecordAction(
 
     if (!result) {
       return {
-        error: messages.missing ?? "That request could not be found.",
+        error: messages.missing ?? "That inquiry could not be found.",
       };
     }
 
@@ -370,8 +499,8 @@ async function runInquiryRecordAction(
       return {
         error:
           result.lockedReason === "trash"
-            ? messages.trashLocked ?? "Restore this request from trash first."
-            : messages.archivedLocked ?? "Unarchive this request first.",
+            ? messages.trashLocked ?? "Restore this inquiry from trash first."
+            : messages.archivedLocked ?? "Unarchive this inquiry first.",
       };
     }
 
@@ -382,7 +511,7 @@ async function runInquiryRecordAction(
     console.error(messages.fallbackError, error);
 
     return {
-      error: "We couldn't update that request right now.",
+      error: "We couldn't update that inquiry right now.",
     };
   }
 }
@@ -396,9 +525,9 @@ export async function archiveInquiryAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, archiveInquiryForBusiness, {
-    success: "Request archived.",
-    unchanged: "Request is already archived.",
-    trashLocked: "Restore this request from trash before archiving it.",
+    success: "Inquiry archived.",
+    unchanged: "Inquiry is already archived.",
+    trashLocked: "Restore this inquiry from trash before archiving it.",
     fallbackError: "Failed to archive inquiry.",
   });
 }
@@ -412,9 +541,9 @@ export async function unarchiveInquiryAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, unarchiveInquiryForBusiness, {
-    success: "Request restored to active.",
-    unchanged: "Request is already active.",
-    trashLocked: "Restore this request from trash instead.",
+    success: "Inquiry restored to active.",
+    unchanged: "Inquiry is already active.",
+    trashLocked: "Restore this inquiry from trash instead.",
     fallbackError: "Failed to unarchive inquiry.",
   });
 }
@@ -428,8 +557,8 @@ export async function trashInquiryAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, trashInquiryForBusiness, {
-    success: "Request moved to trash.",
-    unchanged: "Request is already in trash.",
+    success: "Inquiry moved to trash.",
+    unchanged: "Inquiry is already in trash.",
     fallbackError: "Failed to move inquiry to trash.",
   });
 }
@@ -443,8 +572,8 @@ export async function restoreInquiryFromTrashAction(
   void _formData;
 
   return runInquiryRecordAction(inquiryId, restoreInquiryFromTrashForBusiness, {
-    success: "Request restored from trash.",
-    unchanged: "Request is already active.",
+    success: "Inquiry restored from trash.",
+    unchanged: "Inquiry is already active.",
     fallbackError: "Failed to restore inquiry from trash.",
   });
 }

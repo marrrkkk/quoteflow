@@ -11,6 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  formatFollowUpDate,
+  getFollowUpDueBucket,
+} from "@/features/follow-ups/utils";
 import { QuotePostAcceptanceStatusBadge } from "@/features/quotes/components/quote-post-acceptance-status-badge";
 import { QuoteRecordStateBadge } from "@/features/quotes/components/quote-record-state-badge";
 import { QuoteReminderBadge } from "@/features/quotes/components/quote-reminder-badge";
@@ -47,6 +52,9 @@ export function QuoteListTable({
         <TableBody>
           {quotes.map((quote) => {
             const quoteHref = getBusinessQuotePath(businessSlug, quote.id);
+            const reminders = quote.reminders.filter(
+              (reminder) => reminder !== "follow_up_due",
+            );
 
             return (
               <TableRow className="group/row" key={quote.id}>
@@ -64,19 +72,26 @@ export function QuoteListTable({
                       prefetch={true}
                       text={quote.title}
                     />
-                    {quote.reminders.length || quote.postAcceptanceStatus !== "none" ? (
+                    {reminders.length ||
+                    quote.postAcceptanceStatus !== "none" ||
+                    quote.pendingFollowUpCount > 0 ||
+                    isViewedWithoutResponse(quote) ? (
                       <Link
                         className="flex flex-wrap gap-2"
                         href={quoteHref}
                         prefetch={true}
                       >
-                        {quote.reminders.map((reminder) => (
+                        {reminders.map((reminder) => (
                           <QuoteReminderBadge key={reminder} kind={reminder} />
                         ))}
                         {quote.postAcceptanceStatus !== "none" ? (
                           <QuotePostAcceptanceStatusBadge
                             status={quote.postAcceptanceStatus}
                           />
+                        ) : null}
+                        <QuoteFollowUpBadge quote={quote} />
+                        {isViewedWithoutResponse(quote) ? (
+                          <Badge variant="secondary">Viewed, no response</Badge>
                         ) : null}
                       </Link>
                     ) : null}
@@ -94,7 +109,7 @@ export function QuoteListTable({
                       className="table-supporting-text"
                       href={quoteHref}
                       prefetch={true}
-                      text={quote.customerEmail}
+                      text={quote.customerEmail ?? ""}
                     />
                   </div>
                 </TableCell>
@@ -133,4 +148,39 @@ export function QuoteListTable({
       </Table>
     </DashboardTableContainer>
   );
+}
+
+function isViewedWithoutResponse(quote: DashboardQuoteListItem) {
+  return Boolean(
+    quote.status === "sent" &&
+      quote.publicViewedAt &&
+      !quote.customerRespondedAt,
+  );
+}
+
+function QuoteFollowUpBadge({
+  quote,
+}: {
+  quote: DashboardQuoteListItem;
+}) {
+  if (quote.pendingFollowUpCount > 0 && quote.nextFollowUpDueAt) {
+    const dueBucket = getFollowUpDueBucket({
+      status: "pending",
+      dueAt: quote.nextFollowUpDueAt,
+    });
+    const label =
+      dueBucket === "overdue"
+        ? "Follow-up overdue"
+        : dueBucket === "today"
+          ? "Follow-up today"
+          : `Follow-up ${formatFollowUpDate(quote.nextFollowUpDueAt)}`;
+
+    return <Badge variant="secondary">{label}</Badge>;
+  }
+
+  if (quote.status === "sent" && !quote.customerRespondedAt) {
+    return <Badge variant="outline">No follow-up</Badge>;
+  }
+
+  return null;
 }

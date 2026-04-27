@@ -51,6 +51,7 @@ import {
 import { db } from "@/lib/db/client";
 import {
   activityLogs,
+  followUps,
   inquiries,
   inquiryAttachments,
   inquiryNotes,
@@ -64,6 +65,7 @@ import {
 import type {
   DashboardInquiryDetail,
   DashboardInquiryListItem,
+  InquiryEditorForm,
   InquiryListQueryFilters,
   PublicInquiryBusiness,
 } from "@/features/inquiries/types";
@@ -527,6 +529,20 @@ export async function getInquiryListPageForBusiness({
       subject: inquiries.subject,
       archivedAt: inquiries.archivedAt,
       deletedAt: inquiries.deletedAt,
+      pendingFollowUpCount: sql<number>`(
+        select count(*)::int
+        from ${followUps}
+        where ${followUps.businessId} = ${inquiries.businessId}
+          and ${followUps.inquiryId} = ${inquiries.id}
+          and ${followUps.status} = 'pending'
+      )`,
+      nextFollowUpDueAt: sql<Date | null>`(
+        select min(${followUps.dueAt})
+        from ${followUps}
+        where ${followUps.businessId} = ${inquiries.businessId}
+          and ${followUps.inquiryId} = ${inquiries.id}
+          and ${followUps.status} = 'pending'
+      )`,
       submittedAt: inquiries.submittedAt,
       createdAt: inquiries.createdAt,
     })
@@ -545,9 +561,9 @@ type InquiryExportRow = {
   id: string;
   inquiryFormName: string;
   customerName: string;
-  customerEmail: string;
-  customerPhone: string | null;
-  companyName: string | null;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   requestedDeadline: string | null;
   budgetText: string | null;
@@ -588,8 +604,8 @@ export async function getInquiryExportRowsForBusiness({
       inquiryFormName: businessInquiryForms.name,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
-      customerPhone: inquiries.customerPhone,
-      companyName: inquiries.companyName,
+      customerContactMethod: inquiries.customerContactMethod,
+      customerContactHandle: inquiries.customerContactHandle,
       serviceCategory: inquiries.serviceCategory,
       requestedDeadline: inquiries.requestedDeadline,
       budgetText: inquiries.budgetText,
@@ -634,8 +650,8 @@ export async function getInquiryDetailForBusiness({
       inquiryFormBusinessType: businessInquiryForms.businessType,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
-      customerPhone: inquiries.customerPhone,
-      companyName: inquiries.companyName,
+      customerContactMethod: inquiries.customerContactMethod,
+      customerContactHandle: inquiries.customerContactHandle,
       serviceCategory: inquiries.serviceCategory,
       requestedDeadline: inquiries.requestedDeadline,
       budgetText: inquiries.budgetText,
@@ -789,6 +805,104 @@ export async function getBusinessInquiryFormOptionsForBusiness(
     .from(businessInquiryForms)
     .where(eq(businessInquiryForms.businessId, businessId))
     .orderBy(desc(businessInquiryForms.isDefault), asc(businessInquiryForms.name));
+}
+
+export async function getInquiryEditorFormsForBusiness(
+  businessId: string,
+): Promise<InquiryEditorForm[]> {
+  "use cache";
+
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(...getBusinessInquiryFormsCacheTags(businessId));
+
+  const forms = await db
+    .select({
+      id: businessInquiryForms.id,
+      name: businessInquiryForms.name,
+      slug: businessInquiryForms.slug,
+      businessType: businessInquiryForms.businessType,
+      isDefault: businessInquiryForms.isDefault,
+      publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+    })
+    .from(businessInquiryForms)
+    .where(
+      and(
+        eq(businessInquiryForms.businessId, businessId),
+        isNull(businessInquiryForms.archivedAt),
+      ),
+    )
+    .orderBy(desc(businessInquiryForms.isDefault), asc(businessInquiryForms.name));
+
+  return forms.map((form) => {
+    const businessType = normalizeBusinessType(form.businessType);
+
+    return {
+      id: form.id,
+      name: form.name,
+      slug: form.slug,
+      businessType,
+      isDefault: form.isDefault,
+      publicInquiryEnabled: form.publicInquiryEnabled,
+      inquiryFormConfig: getNormalizedInquiryFormConfig(form.inquiryFormConfig, {
+        businessType,
+      }),
+    } satisfies InquiryEditorForm;
+  });
+}
+
+export async function getInquiryEditorFormForBusiness({
+  businessId,
+  formSlug,
+}: {
+  businessId: string;
+  formSlug: string;
+}): Promise<InquiryEditorForm | null> {
+  "use cache";
+
+  cacheLife(hotBusinessCacheLife);
+  cacheTag(
+    ...getBusinessInquiryFormsCacheTags(businessId),
+    ...getBusinessInquiryFormCacheTags(businessId, formSlug),
+  );
+
+  const [form] = await db
+    .select({
+      id: businessInquiryForms.id,
+      name: businessInquiryForms.name,
+      slug: businessInquiryForms.slug,
+      businessType: businessInquiryForms.businessType,
+      isDefault: businessInquiryForms.isDefault,
+      publicInquiryEnabled: businessInquiryForms.publicInquiryEnabled,
+      inquiryFormConfig: businessInquiryForms.inquiryFormConfig,
+    })
+    .from(businessInquiryForms)
+    .where(
+      and(
+        eq(businessInquiryForms.businessId, businessId),
+        eq(businessInquiryForms.slug, formSlug),
+        isNull(businessInquiryForms.archivedAt),
+      ),
+    )
+    .limit(1);
+
+  if (!form) {
+    return null;
+  }
+
+  const businessType = normalizeBusinessType(form.businessType);
+
+  return {
+    id: form.id,
+    name: form.name,
+    slug: form.slug,
+    businessType,
+    isDefault: form.isDefault,
+    publicInquiryEnabled: form.publicInquiryEnabled,
+    inquiryFormConfig: getNormalizedInquiryFormConfig(form.inquiryFormConfig, {
+      businessType,
+    }),
+  } satisfies InquiryEditorForm;
 }
 
 type GetInquiryAttachmentForBusinessInput = {

@@ -6,7 +6,7 @@
  * payment method info, and action buttons.
  */
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import {
   CreditCard,
   QrCode,
@@ -15,11 +15,14 @@ import {
   Clock,
   CircleMinus,
   CircleDashed,
-  Zap,
-  Crown,
+  Briefcase,
+  Building2,
   CalendarDays,
   Receipt,
   Shield,
+  Check,
+  X,
+  ArrowUpRight,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -38,8 +42,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { PlanBadge } from "@/components/shared/paywall";
 import { UpgradeButton } from "@/features/billing/components/upgrade-button";
 import { cancelSubscriptionAction } from "@/features/billing/actions";
+import { clearCachedPendingCheckout, clearCachedPendingQrCheckout } from "@/features/billing/pending-checkout";
 import type { WorkspaceBillingOverview, CancelActionState } from "@/features/billing/types";
-import { planMeta, getUsageLimit } from "@/lib/plans";
+import { planMeta, getUsageLimit, planFeatures, hasFeatureAccess, planFeatureLabels } from "@/lib/plans";
 import { getPlanPriceLabel, getCurrencySymbol } from "@/lib/billing/plans";
 import { cn } from "@/lib/utils";
 
@@ -53,12 +58,14 @@ type BillingStatusCardProps = {
     quotes: number;
     requoQuoteEmailsThisMonth: number;
   };
+  variant?: "full" | "overview";
 };
 
 export function BillingStatusCard({
   billing,
   showPlanComparison = true,
   freePlanUsage,
+  variant = "full",
 }: BillingStatusCardProps) {
   const { subscription, currentPlan, workspaceId, workspaceSlug, region, defaultCurrency } =
     billing;
@@ -68,57 +75,152 @@ export function BillingStatusCard({
   );
 
   const isFreePlan = currentPlan === "free";
+
+  // Clear cached QR when a pending payment is cancelled
+  const cancelSuccess = cancelState.success;
+  useEffect(() => {
+    if (cancelSuccess) {
+      clearCachedPendingCheckout(workspaceId);
+    }
+  }, [cancelSuccess, workspaceId]);
+
   const hasActiveSubscription =
     subscription &&
     (subscription.status === "active" || subscription.status === "past_due");
   const hasPendingSubscription =
     subscription && subscription.status === "pending";
   const hasSubscription = hasActiveSubscription || hasPendingSubscription;
+  const isOverviewVariant = variant === "overview";
+
+  // Clear stale QR cache when the server confirms no pending subscription.
+  // This handles the page-reload case where a webhook (payment.expired /
+  // payment.failed) updated the status but the sessionStorage cache wasn't
+  // cleared (e.g. user closed the tab or realtime was disconnected).
+  useEffect(() => {
+    if (subscription?.provider !== "paymongo" || !hasPendingSubscription) {
+      clearCachedPendingQrCheckout(workspaceId);
+    }
+  }, [hasPendingSubscription, subscription?.provider, workspaceId]);
 
   return (
     <div className="flex flex-col gap-6">
       {/* Current plan overview */}
-      <Card>
-        <CardHeader className="pb-0">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col gap-1.5">
-              <span className="meta-label">Current plan</span>
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-2xl">
-                  {planMeta[currentPlan].label}
-                </CardTitle>
-                {hasSubscription ? (
-                  <StatusBadge status={subscription.status} canceled={!!subscription.canceledAt} />
-                ) : null}
+      <Card className={cn(isOverviewVariant && "gap-0")}>
+        {isOverviewVariant ? (
+          <CardHeader className="gap-3 pb-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-col gap-2">
+                <span className="meta-label">Current plan</span>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <CardTitle className="text-2xl">
+                    {planMeta[currentPlan].label}
+                  </CardTitle>
+                  {hasSubscription ? (
+                    <StatusBadge
+                      status={subscription.status}
+                      canceled={!!subscription.canceledAt}
+                    />
+                  ) : null}
+                </div>
               </div>
+              <PlanBadge className="shrink-0" plan={currentPlan} />
             </div>
-            <PlanBadge plan={currentPlan} />
-          </div>
-        </CardHeader>
-
-        <CardContent className="grid gap-5">
-          {/* Price + description */}
-          <div className="flex flex-col gap-1.5">
-            {!isFreePlan && subscription ? (
-              <p className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-                {getPlanPriceLabel(
-                  currentPlan as "pro" | "business",
-                  subscription.currency,
-                )}
-              </p>
-            ) : (
-              <p className="font-heading text-3xl font-semibold tracking-tight text-foreground">
-                {getCurrencySymbol(defaultCurrency)}0
-                <span className="text-base font-normal text-muted-foreground"> /forever</span>
-              </p>
-            )}
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <CardDescription className="max-w-[34ch] leading-relaxed">
               {planMeta[currentPlan].description}
-            </p>
-          </div>
+            </CardDescription>
+          </CardHeader>
+        ) : (
+          <>
+            <CardHeader className="pb-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="meta-label">Current plan</span>
+                  <div className="flex items-center gap-3">
+                    <CardTitle className="text-2xl">
+                      {planMeta[currentPlan].label}
+                    </CardTitle>
+                    {hasSubscription ? (
+                      <StatusBadge
+                        status={subscription.status}
+                        canceled={!!subscription.canceledAt}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+                <PlanBadge plan={currentPlan} />
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {planMeta[currentPlan].description}
+              </p>
+            </CardContent>
+          </>
+        )}
+        {currentPlan !== "business" ? (
+          <CardFooter className="flex-wrap gap-2.5">
+            <UpgradeButton
+              currentPlan={currentPlan}
+              defaultCurrency={defaultCurrency}
+              region={region}
+              workspaceId={workspaceId}
+              workspaceSlug={workspaceSlug}
+            >
+              {variant === "full" ? (
+                <>
+                  <ArrowUpRight data-icon="inline-start" />
+                  Change plan
+                </>
+              ) : undefined}
+            </UpgradeButton>
+          </CardFooter>
+        ) : null}
+      </Card>
 
-          {/* Subscription details grid */}
-          {hasSubscription ? (
+      {/* Plan Features */}
+      {variant === "full" ? (
+        <Card>
+          <CardHeader>
+          <CardTitle className="text-lg">Plan features</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-3">
+            {planFeatures.map((feature) => {
+              const hasAccess = hasFeatureAccess(currentPlan, feature);
+              return (
+                <div key={feature} className="flex items-center gap-3 text-sm">
+                  {hasAccess ? (
+                    <Check className="size-4 shrink-0 text-emerald-500" />
+                  ) : (
+                    <X className="size-4 shrink-0 text-muted-foreground/60" />
+                  )}
+                  <span className={cn(hasAccess ? "text-foreground" : "text-muted-foreground")}>
+                    {planFeatureLabels[feature]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="my-1 border-t border-border/40" />
+
+          <div className="flex flex-col gap-2">
+            <PlanLimit label="Inquiries limit" value={getUsageLimit(currentPlan, "inquiriesPerMonth")} />
+            <PlanLimit label="Quotes limit" value={getUsageLimit(currentPlan, "quotesPerMonth")} />
+            <PlanLimit label="Businesses limit" value={getUsageLimit(currentPlan, "businessesPerWorkspace")} />
+            <PlanLimit label="Members limit" value={getUsageLimit(currentPlan, "membersPerWorkspace")} />
+          </div>
+        </CardContent>
+      </Card>
+      ) : null}
+
+      {/* Billing Details */}
+      {hasSubscription && variant === "full" ? (
+        <Card id="billing-details">
+          <CardHeader>
+            <CardTitle className="text-lg">Billing details</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5">
             <div className="soft-panel grid gap-0 divide-y divide-border/60 overflow-hidden rounded-xl px-0 py-0">
               {subscription.provider ? (
                 <div className="flex items-center justify-between px-4 py-3">
@@ -186,76 +288,63 @@ export function BillingStatusCard({
                 </div>
               ) : null}
             </div>
-          ) : null}
 
-          {/* Cancellation warning */}
-          {subscription?.canceledAt && subscription.status === "active" ? (
-            <Alert variant="default" className="border-amber-200/60 bg-amber-50/50 text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/20 dark:text-amber-400 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
-              <CircleAlert className="size-4" />
-              <div>
-                <p className="text-sm font-medium">Subscription canceling</p>
-                <p className="mt-1 text-sm opacity-90">
-                  Your subscription will cancel at the end of this billing period.
-                  You&apos;ll keep full access until then.
-                </p>
-              </div>
-            </Alert>
-          ) : null}
+            {/* Cancellation warning */}
+            {subscription?.canceledAt && subscription.status === "active" ? (
+              <Alert variant="default" className="border-amber-200/60 bg-amber-50/50 text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/20 dark:text-amber-400 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
+                <CircleAlert className="size-4" />
+                <div>
+                  <p className="text-sm font-medium">Subscription canceling</p>
+                  <p className="mt-1 text-sm opacity-90">
+                    Your subscription will cancel at the end of this billing period.
+                    You&apos;ll keep full access until then.
+                  </p>
+                </div>
+              </Alert>
+            ) : null}
 
-          {/* Success / error messages */}
-          {cancelState.success ? (
-            <Alert variant="default" className="border-emerald-200/60 bg-emerald-50/50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/20 dark:text-emerald-400">
-              <CircleCheck className="size-4" />
-              <p className="text-sm">{cancelState.success}</p>
-            </Alert>
-          ) : null}
-          {cancelState.error ? (
-            <Alert variant="destructive">
-              <CircleAlert className="size-4" />
-              <p className="text-sm">{cancelState.error}</p>
-            </Alert>
-          ) : null}
-        </CardContent>
+            {/* Success / error messages */}
+            {cancelState.success ? (
+              <Alert variant="default" className="border-emerald-200/60 bg-emerald-50/50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/20 dark:text-emerald-400">
+                <CircleCheck className="size-4" />
+                <p className="text-sm">{cancelState.success}</p>
+              </Alert>
+            ) : null}
+            {cancelState.error ? (
+              <Alert variant="destructive">
+                <CircleAlert className="size-4" />
+                <p className="text-sm">{cancelState.error}</p>
+              </Alert>
+            ) : null}
+          </CardContent>
 
-        {/* Actions footer */}
-        <CardFooter className="flex-wrap gap-2.5">
-          {isFreePlan || currentPlan === "pro" ? (
-            <UpgradeButton
-              currentPlan={currentPlan}
-              defaultCurrency={defaultCurrency}
-              region={region}
-              workspaceId={workspaceId}
-              workspaceSlug={workspaceSlug}
-            />
-          ) : null}
-
-          {hasSubscription &&
-          !subscription.canceledAt &&
+          {!subscription.canceledAt &&
           (subscription.status === "active" || subscription.status === "pending") ? (
-            <form action={cancelAction}>
-              <input name="workspaceId" type="hidden" value={workspaceId} />
-              <Button
-                disabled={isCanceling}
-                size="sm"
-                type="submit"
-                variant="ghost"
-                className="text-muted-foreground"
-              >
-                {isCanceling ? (
-                  <>
-                    <Spinner aria-hidden="true" />
-                    Canceling...
-                  </>
-                ) : subscription.status === "pending" ? (
-                  "Cancel pending payment"
-                ) : (
-                  "Cancel subscription"
-                )}
-              </Button>
-            </form>
+            <CardFooter className="flex-wrap gap-2.5 border-t border-border/40 pt-6">
+              <form action={cancelAction}>
+                <input name="workspaceId" type="hidden" value={workspaceId} />
+                <Button
+                  disabled={isCanceling}
+                  size="sm"
+                  type="submit"
+                  variant="destructive"
+                >
+                  {isCanceling ? (
+                    <>
+                      <Spinner aria-hidden="true" className="text-destructive-foreground" />
+                      Canceling...
+                    </>
+                  ) : subscription.status === "pending" ? (
+                    "Cancel pending payment"
+                  ) : (
+                    "Cancel subscription"
+                  )}
+                </Button>
+              </form>
+            </CardFooter>
           ) : null}
-        </CardFooter>
-      </Card>
+        </Card>
+      ) : null}
 
       {isFreePlan && freePlanUsage ? (
         <Card>
@@ -296,7 +385,7 @@ export function BillingStatusCard({
               {(["free", "pro", "business"] as const).map((plan) => {
                 const isCurrent = plan === currentPlan;
                 const meta = planMeta[plan];
-                const PlanIcon = plan === "pro" ? Zap : plan === "business" ? Crown : null;
+                const PlanIcon = plan === "pro" ? Briefcase : plan === "business" ? Building2 : null;
 
                 return (
                   <div
@@ -314,7 +403,7 @@ export function BillingStatusCard({
                       </Badge>
                     ) : null}
                     <div className="flex items-center gap-2">
-                      {PlanIcon ? <PlanIcon className={cn("size-4", plan === "pro" ? "fill-current text-primary" : "text-violet-500")} /> : null}
+                      {PlanIcon ? <PlanIcon className={cn("size-4", plan === "pro" ? "text-primary" : "text-violet-500")} /> : null}
                       <p className="text-sm font-semibold text-foreground">{meta.label}</p>
                     </div>
                     <p className="font-heading text-xl font-semibold tracking-tight text-foreground">

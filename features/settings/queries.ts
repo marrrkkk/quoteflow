@@ -57,8 +57,17 @@ export async function getBusinessSettingsForBusiness(
       notifyOnQuoteResponse: businesses.notifyOnQuoteResponse,
       notifyOnMemberInviteResponse: businesses.notifyOnMemberInviteResponse,
       notifyInAppOnNewInquiry: businesses.notifyInAppOnNewInquiry,
+      notifyInAppOnQuoteSent: businesses.notifyInAppOnQuoteSent,
       notifyInAppOnQuoteResponse: businesses.notifyInAppOnQuoteResponse,
       notifyInAppOnMemberInviteResponse: businesses.notifyInAppOnMemberInviteResponse,
+      notifyPushOnNewInquiry: businesses.notifyPushOnNewInquiry,
+      notifyPushOnQuoteSent: businesses.notifyPushOnQuoteSent,
+      notifyPushOnQuoteResponse: businesses.notifyPushOnQuoteResponse,
+      notifyPushOnMemberInviteResponse: businesses.notifyPushOnMemberInviteResponse,
+      notifyOnFollowUpReminder: businesses.notifyOnFollowUpReminder,
+      notifyInAppOnFollowUpReminder: businesses.notifyInAppOnFollowUpReminder,
+      notifyOnQuoteExpiring: businesses.notifyOnQuoteExpiring,
+      notifyInAppOnQuoteExpiring: businesses.notifyInAppOnQuoteExpiring,
       defaultCurrency: businesses.defaultCurrency,
       activeWorkspaceBusinessCount: sql<number>`(
         select count(*)::int

@@ -11,9 +11,10 @@ export const auditEntityTypes = [
 export const auditSources = ["app", "webhook", "system"] as const;
 
 export const auditActionLabels = {
-  "request.archived": "Request archived",
-  "request.trashed": "Request moved to trash",
-  "request.restored": "Request restored",
+  "request.archived": "Inquiry archived",
+  "request.trashed": "Inquiry moved to trash",
+  "request.restored": "Inquiry restored",
+  "request.updated": "Inquiry updated",
   "quote.created": "Quote created",
   "quote.sent": "Quote sent",
   "quote.voided": "Quote voided",
@@ -32,8 +33,11 @@ export const auditActionLabels = {
   "subscription.canceled": "Subscription canceled",
   "subscription.reactivated": "Subscription reactivated",
   "member.invited": "Member invited",
+  "member.joined": "Member joined",
   "member.removed": "Member removed",
   "member.role_changed": "Member role changed",
+  "member.invite_link_regenerated": "Member invite link regenerated",
+  "member.invite_canceled": "Member invite canceled",
   "account.deletion_requested": "Account deletion requested",
   "account.deleted": "Account deleted",
 } as const;

@@ -18,15 +18,16 @@ This version has breaking changes - APIs, conventions, and file structure may al
 Requo is an owner-led SaaS app for service businesses that handle inbound inquiries and custom quotes. The shared product workflow is:
 
 1. capture inquiries,
-2. qualify leads,
-3. send professional quotes,
-4. follow up consistently.
+2. turn qualified inquiries into quotes,
+3. share or send professional quotes,
+4. follow up consistently,
+5. track viewed, accepted, rejected, expired, and voided quote states.
 
-The app also handles public inquiry intake, business-scoped dashboards, quotes, knowledge files, AI-assisted drafts, transactional email, and workspace-level subscription billing.
+The app also handles public inquiry intake, public quote pages, business-scoped dashboards, manual and Requo email quote delivery, follow-up tasks, analytics, notifications, knowledge files, AI-assisted drafts, transactional email, workspace membership, and workspace-level subscription billing.
 
 ## Product Direction
 
-- Prioritize the inquiry -> qualification -> quote -> follow-up workflow across marketing, onboarding, defaults, and in-app product copy.
+- Prioritize the inquiry -> quote -> share/send -> follow-up -> viewed/accepted/rejected tracking workflow across marketing, onboarding, defaults, and in-app product copy.
 - Support multiple business types through editable starter templates.
 - Do not over-specialize into a single vertical.
 - Lead with workflow value, not generic configurability.
@@ -41,6 +42,10 @@ The app also handles public inquiry intake, business-scoped dashboards, quotes, 
 - `lib/` owns auth, database access, provider clients, env parsing, and shared utilities.
 - `lib/billing/` owns billing domain types, plan pricing, region detection, subscription service, webhook processing, and provider clients.
 - `features/billing/` owns checkout UI, billing status, server actions, and billing-related queries.
+- `features/follow-ups/` owns follow-up scheduling, reminders, and lifecycle mutations.
+- `features/workspaces/`, `features/workspace-members/`, and `features/business-members/` own workspace and business permission surfaces.
+- `features/analytics/` owns conversion/workflow analytics and public view tracking.
+- `features/audit/` owns audit log writes and reads for sensitive workspace actions.
 - `scripts/` owns migrations, seeders, and operational scripts.
 - `tests/unit/`, `tests/components/`, and `tests/integration/` own fast automated confidence for logic, UI, and server behavior.
 - `tests/e2e/` owns Playwright coverage for user flows.
@@ -53,7 +58,7 @@ The app also handles public inquiry intake, business-scoped dashboards, quotes, 
 - Better Auth for authentication and sessions
 - Supabase for storage and realtime-backed plumbing
 - Resend for transactional email
-- OpenRouter for AI features
+- AI provider routing through Groq, Gemini, and OpenRouter
 - PayMongo for QRPh payments (Philippines)
 - Paddle for card/global payments
 
@@ -115,6 +120,15 @@ Do not add:
 - Plan access is resolved through `getEffectivePlan()` in the subscription service, which checks subscription status, cancellation dates, and grace periods.
 - Do not bypass the subscription service or write directly to `workspace_subscriptions`.
 
+## Testing Priorities
+
+- Test behavior and product risk, not implementation details.
+- Backend permission tests are mandatory for business-scoped and workspace-scoped behavior.
+- Keep schema tests focused on external input boundaries that protect inquiry creation, quote creation, public quote responses, billing, and critical route handlers.
+- Keep integration tests DB-backed for access control, workflow mutations, quote status transitions, public analytics, billing webhooks, and server actions.
+- Keep component tests only when they exercise meaningful user interaction or auth/payment state. Avoid shallow render tests and brittle snapshots.
+- Keep Playwright coverage focused on smoke workflows: sign-in, non-member denial, public inquiry submission, quote creation/sending, and public quote response.
+
 ## UI Rules
 
 - Follow `DESIGN.md`. Do not invent a new visual language.
@@ -134,7 +148,7 @@ A task is done when:
 
 1. the requested slice is implemented,
 2. messaging is clearer and aligned with the owner-led service business ICP,
-3. the workflow emphasis stays on inquiry -> qualification -> quote -> follow-up,
+3. the workflow emphasis stays on inquiry -> quote -> share/send -> follow-up -> viewed/accepted/rejected tracking,
 4. onboarding remains guided through a few starter business paths,
 5. templates and defaults are more opinionated but still editable,
 6. the implementation stays lightweight, maintainable, and consistent with the current architecture and design system,

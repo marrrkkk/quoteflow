@@ -1,4 +1,4 @@
-import { Building2, Mail, Phone } from "lucide-react";
+import { AtSign, Mail } from "lucide-react";
 
 import { InfoTile } from "@/components/shared/info-tile";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ export function InquiryPrintDocument({
       <section className="section-panel overflow-hidden print:rounded-none print:border-0 print:bg-transparent print:shadow-none">
         <div className="flex flex-col gap-3 px-4 py-4">
           <div className="flex flex-col gap-2 border-b border-border/70 pb-3">
-            <p className="meta-label">Request printout</p>
+            <p className="meta-label">Inquiry printout</p>
             <div className="flex flex-col gap-2">
               <h2 className="font-heading text-2xl font-semibold tracking-tight text-balance">
                 {inquiry.customerName}
@@ -58,17 +58,12 @@ export function InquiryPrintDocument({
             <InfoTile
               icon={Mail}
               label="Email"
-              value={inquiry.customerEmail}
+              value={inquiry.customerEmail ?? "Not provided"}
             />
             <InfoTile
-              icon={Phone}
-              label="Phone"
-              value={inquiry.customerPhone ?? "Not provided"}
-            />
-            <InfoTile
-              icon={Building2}
-              label="Company"
-              value={inquiry.companyName ?? "Not provided"}
+              icon={AtSign}
+              label={`Contact (${inquiry.customerContactMethod})`}
+              value={inquiry.customerContactHandle}
             />
             <InfoTile
               label="Received"
@@ -82,7 +77,7 @@ export function InquiryPrintDocument({
         <div className="flex flex-col gap-3">
           <Card className="gap-0 print:rounded-none print:border-0 print:bg-transparent print:shadow-none">
             <CardHeader className="gap-1 pb-2">
-              <CardTitle>Request summary</CardTitle>
+              <CardTitle>Inquiry summary</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Submitted through the public form.
               </p>
@@ -148,7 +143,7 @@ export function InquiryPrintDocument({
             <CardHeader className="gap-1 pb-2">
               <CardTitle>Attachments</CardTitle>
               <p className="text-sm text-muted-foreground">
-                File metadata from the request.
+                File metadata from the inquiry.
               </p>
             </CardHeader>
             <CardContent>

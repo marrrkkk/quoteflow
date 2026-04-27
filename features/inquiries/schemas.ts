@@ -7,6 +7,7 @@ import {
   type InquiryFormConfig,
   type InquiryFormCustomFieldDefinition,
   type InquiryFormFieldDefinition,
+  type InquiryFormSystemFieldDefinition,
   type InquirySubmittedFieldSnapshot,
   type InquirySubmittedFieldSnapshotField,
 } from "@/features/inquiries/form-config";
@@ -148,9 +149,9 @@ const publicInquiryAttachmentSchema = z.preprocess(
 
 export type PublicInquirySubmissionInput = {
   customerName: string;
-  customerEmail: string;
-  customerPhone?: string;
-  companyName?: string;
+  customerEmail?: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   requestedDeadline?: string;
   budgetText?: string;
@@ -408,31 +409,9 @@ function createPublicInquirySubmissionSchema(config: InquiryFormConfig) {
     });
   }
 
-  if (config.contactFields.customerEmail.enabled) {
-    shape.customerEmail = z
-      .string()
-      .trim()
-      .min(1, getTextFieldMessage(config.contactFields.customerEmail.label))
-      .max(320, "Email address must be 320 characters or fewer.")
-      .email("Enter a valid email address.");
-  }
-
-  if (config.contactFields.customerPhone.enabled) {
-    shape.customerPhone = config.contactFields.customerPhone.required
-      ? createRequiredTextSchema({
-          label: config.contactFields.customerPhone.label,
-          maxLength: 40,
-        })
-      : createOptionalTextSchema(config.contactFields.customerPhone.label, 40);
-  }
-
-  if (config.contactFields.companyName.enabled) {
-    shape.companyName = config.contactFields.companyName.required
-      ? createRequiredTextSchema({
-          label: config.contactFields.companyName.label,
-          maxLength: 120,
-        })
-      : createOptionalTextSchema(config.contactFields.companyName.label, 120);
+  if (config.contactFields.preferredContact.enabled) {
+    shape.customerContactMethod = z.string().trim().min(1, "Choose a preferred contact method.");
+    shape.customerContactHandle = z.string().trim().min(1, "Enter your contact details.");
   }
 
   for (const field of config.projectFields) {
@@ -479,7 +458,18 @@ function createPublicInquirySubmissionSchema(config: InquiryFormConfig) {
     }
   }
 
-  return z.object(shape);
+  return z.object(shape).superRefine((data, ctx) => {
+    if (data.customerContactMethod === "email") {
+      const result = z.string().email("Enter a valid email address.").safeParse(data.customerContactHandle);
+      if (!result.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter a valid email address.",
+          path: ["customerContactHandle"],
+        });
+      }
+    }
+  });
 }
 
 function getSubmittedFieldSnapshotValue(
@@ -563,12 +553,13 @@ export function validatePublicInquirySubmission(
   const schema = createPublicInquirySubmissionSchema(config);
   const candidate: Record<string, unknown> = {};
 
-  for (const contactKey of inquiryContactFieldKeys) {
-    if (!config.contactFields[contactKey].enabled) {
-      continue;
-    }
-
-    candidate[contactKey] = getRawFormValue(formData, contactKey);
+  if (config.contactFields.customerName.enabled) {
+    candidate.customerName = getRawFormValue(formData, "customerName");
+  }
+  
+  if (config.contactFields.preferredContact.enabled) {
+    candidate.customerContactMethod = getRawFormValue(formData, "customerContactMethod");
+    candidate.customerContactHandle = getRawFormValue(formData, "customerContactHandle");
   }
 
   for (const field of config.projectFields) {
@@ -595,15 +586,9 @@ export function validatePublicInquirySubmission(
     success: true as const,
     data: {
       customerName: String(parsedValues.customerName ?? ""),
-      customerEmail: String(parsedValues.customerEmail ?? ""),
-      customerPhone:
-        typeof parsedValues.customerPhone === "string"
-          ? parsedValues.customerPhone
-          : undefined,
-      companyName:
-        typeof parsedValues.companyName === "string"
-          ? parsedValues.companyName
-          : undefined,
+      customerEmail: parsedValues.customerContactMethod === "email" ? String(parsedValues.customerContactHandle) : null,
+      customerContactMethod: String(parsedValues.customerContactMethod ?? "email"),
+      customerContactHandle: String(parsedValues.customerContactHandle ?? ""),
       serviceCategory: String(parsedValues.serviceCategory ?? ""),
       requestedDeadline:
         typeof parsedValues.requestedDeadline === "string"
@@ -621,6 +606,56 @@ export function validatePublicInquirySubmission(
       submittedFieldSnapshot: buildSubmittedFieldSnapshot(config, parsedValues),
     } satisfies PublicInquirySubmissionInput,
   };
+}
+
+const manualQuickInquiryFieldKeys = new Set([
+  "serviceCategory",
+  "requestedDeadline",
+  "budgetText",
+  "details",
+]);
+
+export function createManualQuickInquiryFormConfig(
+  config: InquiryFormConfig,
+): InquiryFormConfig {
+  const projectFields = config.projectFields
+    .filter(
+      (field): field is InquiryFormSystemFieldDefinition =>
+        field.kind === "system" && manualQuickInquiryFieldKeys.has(field.key),
+    )
+    .map((field) => ({
+      ...field,
+      enabled: true,
+      required: field.key === "serviceCategory" || field.key === "details",
+    }));
+
+  return {
+    ...config,
+    contactFields: {
+      ...config.contactFields,
+      customerName: {
+        ...config.contactFields.customerName,
+        enabled: true,
+        required: true,
+      },
+      preferredContact: {
+        ...config.contactFields.preferredContact,
+        enabled: true,
+        required: true,
+      },
+    },
+    projectFields,
+  };
+}
+
+export function validateManualQuickInquirySubmission(
+  config: InquiryFormConfig,
+  formData: FormData,
+) {
+  return validatePublicInquirySubmission(
+    createManualQuickInquiryFormConfig(config),
+    formData,
+  );
 }
 
 export const inquiryIdSchema = z.string().trim().min(1).max(128);
@@ -666,6 +701,14 @@ export const inquiryListFiltersSchema = z.object({
     )
     .catch("newest"),
   page: coercePositiveInteger("Page").catch(1),
+});
+
+export const inquiryFormSelectionSchema = z.object({
+  formSlug: z
+    .string()
+    .trim()
+    .min(1, "Choose an inquiry form.")
+    .max(120),
 });
 
 export const inquiryNoteSchema = z.object({

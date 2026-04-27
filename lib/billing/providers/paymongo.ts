@@ -58,9 +58,15 @@ type PayMongoPaymentIntentResponse = {
       currency: string;
       status: string;
       client_key: string;
+      created_at?: number;
       next_action?: {
         type: string;
         redirect?: { url: string };
+        code?: {
+          url?: string;
+          test_url?: string;
+          image_url?: string;
+        };
       };
       payments: Array<{
         id: string;
@@ -98,6 +104,16 @@ type PayMongoAttachResponse = {
     };
   };
 };
+
+type CancelPaymentIntentResult =
+  | {
+      ok: true;
+      status: "active" | "canceled" | "expired" | "failed";
+    }
+  | {
+      ok: false;
+      message: string;
+    };
 
 /**
  * Creates a QRPh checkout flow:
@@ -151,6 +167,7 @@ export async function createQrPhCheckout(params: {
           data: {
             attributes: {
               type: "qrph",
+              expiry_seconds: 1800,
             },
           },
         },
@@ -184,7 +201,11 @@ export async function createQrPhCheckout(params: {
         type: "qrph",
         qrCodeData: redirectUrl,
         paymentIntentId,
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 min
+        expiresAt: new Date(
+          ((intentResponse.data.attributes.created_at ?? Math.floor(Date.now() / 1000)) +
+            30 * 60) *
+            1000,
+        ).toISOString(),
         amount,
         currency: "PHP",
       };
@@ -222,6 +243,111 @@ export async function getPaymentIntent(
   } catch {
     return null;
   }
+}
+
+function mapPaymentIntentResolutionStatus(
+  paymongoStatus: string,
+): "pending" | "active" | "canceled" | "expired" | "failed" {
+  if (paymongoStatus === "cancelled") {
+    return "canceled";
+  }
+
+  return mapPayMongoStatus(paymongoStatus);
+}
+
+export async function cancelPaymentIntent(
+  paymentIntentId: string,
+): Promise<CancelPaymentIntentResult> {
+  try {
+    const response = await paymongoRequest<PayMongoPaymentIntentResponse>(
+      "POST",
+      `/payment_intents/${paymentIntentId}/cancel`,
+    );
+
+    const status = mapPaymentIntentResolutionStatus(
+      response.data.attributes.status,
+    );
+
+    if (status === "pending") {
+      return {
+        ok: false,
+        message: "PayMongo did not confirm the cancellation yet.",
+      };
+    }
+
+    return { ok: true, status };
+  } catch (error) {
+    const currentIntent = await getPaymentIntent(paymentIntentId);
+
+    if (currentIntent) {
+      const status = mapPaymentIntentResolutionStatus(
+        currentIntent.attributes.status,
+      );
+
+      if (status !== "pending") {
+        return { ok: true, status };
+      }
+    }
+
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to cancel the QR Ph payment.",
+    };
+  }
+}
+
+/**
+ * Retrieves a pending Payment Intent and extracts QR data if still valid.
+ * Returns null if the intent is no longer awaiting payment or has expired.
+ */
+export async function getPaymentIntentQrData(
+  paymentIntentId: string,
+): Promise<{
+  qrCodeData: string;
+  paymentIntentId: string;
+  expiresAt: string;
+  amount: number;
+  currency: "PHP";
+  status: string;
+} | null> {
+  const data = await getPaymentIntent(paymentIntentId);
+
+  if (!data) {
+    return null;
+  }
+
+  const { created_at, status, amount, next_action } = data.attributes;
+  const mappedStatus = mapPayMongoStatus(status);
+
+  // Only return QR data if the intent is still pending
+  if (mappedStatus !== "pending") {
+    return null;
+  }
+
+  const qrUrl =
+    next_action?.redirect?.url ??
+    next_action?.code?.url ??
+    next_action?.code?.test_url;
+
+  if (!qrUrl) {
+    return null;
+  }
+
+  const expiresAt = new Date(
+    ((created_at ?? Math.floor(Date.now() / 1000)) + 30 * 60) * 1000,
+  ).toISOString();
+
+  return {
+    qrCodeData: qrUrl,
+    paymentIntentId: data.id,
+    expiresAt,
+    amount,
+    currency: "PHP",
+    status,
+  };
 }
 
 /* ── Webhook verification ─────────────────────────────────────────────────── */

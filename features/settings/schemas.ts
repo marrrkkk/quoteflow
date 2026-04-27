@@ -236,8 +236,17 @@ export const businessNotificationSettingsSchema = z.object({
   notifyOnQuoteResponse: z.boolean(),
   notifyOnMemberInviteResponse: z.boolean(),
   notifyInAppOnNewInquiry: z.boolean(),
+  notifyInAppOnQuoteSent: z.boolean(),
   notifyInAppOnQuoteResponse: z.boolean(),
   notifyInAppOnMemberInviteResponse: z.boolean(),
+  notifyPushOnNewInquiry: z.boolean(),
+  notifyPushOnQuoteSent: z.boolean(),
+  notifyPushOnQuoteResponse: z.boolean(),
+  notifyPushOnMemberInviteResponse: z.boolean(),
+  notifyOnFollowUpReminder: z.boolean(),
+  notifyInAppOnFollowUpReminder: z.boolean(),
+  notifyOnQuoteExpiring: z.boolean(),
+  notifyInAppOnQuoteExpiring: z.boolean(),
 });
 
 export type BusinessGeneralSettingsInput = z.infer<

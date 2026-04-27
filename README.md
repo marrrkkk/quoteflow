@@ -9,8 +9,9 @@
 </p>
 
 <p align="center">
-  Requo helps service businesses capture inquiries, qualify leads, send quotes, and
-  follow up from one place.
+  Requo helps service businesses capture inquiries, turn qualified work into quotes,
+  share or send those quotes, follow up, and track viewed, accepted, rejected,
+  expired, and voided states from one place.
 </p>
 
 <p align="center">
@@ -25,9 +26,10 @@ inquiries and custom quotes.
 It is built around one shared workflow:
 
 - capture inquiries from public forms, referrals, ads, socials, and directories
-- qualify leads before pricing
-- send clear, professional quotes faster
+- turn qualified inquiries into clear, professional quotes
+- share quote links or send quote emails from Requo
 - follow up consistently without losing context
+- track public quote views and customer accept/reject responses
 
 The product supports multiple business types through guided starter templates, while
 keeping the core experience focused on this workflow rather than generic configurability.
@@ -37,11 +39,14 @@ keeping the core experience focused on this workflow rather than generic configu
 - Public inquiry intake with editable forms, supporting cards, optional showcase images, and file uploads
 - Guided onboarding with 4 starter templates:
   `Agency / Studio`, `Consultant / Professional Services`, `Contractor / Home Service`, and `General Service Business`
-- Owner dashboard for inquiries, lead qualification, quotes, follow-up, and business settings
-- Quote workflow with draft, sent, accepted, rejected, expired, and follow-up states
+- Owner dashboard for inquiries, lead qualification, quotes, follow-ups, analytics, and business settings
+- Quote workflow with draft, sent, viewed, accepted, rejected, expired, voided, and post-acceptance states
+- Public quote pages with customer accept/reject responses and response messages
+- Manual quote sharing plus Requo email sending through transactional email
+- Follow-up scheduling and lifecycle tracking for inquiries and quotes
 - Starter defaults for inquiry fields, reply snippets, and quote notes that stay editable later
 - Knowledge and FAQ management for business-specific reference material
-- AI-assisted response drafting through OpenRouter
+- AI-assisted response drafting through Groq, Gemini, and OpenRouter fallback routing
 - Transactional email flows through Resend
 - Subscription billing with PayMongo (QRPh for Philippines) and Paddle (cards for international)
 - Analytics and notification foundations for operational visibility
@@ -57,7 +62,7 @@ keeping the core experience focused on this workflow rather than generic configu
 - Drizzle ORM with PostgreSQL
 - Supabase for storage and realtime-backed notification plumbing
 - Resend for transactional email
-- OpenRouter for AI features
+- Groq, Gemini, and OpenRouter for AI-assisted drafting
 - PayMongo for QRPh payments (Philippines)
 - Paddle for card/global payments
 
@@ -139,7 +144,6 @@ The demo seed also creates two additional sample businesses, three inquiry forms
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_JWT_SECRET`
-- `APP_ENCRYPTION_KEYS`
 - `APP_TOKEN_HASH_SECRET`
 
 ### Database tooling
@@ -156,13 +160,16 @@ The demo seed also creates two additional sample businesses, three inquiry forms
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `RESEND_REPLY_TO_EMAIL`
+- `GROQ_API_KEY`
+- `GEMINI_API_KEY`
 - `OPENROUTER_API_KEY`
-- `OPENROUTER_DEFAULT_MODEL`
 
 ### Optional app config
 
 - `NEXT_PUBLIC_BETTER_AUTH_URL`
 - `VERCEL_URL`
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
 - `DEMO_OWNER_NAME`
 - `DEMO_OWNER_EMAIL`
 - `DEMO_OWNER_PASSWORD`
@@ -170,6 +177,7 @@ The demo seed also creates two additional sample businesses, three inquiry forms
 - `DEMO_BUSINESS_SLUG`
 - `DEMO_QUOTE_PUBLIC_TOKEN`
 - `DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN`
+- `DEMO_VOIDED_QUOTE_PUBLIC_TOKEN`
 
 ### Billing providers
 
@@ -226,18 +234,17 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 | `npm run test:coverage` | Run unit and component tests with coverage report |
 | `npm run db:generate` | Generate Drizzle artifacts |
 | `npm run db:migrate` | Apply Drizzle migrations |
-| `npm run db:backfill-security-secrets` | Backfill encrypted reversible secrets after configuring app crypto keys |
 | `npm run db:push` | Push schema changes directly |
 | `npm run db:studio` | Open Drizzle Studio |
 | `npm run db:seed-demo` | Seed the demo workspace |
 
 ## Testing And CI
 
-Requo uses a layered test strategy:
+Requo uses a layered, risk-based test strategy:
 
-- `tests/unit/` covers logic-heavy utilities, pricing, plan access, helpers, and parsing behavior
-- `tests/components/` covers high-value interactive UI with Vitest, jsdom, and React Testing Library
-- `tests/integration/` covers DB-backed actions, webhook handlers, and authorization-sensitive server behavior
+- `tests/unit/` covers validation schemas, parsing, plan access, pricing, auth helpers, and critical route authorization
+- `tests/components/` covers meaningful interactive UI behavior with Vitest, jsdom, and React Testing Library
+- `tests/integration/` covers DB-backed access control, inquiry submission, quote mutation/status transitions, public analytics, follow-ups, billing routes, and server behavior
 - `tests/e2e/` covers product-critical browser journeys with Playwright
 
 The browser suite is intentionally split:
@@ -256,7 +263,7 @@ Deployment and CI responsibilities are intentionally split:
 
 - `app/` route groups, layouts, pages, and route handlers
 - `components/` shared UI primitives, shell UI, and marketing components
-- `features/` product slices such as account, auth, businesses, inquiries, quotes, knowledge, AI, analytics, notifications, onboarding, settings, and theme
+- `features/` product slices such as account, AI, analytics, audit, auth, billing, businesses, business members, calendar, customers, follow-ups, inquiries, memory/knowledge, notifications, onboarding, quotes, settings, theme, workspace members, and workspaces
 - `lib/` auth, database, provider clients, env validation, and shared utilities
 - `emails/templates/` transactional email rendering
 - `docs/` setup and architecture documentation
@@ -272,6 +279,9 @@ Deployment and CI responsibilities are intentionally split:
 - `lib/db/schema/subscriptions.ts` workspace_subscriptions, billing_events, and payment_attempts tables
 - `features/billing/` checkout dialog, billing status card, upgrade button, server actions, and queries
 - `app/api/billing/` webhook route handlers for PayMongo and Paddle
+- `features/follow-ups/` follow-up creation, rescheduling, completion, skipping, and reminders
+- `features/analytics/` conversion/workflow analytics plus public inquiry and quote view tracking
+- `features/workspace-members/` and `features/business-members/` workspace and business role management
 
 ## Architecture Notes
 
@@ -281,13 +291,13 @@ Deployment and CI responsibilities are intentionally split:
 - Supabase is used for storage and notification plumbing, not Supabase Auth
 - `DESIGN.md` is the canonical UI system, with semantic tokens and shared wrappers implemented in `app/globals.css` and `components/shared/*`
 - Private assets stay behind authenticated route handlers
-- AI drafting stays server-side and uses business context plus uploaded knowledge
-- Marketing, onboarding, starter templates, and in-app copy are aligned around the inquiry -> qualification -> quote -> follow-up workflow
+- AI drafting stays server-side and uses business context plus uploaded knowledge, with provider fallback ordered Groq -> Gemini -> OpenRouter
+- Marketing, onboarding, starter templates, and in-app copy are aligned around the inquiry -> quote -> share/send -> follow-up -> viewed/accepted/rejected workflow
 - Starter templates are opinionated defaults, not rigid vertical product modes
 - Subscriptions are workspace-scoped with PayMongo for QRPh and Paddle for cards
 - The `workspaces.plan` column is a denormalized read cache; the authoritative state lives in `workspace_subscriptions`
 - Billing mutations go through `lib/billing/subscription-service.ts`; webhooks go through `lib/billing/webhook-processor.ts`
-- Reversible stored credentials and provider tokens use app-layer encryption via `APP_ENCRYPTION_KEYS`; opaque lookup tokens are hashed
+- Opaque lookup tokens are hashed with `APP_TOKEN_HASH_SECRET` or `BETTER_AUTH_SECRET`
 - See [docs/setup/billing.md](./docs/setup/billing.md) for provider setup instructions
 
 Detailed architecture guidance lives in [docs/architecture/requo-architecture.md](./docs/architecture/requo-architecture.md).
@@ -316,6 +326,7 @@ npm run test:e2e
 - [Design system](./DESIGN.md)
 - [Local setup](./docs/setup/local.md)
 - [Deployment setup](./docs/setup/deployment.md)
+- [Billing setup](./docs/setup/billing.md)
 - [Architecture](./docs/architecture/requo-architecture.md)
 
 Requo is intentionally scoped for owner-led service businesses that handle inbound

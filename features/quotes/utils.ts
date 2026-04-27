@@ -231,6 +231,7 @@ export function parseCurrencyInputToCents(value: string) {
 export function calculateQuoteEditorTotals(
   items: QuoteEditorLineItemValue[],
   discountValue: string,
+  discountType: "amount" | "percentage" = "amount",
 ) {
   const subtotalInCents = items.reduce((sum, item) => {
     const quantity = Number.parseInt(item.quantity.trim(), 10);
@@ -239,10 +240,18 @@ export function calculateQuoteEditorTotals(
 
     return sum + safeQuantity * parseCurrencyInputToCents(item.unitPrice);
   }, 0);
-  const discountInCents = Math.min(
-    subtotalInCents,
-    parseCurrencyInputToCents(discountValue),
-  );
+
+  let parsedDiscount = 0;
+  if (discountType === "percentage") {
+    const percentage = Number.parseFloat(discountValue.trim());
+    if (Number.isFinite(percentage) && percentage > 0) {
+      parsedDiscount = Math.round(subtotalInCents * (percentage / 100));
+    }
+  } else {
+    parsedDiscount = parseCurrencyInputToCents(discountValue);
+  }
+
+  const discountInCents = Math.min(subtotalInCents, parsedDiscount);
 
   return {
     subtotalInCents,
@@ -284,6 +293,8 @@ export function getQuoteEditorInitialValuesFromInquiry(
     title: buildQuoteTitleFromInquiry(inquiry),
     customerName: inquiry.customerName,
     customerEmail: inquiry.customerEmail,
+    customerContactMethod: inquiry.customerContactMethod,
+    customerContactHandle: inquiry.customerContactHandle,
     notes: [
       `Service/category: ${inquiry.serviceCategory}`,
       inquiry.requestedDeadline
@@ -299,6 +310,7 @@ export function getQuoteEditorInitialValuesFromInquiry(
       .join("\n"),
     validUntil: getDefaultQuoteValidityDate(options?.defaultQuoteValidityDays),
     discount: "",
+    discountType: "amount" as const,
     items: [createQuoteEditorLineItem()],
   };
 }
@@ -310,9 +322,12 @@ export function getQuoteEditorInitialValuesFromDetail(
     title: quote.title,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     notes: quote.notes ?? "",
     validUntil: quote.validUntil,
     discount: centsToMoneyInput(quote.discountInCents),
+    discountType: "amount" as const,
     items: quote.items.length
       ? quote.items.map((item) => ({
           id: item.id,
@@ -367,3 +382,154 @@ export function getQuoteReminderKinds(input: {
 
   return reminderKinds;
 }
+
+/* ---------------------------------------------------------------------------
+ * Send channel helpers
+ * --------------------------------------------------------------------------- */
+
+import {
+  AtSign,
+  MessageCircle,
+  MessageSquare,
+  Phone,
+  Smartphone,
+  Link2,
+} from "lucide-react";
+
+import type { QuoteSendChannel } from "@/features/quotes/types";
+
+export const quoteSendChannelLabels: Record<QuoteSendChannel, string> = {
+  email: "Email",
+  sms: "SMS",
+  whatsapp: "WhatsApp",
+  messenger: "Messenger",
+  instagram: "Instagram",
+  phone: "Phone",
+  other: "Other",
+};
+
+export const quoteSendChannelIcons: Record<
+  QuoteSendChannel,
+  typeof AtSign
+> = {
+  email: AtSign,
+  sms: Smartphone,
+  whatsapp: MessageCircle,
+  messenger: MessageSquare,
+  instagram: AtSign,
+  phone: Phone,
+  other: Link2,
+};
+
+export function getSendChannelLabel(channel: QuoteSendChannel) {
+  return quoteSendChannelLabels[channel];
+}
+
+export function getDefaultSendChannel(contactMethod: string): QuoteSendChannel {
+  const normalized = contactMethod.toLowerCase().trim();
+
+  if (normalized === "email") return "email";
+  if (normalized === "sms" || normalized === "text") return "sms";
+  if (normalized === "whatsapp") return "whatsapp";
+  if (normalized === "messenger" || normalized === "facebook") return "messenger";
+  if (normalized === "instagram") return "instagram";
+  if (normalized === "phone" || normalized === "call") return "phone";
+
+  return "other";
+}
+
+/* ---------------------------------------------------------------------------
+ * Message templates
+ * --------------------------------------------------------------------------- */
+
+type MessageTemplateInput = {
+  customerName: string;
+  businessName: string;
+  quoteLink: string;
+};
+
+export function generateQuoteChatMessage(input: MessageTemplateInput) {
+  return `Hi ${input.customerName}, here's your quote from ${input.businessName}: ${input.quoteLink}`;
+}
+
+export function generateQuoteSmsMessage(input: MessageTemplateInput) {
+  return `Hi ${input.customerName}, your quote from ${input.businessName} is ready: ${input.quoteLink}`;
+}
+
+export function generateQuoteEmailSubject(businessName: string) {
+  return `Your quote from ${businessName}`;
+}
+
+export function generateQuoteEmailBody(input: MessageTemplateInput) {
+  return `Hi ${input.customerName},
+
+Here's your quote from ${input.businessName}:
+
+${input.quoteLink}
+
+Please review it when you have time. Let us know if you have any questions.
+
+Thanks,
+${input.businessName}`;
+}
+
+export function generateQuoteFollowUpMessage(input: MessageTemplateInput) {
+  return `Hi ${input.customerName}, just following up on the quote we sent: ${input.quoteLink}
+
+Let us know if you have any questions.`;
+}
+
+export function getChannelPrimaryAction(
+  channel: QuoteSendChannel,
+): { label: string; variant: "email" | "copy" } {
+  switch (channel) {
+    case "email":
+      return { label: "Open in Email App", variant: "email" };
+    case "sms":
+      return { label: "Copy SMS Message", variant: "copy" };
+    case "whatsapp":
+      return { label: "Copy WhatsApp Message", variant: "copy" };
+    case "messenger":
+    case "instagram":
+      return { label: "Copy Chat Message", variant: "copy" };
+    case "phone":
+      return { label: "Copy Quote Link", variant: "copy" };
+    case "other":
+    default:
+      return { label: "Copy Quote Link", variant: "copy" };
+  }
+}
+
+export function getChannelMessage(
+  channel: QuoteSendChannel,
+  input: MessageTemplateInput,
+) {
+  switch (channel) {
+    case "email":
+      return generateQuoteEmailBody(input);
+    case "sms":
+      return generateQuoteSmsMessage(input);
+    case "whatsapp":
+    case "messenger":
+    case "instagram":
+      return generateQuoteChatMessage(input);
+    case "phone":
+    case "other":
+    default:
+      return generateQuoteChatMessage(input);
+  }
+}
+
+export function buildMailtoUrl(input: {
+  to: string;
+  subject: string;
+  body: string;
+}) {
+  const params = new URLSearchParams();
+
+  params.set("subject", input.subject);
+  params.set("body", input.body);
+
+  return `mailto:${encodeURIComponent(input.to)}?${params.toString()}`;
+}
+

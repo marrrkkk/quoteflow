@@ -13,7 +13,9 @@ export {
 export type BusinessOverviewInquiryActionItem = {
   id: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   status: InquiryStatus;
   submittedAt: Date;
@@ -25,7 +27,9 @@ export type BusinessOverviewQuoteActionItem = {
   quoteNumber: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   currency: string;
   totalInCents: number;
   status: QuoteStatus;
@@ -42,7 +46,6 @@ export type BusinessOverviewCounts = {
   overdueInquiries: number;
   expiringSoonQuotes: number;
   newInquiries: number;
-  followUpDueQuotes: number;
   recentAcceptedQuotes: number;
 };
 
@@ -50,7 +53,6 @@ export type BusinessOverviewData = {
   overdueInquiries: BusinessOverviewInquiryActionItem[];
   expiringSoonQuotes: BusinessOverviewQuoteActionItem[];
   newInquiries: BusinessOverviewInquiryActionItem[];
-  followUpDueQuotes: BusinessOverviewQuoteActionItem[];
   recentAcceptedQuotes: BusinessOverviewQuoteActionItem[];
   counts: BusinessOverviewCounts;
 };

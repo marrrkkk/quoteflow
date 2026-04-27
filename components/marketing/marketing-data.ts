@@ -31,7 +31,7 @@ export const whyPoints: readonly {
 }[] = [
   {
     icon: Upload,
-    title: "The request stays complete",
+    title: "The inquiry stays complete",
     description:
       "Keep the customer's details, files, timing, and scope tied to the same job instead of scattered across messages.",
   },
@@ -51,7 +51,7 @@ export const whyPoints: readonly {
 
 export const workflowSteps = [
   {
-    title: "Capture the request",
+    title: "Capture the inquiry",
     description:
       "Collect a new inquiry from your public page or add the lead yourself when it comes in elsewhere.",
   },

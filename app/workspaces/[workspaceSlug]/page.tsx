@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Settings2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/shared/brand-mark";
@@ -10,7 +10,6 @@ import { getWorkspaceOverviewBySlug, getWorkspaceListForUser } from "@/features/
 import { WorkspaceOverviewContent } from "@/features/workspaces/components/workspace-overview";
 import { createBusinessAction } from "@/features/businesses/actions";
 import {
-  getWorkspaceSettingsPath,
   getWorkspacePath,
   workspacesHubPath,
 } from "@/features/workspaces/routes";
@@ -19,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ThemePreferenceSync } from "@/features/theme/components/theme-preference-sync";
 import { getThemePreferenceForUser } from "@/features/theme/queries";
 import { getWorkspaceBillingOverview } from "@/features/billing/queries";
+import { WorkspaceCheckoutProvider } from "@/features/billing/components/workspace-checkout-provider";
 import { finalizeScheduledWorkspaceDeletionIfDue } from "@/features/workspaces/mutations";
 
 type WorkspacePageProps = {
@@ -50,21 +50,21 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
     notFound();
   }
 
-  const finalizedDeletion = await finalizeScheduledWorkspaceDeletionIfDue(overview.id);
+  const [finalizedDeletion, billingOverview] = await Promise.all([
+    finalizeScheduledWorkspaceDeletionIfDue(overview.id),
+    getWorkspaceBillingOverview(overview.id),
+  ]);
 
   if (finalizedDeletion.deleted) {
     redirect(workspacesHubPath);
   }
-
-  const billingOverview = await getWorkspaceBillingOverview(overview.id);
-  const isOwner = overview.memberRole === "owner";
   const avatarSrc = resolveUserAvatarSrc({
     avatarStoragePath: profile?.avatarStoragePath,
     profileUpdatedAt: profile?.updatedAt,
     oauthImage: session.user.image ?? null,
   });
 
-  return (
+  const content = (
     <>
       <ThemePreferenceSync
         themePreference={themePreference}
@@ -88,19 +88,6 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
             </Button>
           </div>
           <div className="flex items-center gap-3">
-            {isOwner && (
-              <Button
-                asChild
-                className="size-10 rounded-xl border-border/70 bg-background/90 shadow-sm hover:bg-muted/35"
-                size="icon"
-                title="Workspace settings"
-                variant="outline"
-              >
-                <Link href={getWorkspaceSettingsPath(overview.slug)} prefetch={true}>
-                  <Settings2 className="size-4" />
-                </Link>
-              </Button>
-            )}
             <AccountUserMenu
               user={{
                 id: session.user.id,
@@ -124,9 +111,7 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
             </div>
             
             <WorkspaceOverviewContent
-              businessView={businessView}
               overview={overview}
-              searchParams={searchParams}
               workspaceList={workspaceList}
               billingOverview={billingOverview!}
               createBusinessAction={createBusinessAction}
@@ -135,5 +120,15 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
         </main>
       </div>
     </>
+  );
+
+  if (!billingOverview) {
+    return content;
+  }
+
+  return (
+    <WorkspaceCheckoutProvider billing={billingOverview}>
+      {content}
+    </WorkspaceCheckoutProvider>
   );
 }

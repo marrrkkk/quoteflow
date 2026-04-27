@@ -36,6 +36,7 @@ import { getAccountProfilePath } from "@/features/account/routes";
 import {
   getBusinessAnalyticsPath,
   getBusinessInquiriesExportPath,
+  getBusinessNewInquiryPath,
   getBusinessQuotesExportPath,
   getBusinessQuotesPath,
   getBusinessSettingsPath,
@@ -141,6 +142,14 @@ export function CommandMenu({ businessSlug, role, workspaceSlug }: CommandMenuPr
               <CommandGroup heading="Create">
                 <CommandItem
                   onSelect={() =>
+                    runCommand(() => router.push(getBusinessNewInquiryPath(businessSlug)))
+                  }
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>New inquiry</span>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() =>
                     runCommand(() => router.push(`${getBusinessQuotesPath(businessSlug)}/new`))
                   }
                 >
@@ -170,7 +179,7 @@ export function CommandMenu({ businessSlug, role, workspaceSlug }: CommandMenuPr
                   }
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  <span>Download requests (CSV)</span>
+                  <span>Download inquiries (CSV)</span>
                 </CommandItem>
               </CommandGroup>
 

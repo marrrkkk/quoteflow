@@ -17,26 +17,30 @@ Minimum local requirements:
 - `DATABASE_MIGRATION_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
-- `APP_ENCRYPTION_KEYS`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_JWT_SECRET`
 
-Generate `APP_ENCRYPTION_KEYS` with:
-
-```bash
-node -e "console.log('v1:' + require('node:crypto').randomBytes(32).toString('base64'))"
-```
-
 Optional but commonly needed:
 
 - `NEXT_PUBLIC_BETTER_AUTH_URL`
+- `APP_TOKEN_HASH_SECRET`
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `RESEND_REPLY_TO_EMAIL`
+- `GROQ_API_KEY`
+- `GEMINI_API_KEY`
 - `OPENROUTER_API_KEY`
-- `OPENROUTER_DEFAULT_MODEL`
+- PayMongo and Paddle variables from `docs/setup/billing.md` when testing checkout or webhooks
+
+Generate Web Push VAPID keys with:
+
+```bash
+npx web-push generate-vapid-keys
+```
 
 ## Provider Expectations
 
@@ -89,10 +93,12 @@ Where to get it in Supabase:
 - Password reset and inquiry notification emails will be skipped when Resend is not configured.
 - Quote sending intentionally returns an error when Resend is not configured, because the action is explicit and user-facing.
 
-### OpenRouter
+### AI Providers
 
-- Leave `OPENROUTER_API_KEY` blank if you do not need live AI locally.
-- The inquiry assistant returns a configuration-related error when OpenRouter is not configured.
+- The AI router tries configured providers in this order: Groq, Gemini, then OpenRouter.
+- Leave `GROQ_API_KEY`, `GEMINI_API_KEY`, and `OPENROUTER_API_KEY` blank if you do not need live AI locally.
+- Configure at least one provider to test AI-assisted inquiry replies or drafting.
+- The inquiry assistant returns a configuration-related error when no AI provider is configured.
 
 ## Local Bootstrap
 
@@ -123,6 +129,7 @@ Default demo values:
 - Business slug: `brightside-print-studio`
 - Demo sent quote token: `demoquote1002senttoken`
 - Demo expired quote token: `demoquote1005expiredtoken`
+- Demo voided quote token: `demoquote1006voidedtoken`
 
 The seed also adds two extra sample businesses, three inquiry forms per business, and several hundred inquiries and quotes while keeping the primary BrightSide demo workspace stable for local testing.
 
@@ -131,8 +138,10 @@ The seed supports overriding these values through the `DEMO_*` env variables in 
 ### 4. Start the app
 
 ```bash
-npm run dev
+npm run dev:app
 ```
+
+Use `npm run dev` only when you also need an ngrok tunnel for callbacks or webhook testing.
 
 Open the app at the same origin configured in `BETTER_AUTH_URL`.
 
@@ -142,15 +151,18 @@ Run the repo health checks:
 
 ```bash
 npm run check
+npm run test
+npm run test:integration
 npm run build
-npm run test:e2e
+npm run test:e2e:smoke
 ```
 
 ## Notes for Local Testing
 
-- The Playwright suite starts its own local server, sets `BETTER_AUTH_URL` to `127.0.0.1`, and disables live Resend and OpenRouter calls.
+- The Playwright suite starts its own local server, sets `BETTER_AUTH_URL` to `127.0.0.1`, and disables live Resend and AI provider calls.
 - The E2E suite uses the seeded demo business and fixed public quote tokens.
-- The current automated suite does not cover live storage uploads, live Resend delivery, or live OpenRouter generation.
+- The current automated suite does not cover live storage uploads, live Resend delivery, or live AI generation.
+- If port `3000` is already occupied, run Playwright with another port, for example `$env:PORT='3100'; npm run test:e2e:smoke` in PowerShell.
 
 ### Canonical Dashboard Routes
 
@@ -160,6 +172,7 @@ Use one canonical route set in docs and tests:
 - Inquiries: `/businesses/<slug>/dashboard/inquiries`
 - Quotes: `/businesses/<slug>/dashboard/quotes`
 - Forms: `/businesses/<slug>/dashboard/forms`
+- Members: `/businesses/<slug>/dashboard/members`
 - Settings hub: `/businesses/<slug>/dashboard/settings`
 - Settings sections:
   - General: `/settings/general`
@@ -168,6 +181,7 @@ Use one canonical route set in docs and tests:
   - Quote defaults: `/settings/quote`
   - Pricing library: `/settings/pricing`
   - Knowledge base: `/settings/knowledge`
+  - Billing: `/workspaces/<workspaceSlug>/settings/billing`
 
 ### Product Notes
 

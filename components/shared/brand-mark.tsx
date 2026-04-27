@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandWordmark } from "@/components/shared/brand-wordmark";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,7 @@ export function BrandMark({
         size="lg"
         className="size-10 shrink-0 rounded-xl border border-border/70 bg-background/80 shadow-sm dark:border-white/8 dark:bg-card dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_1px_rgba(0,0,0,0.2)]"
       >
-        <AvatarImage src="/logo.svg" alt="" className="rounded-xl object-contain p-1.5" />
+        <AvatarImage src="/logo.svg" alt="" className="rounded-none object-contain p-1.5" />
         <AvatarFallback className="rounded-xl font-heading text-sm font-semibold text-foreground">
           R
         </AvatarFallback>
@@ -41,9 +42,7 @@ export function BrandMark({
           collapseLabel && "group-data-[collapsible=icon]:hidden",
         )}
       >
-        <span className="truncate font-heading text-[1.02rem] font-semibold tracking-tight">
-          Requo
-        </span>
+        <BrandWordmark className="truncate" />
         {subtitle !== null ? (
           <span className="truncate text-[0.64rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             {subtitle}

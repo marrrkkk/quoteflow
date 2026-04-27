@@ -223,6 +223,33 @@ async function hasBillingSchema(client: SqlClient) {
   );
 }
 
+async function hasSecurityHardeningSchema(client: SqlClient) {
+  return (
+    (await tableExists(client, "rate_limit")) &&
+    (await columnExists(client, "quotes", "public_token_hash"))
+  );
+}
+
+async function hasRateLimitAdapterCompat(client: SqlClient) {
+  return await columnExists(client, "rate_limit", "id");
+}
+
+async function hasWorkflowAnalyticsEvents(client: SqlClient) {
+  return await tableExists(client, "analytics_events");
+}
+
+async function hasRequestQuoteRecordState(client: SqlClient) {
+  return await columnExists(client, "inquiries", "archived_at");
+}
+
+async function hasSafeWorkspaceBusinessDeletion(client: SqlClient) {
+  return await columnExists(client, "businesses", "archived_at");
+}
+
+async function hasWorkspaceAuditLog(client: SqlClient) {
+  return await tableExists(client, "audit_logs");
+}
+
 async function repairKnownMigrationDrift(client: SqlClient) {
   await client`create schema if not exists drizzle`;
   await client`
@@ -265,6 +292,30 @@ async function repairKnownMigrationDrift(client: SqlClient) {
     {
       tag: "0028_huge_flatman",
       matches: hasBillingSchema,
+    },
+    {
+      tag: "0030_security_hardening",
+      matches: hasSecurityHardeningSchema,
+    },
+    {
+      tag: "0032_auth_rate_limit_adapter_compat",
+      matches: hasRateLimitAdapterCompat,
+    },
+    {
+      tag: "0033_workflow_analytics_events",
+      matches: hasWorkflowAnalyticsEvents,
+    },
+    {
+      tag: "0034_request_quote_record_state",
+      matches: hasRequestQuoteRecordState,
+    },
+    {
+      tag: "0035_safe_workspace_business_deletion",
+      matches: hasSafeWorkspaceBusinessDeletion,
+    },
+    {
+      tag: "0036_workspace_audit_log",
+      matches: hasWorkspaceAuditLog,
     },
   ];
 

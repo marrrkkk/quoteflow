@@ -30,12 +30,33 @@ export function getBusinessInquiriesPath(slug: string) {
   return `${getBusinessDashboardPath(slug)}/inquiries`;
 }
 
+export function getBusinessNewInquiryPath(
+  slug: string,
+  formSlug?: string | null,
+) {
+  const basePath = `${getBusinessInquiriesPath(slug)}/new`;
+
+  if (!formSlug) {
+    return basePath;
+  }
+
+  const searchParams = new URLSearchParams({
+    form: formSlug,
+  });
+
+  return `${basePath}?${searchParams.toString()}`;
+}
+
 export function getBusinessInquiryPath(slug: string, inquiryId: string) {
   return `${getBusinessInquiriesPath(slug)}/${inquiryId}`;
 }
 
 export function getBusinessQuotesPath(slug: string) {
   return `${getBusinessDashboardPath(slug)}/quotes`;
+}
+
+export function getBusinessFollowUpsPath(slug: string) {
+  return `${getBusinessDashboardPath(slug)}/follow-ups`;
 }
 
 export function getBusinessNewQuotePath(

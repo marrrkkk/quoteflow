@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  BellRing,
   FormInput,
   FileText,
   Inbox,
@@ -19,10 +20,12 @@ import {
   getBusinessAnalyticsPath,
   getBusinessDashboardPath,
   getBusinessDashboardSlugFromPathname,
+  getBusinessFollowUpsPath,
   getBusinessFormsPath,
   getBusinessInquiriesPath,
   getBusinessKnowledgeCompatibilityPath,
   getBusinessMembersPath,
+  getBusinessNewInquiryPath,
   getBusinessQuotesPath,
   getBusinessSettingsPath,
 } from "@/features/businesses/routes";
@@ -53,8 +56,8 @@ export function getDashboardNavigation(
     },
     {
       href: getBusinessInquiriesPath(slug),
-      label: "Requests",
-      description: "Capture, review, and move customer requests forward.",
+      label: "Inquiries",
+      description: "Capture, review, and move customer inquiries forward.",
       icon: Inbox,
     },
     {
@@ -62,6 +65,12 @@ export function getDashboardNavigation(
       label: "Quotes",
       description: "Draft, send, and track quotes from one place.",
       icon: FileText,
+    },
+    {
+      href: getBusinessFollowUpsPath(slug),
+      label: "Follow-ups",
+      description: "See who needs contact next and when.",
+      icon: BellRing,
     },
     ...(canManageOperationalBusinessSettings(role)
       ? [
@@ -205,12 +214,18 @@ function withDashboardHome(
   items: DashboardBreadcrumbItem[],
 ): DashboardBreadcrumbItem[] {
   const dashboardPath = getBusinessDashboardPath(slug);
+  const normalizedItems = items.map((item) => ({
+    ...item,
+    label: item.label
+      .replace(/^Requests$/, "Inquiries")
+      .replace(/^Request\b/, "Inquiry"),
+  }));
 
-  if (items[0]?.label === "Dashboard") {
-    return items;
+  if (normalizedItems[0]?.label === "Dashboard") {
+    return normalizedItems;
   }
 
-  return [{ label: "Dashboard", href: dashboardPath }, ...items];
+  return [{ label: "Dashboard", href: dashboardPath }, ...normalizedItems];
 }
 
 export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[] {
@@ -222,6 +237,7 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
 
   const dashboardPath = getBusinessDashboardPath(slug);
   const analyticsPath = getBusinessAnalyticsPath(slug);
+  const followUpsPath = getBusinessFollowUpsPath(slug);
   const inquiriesPath = getBusinessInquiriesPath(slug);
   const quotesPath = getBusinessQuotesPath(slug);
   const formsPath = getBusinessFormsPath(slug);
@@ -237,7 +253,19 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
   }
 
   if (pathname === inquiriesPath) {
-    return withDashboardHome(slug, [{ label: "Requests" }]);
+    return withDashboardHome(slug, [{ label: "Inquiries" }]);
+  }
+
+  if (pathname === getBusinessNewInquiryPath(slug)) {
+    return withDashboardHome(slug, [
+      {
+        label: "Inquiries",
+        href: inquiriesPath,
+      },
+      {
+        label: "New inquiry",
+      },
+    ]);
   }
 
   if (pathname.startsWith(`${inquiriesPath}/`)) {
@@ -245,19 +273,23 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
 
     return withDashboardHome(slug, [
       {
-        label: "Requests",
+        label: "Inquiries",
         href: inquiriesPath,
       },
       {
         label: inquiryId
-          ? `Request · ${formatRecordHint(inquiryId)}`
-          : "Request details",
+          ? `Inquiry: ${formatRecordHint(inquiryId)}`
+          : "Inquiry details",
       },
     ]);
   }
 
   if (pathname === quotesPath) {
     return withDashboardHome(slug, [{ label: "Quotes" }]);
+  }
+
+  if (pathname === followUpsPath || pathname.startsWith(`${followUpsPath}/`)) {
+    return withDashboardHome(slug, [{ label: "Follow-ups" }]);
   }
 
   if (pathname === `${quotesPath}/new`) {
@@ -282,7 +314,7 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
       },
       {
         label: quoteId
-          ? `Quote · ${formatRecordHint(quoteId)}`
+          ? `Quote: ${formatRecordHint(quoteId)}`
           : "Quote details",
       },
     ]);
@@ -355,3 +387,4 @@ export function getDashboardBreadcrumbs(pathname: string): DashboardBreadcrumbIt
 
   return [{ label: "Dashboard" }];
 }
+

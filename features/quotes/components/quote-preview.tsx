@@ -15,7 +15,7 @@ type QuotePreviewProps = {
   quoteNumber: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
   currency: string;
   validUntil: string;
   notes?: string | null;
@@ -75,10 +75,12 @@ export function QuotePreview({
                 className="mt-2 font-medium text-foreground"
                 text={customerName}
               />
-              <TruncatedTextWithTooltip
-                className="mt-1 text-sm text-muted-foreground"
-                text={customerEmail}
-              />
+              {customerEmail ? (
+                <TruncatedTextWithTooltip
+                  className="mt-1 text-sm text-muted-foreground"
+                  text={customerEmail}
+                />
+              ) : null}
             </div>
 
             <div className="info-tile min-w-0 h-full shadow-none">

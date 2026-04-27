@@ -1,16 +1,22 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { getNormalizedInquirySubmittedFieldSnapshot } from "@/features/inquiries/form-config";
 import { getNormalizedInquiryPageConfig } from "@/features/inquiries/page-config";
 import { normalizeBusinessType } from "@/features/inquiries/business-types";
 import { buildBusinessMemoryContext } from "@/features/memory/queries";
 import type { InquiryAssistantContext } from "@/features/ai/types";
+import { getEffectiveQuoteStatus } from "@/features/quotes/queries";
 import { db } from "@/lib/db/client";
 import {
+  activityLogs,
   inquiries,
+  inquiryAttachments,
   inquiryNotes,
+  followUps,
+  quoteItems,
+  quotes,
   user,
   businessInquiryForms,
   businesses,
@@ -25,7 +31,8 @@ export async function getInquiryAssistantContextForBusiness({
   businessId,
   inquiryId,
 }: GetInquiryAssistantContextForBusinessInput): Promise<InquiryAssistantContext | null> {
-  const [businessRow, inquiryRow, notes, memory] = await Promise.all([
+  const [businessRow, inquiryRow, notes, attachments, activities, quoteRows, memory] =
+    await Promise.all([
     db
       .select({
         id: businesses.id,
@@ -38,6 +45,7 @@ export async function getInquiryAssistantContextForBusiness({
         defaultEmailSignature: businesses.defaultEmailSignature,
         defaultQuoteNotes: businesses.defaultQuoteNotes,
         aiTonePreference: businesses.aiTonePreference,
+        createdAt: businesses.createdAt,
       })
       .from(businesses)
       .where(eq(businesses.id, businessId))
@@ -53,8 +61,8 @@ export async function getInquiryAssistantContextForBusiness({
         inquiryPageConfig: businessInquiryForms.inquiryPageConfig,
         customerName: inquiries.customerName,
         customerEmail: inquiries.customerEmail,
-        customerPhone: inquiries.customerPhone,
-        companyName: inquiries.companyName,
+        customerContactMethod: inquiries.customerContactMethod,
+        customerContactHandle: inquiries.customerContactHandle,
         serviceCategory: inquiries.serviceCategory,
         requestedDeadline: inquiries.requestedDeadline,
         budgetText: inquiries.budgetText,
@@ -89,7 +97,75 @@ export async function getInquiryAssistantContextForBusiness({
         ),
       )
       .orderBy(desc(inquiryNotes.createdAt))
-      .limit(6),
+      .limit(20),
+    db
+      .select({
+        id: inquiryAttachments.id,
+        fileName: inquiryAttachments.fileName,
+        contentType: inquiryAttachments.contentType,
+        fileSize: inquiryAttachments.fileSize,
+        createdAt: inquiryAttachments.createdAt,
+      })
+      .from(inquiryAttachments)
+      .where(
+        and(
+          eq(inquiryAttachments.businessId, businessId),
+          eq(inquiryAttachments.inquiryId, inquiryId),
+        ),
+      )
+      .orderBy(desc(inquiryAttachments.createdAt)),
+    db
+      .select({
+        id: activityLogs.id,
+        type: activityLogs.type,
+        summary: activityLogs.summary,
+        createdAt: activityLogs.createdAt,
+        actorName: user.name,
+      })
+      .from(activityLogs)
+      .leftJoin(user, eq(activityLogs.actorUserId, user.id))
+      .where(
+        and(
+          eq(activityLogs.businessId, businessId),
+          eq(activityLogs.inquiryId, inquiryId),
+        ),
+      )
+      .orderBy(desc(activityLogs.createdAt))
+      .limit(30),
+    db
+      .select({
+        id: quotes.id,
+        quoteNumber: quotes.quoteNumber,
+        title: quotes.title,
+        customerName: quotes.customerName,
+        customerEmail: quotes.customerEmail,
+        customerContactMethod: quotes.customerContactMethod,
+        customerContactHandle: quotes.customerContactHandle,
+        currency: quotes.currency,
+        notes: quotes.notes,
+        subtotalInCents: quotes.subtotalInCents,
+        discountInCents: quotes.discountInCents,
+        totalInCents: quotes.totalInCents,
+        validUntil: quotes.validUntil,
+        status: getEffectiveQuoteStatus,
+        postAcceptanceStatus: quotes.postAcceptanceStatus,
+        sentAt: quotes.sentAt,
+        acceptedAt: quotes.acceptedAt,
+        publicViewedAt: quotes.publicViewedAt,
+        customerRespondedAt: quotes.customerRespondedAt,
+        customerResponseMessage: quotes.customerResponseMessage,
+        createdAt: quotes.createdAt,
+        updatedAt: quotes.updatedAt,
+      })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.businessId, businessId),
+          eq(quotes.inquiryId, inquiryId),
+          isNull(quotes.deletedAt),
+        ),
+      )
+      .orderBy(desc(quotes.createdAt)),
     buildBusinessMemoryContext(businessId),
   ]);
 
@@ -112,18 +188,118 @@ export async function getInquiryAssistantContextForBusiness({
       businessType: inquiryFormBusinessType,
     },
   );
+  const quoteIds = quoteRows.map((quote) => quote.id);
+  const [itemRows, quoteActivityRows, followUpRows] = await Promise.all([
+    quoteIds.length
+      ? db
+          .select({
+            id: quoteItems.id,
+            quoteId: quoteItems.quoteId,
+            description: quoteItems.description,
+            quantity: quoteItems.quantity,
+            unitPriceInCents: quoteItems.unitPriceInCents,
+            lineTotalInCents: quoteItems.lineTotalInCents,
+            position: quoteItems.position,
+          })
+          .from(quoteItems)
+          .where(
+            and(
+              eq(quoteItems.businessId, businessId),
+              inArray(quoteItems.quoteId, quoteIds),
+            ),
+          )
+          .orderBy(asc(quoteItems.position), asc(quoteItems.createdAt))
+      : Promise.resolve([]),
+    quoteIds.length
+      ? db
+          .select({
+            id: activityLogs.id,
+            quoteId: activityLogs.quoteId,
+            type: activityLogs.type,
+            summary: activityLogs.summary,
+            createdAt: activityLogs.createdAt,
+            actorName: user.name,
+          })
+          .from(activityLogs)
+          .leftJoin(user, eq(activityLogs.actorUserId, user.id))
+          .where(
+            and(
+              eq(activityLogs.businessId, businessId),
+              inArray(activityLogs.quoteId, quoteIds),
+            ),
+          )
+          .orderBy(desc(activityLogs.createdAt))
+      : Promise.resolve([]),
+    db
+      .select({
+        id: followUps.id,
+        inquiryId: followUps.inquiryId,
+        quoteId: followUps.quoteId,
+        quoteNumber: quotes.quoteNumber,
+        quoteTitle: quotes.title,
+        title: followUps.title,
+        reason: followUps.reason,
+        channel: followUps.channel,
+        dueAt: followUps.dueAt,
+        completedAt: followUps.completedAt,
+        skippedAt: followUps.skippedAt,
+        status: followUps.status,
+        createdAt: followUps.createdAt,
+        updatedAt: followUps.updatedAt,
+      })
+      .from(followUps)
+      .leftJoin(quotes, eq(followUps.quoteId, quotes.id))
+      .where(
+        and(
+          eq(followUps.businessId, businessId),
+          quoteIds.length
+            ? or(
+                eq(followUps.inquiryId, inquiryId),
+                inArray(followUps.quoteId, quoteIds),
+              )
+            : eq(followUps.inquiryId, inquiryId),
+        ),
+      )
+      .orderBy(
+        sql`case when ${followUps.status} = 'pending' then 0 else 1 end`,
+        asc(followUps.dueAt),
+        desc(followUps.createdAt),
+      ),
+  ]);
+  const quoteItemsByQuoteId = new Map<string, typeof itemRows>();
+  const quoteActivitiesByQuoteId = new Map<string, typeof quoteActivityRows>();
+
+  for (const item of itemRows) {
+    const items = quoteItemsByQuoteId.get(item.quoteId) ?? [];
+
+    items.push(item);
+    quoteItemsByQuoteId.set(item.quoteId, items);
+  }
+
+  for (const activity of quoteActivityRows) {
+    if (!activity.quoteId) {
+      continue;
+    }
+
+    const quoteActivities = quoteActivitiesByQuoteId.get(activity.quoteId) ?? [];
+
+    quoteActivities.push(activity);
+    quoteActivitiesByQuoteId.set(activity.quoteId, quoteActivities);
+  }
 
   return {
     business: {
       id: business.id,
       name: business.name,
       slug: business.slug,
+      businessType: business.businessType,
       shortDescription: business.shortDescription,
       contactEmail: business.contactEmail,
       defaultCurrency: business.defaultCurrency,
       defaultEmailSignature: business.defaultEmailSignature,
       defaultQuoteNotes: business.defaultQuoteNotes,
       aiTonePreference: business.aiTonePreference,
+      createdAt: business.createdAt,
       inquiryPageHeadline: inquiryPageConfig.headline,
       inquiryPageTemplate: inquiryPageConfig.template,
       publicInquiryEnabled: inquiry.publicInquiryEnabled,
@@ -136,6 +312,29 @@ export async function getInquiryAssistantContextForBusiness({
       ),
     },
     notes,
+    attachments,
+    activities,
+    followUps: followUpRows,
+    relatedQuotes: quoteRows.map((quote) => ({
+      ...quote,
+      items: (quoteItemsByQuoteId.get(quote.id) ?? []).map((item) => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPriceInCents: item.unitPriceInCents,
+        lineTotalInCents: item.lineTotalInCents,
+        position: item.position,
+      })),
+      activities: (quoteActivitiesByQuoteId.get(quote.id) ?? []).map(
+        (activity) => ({
+          id: activity.id,
+          type: activity.type,
+          summary: activity.summary,
+          createdAt: activity.createdAt,
+          actorName: activity.actorName,
+        }),
+      ),
+    })),
     memory,
   };
 }

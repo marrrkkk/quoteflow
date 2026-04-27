@@ -7,9 +7,10 @@ Requo uses a feature-oriented Next.js App Router architecture. The app is alread
 The product direction is workflow-first:
 
 - capture inquiries
-- qualify leads
-- send professional quotes
+- turn qualified inquiries into quotes
+- share or send professional quotes
 - follow up consistently
+- track public quote views and customer responses
 
 The subscription and billing model is workspace-based:
 
@@ -32,7 +33,10 @@ app/
   (public)/
   account/
   businesses/
+  invite/
   onboarding/
+  verify-email/
+  workspaces/
   api/
 
 components/
@@ -45,24 +49,32 @@ features/
   account/
   ai/
   analytics/
+  audit/
   auth/
+  billing/
   businesses/
+  business-members/
+  calendar/
   customers/
+  follow-ups/
   inquiries/
-  knowledge/
+  memory/
   notifications/
   onboarding/
   quotes/
   settings/
   theme/
+  workspace-members/
+  workspaces/
 
 lib/
+  ai/
   auth/
+  billing/
   cache/
   db/
     schema/
   navigation/
-  openrouter/
   realtime/
   resend/
   supabase/
@@ -75,6 +87,9 @@ emails/
 
 scripts/
 tests/
+  unit/
+  components/
+  integration/
   e2e/
 types/
 docs/
@@ -87,7 +102,7 @@ docs/
 - Keep `app/` focused on routing, layouts, page composition, loading states, and route handlers.
 - Keep business logic in `features/`, not in route files.
 - Keep shared primitives in `components/ui/` and app chrome or layout wrappers in `components/shared/` and `components/shell/`.
-- Keep provider-specific code in `lib/auth`, `lib/supabase`, `lib/resend`, and `lib/openrouter`.
+- Keep provider-specific code in `lib/auth`, `lib/supabase`, `lib/resend`, `lib/ai`, and `lib/billing`.
 - Keep database schema and relational modeling in `lib/db/schema`, with Drizzle migrations in `drizzle/`.
 
 ## Design System And UI Composition
@@ -106,21 +121,30 @@ docs/
 - `onboarding/` owns first-business creation after authentication.
 - `businesses/` owns the businesses hub and business-scoped dashboard routes.
 - `account/` owns profile and security settings.
-- `api/` owns narrow route handlers for Better Auth and authenticated asset access.
+- `api/` owns narrow route handlers for Better Auth, billing webhooks, public analytics, and authenticated asset access.
 
 Feature responsibilities:
 
 - `features/account`: profile, security, and account-owned asset flows.
+- `features/ai`: AI router, prompts, message surfaces, and provider fallback behavior.
+- `features/analytics`: conversion analytics, workflow analytics, and public page view tracking.
+- `features/audit`: audit log writes and workspace audit queries.
 - `features/auth`: auth forms, validation, and client UX.
+- `features/billing`: checkout UI, billing status, upgrade/cancel actions, and workspace billing queries.
 - `features/businesses`: business creation, guided starter templates, hub queries, and business overview composition.
+- `features/business-members`: business role and invite flows.
+- `features/calendar`: calendar event target authorization and related scheduling helpers.
 - `features/customers`: customer presentation and customer-related utilities.
+- `features/follow-ups`: follow-up scheduling, rescheduling, completion, skipping, and reminder workflows.
 - `features/inquiries`: public intake, inquiry page presentation, inbox listing, notes, attachments, forms, and status changes.
-- `features/knowledge`: FAQs and uploaded knowledge files.
+- `features/memory`: business memory and knowledge items used by AI-assisted drafting.
 - `features/notifications`: notification data and UI.
 - `features/onboarding`: first-business onboarding flow and starter-template selection.
-- `features/quotes`: quote editor, delivery, reminders, and public quote response.
+- `features/quotes`: quote editor, calculations, manual/Requo delivery, status transitions, public quote pages, response tracking, and post-acceptance state.
 - `features/settings`: business identity, logo, notifications, public inquiry settings, inquiry page or form defaults, and other workflow settings.
-- `features/ai`, `features/analytics`, and `features/theme`: assistant, reporting, and theme concerns.
+- `features/theme`: product theme concerns.
+- `features/workspace-members`: workspace-level member invitations and permissions.
+- `features/workspaces`: workspace overview, settings, billing entry points, and workspace-scoped queries.
 
 ## Auth, Data, And Security
 
@@ -128,7 +152,7 @@ Feature responsibilities:
 - Better Auth creates authenticated users and server-side profiles. Onboarding creates the first workspace and business; later business creation adds to the existing workspace.
 - Workspaces own plans, entitlements, and usage limits. Businesses inherit these from their workspace.
 - `workspace_members` controls workspace-level access; `business_members` controls business-level roles.
-- Authenticated mutations should continue to use business-aware helpers such as `getOwnerBusinessActionContext`.
+- Authenticated mutations should continue to use business-aware helpers such as `getWorkspaceBusinessActionContext`, `getOperationalBusinessActionContext`, and `getOwnerBusinessActionContext`.
 - Drizzle queries are the current enforcement layer for business ownership and membership.
 - SQL RLS helpers and policies exist in migrations, but the app does not currently set `app.current_user_id` on the database session, so runtime session-based RLS is not the primary app guard.
 - Supabase storage access should remain server-side for private assets, with business checks before reads or downloads.
@@ -138,13 +162,34 @@ Feature responsibilities:
 
 - Supabase: storage, uploads or downloads, and realtime-backed notification plumbing.
 - Resend: transactional email only.
-- OpenRouter: server-side AI drafting only.
+- AI providers: Groq, Gemini, and OpenRouter are routed server-side through `lib/ai`.
 - Better Auth: sessions, password flows, and user lifecycle hooks.
+- PayMongo: QRPh payment intents for Philippines/PHP checkout.
+- Paddle: recurring card subscriptions for global/USD checkout.
+
+## Billing Architecture
+
+- Subscriptions are workspace-scoped. Each workspace has at most one `workspace_subscriptions` row.
+- `workspaces.plan` is a denormalized read cache. `workspace_subscriptions` is authoritative.
+- `lib/billing/subscription-service.ts` is the single write path for subscription mutations and keeps `workspaces.plan` in sync.
+- `lib/billing/webhook-processor.ts` records provider events in `billing_events` for idempotency.
+- PayMongo uses one-time QRPh payment intents and manual renewal. Paddle uses recurring card subscriptions.
+- Billing webhook routes live in `app/api/billing/paymongo/webhook/route.ts` and `app/api/billing/paddle/webhook/route.ts`.
+
+## Testing Architecture
+
+- `tests/unit/` covers validation schemas, parsing helpers, route authorization boundaries, plan access, and other deterministic logic.
+- `tests/components/` is intentionally small and reserved for meaningful interactive UI behavior.
+- `tests/integration/` uses Postgres-backed fixtures for access control, server actions, route handlers, billing webhooks, public analytics, inquiry submissions, follow-ups, and quote workflows.
+- `tests/e2e/` uses Playwright for product-critical browser flows and smoke coverage.
+- Avoid shallow rendering tests, brittle snapshots, and tests that only repeat implementation details.
 
 ## Verification Defaults
 
-- Run `npm run lint` and `npm run typecheck` for most code changes.
+- Run `npm run check` for most code changes.
+- Run `npm run test` for logic, validation, or component behavior changes.
+- Run `npm run test:integration` for server actions, route handlers, authz, billing, or DB-backed changes.
 - Run `npm run build` when routes, layouts, or system wiring change.
-- Run relevant `npm run test:e2e` coverage when user-facing flows change.
+- Run relevant `npm run test:e2e:smoke` coverage when critical user-facing flows change; use `npm run test:e2e` for broader browser journeys.
 - Keep `docs/setup/` aligned with actual env and runtime expectations.
-- Keep README and setup docs aligned with the current starter-template names and the inquiry -> qualification -> quote -> follow-up positioning.
+- Keep README and setup docs aligned with the current starter-template names and the inquiry -> quote -> share/send -> follow-up -> viewed/accepted/rejected positioning.

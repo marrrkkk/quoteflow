@@ -5,7 +5,9 @@ export type QuoteDocumentData = {
   quoteNumber: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   currency: string;
   validUntil: string;
   notes: string | null;
@@ -28,6 +30,8 @@ export function getQuoteDocumentData({
     title: quote.title,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     currency: quote.currency,
     validUntil: quote.validUntil,
     notes: quote.notes,

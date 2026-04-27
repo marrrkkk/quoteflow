@@ -133,6 +133,16 @@ export function useTheme() {
   const value = useContext(ThemeContext);
 
   if (!value) {
+    // If context is lost during SSR (a known Next.js App Router edge case across
+    // async boundaries), return a safe dummy object so the server render doesn't crash.
+    if (typeof window === "undefined") {
+      return {
+        resolvedTheme: "light",
+        setTheme: () => {},
+        theme: "system",
+      } as ThemeContextValue;
+    }
+
     throw new Error("useTheme must be used within ThemeProvider.");
   }
 

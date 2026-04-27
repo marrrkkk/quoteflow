@@ -43,10 +43,13 @@ export const quotes = pgTable(
     quoteNumber: text("quote_number").notNull(),
     publicToken: text("public_token"),
     publicTokenHash: text("public_token_hash"),
-    publicTokenEncrypted: text("public_token_encrypted"),
     title: text("title").notNull(),
     customerName: text("customer_name").notNull(),
-    customerEmail: text("customer_email").notNull(),
+    customerEmail: text("customer_email"),
+    customerContactMethod: text("customer_contact_method")
+      .notNull()
+      .default("email"),
+    customerContactHandle: text("customer_contact_handle").notNull().default(""),
     currency: text("currency").notNull().default("USD"),
     notes: text("message"),
     subtotalInCents: integer("subtotal_in_cents").notNull().default(0),

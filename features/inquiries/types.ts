@@ -28,11 +28,17 @@ export const inquiryFilterableStatuses = [
   "overdue",
 ] as const;
 export const inquiryRecordViews = ["active", "archived", "trash"] as const;
+export const inquirySources = {
+  publicInquiryPage: "public-inquiry-page",
+  manualDashboard: "manual-dashboard",
+} as const;
 
 export type InquiryStatus = (typeof inquiryStatuses)[number];
 export type InquiryWorkflowStatus = (typeof inquiryWorkflowStatuses)[number];
 export type InquiryRecordView = (typeof inquiryRecordViews)[number];
 export type InquiryRecordState = InquiryRecordView;
+export type InquirySource =
+  (typeof inquirySources)[keyof typeof inquirySources];
 export const inquiryStatusFilterValues = [
   "all",
   ...inquiryFilterableStatuses,
@@ -45,7 +51,7 @@ export type DashboardInquiryListItem = {
   inquiryFormName: string;
   inquiryFormSlug: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
   serviceCategory: string;
   budgetText: string | null;
   status: InquiryStatus;
@@ -53,6 +59,8 @@ export type DashboardInquiryListItem = {
   subject: string | null;
   archivedAt: Date | null;
   deletedAt: Date | null;
+  pendingFollowUpCount: number;
+  nextFollowUpDueAt: Date | null;
   submittedAt: Date;
   createdAt: Date;
 };
@@ -98,9 +106,9 @@ export type DashboardInquiryDetail = {
   inquiryFormSlug: string;
   inquiryFormBusinessType: BusinessType;
   customerName: string;
-  customerEmail: string;
-  customerPhone: string | null;
-  companyName: string | null;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   serviceCategory: string;
   requestedDeadline: string | null;
   budgetText: string | null;
@@ -141,6 +149,16 @@ export type BusinessInquiryFormSummary = {
   archivedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type InquiryEditorForm = {
+  id: string;
+  name: string;
+  slug: string;
+  businessType: BusinessType;
+  isDefault: boolean;
+  publicInquiryEnabled: boolean;
+  inquiryFormConfig: InquiryFormConfig;
 };
 
 export type InquiryNoteFieldErrors = Partial<Record<"body", string[] | undefined>>;
@@ -194,4 +212,9 @@ export type PublicInquiryFormState = {
   success?: string;
   fieldErrors?: PublicInquiryFieldErrors;
   inquiryId?: string;
+};
+
+export type ManualInquiryActionState = {
+  error?: string;
+  fieldErrors?: PublicInquiryFieldErrors;
 };

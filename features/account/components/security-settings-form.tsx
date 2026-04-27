@@ -103,7 +103,7 @@ export function SecuritySettingsForm({
   const accountDeletionBlocked = !security.deletion.allowed;
 
   return (
-    <div className="flex min-w-0 flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-5">
       <section className="section-panel p-6">
           <div className="flex flex-col gap-5">
             <div className="space-y-1">

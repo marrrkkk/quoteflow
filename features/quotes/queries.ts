@@ -21,6 +21,7 @@ import { cache } from "react";
 import { db } from "@/lib/db/client";
 import {
   activityLogs,
+  followUps,
   inquiries,
   quoteItems,
   quotes,
@@ -55,7 +56,7 @@ import type {
 import { getQuoteReminderKinds } from "@/features/quotes/utils";
 import {
   getQuotePublicTokenLookupCondition,
-  resolveStoredQuotePublicToken,
+  tryResolveStoredQuotePublicToken,
 } from "@/features/quotes/token-storage";
 
 export const getEffectiveQuoteStatus = sql<QuoteStatus>`case
@@ -221,11 +222,11 @@ async function getCachedQuoteListPageForBusiness({
     .select({
       id: quotes.id,
       quoteNumber: quotes.quoteNumber,
-      publicToken: quotes.publicToken,
-      publicTokenEncrypted: quotes.publicTokenEncrypted,
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       totalInCents: quotes.totalInCents,
       currency: quotes.currency,
       validUntil: quotes.validUntil,
@@ -233,7 +234,22 @@ async function getCachedQuoteListPageForBusiness({
       archivedAt: quotes.archivedAt,
       postAcceptanceStatus: quotes.postAcceptanceStatus,
       sentAt: quotes.sentAt,
+      publicViewedAt: quotes.publicViewedAt,
       customerRespondedAt: quotes.customerRespondedAt,
+      pendingFollowUpCount: sql<number>`(
+        select count(*)::int
+        from ${followUps}
+        where ${followUps.businessId} = ${quotes.businessId}
+          and ${followUps.quoteId} = ${quotes.id}
+          and ${followUps.status} = 'pending'
+      )`,
+      nextFollowUpDueAt: sql<Date | null>`(
+        select min(${followUps.dueAt})
+        from ${followUps}
+        where ${followUps.businessId} = ${quotes.businessId}
+          and ${followUps.quoteId} = ${quotes.id}
+          and ${followUps.status} = 'pending'
+      )`,
     })
     .from(quotes)
     .where(and(...conditions))
@@ -245,11 +261,15 @@ async function getCachedQuoteListPageForBusiness({
     return {
       currency: row.currency,
       customerEmail: row.customerEmail,
+      customerContactMethod: row.customerContactMethod,
+      customerContactHandle: row.customerContactHandle,
       customerName: row.customerName,
       customerRespondedAt: row.customerRespondedAt,
       id: row.id,
+      nextFollowUpDueAt: row.nextFollowUpDueAt,
+      pendingFollowUpCount: row.pendingFollowUpCount,
       postAcceptanceStatus: row.postAcceptanceStatus,
-      publicToken: resolveStoredQuotePublicToken(row),
+      publicViewedAt: row.publicViewedAt,
       quoteNumber: row.quoteNumber,
       reminders: getQuoteReminderKinds({
         status: row.status,
@@ -273,7 +293,9 @@ type QuoteExportRow = {
   quoteNumber: string;
   title: string;
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
   totalInCents: number;
   currency: string;
   validUntil: string;
@@ -317,6 +339,8 @@ export async function getQuoteExportRowsForBusiness({
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       totalInCents: quotes.totalInCents,
       currency: quotes.currency,
       validUntil: quotes.validUntil,
@@ -366,10 +390,11 @@ async function getCachedQuoteDetailForBusiness({
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
       publicToken: quotes.publicToken,
-      publicTokenEncrypted: quotes.publicTokenEncrypted,
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       currency: quotes.currency,
       notes: quotes.notes,
       subtotalInCents: quotes.subtotalInCents,
@@ -390,6 +415,8 @@ async function getCachedQuoteDetailForBusiness({
       linkedInquiryId: inquiries.id,
       linkedInquiryCustomerName: inquiries.customerName,
       linkedInquiryCustomerEmail: inquiries.customerEmail,
+      linkedInquiryCustomerContactMethod: inquiries.customerContactMethod,
+      linkedInquiryCustomerContactHandle: inquiries.customerContactHandle,
       linkedInquiryServiceCategory: inquiries.serviceCategory,
       linkedInquiryStatus: getEffectiveInquiryStatus,
       linkedInquiryRecordState: getInquiryRecordState,
@@ -451,10 +478,12 @@ async function getCachedQuoteDetailForBusiness({
     businessId: quote.businessId,
     inquiryId: quote.inquiryId,
     quoteNumber: quote.quoteNumber,
-    publicToken: resolveStoredQuotePublicToken(quote),
+    publicToken: tryResolveStoredQuotePublicToken(quote),
     title: quote.title,
     customerName: quote.customerName,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     currency: quote.currency,
     notes: quote.notes,
     subtotalInCents: quote.subtotalInCents,
@@ -479,6 +508,8 @@ async function getCachedQuoteDetailForBusiness({
           id: quote.linkedInquiryId,
           customerName: quote.linkedInquiryCustomerName!,
           customerEmail: quote.linkedInquiryCustomerEmail!,
+          customerContactMethod: quote.linkedInquiryCustomerContactMethod!,
+          customerContactHandle: quote.linkedInquiryCustomerContactHandle!,
           serviceCategory: quote.linkedInquiryServiceCategory!,
           status: quote.linkedInquiryStatus!,
           recordState: quote.linkedInquiryRecordState!,
@@ -520,10 +551,11 @@ async function getCachedQuoteSendPayloadForBusiness({
       inquiryId: quotes.inquiryId,
       quoteNumber: quotes.quoteNumber,
       publicToken: quotes.publicToken,
-      publicTokenEncrypted: quotes.publicTokenEncrypted,
       title: quotes.title,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       currency: quotes.currency,
       notes: quotes.notes,
       subtotalInCents: quotes.subtotalInCents,
@@ -568,12 +600,14 @@ async function getCachedQuoteSendPayloadForBusiness({
   return {
     currency: quote.currency,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     customerName: quote.customerName,
     discountInCents: quote.discountInCents,
     id: quote.id,
     inquiryId: quote.inquiryId,
     notes: quote.notes,
-    publicToken: resolveStoredQuotePublicToken(quote),
+    publicToken: tryResolveStoredQuotePublicToken(quote),
     quoteNumber: quote.quoteNumber,
     status: quote.status,
     subtotalInCents: quote.subtotalInCents,
@@ -594,8 +628,6 @@ export async function getPublicQuoteByToken(
     .select({
       id: quotes.id,
       businessId: quotes.businessId,
-      token: quotes.publicToken,
-      publicTokenEncrypted: quotes.publicTokenEncrypted,
       quoteNumber: quotes.quoteNumber,
       title: quotes.title,
       businessName: businesses.name,
@@ -604,6 +636,8 @@ export async function getPublicQuoteByToken(
       businessContactEmail: businesses.contactEmail,
       customerName: quotes.customerName,
       customerEmail: quotes.customerEmail,
+      customerContactMethod: quotes.customerContactMethod,
+      customerContactHandle: quotes.customerContactHandle,
       currency: quotes.currency,
       notes: quotes.notes,
       validUntil: quotes.validUntil,
@@ -657,6 +691,8 @@ export async function getPublicQuoteByToken(
     businessShortDescription: quote.businessShortDescription,
     currency: quote.currency,
     customerEmail: quote.customerEmail,
+    customerContactMethod: quote.customerContactMethod,
+    customerContactHandle: quote.customerContactHandle,
     customerName: quote.customerName,
     customerRespondedAt: quote.customerRespondedAt,
     customerResponseMessage: quote.customerResponseMessage,
@@ -668,10 +704,7 @@ export async function getPublicQuoteByToken(
     sentAt: quote.sentAt,
     status: quote.status,
     subtotalInCents: quote.subtotalInCents,
-    token: resolveStoredQuotePublicToken({
-      publicToken: quote.token,
-      publicTokenEncrypted: quote.publicTokenEncrypted,
-    }),
+    token,
     title: quote.title,
     totalInCents: quote.totalInCents,
     validUntil: quote.validUntil,
@@ -698,6 +731,8 @@ export async function getInquiryQuotePrefillForBusiness({
       id: inquiries.id,
       customerName: inquiries.customerName,
       customerEmail: inquiries.customerEmail,
+      customerContactMethod: inquiries.customerContactMethod,
+      customerContactHandle: inquiries.customerContactHandle,
       serviceCategory: inquiries.serviceCategory,
       status: getEffectiveInquiryStatus,
       recordState: getInquiryRecordState,

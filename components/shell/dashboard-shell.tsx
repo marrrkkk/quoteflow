@@ -24,11 +24,7 @@ import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { getAccountProfilePath } from "@/features/account/routes";
 import { AppearanceMenuSubmenu } from "@/features/theme/components/appearance-menu";
-import { UpgradeButton } from "@/features/billing/components/upgrade-button";
-import { DashboardNotificationBell } from "@/features/notifications/components/dashboard-notification-bell";
-import type { BusinessNotificationBellView } from "@/features/notifications/types";
-import type { BillingCurrency, BillingRegion } from "@/lib/billing/types";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+
 import { ThemePreferenceSync } from "@/features/theme/components/theme-preference-sync";
 import { clearPersistedThemePreference } from "@/features/theme/persistence";
 import {
@@ -103,6 +99,16 @@ const CommandMenu = dynamic(
   },
 );
 
+const DashboardAiPanel = dynamic(
+  () =>
+    import("@/features/ai/components/dashboard-ai-panel").then(
+      (module) => module.DashboardAiPanel,
+    ),
+  {
+    loading: () => null,
+  },
+);
+
 type DashboardShellProps = {
   children: ReactNode;
   themePreference: ThemePreference;
@@ -114,15 +120,10 @@ type DashboardShellProps = {
   };
   businessContext: BusinessContext;
   businessMemberships: BusinessContext[];
-  notificationView: BusinessNotificationBellView;
-  /** When set and plan is Free, shows an Upgrade control in the top bar. */
-  workspaceBilling?: {
-    workspaceId: string;
-    workspaceSlug: string;
-    currentPlan: WorkspacePlan;
-    region: BillingRegion;
-    defaultCurrency: BillingCurrency;
-  } | null;
+  /** Pre-rendered notification bell, typically Suspense-wrapped for streaming. */
+  notificationSlot: ReactNode;
+  /** Pre-rendered upgrade button, typically Suspense-wrapped for streaming. */
+  upgradeSlot: ReactNode;
 };
 
 export function DashboardShell({
@@ -131,8 +132,8 @@ export function DashboardShell({
   user,
   businessContext,
   businessMemberships,
-  notificationView,
-  workspaceBilling,
+  notificationSlot,
+  upgradeSlot,
 }: DashboardShellProps) {
   const pathname = usePathname();
   const breadcrumbs = getDashboardBreadcrumbs(pathname);
@@ -247,27 +248,8 @@ export function DashboardShell({
                     workspaceSlug={business.workspaceSlug}
                   />
                 </div>
-                {workspaceBilling &&
-                workspaceBilling.currentPlan === "free" ? (
-                  <div className="shrink-0">
-                    <UpgradeButton
-                      className="whitespace-nowrap"
-                      currentPlan={workspaceBilling.currentPlan}
-                      defaultCurrency={workspaceBilling.defaultCurrency}
-                      region={workspaceBilling.region}
-                      size="sm"
-                      workspaceId={workspaceBilling.workspaceId}
-                      workspaceSlug={workspaceBilling.workspaceSlug}
-                    />
-                  </div>
-                ) : null}
-                <DashboardNotificationBell
-                  businessId={business.id}
-                  businessSlug={business.slug}
-                  initialView={notificationView}
-                  key={business.id}
-                  userId={user.id}
-                />
+                {upgradeSlot}
+                {notificationSlot}
               </div>
             </div>
           </div>
@@ -278,6 +260,11 @@ export function DashboardShell({
             <div className="dashboard-content">{children}</div>
           </main>
         </div>
+        <DashboardAiPanel
+          businessId={business.id}
+          businessSlug={business.slug}
+          userName={user.name || "You"}
+        />
       </SidebarInset>
     </SidebarProvider>
   );
@@ -539,7 +526,7 @@ function BusinessSwitcher({
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <PlanBadge plan={business.workspacePlan} showIcon={false} />
+            <PlanBadge plan={business.workspacePlan} showIcon={true} />
             <Badge
               className="border-sidebar-border bg-background text-sidebar-foreground"
               variant="outline"

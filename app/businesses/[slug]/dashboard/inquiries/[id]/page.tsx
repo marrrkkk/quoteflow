@@ -1,10 +1,10 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import {
-  Building2,
+  AtSign,
   FileText,
   Mail,
-  Phone,
   Printer,
   ReceiptText,
 } from "lucide-react";
@@ -40,6 +40,9 @@ import { prefillFromInquiry } from "@/features/calendar/prefill";
 import { getCalendarConnectionForUser, getCalendarEventsForInquiry } from "@/features/calendar/queries";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
+import { createInquiryFollowUpAction } from "@/features/follow-ups/actions";
+import { FollowUpPanel } from "@/features/follow-ups/components/follow-up-panel";
+import { getFollowUpsForInquiry } from "@/features/follow-ups/queries";
 import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
 import {
   addInquiryNoteAction,
@@ -64,7 +67,10 @@ import {
   formatInquiryDate,
   formatInquiryDateTime,
 } from "@/features/inquiries/utils";
-import type { InquiryWorkflowStatus } from "@/features/inquiries/types";
+import {
+  inquirySources,
+  type InquiryWorkflowStatus,
+} from "@/features/inquiries/types";
 import { formatQuoteMoney } from "@/features/quotes/utils";
 import { workspacesHubPath } from "@/features/workspaces/routes";
 import {
@@ -85,11 +91,17 @@ const InquiryAiPanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="section-panel mt-6 px-5 py-5 sm:px-6">
-        <p className="meta-label">AI assistant</p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Loading assistant tools...
-        </p>
+      <div className="fixed bottom-4 right-4 z-40 sm:bottom-5 sm:right-5">
+        <div className="flex size-14 items-center justify-center rounded-full border border-border/70 bg-[var(--surface-elevated-bg)] shadow-[var(--surface-shadow-lg)]">
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={34}
+            height={34}
+            className="size-[2.15rem] object-contain"
+          />
+          <span className="sr-only">Loading Requo assistant</span>
+        </div>
       </div>
     ),
   },
@@ -133,13 +145,15 @@ export default async function InquiryDetailPage({
   const unarchiveAction = unarchiveInquiryAction.bind(null, inquiry.id);
   const trashAction = trashInquiryAction.bind(null, inquiry.id);
   const restoreAction = restoreInquiryFromTrashAction.bind(null, inquiry.id);
+  const createFollowUpAction = createInquiryFollowUpAction.bind(null, inquiry.id);
   const additionalFields = getAdditionalInquirySubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
-  const [customerHistory, calendarConnection, calendarEvents] = await Promise.all([
+  const [customerHistory, calendarConnection, calendarEvents, followUps] = await Promise.all([
     getCustomerHistoryForBusiness({
       businessId: businessContext.business.id,
       customerEmail: inquiry.customerEmail,
+      customerContactHandle: inquiry.customerContactHandle,
       excludeInquiryId: inquiry.id,
       excludeQuoteId: inquiry.relatedQuote?.id ?? null,
     }),
@@ -149,13 +163,17 @@ export default async function InquiryDetailPage({
     isGoogleCalendarConfigured
       ? getCalendarEventsForInquiry(businessContext.business.id, inquiry.id)
       : Promise.resolve([]),
+    getFollowUpsForInquiry({
+      businessId: businessContext.business.id,
+      inquiryId: inquiry.id,
+    }),
   ]);
 
   const calendarPrefill = isGoogleCalendarConfigured
     ? prefillFromInquiry(
         {
           customerName: inquiry.customerName,
-          customerEmail: inquiry.customerEmail,
+          customerEmail: inquiry.customerEmail ?? "",
           serviceCategory: inquiry.serviceCategory,
           subject: inquiry.subject,
           details: inquiry.details,
@@ -179,9 +197,7 @@ export default async function InquiryDetailPage({
       <DashboardDetailHeader
         eyebrow="Inquiry detail"
         title={inquiry.customerName}
-        description={`${inquiry.serviceCategory} inquiry received ${formatInquiryDate(
-          inquiry.submittedAt,
-        )}.`}
+        description={getInquiryHeaderDescription(inquiry)}
         meta={
           <>
             <InquiryStatusBadge status={inquiry.status} />
@@ -247,7 +263,7 @@ export default async function InquiryDetailPage({
         <DashboardSidebarStack>
           <DashboardSection
             contentClassName="flex flex-col gap-6"
-            description="Submitted through the public form."
+            description={getInquirySourceDescription(inquiry.source)}
             title="Summary"
           >
             <DashboardStatsGrid className="xl:grid-cols-4">
@@ -472,12 +488,14 @@ export default async function InquiryDetailPage({
             contentClassName="flex flex-col gap-4"
             description="Reach out directly from the business."
             footer={
-              <>
-                <Button asChild variant="outline">
-                  <a href={`mailto:${inquiry.customerEmail}`}>Email customer</a>
-                </Button>
-                <CopyEmailButton email={inquiry.customerEmail} />
-              </>
+              inquiry.customerEmail ? (
+                <>
+                  <Button asChild variant="outline">
+                    <a href={`mailto:${inquiry.customerEmail}`}>Email customer</a>
+                  </Button>
+                  <CopyEmailButton email={inquiry.customerEmail} />
+                </>
+              ) : null
             }
             title="Customer contact"
           >
@@ -485,39 +503,35 @@ export default async function InquiryDetailPage({
                 icon={Mail}
                 label="Email"
                 value={
-                  <a
-                    className="truncate underline-offset-4 hover:underline"
-                    href={`mailto:${inquiry.customerEmail}`}
-                  >
-                    {inquiry.customerEmail}
-                  </a>
-                }
-              />
-
-              <InfoTile
-                icon={Phone}
-                label="Phone"
-                value={
-                  inquiry.customerPhone ? (
+                  inquiry.customerEmail ? (
                     <a
-                      className="underline-offset-4 hover:underline"
-                      href={`tel:${inquiry.customerPhone}`}
+                      className="truncate underline-offset-4 hover:underline"
+                      href={`mailto:${inquiry.customerEmail}`}
                     >
-                      {inquiry.customerPhone}
+                      {inquiry.customerEmail}
                     </a>
                   ) : (
                     "Not provided"
                   )
                 }
               />
-              {inquiry.companyName ? (
-                <InfoTile
-                  icon={Building2}
-                  label="Company"
-                  value={inquiry.companyName}
-                />
-              ) : null}
+
+              <InfoTile
+                icon={AtSign}
+                label={`Contact (${inquiry.customerContactMethod})`}
+                value={inquiry.customerContactHandle}
+              />
           </DashboardSection>
+
+          <FollowUpPanel
+            businessSlug={businessSlug}
+            createAction={createFollowUpAction}
+            ctaDescription="Set a reminder for the next customer touchpoint on this inquiry."
+            defaultChannel={inquiry.customerContactMethod}
+            defaultReason="Follow up with the customer to keep this inquiry moving."
+            defaultTitle={`Follow up with ${inquiry.customerName}`}
+            followUps={followUps}
+          />
 
           <DashboardSection
             contentClassName="flex flex-col gap-4"
@@ -599,7 +613,7 @@ export default async function InquiryDetailPage({
           ) : null}
 
           <DashboardSection
-            description="Move the request through your workflow."
+            description="Move the inquiry through your workflow."
             title="Workflow"
           >
             {inquiry.recordState === "active" ? (
@@ -612,11 +626,11 @@ export default async function InquiryDetailPage({
               <Alert>
                 <AlertTitle>
                   {inquiry.recordState === "archived"
-                    ? "Restore this request to active first."
-                    : "Restore this request from trash first."}
+                    ? "Restore this inquiry to active first."
+                    : "Restore this inquiry from trash first."}
                 </AlertTitle>
                 <AlertDescription>
-                  Workflow status is locked while the request is{" "}
+                  Workflow status is locked while the inquiry is{" "}
                   {inquiry.recordState === "archived" ? "archived" : "in trash"}.
                 </AlertDescription>
               </Alert>
@@ -625,7 +639,7 @@ export default async function InquiryDetailPage({
 
           <DashboardSection
             description="Archive for safekeeping or move obvious junk to trash."
-            title="Manage request"
+            title="Manage inquiry"
           >
             <InquiryRecordActions
               archiveAction={archiveAction}
@@ -637,7 +651,34 @@ export default async function InquiryDetailPage({
           </DashboardSection>
         </DashboardSidebarStack>
       </DashboardDetailLayout>
-      <InquiryAiPanel inquiryId={inquiry.id} userName={session.user.name || "You"} />
+      <InquiryAiPanel
+        businessSlug={businessSlug}
+        inquiryId={inquiry.id}
+        userName={session.user.name || "You"}
+      />
     </DashboardPage>
   );
+}
+
+function getInquiryHeaderDescription(inquiry: {
+  serviceCategory: string;
+  source: string | null;
+  submittedAt: Date;
+}) {
+  const eventLabel =
+    inquiry.source === inquirySources.manualDashboard
+      ? "inquiry created"
+      : "inquiry received";
+
+  return `${inquiry.serviceCategory} ${eventLabel} ${formatInquiryDate(
+    inquiry.submittedAt,
+  )}.`;
+}
+
+function getInquirySourceDescription(source: string | null) {
+  if (source === inquirySources.manualDashboard) {
+    return "Created manually inside the dashboard.";
+  }
+
+  return "Submitted through the public form.";
 }

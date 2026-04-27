@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
 
 import { DashboardListResultsSkeleton } from "@/components/shared/dashboard-list-results-skeleton";
 import {
@@ -15,7 +15,10 @@ import type {
   DashboardInquiryListItem,
   InquiryListFilters,
 } from "@/features/inquiries/types";
-import { getBusinessInquiriesPath } from "@/features/businesses/routes";
+import {
+  getBusinessInquiriesPath,
+  getBusinessNewInquiryPath,
+} from "@/features/businesses/routes";
 
 type SearchParamsRecord = Record<string, string | string[] | undefined>;
 
@@ -85,6 +88,12 @@ export async function InquiryListControlsSection({
             formOptions={formOptions}
             resultCount={totalItems}
           />
+          <Button asChild>
+            <Link href={getBusinessNewInquiryPath(businessSlug)} prefetch={true}>
+              <Plus data-icon="inline-start" />
+              Quick-add inquiry
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -106,7 +115,6 @@ type InquiryListContentSectionProps = {
   pageDataPromise: Promise<InquiryListResultsData>;
   clearFiltersPath: string;
   hasNonViewFilters: boolean;
-  publicInquiryUrl: string;
 };
 
 export async function InquiryListContentSection({
@@ -117,7 +125,6 @@ export async function InquiryListContentSection({
   pageDataPromise,
   clearFiltersPath,
   hasNonViewFilters,
-  publicInquiryUrl,
 }: InquiryListContentSectionProps) {
   const totalItems = await totalItemsPromise;
 
@@ -143,13 +150,14 @@ export async function InquiryListContentSection({
         ) : filters.view !== "active" ? (
           <Button asChild variant="outline">
             <Link href={getBusinessInquiriesPath(businessSlug)} prefetch={true}>
-              View active requests
+              View active inquiries
             </Link>
           </Button>
         ) : (
           <Button asChild>
-            <Link href={publicInquiryUrl} prefetch={false}>
-              Preview inquiry page
+            <Link href={getBusinessNewInquiryPath(businessSlug)} prefetch={true}>
+              <Plus data-icon="inline-start" />
+              Quick-add first inquiry
             </Link>
           </Button>
         )
@@ -158,17 +166,17 @@ export async function InquiryListContentSection({
         hasNonViewFilters
           ? "Try another search or status."
           : filters.view === "archived"
-            ? "Archived requests stay here until you restore them."
+            ? "Archived inquiries stay here until you restore them."
             : filters.view === "trash"
-              ? "Requests moved to trash stay here until you restore them."
-              : "New inquiries show up here."
+              ? "Inquiries moved to trash stay here until you restore them."
+              : "Quick-add an inquiry manually or wait for new inquiries to arrive."
       }
       icon={Inbox}
       title={
         hasNonViewFilters
-          ? "No requests match these filters."
+          ? "No inquiries match these filters."
           : filters.view === "archived"
-            ? "No archived requests"
+            ? "No archived inquiries"
             : filters.view === "trash"
               ? "Trash is empty"
               : "Your inquiry inbox is still empty."
@@ -186,6 +194,7 @@ export function InquiryListControlsFallback() {
 
         <div className="dashboard-actions w-full [&>*]:w-full sm:[&>*]:w-auto xl:w-auto xl:justify-end">
           <Skeleton className="h-10 w-full rounded-xl sm:w-36" />
+          <Skeleton className="h-10 w-full rounded-xl sm:w-40" />
         </div>
       </div>
 

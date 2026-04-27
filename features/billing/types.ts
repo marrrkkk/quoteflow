@@ -3,6 +3,8 @@ import type {
   BillingCurrency,
   BillingProvider,
   BillingRegion,
+  PaymentAttemptStatus,
+  PaidPlan,
   SubscriptionStatus,
 } from "@/lib/billing/types";
 
@@ -31,6 +33,7 @@ export type CheckoutDialogProps = {
   workspaceId: string;
   workspaceSlug: string;
   currentPlan: WorkspacePlan;
+  plan: PaidPlan;
   region: BillingRegion;
   defaultCurrency: BillingCurrency;
 };
@@ -48,6 +51,45 @@ export type CheckoutActionState = {
     amount: number;
     currency: "PHP";
   };
+};
+
+/** Pending QRPh checkout data loaded from the server. */
+export type PendingQrPhData = {
+  qrCodeData: string;
+  paymentIntentId: string;
+  expiresAt: string;
+  amount: number;
+  currency: "PHP";
+  plan: PaidPlan;
+};
+
+export type PendingCheckoutState = {
+  provider: "paymongo";
+} & PendingQrPhData;
+
+export type CancelPendingQrCheckoutResult =
+  | {
+      ok: true;
+      outcome: "canceled" | "already_canceled";
+    }
+  | {
+      ok: true;
+      outcome: "already_paid";
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+export type CheckoutStatusSnapshot = {
+  subscription: {
+    plan: string;
+    status: SubscriptionStatus;
+  } | null;
+  paymentAttempt: {
+    providerPaymentId: string;
+    status: PaymentAttemptStatus;
+  } | null;
 };
 
 /** Cancel action state. */

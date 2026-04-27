@@ -33,6 +33,7 @@ import {
   archiveQuoteForBusiness,
   createQuoteForBusiness,
   deleteDraftQuoteForBusiness,
+  logQuoteSendEvent,
   markQuoteSentForBusiness,
   respondToPublicQuoteByToken,
   restoreArchivedQuoteForBusiness,
@@ -102,6 +103,8 @@ function mapQuoteEditorFieldErrors(fieldErrors: Record<string, string[] | undefi
     title: fieldErrors.title,
     customerName: fieldErrors.customerName,
     customerEmail: fieldErrors.customerEmail,
+    customerContactMethod: fieldErrors.customerContactMethod,
+    customerContactHandle: fieldErrors.customerContactHandle,
     notes: fieldErrors.notes,
     validUntil: fieldErrors.validUntil,
     discount: fieldErrors.discountInCents,
@@ -142,6 +145,8 @@ export async function createQuoteAction(
     title: formData.get("title"),
     customerName: formData.get("customerName"),
     customerEmail: formData.get("customerEmail"),
+    customerContactMethod: formData.get("customerContactMethod"),
+    customerContactHandle: formData.get("customerContactHandle"),
     notes: formData.get("notes"),
     validUntil: formData.get("validUntil"),
     discountInCents: formData.get("discount"),
@@ -222,6 +227,8 @@ export async function updateQuoteAction(
     title: formData.get("title"),
     customerName: formData.get("customerName"),
     customerEmail: formData.get("customerEmail"),
+    customerContactMethod: formData.get("customerContactMethod"),
+    customerContactHandle: formData.get("customerContactHandle"),
     notes: formData.get("notes"),
     validUntil: formData.get("validUntil"),
     discountInCents: formData.get("discount"),
@@ -456,6 +463,13 @@ export async function sendQuoteAction(
       };
     }
 
+    if (!quote.publicToken) {
+      return {
+        error:
+          "This quote's customer link is unavailable right now, so it can't be sent.",
+      };
+    }
+
     if (
       deliveryMethod === "requo" &&
       businessContext.business.workspacePlan === "free"
@@ -587,6 +601,22 @@ export async function sendQuoteAction(
       });
     }
 
+    // Push notification for quote sent
+    if (businessSettings.notifyPushOnQuoteSent) {
+      after(async () => {
+        try {
+          const { sendPushToBusinessSubscribers } = await import("@/lib/push/send");
+          await sendPushToBusinessSubscribers(businessContext.business.id, {
+            title: "Quote sent",
+            body: `Quote ${result.quoteNumber} sent to ${quote.customerName}.`,
+            url: getBusinessQuotePath(businessContext.business.slug, quote.id),
+          });
+        } catch (error) {
+          console.error("Push notification failed for quote sent.", error);
+        }
+      });
+    }
+
     updateCacheTags(
       getQuoteMutationCacheTags(
         businessContext.business.id,
@@ -609,6 +639,41 @@ export async function sendQuoteAction(
         getResendSendFailureMessage(error) ??
         "We couldn't send that quote right now.",
     };
+  }
+}
+
+export async function logQuoteSendEventAction(
+  quoteId: string,
+  eventType: string,
+  channel?: string,
+): Promise<{ error?: string }> {
+  const ownerAccess = await getWorkspaceBusinessActionContext();
+
+  if (!ownerAccess.ok) {
+    return { error: ownerAccess.error };
+  }
+
+  const { user, businessContext } = ownerAccess;
+
+  try {
+    await logQuoteSendEvent({
+      businessId: businessContext.business.id,
+      quoteId,
+      inquiryId: null,
+      actorUserId: user.id,
+      eventType,
+      channel,
+    });
+
+    updateCacheTags(
+      getQuoteMutationCacheTags(businessContext.business.id, quoteId),
+    );
+
+    return {};
+  } catch (error) {
+    console.error("Failed to log quote send event.", error);
+
+    return { error: "We couldn't log that action right now." };
   }
 }
 
@@ -802,6 +867,23 @@ export async function respondToPublicQuoteAction(
             "The quote response was saved but the owner notification email failed to send.",
             error,
           );
+        }
+      });
+    }
+
+    // Push notification for quote response
+    if (result.notifyPushOnQuoteResponse) {
+      after(async () => {
+        try {
+          const { sendPushToBusinessSubscribers } = await import("@/lib/push/send");
+          const responseLabel = result.status === "accepted" ? "accepted" : "declined";
+          await sendPushToBusinessSubscribers(result.businessId, {
+            title: `Quote ${responseLabel}`,
+            body: `${result.customerName} ${responseLabel} quote ${result.quoteNumber}.`,
+            url: getBusinessQuotePath(result.businessSlug, result.quoteId),
+          });
+        } catch (error) {
+          console.error("Push notification failed for quote response.", error);
         }
       });
     }

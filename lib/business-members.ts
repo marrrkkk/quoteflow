@@ -66,7 +66,7 @@ export function hasBusinessRoleAccess(
 }
 
 export function canManageBusinessMembers(role: BusinessMemberRole) {
-  return role === "owner";
+  return role === "owner" || role === "manager";
 }
 
 export function canManageBusinessAdministration(role: BusinessMemberRole) {

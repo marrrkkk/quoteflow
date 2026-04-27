@@ -44,8 +44,17 @@ export type BusinessSettingsView = {
   notifyOnQuoteResponse: boolean;
   notifyOnMemberInviteResponse: boolean;
   notifyInAppOnNewInquiry: boolean;
+  notifyInAppOnQuoteSent: boolean;
   notifyInAppOnQuoteResponse: boolean;
   notifyInAppOnMemberInviteResponse: boolean;
+  notifyPushOnNewInquiry: boolean;
+  notifyPushOnQuoteSent: boolean;
+  notifyPushOnQuoteResponse: boolean;
+  notifyPushOnMemberInviteResponse: boolean;
+  notifyOnFollowUpReminder: boolean;
+  notifyInAppOnFollowUpReminder: boolean;
+  notifyOnQuoteExpiring: boolean;
+  notifyInAppOnQuoteExpiring: boolean;
   defaultCurrency: string;
   updatedAt: Date;
 };
@@ -77,8 +86,17 @@ export type BusinessNotificationSettingsFieldName =
   | "notifyOnQuoteResponse"
   | "notifyOnMemberInviteResponse"
   | "notifyInAppOnNewInquiry"
+  | "notifyInAppOnQuoteSent"
   | "notifyInAppOnQuoteResponse"
-  | "notifyInAppOnMemberInviteResponse";
+  | "notifyInAppOnMemberInviteResponse"
+  | "notifyPushOnNewInquiry"
+  | "notifyPushOnQuoteSent"
+  | "notifyPushOnQuoteResponse"
+  | "notifyPushOnMemberInviteResponse"
+  | "notifyOnFollowUpReminder"
+  | "notifyInAppOnFollowUpReminder"
+  | "notifyOnQuoteExpiring"
+  | "notifyInAppOnQuoteExpiring";
 
 export type BusinessNotificationSettingsFieldErrors = Partial<
   Record<BusinessNotificationSettingsFieldName, string[] | undefined>

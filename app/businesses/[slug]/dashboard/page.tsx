@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import {
   DashboardOverviewChecklistFallback,
   DashboardOverviewChecklistSection,
+  DashboardNeedsAttentionFallback,
+  DashboardNeedsAttentionSection,
   DashboardOverviewQueuesFallback,
   DashboardOverviewQueuesSection,
   DashboardOverviewStatsFallback,
@@ -24,9 +26,16 @@ import {
   getBusinessOverviewData,
 } from "@/features/businesses/queries";
 import {
+  FollowUpDashboardSection,
+  FollowUpDashboardSectionFallback,
+} from "@/features/follow-ups/components/follow-up-dashboard-section";
+import { getFollowUpOverviewForBusiness } from "@/features/follow-ups/queries";
+import {
   getBusinessInquiriesPath,
   getBusinessNewQuotePath,
 } from "@/features/businesses/routes";
+import { OnboardingWelcomeDialog } from "@/features/onboarding/components/onboarding-welcome-dialog";
+import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 import { redirect } from "next/navigation";
@@ -56,6 +65,9 @@ export default async function DashboardOverviewPage({
   const overviewPromise = getBusinessOverviewData(
     businessContext.business.id,
   );
+  const followUpOverviewPromise = getFollowUpOverviewForBusiness(
+    businessContext.business.id,
+  );
 
   return (
     <DashboardPage className="gap-5 xl:gap-6">
@@ -65,6 +77,14 @@ export default async function DashboardOverviewPage({
           businessSlug={businessSlug}
           publicInquiryEnabled={businessContext.business.publicInquiryEnabled}
           summaryPromise={summaryPromise}
+        />
+      </Suspense>
+
+      <Suspense fallback={<DashboardNeedsAttentionFallback />}>
+        <DashboardNeedsAttentionSection
+          businessSlug={businessSlug}
+          overviewPromise={overviewPromise}
+          followUpOverviewPromise={followUpOverviewPromise}
         />
       </Suspense>
 
@@ -113,6 +133,19 @@ export default async function DashboardOverviewPage({
           overviewPromise={overviewPromise}
         />
       </Suspense>
+
+      <Suspense fallback={<FollowUpDashboardSectionFallback />}>
+        <FollowUpDashboardSection
+          businessSlug={businessSlug}
+          overviewPromise={followUpOverviewPromise}
+        />
+      </Suspense>
+
+      <OnboardingWelcomeDialog
+        businessName={businessContext.business.name}
+        businessSlug={businessSlug}
+        publicInquiryUrl={getBusinessPublicInquiryUrl(businessSlug)}
+      />
     </DashboardPage>
   );
 }

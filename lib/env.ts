@@ -15,7 +15,6 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
   NEXT_PUBLIC_BETTER_AUTH_URL: emptyToUndefined(z.url()),
-  APP_ENCRYPTION_KEYS: z.string().min(1),
   APP_TOKEN_HASH_SECRET: emptyToUndefined(z.string().min(32)),
   VERCEL_URL: emptyToUndefined(z.string().min(1)),
   GOOGLE_CLIENT_ID: emptyToUndefined(z.string().min(1)),
@@ -30,10 +29,9 @@ const envSchema = z.object({
   RESEND_API_KEY: emptyToUndefined(z.string().min(1)),
   RESEND_FROM_EMAIL: emptyToUndefined(z.email()),
   RESEND_REPLY_TO_EMAIL: emptyToUndefined(z.email()),
+  GROQ_API_KEY: emptyToUndefined(z.string().min(1)),
+  GEMINI_API_KEY: emptyToUndefined(z.string().min(1)),
   OPENROUTER_API_KEY: emptyToUndefined(z.string().min(1)),
-  OPENROUTER_DEFAULT_MODEL: emptyToUndefined(z.string().min(1)).default(
-    "openai/gpt-5-mini",
-  ),
   PAYMONGO_SECRET_KEY: emptyToUndefined(z.string().min(1)),
   PAYMONGO_PUBLIC_KEY: emptyToUndefined(z.string().min(1)),
   PAYMONGO_WEBHOOK_SECRET: emptyToUndefined(z.string().min(1)),
@@ -54,6 +52,8 @@ const envSchema = z.object({
   DEMO_QUOTE_PUBLIC_TOKEN: emptyToUndefined(z.string().trim().min(1)),
   DEMO_EXPIRED_QUOTE_PUBLIC_TOKEN: emptyToUndefined(z.string().trim().min(1)),
   DEMO_VOIDED_QUOTE_PUBLIC_TOKEN: emptyToUndefined(z.string().trim().min(1)),
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: emptyToUndefined(z.string().min(1)),
+  VAPID_PRIVATE_KEY: emptyToUndefined(z.string().min(1)),
 });
 
 export const env = envSchema.parse(process.env);
@@ -63,12 +63,15 @@ export const publicEnv = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
   NEXT_PUBLIC_PADDLE_ENVIRONMENT: env.NEXT_PUBLIC_PADDLE_ENVIRONMENT,
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
 };
 
 export const isResendConfigured = Boolean(
   env.RESEND_API_KEY && env.RESEND_FROM_EMAIL,
 );
 
+export const isGroqConfigured = Boolean(env.GROQ_API_KEY);
+export const isGeminiConfigured = Boolean(env.GEMINI_API_KEY);
 export const isOpenRouterConfigured = Boolean(env.OPENROUTER_API_KEY);
 export const isSupabaseRealtimeConfigured = Boolean(env.SUPABASE_JWT_SECRET);
 export const isGoogleCalendarConfigured = Boolean(
@@ -79,5 +82,8 @@ export const isPayMongoConfigured = Boolean(
 );
 export const isPaddleConfigured = Boolean(
   env.PADDLE_API_KEY && env.PADDLE_PRO_PRICE_ID,
+);
+export const isPushConfigured = Boolean(
+  env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY,
 );
 

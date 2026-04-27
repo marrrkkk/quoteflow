@@ -199,8 +199,12 @@ export const quoteEditorSchema = z
     customerEmail: z
       .string()
       .trim()
-      .min(1, "Enter the customer email.")
-      .email("Enter a valid customer email."),
+      .email("Enter a valid customer email.")
+      .nullable()
+      .optional()
+      .or(z.literal("")),
+    customerContactMethod: z.string().trim().min(1, "Select a preferred contact method."),
+    customerContactHandle: z.string().trim().min(1, "Enter the contact handle."),
     notes: optionalText(4000),
     validUntil: z
       .string()
@@ -236,6 +240,17 @@ export const quoteEditorSchema = z
         path: ["discountInCents"],
         message: "Discount cannot be larger than the subtotal.",
       });
+    }
+
+    if (value.customerContactMethod.toLowerCase() === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value.customerContactHandle)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["customerContactHandle"],
+          message: "Enter a valid email address.",
+        });
+      }
     }
   });
 

@@ -42,9 +42,9 @@ export function AccountSettingsNav({ groups }: AccountSettingsNavProps) {
   const pathname = usePathname();
   const router = useProgressRouter();
   const flatItems = groups.flatMap((group) => group.items);
-  const activeItem = flatItems.find((item) =>
-    isActiveAccountSettingsItem(pathname, item.href),
-  );
+  const activeItem = flatItems
+    .filter((item) => isActiveAccountSettingsItem(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0] ?? flatItems[0];
   const comboboxGroups: ComboboxOptionGroup<AccountSettingsOption>[] = groups.map(
     (group) => ({
       heading: group.label,
@@ -125,7 +125,7 @@ export function AccountSettingsNav({ groups }: AccountSettingsNavProps) {
                   return (
                     <BusinessSettingsNavLink
                       href={item.href}
-                      isActive={isActiveAccountSettingsItem(pathname, item.href)}
+                      isActive={activeItem?.href === item.href}
                       key={item.href}
                       label={item.label}
                     >

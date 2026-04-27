@@ -20,7 +20,7 @@ import { insertBusinessNotification } from "@/features/notifications/mutations";
 import {
   createStoredQuotePublicToken,
   getQuotePublicTokenLookupCondition,
-  resolveStoredQuotePublicToken,
+  tryResolveStoredQuotePublicToken,
 } from "@/features/quotes/token-storage";
 
 function createId(prefix: string) {
@@ -364,12 +364,13 @@ export async function createQuoteForBusiness({
           inquiryId,
           status: "draft",
           quoteNumber,
-          publicToken: null,
+          publicToken: storedPublicToken.publicToken,
           publicTokenHash: storedPublicToken.publicTokenHash,
-          publicTokenEncrypted: storedPublicToken.publicTokenEncrypted,
           title: quote.title,
           customerName: quote.customerName,
-          customerEmail: quote.customerEmail,
+          customerEmail: quote.customerContactMethod === "email" ? quote.customerContactHandle : quote.customerEmail ?? null,
+          customerContactMethod: quote.customerContactMethod,
+          customerContactHandle: quote.customerContactHandle,
           currency,
           notes: quote.notes ?? null,
           subtotalInCents: totals.subtotalInCents,
@@ -497,7 +498,9 @@ export async function updateQuoteForBusiness({
       .set({
         title: quote.title,
         customerName: quote.customerName,
-        customerEmail: quote.customerEmail,
+        customerEmail: quote.customerContactMethod === "email" ? quote.customerContactHandle : quote.customerEmail ?? null,
+        customerContactMethod: quote.customerContactMethod,
+        customerContactHandle: quote.customerContactHandle,
         notes: quote.notes ?? null,
         subtotalInCents: totals.subtotalInCents,
         discountInCents: totals.discountInCents,
@@ -955,7 +958,6 @@ export async function markQuoteSentForBusiness({
         inquiryId: quotes.inquiryId,
         quoteNumber: quotes.quoteNumber,
         publicToken: quotes.publicToken,
-        publicTokenEncrypted: quotes.publicTokenEncrypted,
         status: quotes.status,
         postAcceptanceStatus: quotes.postAcceptanceStatus,
         archivedAt: quotes.archivedAt,
@@ -979,7 +981,7 @@ export async function markQuoteSentForBusiness({
         status: existingQuote.status,
         quoteNumber: existingQuote.quoteNumber,
         inquiryId: existingQuote.inquiryId,
-        publicToken: resolveStoredQuotePublicToken(existingQuote),
+        publicToken: tryResolveStoredQuotePublicToken(existingQuote),
       };
     }
 
@@ -1037,8 +1039,55 @@ export async function markQuoteSentForBusiness({
       status: "sent" as const,
       quoteNumber: existingQuote.quoteNumber,
       inquiryId: existingQuote.inquiryId,
-      publicToken: resolveStoredQuotePublicToken(existingQuote),
+      publicToken: tryResolveStoredQuotePublicToken(existingQuote),
     };
+  });
+}
+
+type LogQuoteSendEventInput = {
+  businessId: string;
+  quoteId: string;
+  inquiryId: string | null;
+  actorUserId: string;
+  eventType: string;
+  channel?: string;
+};
+
+const sendEventSummaries: Record<string, string> = {
+  copied_link: "Quote link copied",
+  copied_message: "Quote message copied",
+  opened_email_app: "Email compose opened",
+  copied_followup: "Follow-up message copied",
+};
+
+export async function logQuoteSendEvent({
+  businessId,
+  quoteId,
+  inquiryId,
+  actorUserId,
+  eventType,
+  channel,
+}: LogQuoteSendEventInput) {
+  const now = new Date();
+  const channelLabel = channel ? ` via ${channel}` : "";
+  const baseSummary =
+    sendEventSummaries[eventType] ?? "Quote send action recorded";
+  const summary = `${baseSummary}${channelLabel}.`;
+
+  await db.transaction(async (tx) => {
+    await insertQuoteActivity(tx, {
+      businessId,
+      inquiryId,
+      quoteId,
+      actorUserId,
+      type: `quote.send.${eventType}`,
+      summary,
+      metadata: {
+        eventType,
+        ...(channel ? { channel } : {}),
+      },
+      now,
+    });
   });
 }
 
@@ -1089,13 +1138,13 @@ export async function respondToPublicQuoteByToken({
         customerName: quotes.customerName,
         customerEmail: quotes.customerEmail,
         publicToken: quotes.publicToken,
-        publicTokenEncrypted: quotes.publicTokenEncrypted,
         status: quotes.status,
         validUntil: quotes.validUntil,
         sentAt: quotes.sentAt,
         postAcceptanceStatus: quotes.postAcceptanceStatus,
         notifyOnQuoteResponse: businesses.notifyOnQuoteResponse,
         notifyInAppOnQuoteResponse: businesses.notifyInAppOnQuoteResponse,
+        notifyPushOnQuoteResponse: businesses.notifyPushOnQuoteResponse,
       })
       .from(quotes)
       .innerJoin(businesses, eq(quotes.businessId, businesses.id))
@@ -1222,7 +1271,8 @@ export async function respondToPublicQuoteByToken({
       customerEmail: existingQuote.customerEmail,
       customerResponseMessage: message?.trim() || null,
       notifyOnQuoteResponse: existingQuote.notifyOnQuoteResponse,
-      publicToken: resolveStoredQuotePublicToken(existingQuote),
+      notifyPushOnQuoteResponse: existingQuote.notifyPushOnQuoteResponse,
+      publicToken: tryResolveStoredQuotePublicToken(existingQuote),
       quoteNumber: existingQuote.quoteNumber,
       status: nextStatus,
       title: existingQuote.title,
