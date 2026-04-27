@@ -333,15 +333,15 @@ export async function getBusinessAnalyticsData(
     db
       .select({
         quotesSent:
-          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.sentAt} is not null and ${quotes.sentAt} >= ${summaryStart})`,
+          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.sentAt} is not null and ${quotes.sentAt} >= ${summaryStart.toISOString()})`,
         quotesViewed:
-          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.publicViewedAt} is not null and ${quotes.publicViewedAt} >= ${summaryStart})`,
+          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.publicViewedAt} is not null and ${quotes.publicViewedAt} >= ${summaryStart.toISOString()})`,
         quotesAccepted:
-          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'accepted' and ${quotes.acceptedAt} is not null and ${quotes.acceptedAt} >= ${summaryStart})`,
+          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'accepted' and ${quotes.acceptedAt} is not null and ${quotes.acceptedAt} >= ${summaryStart.toISOString()})`,
         quotesRejected:
-          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'rejected' and ${quotes.customerRespondedAt} is not null and ${quotes.customerRespondedAt} >= ${summaryStart})`,
+          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'rejected' and ${quotes.customerRespondedAt} is not null and ${quotes.customerRespondedAt} >= ${summaryStart.toISOString()})`,
         avgTimeSentToDecisionHours:
-          sql<number | null>`avg(extract(epoch from (${quotes.customerRespondedAt} - ${quotes.sentAt})) / 3600) filter (where ${quotes.customerRespondedAt} is not null and ${quotes.sentAt} is not null and ${quotes.customerRespondedAt} >= ${summaryStart})`,
+          sql<number | null>`avg(extract(epoch from (${quotes.customerRespondedAt} - ${quotes.sentAt})) / 3600) filter (where ${quotes.customerRespondedAt} is not null and ${quotes.sentAt} is not null and ${quotes.customerRespondedAt} >= ${summaryStart.toISOString()})`,
       })
       .from(quotes)
       .where(
