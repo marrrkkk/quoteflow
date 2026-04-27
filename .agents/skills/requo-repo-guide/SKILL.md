@@ -20,7 +20,7 @@ Read these sources first when relevant:
 - Keep `app/` focused on routes, layouts, loading states, and route handlers.
 - Keep business logic, validation, queries, actions, and mutations in `features/`.
 - Keep provider integrations and shared utilities in `lib/`.
-- Stay within current product scope: owner-first workflows only, with no billing, marketplace, live chat, mobile app, or advanced team collaboration unless explicitly requested.
+- Stay within current product scope: owner-first service-business workflows with workspace billing and light role-based membership. Do not add marketplace, live chat, mobile app, dispatch, payroll, invoicing, or advanced team collaboration unless explicitly requested.
 
 ## UI System
 
@@ -40,13 +40,32 @@ Read these sources first when relevant:
 - Keep provider boundaries narrow:
   - Better Auth for sessions and password flows
   - Supabase for storage and realtime-backed notification plumbing
-  - Resend for transactional email
-  - OpenRouter for server-side AI drafting
+- Resend for transactional email
+- Groq, Gemini, and OpenRouter through `lib/ai` for server-side AI drafting
+- PayMongo for QRPh payments and Paddle for card subscriptions
+
+## Billing
+
+- Subscriptions are workspace-scoped.
+- `workspace_subscriptions` is authoritative; `workspaces.plan` is a denormalized read cache.
+- `lib/billing/subscription-service.ts` is the single write path for subscription mutations.
+- `lib/billing/webhook-processor.ts` records provider events in `billing_events` for idempotency.
+- PayMongo webhook route: `app/api/billing/paymongo/webhook/route.ts`.
+- Paddle webhook route: `app/api/billing/paddle/webhook/route.ts`.
+
+## Testing
+
+- Test behavior and product risk, not implementation details.
+- Backend permission tests are required for business/workspace access changes.
+- Prefer DB-backed integration tests for server actions, route handlers, workflow mutations, billing webhooks, and authorization-sensitive behavior.
+- Keep component tests for meaningful interaction only. Avoid shallow render checks and snapshots.
 
 ## Verification
 
 - Docs-only changes: read through the edited files and run targeted grep checks.
-- Most code changes: run `npm run lint` and `npm run typecheck`.
+- Most code changes: run `npm run check`.
+- Logic, validation, or component changes: also run `npm run test`.
+- Server action, route handler, billing, authz, or DB-backed changes: also run `npm run test:integration`.
 - Route, layout, or system wiring changes: also run `npm run build`.
-- Covered user-flow changes: run the relevant `npm run test:e2e`.
-- CI baseline is lint, typecheck, build, and Playwright.
+- Covered user-flow changes: run the relevant `npm run test:e2e:smoke`; use `npm run test:e2e` for broader browser journeys.
+- CI baseline is lint, typecheck, unit/component tests, build, DB-backed integration tests, and Playwright smoke coverage.

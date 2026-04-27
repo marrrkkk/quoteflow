@@ -3,10 +3,11 @@
 ## Summary
 
 Requo deploys as a Next.js app with a Postgres database, Supabase storage credentials,
-Better Auth secrets, Resend for transactional email, and OpenRouter for AI drafting.
+Better Auth secrets, Resend for transactional email, AI provider keys, and optional billing providers.
 
 The deployed product is aimed at owner-led service businesses that need to capture
-inquiries, qualify leads, send quotes, and follow up from one place.
+inquiries, turn them into quotes, share or send quotes, follow up, and track quote
+views plus customer responses from one place.
 
 ## Environment Variables
 
@@ -15,6 +16,7 @@ inquiries, qualify leads, send quotes, and follow up from one place.
 - `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
+- `APP_TOKEN_HASH_SECRET`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -31,8 +33,10 @@ inquiries, qualify leads, send quotes, and follow up from one place.
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `RESEND_REPLY_TO_EMAIL`
+- `GROQ_API_KEY`
+- `GEMINI_API_KEY`
 - `OPENROUTER_API_KEY`
-- `OPENROUTER_DEFAULT_MODEL`
+- PayMongo and Paddle variables when checkout is enabled
 
 ## Better Auth Checklist
 
@@ -80,13 +84,34 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 - Expect password reset and inquiry notification email flows to be best-effort when Resend is absent.
 - Expect quote sending to fail clearly when Resend is absent.
 
-## OpenRouter Checklist
+## AI Provider Checklist
 
-- Create an OpenRouter API key.
-- Set `OPENROUTER_API_KEY`.
-- Set `OPENROUTER_DEFAULT_MODEL` to the production default model ID you want to use.
-- Keep the API key server-only.
+- Configure one or more AI providers: `GROQ_API_KEY`, `GEMINI_API_KEY`, or `OPENROUTER_API_KEY`.
+- The router tries configured providers in this order: Groq, Gemini, then OpenRouter.
+- Keep all AI API keys server-only.
 - Plan separate monitoring for rate limits, credit usage, and model-availability failures.
+
+## Billing Checklist
+
+- Billing is workspace-scoped. `workspace_subscriptions` is authoritative and `workspaces.plan` is a read cache.
+- Configure PayMongo for QRPh/PHP checkout if serving Philippines payments:
+  - `PAYMONGO_SECRET_KEY`
+  - `PAYMONGO_PUBLIC_KEY`
+  - `PAYMONGO_WEBHOOK_SECRET`
+- Configure Paddle for recurring card/USD checkout:
+  - `PADDLE_API_KEY`
+  - `PADDLE_WEBHOOK_SECRET`
+  - `PADDLE_PRO_PRICE_ID`
+  - `PADDLE_PRO_YEARLY_PRICE_ID`
+  - `PADDLE_BUSINESS_PRICE_ID`
+  - `PADDLE_BUSINESS_YEARLY_PRICE_ID`
+  - `PADDLE_ENVIRONMENT`
+  - `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`
+  - `NEXT_PUBLIC_PADDLE_ENVIRONMENT`
+- Point webhooks at:
+  - `/api/billing/paymongo/webhook`
+  - `/api/billing/paddle/webhook`
+- Read `docs/setup/billing.md` before enabling live checkout.
 
 ## Rollout Order
 
@@ -95,11 +120,12 @@ DATABASE_MIGRATION_URL=postgresql://postgres.<project-ref>:<db-password>@aws-<re
 3. Run `npm run db:migrate`.
 4. Configure Supabase storage credentials and verify upload-backed flows.
 5. Configure Resend and verify forgot-password plus quote-send flows.
-6. Configure OpenRouter and verify the inquiry assistant.
-7. Run the baseline health checks and smoke-test the public inquiry page, onboarding starter templates, dashboard login, quote send, and public quote response.
+6. Configure at least one AI provider and verify the inquiry assistant.
+7. Configure PayMongo/Paddle if checkout is part of the deployment.
+8. Run the baseline health checks and smoke-test dashboard login, non-member denial, public inquiry submission, quote send/share, and public quote response.
 
 ## Current Operational Gaps
 
 - Live provider behavior is not covered by the default automated suite.
-- There is no deployment-specific observability layer yet for Resend or OpenRouter failures.
+- There is no deployment-specific observability layer yet for Resend, AI provider, PayMongo, or Paddle failures.
 - SQL RLS helpers and policies exist, but the app does not currently inject `app.current_user_id` into the Postgres session, so database-session RLS is not the main enforcement path for runtime queries yet.
