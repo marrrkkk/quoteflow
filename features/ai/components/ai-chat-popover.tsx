@@ -56,6 +56,12 @@ type AIChatPopoverProps = {
   title?: string;
 };
 
+type ConversationMessagesSnapshot = {
+  messages: ChatMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
 type CopyState = "idle" | "copied" | "error";
 
 type ChatMessage = {
@@ -721,21 +727,14 @@ export function ChatInput({
 export function DashboardChatHistoryList({
   conversations,
   isLoading,
-  onBack,
   onSelect,
 }: {
   conversations: AiConversationSummary[];
   isLoading: boolean;
-  onBack: () => void;
   onSelect: (conversation: AiConversationSummary) => void;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-border/70 px-4 py-3">
-        <Button onClick={onBack} size="sm" type="button" variant="ghost">
-          Back to chat
-        </Button>
-      </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {isLoading ? (
           <div className="flex min-h-[16rem] items-center justify-center text-sm text-muted-foreground">
@@ -774,19 +773,29 @@ export function DashboardChatHistoryList({
 
 export function AIChatPanel({
   businessSlug,
+  cachedDashboardConversations,
   entityId,
+  messagesCache,
   surface,
   title,
   userName,
   onClose,
+  onDashboardConversationsChange,
+  onMessagesCacheUpdate,
 }: AIChatPopoverProps & {
+  cachedDashboardConversations?: AiConversationSummary[] | null;
+  messagesCache?: Map<string, ConversationMessagesSnapshot>;
   onClose: () => void;
+  onDashboardConversationsChange?: (conversations: AiConversationSummary[]) => void;
+  onMessagesCacheUpdate?: (conversationId: string, snapshot: ConversationMessagesSnapshot) => void;
 }) {
+  const isDashboard = surface === "dashboard";
+  const hasCachedList = isDashboard && cachedDashboardConversations != null;
   const [conversation, setConversation] = useState<AiConversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [composerValue, setComposerValue] = useState("");
   const [isPending, setIsPending] = useState(false);
-  const [isHydrating, setIsHydrating] = useState(true);
+  const [isHydrating, setIsHydrating] = useState(!isDashboard);
   const [hydrateError, setHydrateError] = useState<string | null>(null);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [paginationError, setPaginationError] = useState<string | null>(null);
@@ -794,11 +803,11 @@ export function AIChatPanel({
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(isDashboard);
   const [historyConversations, setHistoryConversations] = useState<
     AiConversationSummary[]
-  >([]);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  >(cachedDashboardConversations ?? []);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(isDashboard && !hasCachedList);
   const [copyState, setCopyState] = useTimedCopyState();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldScrollToBottomRef = useRef(false);
@@ -808,7 +817,61 @@ export function AIChatPanel({
     scrollTop: number;
   } | null>(null);
 
+  // Dashboard: fetch conversation list on mount only if not already cached
   useEffect(() => {
+    if (!isDashboard || hasCachedList) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setHistoryOpen(true);
+    setIsHistoryLoading(true);
+
+    fetch(getDashboardConversationsEndpoint({ businessSlug, entityId }), {
+      headers: { accept: "application/json" },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            await getJsonErrorMessage(
+              response,
+              "Dashboard conversation history could not be loaded.",
+            ),
+          );
+        }
+
+        const payload = (await response.json()) as {
+          conversations: AiConversationSummary[];
+        };
+
+        setHistoryConversations(payload.conversations);
+        onDashboardConversationsChange?.(payload.conversations);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.error("Failed to load dashboard AI history.", error);
+        setHistoryConversations([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsHistoryLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [isDashboard, hasCachedList, businessSlug, entityId, reloadKey, onDashboardConversationsChange]);
+
+  // Inquiry/Quote: fetch conversation + messages in parallel
+  useEffect(() => {
+    if (isDashboard) {
+      return;
+    }
+
     const controller = new AbortController();
 
     setIsHydrating(true);
@@ -861,7 +924,7 @@ export function AIChatPanel({
       });
 
     return () => controller.abort();
-  }, [businessSlug, entityId, reloadKey, surface, userName]);
+  }, [isDashboard, businessSlug, entityId, reloadKey, surface, userName]);
 
   useLayoutEffect(() => {
     const el = scrollContainerRef.current;
@@ -951,25 +1014,45 @@ export function AIChatPanel({
   async function loadMessagesForConversation(nextConversation: AiConversation) {
     setConversation(nextConversation);
     setHistoryOpen(false);
-    setIsHydrating(true);
     setHydrateError(null);
     setPaginationError(null);
-    setMessages([]);
     setComposerValue("");
+
+    // Use cached messages if available
+    const cached = messagesCache?.get(nextConversation.id);
+
+    if (cached) {
+      setMessages(cached.messages);
+      setNextCursor(cached.nextCursor);
+      setHasMore(cached.hasMore);
+      setIsHydrating(false);
+      shouldScrollToBottomRef.current = true;
+      return;
+    }
+
+    setIsHydrating(true);
+    setMessages([]);
 
     try {
       const page = await fetchMessagePage({
         conversationId: nextConversation.id,
       });
 
-      setMessages(
-        page.messages.map((message) =>
-          mapAiMessageToChatMessage(message, userName),
-        ),
+      const loadedMessages = page.messages.map((message) =>
+        mapAiMessageToChatMessage(message, userName),
       );
+
+      setMessages(loadedMessages);
       setNextCursor(page.nextCursor);
       setHasMore(page.hasMore);
       shouldScrollToBottomRef.current = true;
+
+      // Cache the loaded messages
+      onMessagesCacheUpdate?.(nextConversation.id, {
+        messages: loadedMessages,
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
+      });
     } catch (error) {
       setHydrateError(
         error instanceof Error
@@ -1057,12 +1140,18 @@ export function AIChatPanel({
     }
   }
 
-  async function loadDashboardHistory() {
+  async function loadDashboardHistory(forceRefresh = false) {
     if (surface !== "dashboard") {
       return;
     }
 
     setHistoryOpen(true);
+
+    // Reuse cached list unless explicitly refreshing
+    if (!forceRefresh && historyConversations.length > 0) {
+      return;
+    }
+
     setIsHistoryLoading(true);
 
     try {
@@ -1089,6 +1178,7 @@ export function AIChatPanel({
       };
 
       setHistoryConversations(payload.conversations);
+      onDashboardConversationsChange?.(payload.conversations);
     } catch (error) {
       console.error("Failed to load dashboard AI history.", error);
       setHistoryConversations([]);
@@ -1372,6 +1462,19 @@ export function AIChatPanel({
       });
     } finally {
       setIsPending(false);
+
+      // Update message cache after streaming completes
+      if (conversation) {
+        setMessages((currentMessages) => {
+          onMessagesCacheUpdate?.(conversation.id, {
+            messages: currentMessages,
+            nextCursor,
+            hasMore,
+          });
+
+          return currentMessages;
+        });
+      }
     }
   }
 
@@ -1423,7 +1526,7 @@ export function AIChatPanel({
               <Button
                 aria-label="History"
                 disabled={isPending}
-                onClick={() => void loadDashboardHistory()}
+                onClick={() => void loadDashboardHistory(true)}
                 size="icon-sm"
                 type="button"
                 variant="ghost"
@@ -1446,11 +1549,10 @@ export function AIChatPanel({
         </div>
       </div>
 
-      {historyOpen && surface === "dashboard" ? (
+      {historyOpen && isDashboard ? (
         <DashboardChatHistoryList
           conversations={historyConversations}
           isLoading={isHistoryLoading}
-          onBack={() => setHistoryOpen(false)}
           onSelect={(nextConversation) => {
             void loadMessagesForConversation(nextConversation);
           }}
@@ -1545,6 +1647,13 @@ export function AIChatPanel({
 
 export function AIChatPopover(props: AIChatPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isDashboard = props.surface === "dashboard";
+  const [cachedConversations, setCachedConversations] = useState<
+    AiConversationSummary[] | null
+  >(null);
+  const [messagesCache] = useState(
+    () => new Map<string, ConversationMessagesSnapshot>(),
+  );
   const title =
     props.title ??
     (props.surface === "inquiry"
@@ -1552,6 +1661,49 @@ export function AIChatPopover(props: AIChatPopoverProps) {
       : props.surface === "quote"
         ? "Quote Assistant"
         : "Dashboard Assistant");
+
+  // Pre-fetch dashboard conversation list on mount (persists across open/close)
+  useEffect(() => {
+    if (!isDashboard) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    fetch(
+      getDashboardConversationsEndpoint({
+        businessSlug: props.businessSlug,
+        entityId: props.entityId,
+      }),
+      {
+        headers: { accept: "application/json" },
+        signal: controller.signal,
+      },
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          conversations: AiConversationSummary[];
+        };
+
+        setCachedConversations(payload.conversations);
+      })
+      .catch(() => {
+        // Silently fail — the panel will fetch on mount if cache is null
+      });
+
+    return () => controller.abort();
+  }, [isDashboard, props.businessSlug, props.entityId]);
+
+  function handleMessagesCacheUpdate(
+    conversationId: string,
+    snapshot: ConversationMessagesSnapshot,
+  ) {
+    messagesCache.set(conversationId, snapshot);
+  }
 
   return (
     <div className="fixed bottom-4 right-4 z-40 sm:bottom-5 sm:right-5">
@@ -1587,7 +1739,14 @@ export function AIChatPopover(props: AIChatPopoverProps) {
           side="top"
           sideOffset={18}
         >
-          <AIChatPanel {...props} onClose={() => setIsOpen(false)} />
+          <AIChatPanel
+            {...props}
+            cachedDashboardConversations={cachedConversations}
+            messagesCache={messagesCache}
+            onClose={() => setIsOpen(false)}
+            onDashboardConversationsChange={setCachedConversations}
+            onMessagesCacheUpdate={handleMessagesCacheUpdate}
+          />
         </PopoverContent>
       </Popover>
     </div>
