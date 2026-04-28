@@ -23,10 +23,14 @@ import { prefillFromQuote, prefillFromAcceptedQuote } from "@/features/calendar/
 import { getCalendarConnectionForUser, getCalendarEventsForQuote } from "@/features/calendar/queries";
 import {
   archiveQuoteAction,
+  cancelAcceptedQuoteAction,
+  completeAcceptedQuoteAction,
+  createPostWinChecklistItemAction,
   deleteDraftQuoteAction,
   logQuoteSendEventAction,
   restoreArchivedQuoteAction,
   sendQuoteAction,
+  togglePostWinChecklistItemAction,
   updateQuotePostAcceptanceStatusAction,
   updateQuoteAction,
   voidQuoteAction,
@@ -43,7 +47,7 @@ import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QuoteExportPopover } from "@/features/quotes/components/quote-export-popover";
 import { QuoteLifecycleActions } from "@/features/quotes/components/quote-lifecycle-actions";
 import { QuotePostAcceptanceStatusBadge } from "@/features/quotes/components/quote-post-acceptance-status-badge";
-import { QuotePostAcceptanceForm } from "@/features/quotes/components/quote-post-acceptance-form";
+import { QuotePostWinPanel } from "@/features/quotes/components/quote-post-win-panel";
 import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import { QuoteRecordStateBadge } from "@/features/quotes/components/quote-record-state-badge";
 import { QuoteReminderBadge } from "@/features/quotes/components/quote-reminder-badge";
@@ -137,6 +141,8 @@ export default async function QuoteDetailPage({
     null,
     quote.id,
   );
+  const cancelAction = cancelAcceptedQuoteAction.bind(null, quote.id);
+  const completeAction = completeAcceptedQuoteAction.bind(null, quote.id);
   const restoreArchivedAction = restoreArchivedQuoteAction.bind(null, quote.id);
   const sendAction = sendQuoteAction.bind(null, quote.id);
   const logEventAction = logQuoteSendEventAction.bind(null, quote.id);
@@ -241,13 +247,25 @@ export default async function QuoteDetailPage({
                   description:
                     "A follow-up is already planned. Keep the quote open until the customer responds.",
                 }
-              : quote.status === "accepted"
+              : quote.status === "accepted" && quote.postAcceptanceStatus === "completed"
                 ? {
-                    title: "Next: schedule or book the work",
+                    title: "Work completed",
                     description:
-                      "The customer accepted this quote. Track the handoff so the job does not stall.",
+                      "This job has been fulfilled. The quote and work history are preserved.",
                   }
-                : null;
+                : quote.status === "accepted" && quote.postAcceptanceStatus === "canceled"
+                  ? {
+                      title: "Canceled after acceptance",
+                      description:
+                        "This accepted quote was canceled. The quote record stays accepted for historical accuracy.",
+                    }
+                  : quote.status === "accepted"
+                    ? {
+                        title: "Next: schedule or book the work",
+                        description:
+                          "The customer accepted this quote. Track the handoff so the job does not stall.",
+                      }
+                    : null;
 
   const customerViewCopy =
     quote.status === "sent"
@@ -659,16 +677,26 @@ export default async function QuoteDetailPage({
             />
 
             {quote.status === "accepted" ? (
-              <DashboardSection
-                description="Track the handoff after the customer says yes."
-                title="Post-acceptance"
-              >
-                <QuotePostAcceptanceForm
-                  key={quote.postAcceptanceStatus}
-                  action={postAcceptanceAction}
-                  currentStatus={quote.postAcceptanceStatus}
-                />
-              </DashboardSection>
+              <QuotePostWinPanel
+                key={quote.postAcceptanceStatus}
+                quoteId={quote.id}
+                quoteNumber={quote.quoteNumber}
+                customerName={quote.customerName}
+                totalInCents={quote.totalInCents}
+                currency={quote.currency}
+                acceptedAt={quote.acceptedAt}
+                completedAt={quote.completedAt}
+                canceledAt={quote.canceledAt}
+                cancellationReason={quote.cancellationReason}
+                cancellationNote={quote.cancellationNote}
+                postAcceptanceStatus={quote.postAcceptanceStatus}
+                checklistItems={quote.checklistItems}
+                postAcceptanceAction={postAcceptanceAction}
+                cancelAction={cancelAction}
+                completeAction={completeAction}
+                toggleChecklistItemAction={togglePostWinChecklistItemAction}
+                createChecklistItemAction={createPostWinChecklistItemAction}
+              />
             ) : null}
 
             {isGoogleCalendarConfigured ? (
