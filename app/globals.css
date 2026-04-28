@@ -967,7 +967,7 @@ html[data-reload-loading="true"] [data-reload-loading-overlay] {
   }
 
   .public-page-header-link {
-    @apply rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground;
+    @apply rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-transparent hover:text-primary;
   }
 
   .public-hero-surface {
@@ -1676,8 +1676,8 @@ html[data-reload-loading="true"] [data-reload-loading-overlay] {
 
 .mobile-nav-link:hover,
 .mobile-nav-link:focus-visible {
-  background-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  color: var(--foreground);
+  background-color: transparent;
+  color: var(--primary);
 }
 
 .mobile-nav-link:focus-visible {
