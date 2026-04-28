@@ -1,11 +1,14 @@
 import {
   AlertTriangle,
+  Ban,
   CheckCircle2,
+  CircleCheck,
   Clock,
   Hourglass,
   Inbox,
   Eye,
   FileText,
+  ListChecks,
   MessagesSquare,
   Timer,
 } from "lucide-react";
@@ -160,6 +163,29 @@ export function AnalyticsWorkflowTab({
               description="Sent over 7 days ago, no response"
               tooltip="Quotes you sent that the customer hasn't responded to in over a week."
             />
+            <AnalyticsMetricCard
+              icon={CircleCheck}
+              title="Completed"
+              value={`${data.summary.quotesCompleted}`}
+              description="Accepted quotes with fulfilled work"
+              tooltip="Accepted quotes where the work was marked completed."
+            />
+            <AnalyticsMetricCard
+              icon={Ban}
+              title="Canceled after acceptance"
+              value={`${data.summary.quotesCanceledAfterAcceptance}`}
+              description="Customer backed out after accepting"
+              tooltip="Accepted quotes that were later canceled by the customer or business."
+            />
+            {data.summary.acceptedNeedingNextStepCount > 0 ? (
+              <AnalyticsMetricCard
+                icon={ListChecks}
+                title="Needs next step"
+                value={`${data.summary.acceptedNeedingNextStepCount}`}
+                description="Accepted quotes not yet completed or canceled"
+                tooltip="Accepted quotes that still need scheduling, a deposit, or other follow-through."
+              />
+            ) : null}
           </div>
         </CardContent>
       </Card>

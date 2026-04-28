@@ -1,6 +1,8 @@
 import {
+  Ban,
   Banknote,
   CheckCircle2,
+  CircleCheck,
   Eye,
   FileText,
   Target,
@@ -61,6 +63,24 @@ export function AnalyticsConversionTab({
           description="Total value of accepted quotes"
           tooltip="Sum of accepted quote totals across the recent inquiry pipeline."
         />
+        {data.summary.completedValueInCents > 0 ? (
+          <AnalyticsValueCard
+            icon={CircleCheck}
+            title="Completed revenue"
+            value={formatAnalyticsMoney(data.summary.completedValueInCents, currency)}
+            description={`${data.summary.quotesCompleted} completed of ${data.summary.quotesAccepted} accepted — ${formatAnalyticsPercent(data.summary.acceptedToCompletedRate)}`}
+            tooltip="Revenue from accepted quotes where work has been marked completed."
+          />
+        ) : null}
+        {data.summary.canceledAfterAcceptanceValueInCents > 0 ? (
+          <AnalyticsValueCard
+            icon={Ban}
+            title="Canceled after acceptance"
+            value={formatAnalyticsMoney(data.summary.canceledAfterAcceptanceValueInCents, currency)}
+            description={`${data.summary.quotesCanceledAfterAcceptance} canceled — ${formatAnalyticsPercent(data.summary.acceptedToCanceledRate)} of accepted`}
+            tooltip="Revenue lost when customers backed out after accepting a quote."
+          />
+        ) : null}
       </DashboardStatsGrid>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(18rem,0.42fr)]">

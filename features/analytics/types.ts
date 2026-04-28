@@ -83,11 +83,17 @@ export type ConversionAnalyticsData = {
     quotePageViews: number;
     quotesAccepted: number;
     quotesRejected: number;
+    quotesCompleted: number;
+    quotesCanceledAfterAcceptance: number;
     inquiryToQuoteRate: number;
     quoteViewRate: number;
     quoteAcceptanceRate: number;
+    acceptedToCompletedRate: number;
+    acceptedToCanceledRate: number;
     acceptedValueInCents: number;
     averageAcceptedValueInCents: number;
+    completedValueInCents: number;
+    canceledAfterAcceptanceValueInCents: number;
   };
   funnel: {
     inquirySubmissions: number;
@@ -112,6 +118,9 @@ export type WorkflowAnalyticsData = {
     quotesAccepted: number;
     quotesRejected: number;
     quotesVoided: number;
+    quotesCompleted: number;
+    quotesCanceledAfterAcceptance: number;
+    acceptedNeedingNextStepCount: number;
     quoteAcceptanceRate: number;
   };
   statusCounts: Array<{

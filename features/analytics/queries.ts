@@ -622,10 +622,18 @@ export async function getConversionAnalyticsData(
           sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'accepted')`,
         quotesRejected:
           sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'rejected')`,
+        quotesCompleted:
+          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'accepted' and ${quotes.completedAt} is not null)`,
+        quotesCanceledAfterAcceptance:
+          sql<number>`count(distinct ${quotes.id}) filter (where ${quotes.status} = 'accepted' and ${quotes.canceledAt} is not null)`,
         acceptedValueInCents:
           sql<number>`coalesce(sum(${quotes.totalInCents}) filter (where ${quotes.status} = 'accepted'), 0)`,
         avgAcceptedValueInCents:
           sql<number>`coalesce(avg(${quotes.totalInCents}) filter (where ${quotes.status} = 'accepted'), 0)`,
+        completedValueInCents:
+          sql<number>`coalesce(sum(${quotes.totalInCents}) filter (where ${quotes.status} = 'accepted' and ${quotes.completedAt} is not null), 0)`,
+        canceledAfterAcceptanceValueInCents:
+          sql<number>`coalesce(sum(${quotes.totalInCents}) filter (where ${quotes.status} = 'accepted' and ${quotes.canceledAt} is not null), 0)`,
       })
       .from(inquiries)
       .leftJoin(firstQuote, eq(firstQuote.inquiryId, inquiries.id))
@@ -763,6 +771,8 @@ export async function getConversionAnalyticsData(
   const quotesViewed = Number(summary?.quotesViewed ?? 0);
   const quotesAccepted = Number(summary?.quotesAccepted ?? 0);
   const quotesRejected = Number(summary?.quotesRejected ?? 0);
+  const quotesCompleted = Number(summary?.quotesCompleted ?? 0);
+  const quotesCanceledAfterAcceptance = Number(summary?.quotesCanceledAfterAcceptance ?? 0);
   const quotePageViews = Number(quoteViewRows[0]?.quotePageViews ?? 0);
 
   const formPerformance: FormPerformanceAnalyticsRow[] = formRows.map((row) => {
@@ -801,15 +811,21 @@ export async function getConversionAnalyticsData(
       quotePageViews,
       quotesAccepted,
       quotesRejected,
+      quotesCompleted,
+      quotesCanceledAfterAcceptance,
       inquiryToQuoteRate: inquirySubmissions
         ? inquiriesWithQuote / inquirySubmissions
         : 0,
       quoteViewRate: quotesSent ? quotesViewed / quotesSent : 0,
       quoteAcceptanceRate: quotesSent ? quotesAccepted / quotesSent : 0,
+      acceptedToCompletedRate: quotesAccepted ? quotesCompleted / quotesAccepted : 0,
+      acceptedToCanceledRate: quotesAccepted ? quotesCanceledAfterAcceptance / quotesAccepted : 0,
       acceptedValueInCents: Number(summary?.acceptedValueInCents ?? 0),
       averageAcceptedValueInCents: Math.round(
         Number(summary?.avgAcceptedValueInCents ?? 0),
       ),
+      completedValueInCents: Number(summary?.completedValueInCents ?? 0),
+      canceledAfterAcceptanceValueInCents: Number(summary?.canceledAfterAcceptanceValueInCents ?? 0),
     },
     funnel: {
       inquirySubmissions,
@@ -879,6 +895,12 @@ export async function getWorkflowAnalyticsData(
           sql<number>`count(*) filter (where ${quotes.status} = 'rejected')`,
         quotesVoided:
           sql<number>`count(*) filter (where ${quotes.status} = 'voided')`,
+        quotesCompleted:
+          sql<number>`count(*) filter (where ${quotes.status} = 'accepted' and ${quotes.completedAt} is not null)`,
+        quotesCanceledAfterAcceptance:
+          sql<number>`count(*) filter (where ${quotes.status} = 'accepted' and ${quotes.canceledAt} is not null)`,
+        acceptedNeedingNextStepCount:
+          sql<number>`count(*) filter (where ${quotes.status} = 'accepted' and ${quotes.completedAt} is null and ${quotes.canceledAt} is null)`,
         avgTimeSentToDecisionHours:
           sql<number | null>`avg(extract(epoch from (${quotes.customerRespondedAt} - ${quotes.sentAt})) / 3600) filter (where ${quotes.customerRespondedAt} is not null and ${quotes.sentAt} is not null)`,
       })
@@ -945,6 +967,9 @@ export async function getWorkflowAnalyticsData(
   const quotesAccepted = Number(quoteTiming?.quotesAccepted ?? 0);
   const quotesRejected = Number(quoteTiming?.quotesRejected ?? 0);
   const quotesVoided = Number(quoteTiming?.quotesVoided ?? 0);
+  const quotesCompleted = Number(quoteTiming?.quotesCompleted ?? 0);
+  const quotesCanceledAfterAcceptance = Number(quoteTiming?.quotesCanceledAfterAcceptance ?? 0);
+  const acceptedNeedingNextStepCount = Number(quoteTiming?.acceptedNeedingNextStepCount ?? 0);
   const quoteStatusCountMap = new Map(
     quoteStatusRows.map((row) => [row.status, Number(row.count)]),
   );
@@ -967,6 +992,9 @@ export async function getWorkflowAnalyticsData(
       quotesAccepted,
       quotesRejected,
       quotesVoided,
+      quotesCompleted,
+      quotesCanceledAfterAcceptance,
+      acceptedNeedingNextStepCount,
       quoteAcceptanceRate: quotesSent ? quotesAccepted / quotesSent : 0,
     },
     statusCounts: quoteStatuses.map((status) => ({
