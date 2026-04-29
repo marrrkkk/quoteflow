@@ -1,6 +1,6 @@
 import {
   DashboardPage,
-  DashboardSection,
+  DashboardToolbar,
 } from "@/components/shared/dashboard-layout";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -16,9 +17,9 @@ import {
 import {
   AdminDataTable,
   AdminPagination,
-  buildAdminPageHref,
   formatDateTime,
   formatMetadataPreview,
+  formatNumber,
 } from "@/features/admin/components/admin-common";
 import { adminAuditLogPageDescription } from "@/features/admin/constants";
 import { requireAdminPage } from "@/features/admin/page-guard";
@@ -42,8 +43,8 @@ function SelectField({
   options: Array<{ label: string; value: string }>;
 }) {
   return (
-    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-foreground">
-      {label}
+    <label className="flex min-w-0 flex-col gap-2">
+      <span className="meta-label px-0.5">{label}</span>
       <select
         className="control-surface h-10 rounded-md border border-border/85 px-3 text-sm text-foreground shadow-sm outline-none focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/15"
         defaultValue={value}
@@ -71,103 +72,123 @@ export default async function AdminAuditLogsPage({
     <DashboardPage>
       <PageHeader
         description={adminAuditLogPageDescription}
-        eyebrow="Internal admin"
         title="Audit logs"
       />
 
-      <DashboardSection title="Filter audit logs">
+      <DashboardToolbar>
         <form
           action="/admin/audit-logs"
-          className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+          className="flex flex-col gap-4"
         >
-          <SelectField
-            label="Action"
-            name="action"
-            options={[
-              { label: "All actions", value: "all" },
-              ...adminAuditActions.map((action) => ({
-                label: action,
-                value: action,
-              })),
-            ]}
-            value={filters.action}
-          />
-          <SelectField
-            label="Target type"
-            name="targetType"
-            options={[
-              { label: "All targets", value: "all" },
-              ...adminAuditTargetTypes.map((targetType) => ({
-                label: targetType,
-                value: targetType,
-              })),
-            ]}
-            value={filters.targetType}
-          />
-          <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-foreground">
-            Admin
-            <Input
-              defaultValue={filters.admin}
-              name="admin"
-              placeholder="Email or user ID"
+          <div className="data-list-toolbar-summary">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Filter internal admin access and support actions.
+            </p>
+            <p className="data-list-toolbar-count">
+              {formatNumber(page.pageInfo.totalCount)} events
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <SelectField
+              label="Action"
+              name="action"
+              options={[
+                { label: "All actions", value: "all" },
+                ...adminAuditActions.map((action) => ({
+                  label: action,
+                  value: action,
+                })),
+              ]}
+              value={filters.action}
             />
-          </label>
-          <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-foreground">
-            Target ID
-            <Input
-              defaultValue={filters.targetId}
-              name="targetId"
-              placeholder="Target ID"
+            <SelectField
+              label="Target type"
+              name="targetType"
+              options={[
+                { label: "All targets", value: "all" },
+                ...adminAuditTargetTypes.map((targetType) => ({
+                  label: targetType,
+                  value: targetType,
+                })),
+              ]}
+              value={filters.targetType}
             />
-          </label>
-          <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-foreground">
-            From
-            <Input defaultValue={filters.from} name="from" type="date" />
-          </label>
-          <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-foreground">
-            To
-            <Input defaultValue={filters.to} name="to" type="date" />
-          </label>
-          <div className="flex items-end">
-            <Button type="submit" variant="outline">
-              Apply filters
-            </Button>
+            <label className="flex min-w-0 flex-col gap-2">
+              <span className="meta-label px-0.5">Admin</span>
+              <Input
+                defaultValue={filters.admin}
+                name="admin"
+                placeholder="Email or user ID"
+              />
+            </label>
+            <label className="flex min-w-0 flex-col gap-2">
+              <span className="meta-label px-0.5">Target ID</span>
+              <Input
+                defaultValue={filters.targetId}
+                name="targetId"
+                placeholder="Target ID"
+              />
+            </label>
+            <label className="flex min-w-0 flex-col gap-2">
+              <span className="meta-label px-0.5">From</span>
+              <Input defaultValue={filters.from} name="from" type="date" />
+            </label>
+            <label className="flex min-w-0 flex-col gap-2">
+              <span className="meta-label px-0.5">To</span>
+              <Input defaultValue={filters.to} name="to" type="date" />
+            </label>
+            <div className="flex items-end">
+              <Button className="w-full sm:w-auto" type="submit" variant="outline">
+                Apply filters
+              </Button>
+            </div>
           </div>
         </form>
-      </DashboardSection>
+      </DashboardToolbar>
 
-      <DashboardSection
-        description="Newest internal admin events first."
-        title="Internal admin audit"
-      >
+      <div className="flex flex-col gap-5">
         <AdminDataTable empty={page.items.length === 0}>
-          <Table>
+          <Table className="min-w-[86rem] table-fixed">
+            <TableCaption className="sr-only">
+              Newest internal admin audit events appear first.
+            </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Metadata</TableHead>
-                <TableHead>Request</TableHead>
+                <TableHead className="w-[12rem]">When</TableHead>
+                <TableHead className="w-[18rem]">Admin</TableHead>
+                <TableHead className="w-[18rem]">Action</TableHead>
+                <TableHead className="w-[18rem]">Target</TableHead>
+                <TableHead className="w-[22rem]">Metadata</TableHead>
+                <TableHead className="w-[18rem]">Request</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {page.items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{formatDateTime(item.createdAt)}</TableCell>
-                  <TableCell>{item.adminEmail}</TableCell>
-                  <TableCell>{item.action}</TableCell>
-                  <TableCell>
+                  <TableCell className="w-[12rem] text-muted-foreground">
+                    {formatDateTime(item.createdAt)}
+                  </TableCell>
+                  <TableCell className="w-[18rem] table-emphasis">
+                    {item.adminEmail}
+                  </TableCell>
+                  <TableCell className="w-[18rem] table-emphasis">
+                    {item.action}
+                  </TableCell>
+                  <TableCell className="w-[18rem]">
                     <span className="flex min-w-0 flex-col gap-1">
-                      <span>{item.targetType}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="table-emphasis">{item.targetType}</span>
+                      <span className="table-supporting-text">
                         {item.targetId}
                       </span>
                     </span>
                   </TableCell>
-                  <TableCell>{formatMetadataPreview(item.metadata)}</TableCell>
-                  <TableCell>
+                  <TableCell className="w-[22rem] text-muted-foreground">
+                    <span className="block truncate">
+                      {formatMetadataPreview(item.metadata)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="w-[18rem] text-muted-foreground">
                     {item.ipAddress ?? "No IP"} /{" "}
                     {item.userAgent ? item.userAgent.slice(0, 60) : "No UA"}
                   </TableCell>
@@ -178,16 +199,11 @@ export default async function AdminAuditLogsPage({
         </AdminDataTable>
 
         <AdminPagination
-          hrefForPage={(nextPage) =>
-            buildAdminPageHref(
-              "/admin/audit-logs",
-              resolvedSearchParams,
-              nextPage,
-            )
-          }
           pageInfo={page.pageInfo}
+          pathname="/admin/audit-logs"
+          searchParams={resolvedSearchParams}
         />
-      </DashboardSection>
+      </div>
     </DashboardPage>
   );
 }
