@@ -48,7 +48,10 @@ export default async function AdminSystemPage() {
         <AdminBasicTable
           headers={["Provider", "Configured"]}
           rows={[
+            ["Email fallback", system.providers.email ? "Yes" : "No"],
             ["Resend", system.providers.resend ? "Yes" : "No"],
+            ["Mailtrap", system.providers.mailtrap ? "Yes" : "No"],
+            ["Brevo", system.providers.brevo ? "Yes" : "No"],
             ["PayMongo", system.providers.billing.payMongo ? "Yes" : "No"],
             ["Paddle", system.providers.billing.paddle ? "Yes" : "No"],
             ["Groq", system.providers.ai.groq ? "Yes" : "No"],

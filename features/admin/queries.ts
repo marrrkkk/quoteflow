@@ -50,9 +50,12 @@ import {
 } from "@/lib/db/schema";
 import {
   env,
+  isBrevoConfigured,
+  isEmailConfigured,
   isGeminiConfigured,
   isGoogleCalendarConfigured,
   isGroqConfigured,
+  isMailtrapConfigured,
   isOpenRouterConfigured,
   isPaddleConfigured,
   isPayMongoConfigured,
@@ -1401,7 +1404,10 @@ export async function getAdminSystemStatus() {
       },
       googleCalendar: isGoogleCalendarConfigured,
       push: isPushConfigured,
+      email: isEmailConfigured,
       resend: isResendConfigured,
+      mailtrap: isMailtrapConfigured,
+      brevo: isBrevoConfigured,
       supabaseRealtime: isSupabaseRealtimeConfigured,
     },
     recentFailedPayments,

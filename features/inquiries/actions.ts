@@ -184,6 +184,8 @@ export async function submitPublicInquiryAction(
               label: field.label,
               value: field.displayValue,
             })),
+            workspaceId,
+            businessId: business.id,
           });
         } catch (error) {
           console.error(

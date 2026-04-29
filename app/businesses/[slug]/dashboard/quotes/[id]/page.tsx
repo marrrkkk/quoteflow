@@ -71,7 +71,7 @@ import {
   getBusinessQuotesPath,
 } from "@/features/businesses/routes";
 import { workspacesHubPath } from "@/features/workspaces/routes";
-import { env, isGoogleCalendarConfigured, isResendConfigured } from "@/lib/env";
+import { env, isEmailConfigured, isGoogleCalendarConfigured } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
@@ -396,7 +396,7 @@ export default async function QuoteDetailPage({
               quote={quote}
               customerQuoteUrl={customerQuoteUrl}
               businessName={businessContext.business.name}
-              isRequoEmailAvailable={isResendConfigured && quote.customerContactMethod === "email" && !!quote.customerEmail}
+              isRequoEmailAvailable={isEmailConfigured && quote.customerContactMethod === "email" && !!quote.customerEmail}
               pdfExportHref={getBusinessQuoteExportPath(businessSlug, quote.id, "pdf")}
             />
           </div>
@@ -448,7 +448,7 @@ export default async function QuoteDetailPage({
                   quote={quote}
                   customerQuoteUrl={customerQuoteUrl}
                   businessName={businessContext.business.name}
-                  isRequoEmailAvailable={isResendConfigured && quote.customerContactMethod === "email" && !!quote.customerEmail}
+                  isRequoEmailAvailable={isEmailConfigured && quote.customerContactMethod === "email" && !!quote.customerEmail}
                   pdfExportHref={getBusinessQuoteExportPath(businessSlug, quote.id, "pdf")}
                 />
               </DashboardSection>

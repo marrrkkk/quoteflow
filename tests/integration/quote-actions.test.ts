@@ -75,7 +75,7 @@ vi.mock("@/lib/env", async () => {
       ...actual.env,
       BETTER_AUTH_URL: "https://requo.test",
     },
-    isResendConfigured: true,
+    isEmailConfigured: true,
   };
 });
 
@@ -378,6 +378,7 @@ describe("quote actions", () => {
       response: "rejected",
       dashboardUrl:
         "https://requo.test/businesses/brightside-print-studio/dashboard/quotes/quote_123",
+      businessId: "business_123",
     });
   });
 

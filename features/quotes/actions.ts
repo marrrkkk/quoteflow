@@ -18,7 +18,7 @@ import {
   getBusinessOwnerEmails,
   getWorkspaceBusinessActionContext,
 } from "@/lib/db/business-access";
-import { env, isResendConfigured } from "@/lib/env";
+import { env, isEmailConfigured } from "@/lib/env";
 import { getUsageLimit } from "@/lib/plans";
 import { checkUsageAllowance } from "@/lib/plans/usage";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
@@ -525,7 +525,7 @@ export async function sendQuoteAction(
     ).toString();
 
     if (deliveryMethod === "requo") {
-      if (!isResendConfigured) {
+      if (!isEmailConfigured) {
         return {
           error:
             "Quote email delivery is unavailable right now. Configure email and try again.",
@@ -560,6 +560,9 @@ export async function sendQuoteAction(
         items: quote.items,
         templateOverrides: businessSettings.quoteEmailTemplate,
         replyToEmail: businessSettings.contactEmail ?? ownerEmails[0],
+        workspaceId: businessContext.business.workspaceId,
+        businessId: businessContext.business.id,
+        userId: user.id,
       });
     }
 
@@ -599,6 +602,8 @@ export async function sendQuoteAction(
               env.BETTER_AUTH_URL,
             ).toString(),
             publicQuoteUrl,
+            workspaceId: businessContext.business.workspaceId,
+            businessId: businessContext.business.id,
           });
         } catch (error) {
           console.error(
@@ -869,6 +874,7 @@ export async function respondToPublicQuoteAction(
               getBusinessQuotePath(result.businessSlug, result.quoteId),
               env.BETTER_AUTH_URL,
             ).toString(),
+            businessId: result.businessId,
           });
         } catch (error) {
           console.error(
