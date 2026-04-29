@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarClock, /* Plus */ } from "lucide-react";
+import { ArrowRight, CalendarClock, PlusCircle } from "lucide-react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
 import { PlanBadge } from "@/components/shared/paywall";
@@ -20,6 +20,7 @@ import { getAccountProfileForUser } from "@/features/account/queries";
 import { AccountUserMenu } from "@/features/account/components/account-user-menu";
 import { resolveUserAvatarSrc } from "@/features/account/utils";
 import { onboardingPath } from "@/features/onboarding/routes";
+import { RecentlyOpenedBusinesses } from "@/features/businesses/components/recently-opened-businesses";
 
 import { ThemePreferenceSync } from "@/features/theme/components/theme-preference-sync";
 import { getThemePreferenceForUser } from "@/features/theme/queries";
@@ -81,88 +82,91 @@ export default async function WorkspacesPage() {
               Your workspaces
             </h1>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[0.96rem]">
-              Each workspace has its own plan, businesses, and team. Switch between workspaces to manage different projects or clients.
+              Manage your businesses, plans, and team access across different workspaces.
             </p>
           </div>
 
           <div className="w-full space-y-6">
+            <RecentlyOpenedBusinesses userId={session.user.id} />
+
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="meta-label">
                   {workspaceList.length} workspace{workspaceList.length === 1 ? "" : "s"}
                 </p>
-                <CreateWorkspaceDialog />
               </div>
 
-              {workspaceList.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {workspaceList.map((ws) => (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {workspaceList.map((ws) => (
+                  <Card
+                    className="group flex flex-col border-border/80 bg-card/98 transition-colors hover:border-border hover:bg-card hover:shadow-sm"
+                    key={ws.id}
+                  >
+                    <CardHeader className="gap-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="max-w-full truncate text-lg">
+                            {ws.name}
+                          </CardTitle>
+                          <CardDescription className="mt-1 max-w-full truncate font-medium">
+                            /{ws.slug}
+                          </CardDescription>
+                        </div>
+                        <PlanBadge plan={ws.plan} />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-1 flex-col justify-between space-y-5">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">
+                          {ws.businessCount} business{ws.businessCount === 1 ? "" : "es"}
+                        </Badge>
+                        <Badge
+                          className="capitalize"
+                          variant="secondary"
+                        >
+                          {ws.memberRole}
+                        </Badge>
+                        {ws.scheduledDeletionAt ? (
+                          <Badge className="gap-1" variant="destructive">
+                            <CalendarClock className="size-3.5" />
+                            Deletion scheduled
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <Button asChild className="w-full sm:w-auto" variant="default">
+                        <Link href={getWorkspacePath(ws.slug)} prefetch={true}>
+                          Open workspace
+                          <ArrowRight data-icon="inline-end" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                <CreateWorkspaceDialog
+                  trigger={
                     <Card
-                      className="border-border/80 bg-card/98"
-                      key={ws.id}
+                      role="button"
+                      className="group flex flex-col border-dashed border-border/80 bg-transparent transition-colors hover:border-border hover:bg-card/50 cursor-pointer"
                     >
-                      <CardHeader className="gap-3">
-                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-                          <div className="flex min-w-0 items-start gap-3">
-                            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background/90 text-sm font-semibold tracking-[0.16em] text-foreground">
-                              {ws.name
-                                .split(" ")
-                                .slice(0, 2)
-                                .map((s) => s[0]?.toUpperCase())
-                                .join("")}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <CardTitle className="max-w-full truncate">
-                                {ws.name}
-                              </CardTitle>
-                              <CardDescription className="mt-1 max-w-full truncate">
-                                /{ws.slug}
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <PlanBadge plan={ws.plan} />
+                      <CardHeader className="gap-4">
+                        <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
+                          <PlusCircle className="size-5" />
+                          <CardTitle className="text-lg">New workspace</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">
-                            {ws.businessCount} business{ws.businessCount === 1 ? "" : "es"}
-                          </Badge>
-                          <Badge
-                            className="capitalize"
-                            variant="secondary"
-                          >
-                            {ws.memberRole}
-                          </Badge>
-                          {ws.scheduledDeletionAt ? (
-                            <Badge className="gap-1" variant="outline">
-                              <CalendarClock className="size-3.5" />
-                              Deletion scheduled
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <Button asChild className="w-full sm:w-auto">
-                          <Link href={getWorkspacePath(ws.slug)} prefetch={true}>
-                            Open workspace
-                            <ArrowRight data-icon="inline-end" />
-                          </Link>
+                      <CardContent className="flex flex-1 flex-col justify-end space-y-5">
+                        <CardDescription className="max-w-full">
+                          Create a separate workspace for a different team, client, or project.
+                        </CardDescription>
+                        <Button className="w-full sm:w-auto" variant="secondary">
+                          Create workspace
                         </Button>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card className="border-dashed">
-                  <CardHeader>
-                    <CardTitle>No workspaces yet</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Create your first workspace to start organizing your businesses.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                  }
+                />
+              </div>
             </section>
 
           </div>

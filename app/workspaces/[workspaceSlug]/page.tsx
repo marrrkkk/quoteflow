@@ -6,7 +6,7 @@ import { BrandMark } from "@/components/shared/brand-mark";
 import { AccountUserMenu } from "@/features/account/components/account-user-menu";
 import { getAccountProfileForUser } from "@/features/account/queries";
 import { resolveUserAvatarSrc } from "@/features/account/utils";
-import { getWorkspaceOverviewBySlug, getWorkspaceListForUser } from "@/features/workspaces/queries";
+import { getWorkspaceOverviewBySlug } from "@/features/workspaces/queries";
 import { WorkspaceOverviewContent } from "@/features/workspaces/components/workspace-overview";
 import { createBusinessAction } from "@/features/businesses/actions";
 import {
@@ -39,10 +39,9 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
       ? searchParams.view
       : "active";
 
-  const [overview, themePreference, workspaceList, profile] = await Promise.all([
+  const [overview, themePreference, profile] = await Promise.all([
     getWorkspaceOverviewBySlug(session.user.id, params.workspaceSlug, businessView),
     getThemePreferenceForUser(session.user.id),
-    getWorkspaceListForUser(session.user.id),
     getAccountProfileForUser(session.user.id),
   ]);
 
@@ -111,10 +110,9 @@ export default async function WorkspacePage(props: WorkspacePageProps) {
             </div>
             
             <WorkspaceOverviewContent
-              overview={overview}
-              workspaceList={workspaceList}
               billingOverview={billingOverview!}
               createBusinessAction={createBusinessAction}
+              overview={overview}
             />
           </div>
         </main>

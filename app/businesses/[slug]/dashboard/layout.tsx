@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
+import { RecentBusinessTracker } from "@/features/businesses/components/recent-business-tracker";
+
 import { DashboardShell } from "@/components/shell/dashboard-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeButton } from "@/features/billing/components/upgrade-button";
@@ -35,12 +37,18 @@ export default async function BusinessDashboardLayout({
   }
 
   // Core shell data — needed synchronously for sidebar nav, user menu, business switcher
-  const [themePreference, businessMemberships, profile, billing] = await Promise.all([
+  const [themePreference, allBusinessMemberships, profile, billing] = await Promise.all([
     getThemePreferenceForUser(session.user.id),
     getBusinessMembershipsForUser(session.user.id),
     getAccountProfileForUser(session.user.id),
     getWorkspaceBillingOverview(businessContext.business.workspaceId),
   ]);
+
+  // Filter to only show businesses in the current workspace
+  const businessMemberships = allBusinessMemberships.filter(
+    (membership) => membership.business.workspaceId === businessContext.business.workspaceId
+  );
+
 
   const avatarSrc = resolveUserAvatarSrc({
     avatarStoragePath: profile?.avatarStoragePath,
@@ -77,21 +85,33 @@ export default async function BusinessDashboardLayout({
     ) : null;
 
   const shell = (
-    <DashboardShell
-      themePreference={themePreference}
-      user={{
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        avatarSrc,
-      }}
-      businessContext={businessContext}
-      businessMemberships={businessMemberships}
-      notificationSlot={notificationSlot}
-      upgradeSlot={upgradeSlot}
-    >
-      {children}
-    </DashboardShell>
+    <>
+      <RecentBusinessTracker
+        userId={session.user.id}
+        businessSlug={businessContext.business.slug}
+        businessName={businessContext.business.name}
+        logoStoragePath={businessContext.business.logoStoragePath}
+        defaultCurrency={businessContext.business.defaultCurrency}
+        workspaceSlug={businessContext.business.workspaceSlug}
+        workspaceName={billing?.workspaceName ?? businessContext.business.workspaceSlug}
+        businessType={businessContext.business.businessType}
+      />
+      <DashboardShell
+        themePreference={themePreference}
+        user={{
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name,
+          avatarSrc,
+        }}
+        businessContext={businessContext}
+        businessMemberships={businessMemberships}
+        notificationSlot={notificationSlot}
+        upgradeSlot={upgradeSlot}
+      >
+        {children}
+      </DashboardShell>
+    </>
   );
 
   if (!billing) {
