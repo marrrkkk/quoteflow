@@ -1,16 +1,20 @@
-import Link from "next/link";
 import { Search } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { DataListPagination } from "@/components/shared/data-list-pagination";
 import {
   DashboardEmptyState,
   DashboardSection,
   DashboardStatsGrid,
   DashboardTableContainer,
+  DashboardToolbar,
 } from "@/components/shared/dashboard-layout";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -73,35 +77,6 @@ export function formatMetadataPreview(
   return JSON.stringify(metadata, null, 0).slice(0, 180);
 }
 
-export function buildAdminPageHref(
-  path: string,
-  searchParams: Record<string, string | string[] | undefined>,
-  page: number,
-) {
-  const params = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === "page" || value === undefined) {
-      continue;
-    }
-
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        params.append(key, item);
-      }
-      continue;
-    }
-
-    if (value) {
-      params.set(key, value);
-    }
-  }
-
-  params.set("page", String(page));
-
-  return `${path}?${params.toString()}`;
-}
-
 export function AdminMetricGrid({ children }: { children: ReactNode }) {
   return (
     <DashboardStatsGrid className="grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
@@ -137,75 +112,80 @@ export function AdminMetricCard({
 export function AdminSearchForm({
   action,
   defaultValue,
+  description,
   placeholder,
+  resultLabel,
 }: {
   action: string;
   defaultValue: string;
+  description?: ReactNode;
   placeholder: string;
+  resultLabel?: ReactNode;
 }) {
   return (
-    <form
-      action={action}
-      className="flex w-full flex-col gap-3 sm:flex-row sm:items-center"
-    >
-      <div className="relative min-w-0 flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          defaultValue={defaultValue}
-          name="q"
-          placeholder={placeholder}
-          type="search"
-        />
-      </div>
-      <Button type="submit" variant="outline">
-        Search
-      </Button>
-    </form>
+    <DashboardToolbar>
+      <form action={action} className="flex flex-col gap-4">
+        {description || resultLabel ? (
+          <div className="data-list-toolbar-summary">
+            {description ? (
+              <p className="text-sm leading-6 text-muted-foreground">
+                {description}
+              </p>
+            ) : null}
+            {resultLabel ? (
+              <p className="data-list-toolbar-count">{resultLabel}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="data-list-toolbar-grid">
+          <Field className="min-w-0 w-full xl:min-w-[10rem] xl:max-w-md xl:flex-1 xl:basis-0">
+            <FieldLabel className="meta-label px-0.5" htmlFor="admin-search">
+              Search
+            </FieldLabel>
+            <FieldContent>
+              <div className="relative min-w-0">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  defaultValue={defaultValue}
+                  id="admin-search"
+                  name="q"
+                  placeholder={placeholder}
+                  type="search"
+                />
+              </div>
+            </FieldContent>
+          </Field>
+          <div className="data-list-toolbar-actions">
+            <Button className="w-full sm:w-auto" type="submit" variant="outline">
+              Search
+            </Button>
+          </div>
+        </div>
+      </form>
+    </DashboardToolbar>
   );
 }
 
 export function AdminPagination({
   pageInfo,
-  hrefForPage,
+  pathname,
+  searchParams,
 }: {
   pageInfo: AdminPageInfo;
-  hrefForPage: (page: number) => string;
+  pathname: string;
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  if (pageInfo.pageCount <= 1) {
-    return null;
-  }
-
-  const hasPrevious = pageInfo.page > 1;
-  const hasNext = pageInfo.page < pageInfo.pageCount;
-
   return (
-    <div className="flex flex-col gap-3 border-t border-border/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground">
-        Page {pageInfo.page} of {pageInfo.pageCount} - {pageInfo.totalCount}{" "}
-        total
-      </p>
-      <div className="dashboard-actions">
-        {hasPrevious ? (
-          <Button asChild variant="outline">
-            <Link href={hrefForPage(pageInfo.page - 1)}>Previous</Link>
-          </Button>
-        ) : (
-          <Button disabled variant="outline">
-            Previous
-          </Button>
-        )}
-        {hasNext ? (
-          <Button asChild variant="outline">
-            <Link href={hrefForPage(pageInfo.page + 1)}>Next</Link>
-          </Button>
-        ) : (
-          <Button disabled variant="outline">
-            Next
-          </Button>
-        )}
-      </div>
-    </div>
+    <DataListPagination
+      currentPage={pageInfo.page}
+      pageSize={pageInfo.pageSize}
+      pathname={pathname}
+      searchParams={searchParams}
+      totalItems={pageInfo.totalCount}
+      totalPages={pageInfo.pageCount}
+    />
   );
 }
 
@@ -263,21 +243,29 @@ export function AdminKeyValueGrid({
 export function AdminDataTable({
   children,
   empty,
+  emptyDescription = "Try a broader search or check back after more records are created.",
+  emptyTitle = "No records found",
 }: {
   children: ReactNode;
   empty?: boolean;
+  emptyDescription?: ReactNode;
+  emptyTitle?: ReactNode;
 }) {
   if (empty) {
     return (
       <DashboardEmptyState
-        description="Try a broader search or check back after more records are created."
-        title="No records found"
-        variant="section"
+        description={emptyDescription}
+        title={emptyTitle}
+        variant="list"
       />
     );
   }
 
-  return <DashboardTableContainer>{children}</DashboardTableContainer>;
+  return (
+    <DashboardTableContainer className="!block">
+      {children}
+    </DashboardTableContainer>
+  );
 }
 
 export function AdminBasicTable({
@@ -329,5 +317,119 @@ export function AdminRelatedSection({
     <DashboardSection description={description} title={title}>
       {children}
     </DashboardSection>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Reusable Skeletons
+ * ---------------------------------------------------------------------------*/
+
+const skeletonWidths = [52, 68, 44, 60, 56, 72, 48, 64, 40, 58];
+
+export function AdminTableSkeleton({
+  columns = 4,
+  rows = 5,
+}: {
+  columns?: number;
+  rows?: number;
+}) {
+  return (
+    <DashboardTableContainer className="!block">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {Array.from({ length: columns }).map((_, index) => (
+              <TableHead key={index}>
+                <Skeleton className="h-4 w-20 rounded-md" />
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: rows }).map((_, rowIndex) => (
+            <TableRow key={rowIndex}>
+              {Array.from({ length: columns }).map((_, colIndex) => (
+                <TableCell key={colIndex}>
+                  {colIndex === 0 ? (
+                    <div className="flex flex-col gap-1.5">
+                      <Skeleton className="h-4 w-28 rounded-md" />
+                      <Skeleton className="h-3 w-20 rounded-md" />
+                    </div>
+                  ) : (
+                    <Skeleton
+                      className="h-4 rounded-md"
+                      style={{
+                        width: `${skeletonWidths[(rowIndex * columns + colIndex) % skeletonWidths.length]}%`,
+                        minWidth: "3rem",
+                      }}
+                    />
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </DashboardTableContainer>
+  );
+}
+
+export function AdminPaginationSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 border-t border-border/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <Skeleton className="h-4 w-32 rounded-md" />
+      <div className="flex items-center gap-1">
+        <Skeleton className="h-9 w-20 rounded-md" />
+        <Skeleton className="size-9 rounded-md" />
+        <Skeleton className="size-9 rounded-md" />
+        <Skeleton className="size-9 rounded-md" />
+        <Skeleton className="h-9 w-16 rounded-md" />
+      </div>
+    </div>
+  );
+}
+
+export function AdminPageSkeleton({
+  title,
+  description,
+  columns = 4,
+  rows = 5,
+  hasSearch = true,
+}: {
+  title: string;
+  description?: string;
+  columns?: number;
+  rows?: number;
+  hasSearch?: boolean;
+}) {
+  return (
+    <>
+      <PageHeader title={title} description={description} />
+
+      {hasSearch ? (
+        <DashboardToolbar>
+          <div className="flex flex-col gap-4">
+            <div className="data-list-toolbar-summary">
+              <Skeleton className="h-4 w-full max-w-sm rounded-md" />
+              <Skeleton className="h-7 w-28 rounded-full" />
+            </div>
+            <div className="data-list-toolbar-grid items-end">
+              <div className="flex min-w-0 flex-col gap-2.5 xl:min-w-[10rem] xl:max-w-md xl:flex-1 xl:basis-0">
+                <Skeleton className="h-3 w-16 rounded-md" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </div>
+              <div className="data-list-toolbar-actions">
+                <Skeleton className="h-10 w-full rounded-xl sm:w-20" />
+              </div>
+            </div>
+          </div>
+        </DashboardToolbar>
+      ) : null}
+
+      <div className="flex flex-col gap-5">
+        <AdminTableSkeleton columns={columns} rows={rows} />
+        <AdminPaginationSkeleton />
+      </div>
+    </>
   );
 }
