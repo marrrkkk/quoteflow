@@ -1,13 +1,11 @@
 import Link from "next/link";
 
-import {
-  DashboardPage,
-  DashboardSection,
-} from "@/components/shared/dashboard-layout";
+import { DashboardPage } from "@/components/shared/dashboard-layout";
 import { PageHeader } from "@/components/shared/page-header";
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -17,8 +15,8 @@ import {
   AdminDataTable,
   AdminPagination,
   AdminSearchForm,
-  buildAdminPageHref,
   formatDateTime,
+  formatNumber,
 } from "@/features/admin/components/admin-common";
 import { requireAdminPage } from "@/features/admin/page-guard";
 import { getAdminDeletionRequestsPage } from "@/features/admin/queries";
@@ -40,57 +38,63 @@ export default async function AdminDeletionRequestsPage({
     <DashboardPage>
       <PageHeader
         description="Inspect scheduled workspace deletion requests and handle safe cancellation or due completion."
-        eyebrow="Internal admin"
         title="Deletion requests"
       />
 
-      <DashboardSection title="Search deletion requests">
-        <AdminSearchForm
-          action="/admin/deletion-requests"
-          defaultValue={filters.q}
-          placeholder="Search by workspace, ID, slug, or owner email"
-        />
-      </DashboardSection>
-
-      <DashboardSection
+      <AdminSearchForm
+        action="/admin/deletion-requests"
+        defaultValue={filters.q}
         description="Only pending scheduled workspace deletions are shown."
-        title="Pending requests"
-      >
+        placeholder="Search by workspace, ID, slug, or owner email"
+        resultLabel={`${formatNumber(page.pageInfo.totalCount)} requests`}
+      />
+
+      <div className="flex flex-col gap-5">
         <AdminDataTable empty={page.items.length === 0}>
-          <Table>
+          <Table className="min-w-[72rem] table-fixed">
+            <TableCaption className="sr-only">
+              Pending scheduled workspace deletion requests.
+            </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead>Target</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Requested by</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Scheduled deletion</TableHead>
-                <TableHead>Subscription</TableHead>
+                <TableHead className="w-[18rem]">Target</TableHead>
+                <TableHead className="w-[9rem]">Type</TableHead>
+                <TableHead className="w-[16rem]">Requested by</TableHead>
+                <TableHead className="w-[18rem]">Owner</TableHead>
+                <TableHead className="w-[12rem]">Scheduled deletion</TableHead>
+                <TableHead className="w-[10rem]">Subscription</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {page.items.map((item) => (
                 <TableRow key={item.workspaceId}>
-                  <TableCell>
+                  <TableCell className="w-[18rem]">
                     <Link
-                      className="flex min-w-0 flex-col gap-1 underline-offset-4 hover:underline"
+                      className="table-meta-stack max-w-full"
                       href={`/admin/deletion-requests/${item.workspaceId}`}
+                      prefetch={true}
                     >
-                      <span className="font-medium text-foreground">
+                      <span className="table-link">
                         {item.workspaceName}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="table-supporting-text">
                         {item.workspaceSlug}
                       </span>
                     </Link>
                   </TableCell>
-                  <TableCell>workspace</TableCell>
-                  <TableCell>{item.requestedByUserId ?? "Not available"}</TableCell>
-                  <TableCell>{item.ownerEmail}</TableCell>
-                  <TableCell>
+                  <TableCell className="w-[9rem]">workspace</TableCell>
+                  <TableCell className="w-[16rem] text-muted-foreground">
+                    {item.requestedByUserId ?? "Not available"}
+                  </TableCell>
+                  <TableCell className="w-[18rem] table-emphasis">
+                    {item.ownerEmail}
+                  </TableCell>
+                  <TableCell className="w-[12rem] text-muted-foreground">
                     {formatDateTime(item.scheduledDeletionAt)}
                   </TableCell>
-                  <TableCell>{item.subscriptionStatus ?? "free"}</TableCell>
+                  <TableCell className="w-[10rem]">
+                    {item.subscriptionStatus ?? "free"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -98,16 +102,11 @@ export default async function AdminDeletionRequestsPage({
         </AdminDataTable>
 
         <AdminPagination
-          hrefForPage={(nextPage) =>
-            buildAdminPageHref(
-              "/admin/deletion-requests",
-              resolvedSearchParams,
-              nextPage,
-            )
-          }
           pageInfo={page.pageInfo}
+          pathname="/admin/deletion-requests"
+          searchParams={resolvedSearchParams}
         />
-      </DashboardSection>
+      </div>
     </DashboardPage>
   );
 }
