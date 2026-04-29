@@ -22,7 +22,7 @@ export type AdminNavigationItem = {
 export const adminNavigationItems: AdminNavigationItem[] = [
   {
     href: "/admin",
-    label: "Overview",
+    label: "Dashboard",
     icon: Gauge,
   },
   {

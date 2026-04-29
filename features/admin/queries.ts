@@ -102,6 +102,12 @@ function daysAgo(days: number) {
   return date;
 }
 
+function daysFromNow(days: number) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date;
+}
+
 function getDayStart(value: string) {
   const date = new Date(`${value}T00:00:00.000Z`);
   return Number.isNaN(date.getTime()) ? null : date;
@@ -235,25 +241,51 @@ async function countByBusinessIds(businessIds: string[]) {
 }
 
 export async function getAdminOverview() {
+  const now = new Date();
   const recentSince = daysAgo(7);
+  const followUpWindowEnd = daysFromNow(7);
 
   const [
     totalUsers,
+    recentUserAccounts,
+    unverifiedUsers,
     totalWorkspaces,
     totalBusinesses,
     activeSubscriptions,
     canceledSubscriptions,
+    pastDueSubscriptions,
+    pendingSubscriptions,
     failedPayments,
     unprocessedBillingEvents,
     pendingDeletionRequests,
+    dueDeletionRequestsCount,
+    openInquiries,
     recentInquiries,
+    totalQuotes,
     recentQuotes,
+    recentAcceptedQuotes,
     acceptedQuotes,
+    sentQuotesAwaitingResponse,
+    viewedQuotesAwaitingResponse,
+    overdueFollowUps,
+    upcomingFollowUps,
     planRows,
     recentUsers,
     recentWorkspaces,
+    dueDeletionRequests,
+    recentFailedPayments,
+    recentUnprocessedBillingEvents,
+    atRiskSubscriptions,
   ] = await Promise.all([
     db.select({ value: count() }).from(user),
+    db
+      .select({ value: count() })
+      .from(user)
+      .where(gte(user.createdAt, recentSince)),
+    db
+      .select({ value: count() })
+      .from(user)
+      .where(eq(user.emailVerified, false)),
     db
       .select({ value: count() })
       .from(workspaces)
@@ -270,6 +302,14 @@ export async function getAdminOverview() {
       .select({ value: count() })
       .from(workspaceSubscriptions)
       .where(eq(workspaceSubscriptions.status, "canceled")),
+    db
+      .select({ value: count() })
+      .from(workspaceSubscriptions)
+      .where(eq(workspaceSubscriptions.status, "past_due")),
+    db
+      .select({ value: count() })
+      .from(workspaceSubscriptions)
+      .where(inArray(workspaceSubscriptions.status, ["pending", "incomplete"])),
     db
       .select({ value: count() })
       .from(paymentAttempts)
@@ -289,8 +329,32 @@ export async function getAdminOverview() {
       ),
     db
       .select({ value: count() })
+      .from(workspaces)
+      .where(
+        and(
+          isNotNull(workspaces.scheduledDeletionAt),
+          lte(workspaces.scheduledDeletionAt, now),
+          isNull(workspaces.deletedAt),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(inquiries)
+      .where(
+        and(
+          inArray(inquiries.status, ["new", "waiting"]),
+          isNull(inquiries.archivedAt),
+          isNull(inquiries.deletedAt),
+        ),
+      ),
+    db
+      .select({ value: count() })
       .from(inquiries)
       .where(gte(inquiries.createdAt, recentSince)),
+    db
+      .select({ value: count() })
+      .from(quotes)
+      .where(and(isNull(quotes.archivedAt), isNull(quotes.deletedAt))),
     db
       .select({ value: count() })
       .from(quotes)
@@ -298,7 +362,61 @@ export async function getAdminOverview() {
     db
       .select({ value: count() })
       .from(quotes)
-      .where(eq(quotes.status, "accepted")),
+      .where(
+        and(
+          eq(quotes.status, "accepted"),
+          gte(quotes.acceptedAt, recentSince),
+          isNull(quotes.archivedAt),
+          isNull(quotes.deletedAt),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.status, "accepted"),
+          isNull(quotes.archivedAt),
+          isNull(quotes.deletedAt),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.status, "sent"),
+          isNull(quotes.customerRespondedAt),
+          isNull(quotes.archivedAt),
+          isNull(quotes.deletedAt),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(quotes)
+      .where(
+        and(
+          eq(quotes.status, "sent"),
+          isNotNull(quotes.publicViewedAt),
+          isNull(quotes.customerRespondedAt),
+          isNull(quotes.archivedAt),
+          isNull(quotes.deletedAt),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(followUps)
+      .where(and(eq(followUps.status, "pending"), lte(followUps.dueAt, now))),
+    db
+      .select({ value: count() })
+      .from(followUps)
+      .where(
+        and(
+          eq(followUps.status, "pending"),
+          gte(followUps.dueAt, now),
+          lte(followUps.dueAt, followUpWindowEnd),
+        ),
+      ),
     db
       .select({
         plan: workspaces.plan,
@@ -329,6 +447,67 @@ export async function getAdminOverview() {
       .innerJoin(user, eq(workspaces.ownerUserId, user.id))
       .orderBy(desc(workspaces.createdAt))
       .limit(adminRecentListLimit),
+    db
+      .select({
+        id: workspaces.id,
+        name: workspaces.name,
+        slug: workspaces.slug,
+        ownerEmail: user.email,
+        scheduledDeletionAt: workspaces.scheduledDeletionAt,
+      })
+      .from(workspaces)
+      .innerJoin(user, eq(workspaces.ownerUserId, user.id))
+      .where(
+        and(
+          isNotNull(workspaces.scheduledDeletionAt),
+          isNull(workspaces.deletedAt),
+        ),
+      )
+      .orderBy(asc(workspaces.scheduledDeletionAt))
+      .limit(adminRecentListLimit),
+    db
+      .select({
+        id: paymentAttempts.id,
+        workspaceId: paymentAttempts.workspaceId,
+        workspaceName: workspaces.name,
+        provider: paymentAttempts.provider,
+        status: paymentAttempts.status,
+        createdAt: paymentAttempts.createdAt,
+      })
+      .from(paymentAttempts)
+      .innerJoin(workspaces, eq(paymentAttempts.workspaceId, workspaces.id))
+      .where(eq(paymentAttempts.status, "failed"))
+      .orderBy(desc(paymentAttempts.createdAt))
+      .limit(adminRecentListLimit),
+    db
+      .select({
+        id: billingEvents.id,
+        provider: billingEvents.provider,
+        eventType: billingEvents.eventType,
+        workspaceId: billingEvents.workspaceId,
+        workspaceName: workspaces.name,
+        createdAt: billingEvents.createdAt,
+      })
+      .from(billingEvents)
+      .leftJoin(workspaces, eq(billingEvents.workspaceId, workspaces.id))
+      .where(isNull(billingEvents.processedAt))
+      .orderBy(desc(billingEvents.createdAt))
+      .limit(adminRecentListLimit),
+    db
+      .select({
+        workspaceId: workspaces.id,
+        workspaceName: workspaces.name,
+        ownerEmail: user.email,
+        status: workspaceSubscriptions.status,
+        billingProvider: workspaceSubscriptions.billingProvider,
+        currentPeriodEnd: workspaceSubscriptions.currentPeriodEnd,
+      })
+      .from(workspaceSubscriptions)
+      .innerJoin(workspaces, eq(workspaceSubscriptions.workspaceId, workspaces.id))
+      .innerJoin(user, eq(workspaces.ownerUserId, user.id))
+      .where(inArray(workspaceSubscriptions.status, ["past_due", "pending", "incomplete"]))
+      .orderBy(desc(workspaceSubscriptions.updatedAt))
+      .limit(adminRecentListLimit),
   ]);
 
   const planCounts = Object.fromEntries(
@@ -346,16 +525,32 @@ export async function getAdminOverview() {
       acceptedQuotes: countValue(acceptedQuotes),
       activeSubscriptions: countValue(activeSubscriptions),
       canceledSubscriptions: countValue(canceledSubscriptions),
+      dueDeletionRequests: countValue(dueDeletionRequestsCount),
       failedPayments: countValue(failedPayments),
+      openInquiries: countValue(openInquiries),
+      overdueFollowUps: countValue(overdueFollowUps),
+      pastDueSubscriptions: countValue(pastDueSubscriptions),
       pendingDeletionRequests: countValue(pendingDeletionRequests),
+      pendingSubscriptions: countValue(pendingSubscriptions),
+      recentAcceptedQuotes: countValue(recentAcceptedQuotes),
       recentInquiries: countValue(recentInquiries),
       recentQuotes: countValue(recentQuotes),
+      recentUserAccounts: countValue(recentUserAccounts),
+      sentQuotesAwaitingResponse: countValue(sentQuotesAwaitingResponse),
       totalBusinesses: countValue(totalBusinesses),
+      totalQuotes: countValue(totalQuotes),
       totalUsers: countValue(totalUsers),
       totalWorkspaces: countValue(totalWorkspaces),
+      unverifiedUsers: countValue(unverifiedUsers),
       unprocessedBillingEvents: countValue(unprocessedBillingEvents),
+      upcomingFollowUps: countValue(upcomingFollowUps),
+      viewedQuotesAwaitingResponse: countValue(viewedQuotesAwaitingResponse),
     },
+    atRiskSubscriptions,
+    dueDeletionRequests,
     planCounts,
+    recentFailedPayments,
+    recentUnprocessedBillingEvents,
     recentUsers,
     recentWorkspaces,
   };
