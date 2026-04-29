@@ -24,9 +24,17 @@ export default function WorkspacesLoading() {
 
         <div className="w-full space-y-6">
           <section className="space-y-4">
+            <Skeleton className="h-5 w-48 rounded-md" />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton className="h-24 rounded-lg" key={index} />
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <Skeleton className="h-5 w-24 rounded-md" />
-              <Skeleton className="h-9 w-36 rounded-md" />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
