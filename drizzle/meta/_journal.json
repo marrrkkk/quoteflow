@@ -351,6 +351,13 @@
       "when": 1777449600000,
       "tag": "0052_email_outbox_fallback",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1777527590499,
+      "tag": "0050_drop_google_calendar",
+      "breakpoints": true
     }
   ]
 }
