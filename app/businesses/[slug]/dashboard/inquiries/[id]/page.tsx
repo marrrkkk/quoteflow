@@ -39,7 +39,12 @@ import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
 import { createInquiryFollowUpAction } from "@/features/follow-ups/actions";
 import { FollowUpPanel } from "@/features/follow-ups/components/follow-up-panel";
 import { getFollowUpsForInquiry } from "@/features/follow-ups/queries";
-import { getAdditionalInquirySubmittedFields } from "@/features/inquiries/form-config";
+import {
+  getCustomSubmittedFields,
+  inquiryContactMethodLabels,
+  systemFieldDefaultLabels,
+  type InquiryContactMethod,
+} from "@/features/inquiries/form-config";
 import {
   addInquiryNoteAction,
   archiveInquiryAction,
@@ -141,7 +146,7 @@ export default async function InquiryDetailPage({
   const trashAction = trashInquiryAction.bind(null, inquiry.id);
   const restoreAction = restoreInquiryFromTrashAction.bind(null, inquiry.id);
   const createFollowUpAction = createInquiryFollowUpAction.bind(null, inquiry.id);
-  const additionalFields = getAdditionalInquirySubmittedFields(
+  const customFields = getCustomSubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
   const [customerHistory, followUps] = await Promise.all([
@@ -165,6 +170,11 @@ export default async function InquiryDetailPage({
     inquiry.status === "lost"
       ? inquiry.status
       : "waiting";
+  const customerContactEmail = getCustomerContactEmail(inquiry);
+  const showPreferredContact = shouldShowPreferredContactTile(inquiry);
+  const preferredContactLabel = getContactMethodLabel(
+    inquiry.customerContactMethod,
+  );
 
   return (
     <DashboardPage className="pb-24">
@@ -229,41 +239,51 @@ export default async function InquiryDetailPage({
         <DashboardSidebarStack>
           <DashboardSection
             contentClassName="flex flex-col gap-6"
-            description={getInquirySourceDescription(inquiry.source)}
-            title="Summary"
+            description={`${getInquirySourceDescription(inquiry.source)} Review the request before replying or quoting.`}
+            title="Inquiry brief"
           >
-            <DashboardStatsGrid className="xl:grid-cols-4">
-              <InfoTile label="Category" value={inquiry.serviceCategory} />
+            <div className="grid gap-4 sm:grid-cols-3">
               <InfoTile label="Form" value={inquiry.inquiryFormName} />
               <InfoTile
-                label="Budget"
+                label={systemFieldDefaultLabels.budgetText}
                 value={formatInquiryBudget(inquiry.budgetText)}
               />
               <InfoTile
-                label="Deadline"
+                label={systemFieldDefaultLabels.requestedDeadline}
                 value={inquiry.requestedDeadline ?? "Not provided"}
               />
-              {inquiry.subject ? (
+              {inquiry.subject &&
+              inquiry.subject !== inquiry.serviceCategory ? (
                 <InfoTile
-                  className="md:col-span-2 xl:col-span-4"
+                  className="sm:col-span-3"
                   label="Subject"
                   value={inquiry.subject}
                 />
               ) : null}
-            </DashboardStatsGrid>
+            </div>
 
             <div className="soft-panel px-5 py-5 shadow-none">
-              <p className="meta-label">Message</p>
+              <p className="meta-label">
+                {systemFieldDefaultLabels.serviceCategory}
+              </p>
+              <p className="mt-3 text-sm leading-7 text-foreground">
+                {inquiry.serviceCategory}
+              </p>
+            </div>
+
+            <div className="soft-panel px-5 py-5 shadow-none">
+              <p className="meta-label">
+                {systemFieldDefaultLabels.details}
+              </p>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
                 {inquiry.details}
               </p>
             </div>
 
-            {additionalFields.length ? (
-              <div className="soft-panel px-5 py-5 shadow-none">
-                <p className="meta-label">Submitted fields</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {additionalFields.map((field) => (
+            {customFields.length ? (
+              <div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {customFields.map((field) => (
                     <InfoTile
                       key={field.id}
                       label={field.label}
@@ -379,6 +399,11 @@ export default async function InquiryDetailPage({
               )}
             </DashboardSection>
 
+            <CustomerHistoryPanel
+              history={customerHistory}
+              businessSlug={businessSlug}
+            />
+
             <DashboardSection
               description="Submission and owner actions."
               title="Activity log"
@@ -451,41 +476,46 @@ export default async function InquiryDetailPage({
 
         <DashboardSidebarStack>
           <DashboardSection
-            contentClassName="flex flex-col gap-4"
+            contentClassName="grid gap-3 sm:grid-cols-2"
             footer={
-              inquiry.customerEmail ? (
+              customerContactEmail ? (
                 <>
                   <Button asChild variant="outline">
-                    <a href={`mailto:${inquiry.customerEmail}`}>Email customer</a>
+                    <a href={`mailto:${customerContactEmail}`}>Email customer</a>
                   </Button>
-                  <CopyEmailButton email={inquiry.customerEmail} />
+                  <CopyEmailButton email={customerContactEmail} />
                 </>
               ) : null
             }
             title="Customer contact"
           >
-              <InfoTile
-                icon={Mail}
-                label="Email"
-                value={
-                  inquiry.customerEmail ? (
-                    <a
-                      className="truncate underline-offset-4 hover:underline"
-                      href={`mailto:${inquiry.customerEmail}`}
-                    >
-                      {inquiry.customerEmail}
-                    </a>
-                  ) : (
-                    "Not provided"
-                  )
-                }
-              />
+            <InfoTile
+              className={showPreferredContact ? undefined : "sm:col-span-2"}
+              icon={Mail}
+              label="Email"
+              valueClassName="break-all"
+              value={
+                customerContactEmail ? (
+                  <a
+                    className="underline-offset-4 hover:underline"
+                    href={`mailto:${customerContactEmail}`}
+                  >
+                    {customerContactEmail}
+                  </a>
+                ) : (
+                  "Not provided"
+                )
+              }
+            />
 
+            {showPreferredContact ? (
               <InfoTile
                 icon={AtSign}
-                label={`Contact (${inquiry.customerContactMethod})`}
+                label={preferredContactLabel}
                 value={inquiry.customerContactHandle}
+                valueClassName="break-all"
               />
+            ) : null}
           </DashboardSection>
 
           <FollowUpPanel
@@ -568,11 +598,6 @@ export default async function InquiryDetailPage({
             )}
           </DashboardSection>
 
-          <CustomerHistoryPanel
-            history={customerHistory}
-            businessSlug={businessSlug}
-          />
-
 
 
           <DashboardSection
@@ -644,4 +669,40 @@ function getInquirySourceDescription(source: string | null) {
   }
 
   return "Submitted through the public form.";
+}
+
+function getCustomerContactEmail(inquiry: {
+  customerEmail: string | null;
+  customerContactMethod: string | null;
+  customerContactHandle: string | null;
+}) {
+  if (inquiry.customerEmail) return inquiry.customerEmail;
+  if (
+    inquiry.customerContactMethod === "email" &&
+    inquiry.customerContactHandle
+  ) {
+    return inquiry.customerContactHandle;
+  }
+  return null;
+}
+
+function shouldShowPreferredContactTile(inquiry: {
+  customerEmail: string | null;
+  customerContactMethod: string | null;
+  customerContactHandle: string | null;
+}) {
+  if (!inquiry.customerContactHandle || !inquiry.customerContactMethod) {
+    return false;
+  }
+  if (inquiry.customerContactMethod === "email") {
+    return inquiry.customerContactHandle !== inquiry.customerEmail;
+  }
+  return true;
+}
+
+function getContactMethodLabel(method: string | null) {
+  if (!method) return "Contact";
+  return (
+    inquiryContactMethodLabels[method as InquiryContactMethod] ?? "Contact"
+  );
 }
