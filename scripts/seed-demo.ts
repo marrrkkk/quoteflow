@@ -451,8 +451,7 @@ async function resetDatabase() {
     "business_memories",
     "quote_library_entries",
     "quote_library_entry_items",
-    "google_calendar_connections",
-    "calendar_events",
+
     "public_action_events",
   ];
   const resetTableArray = tablesToReset
