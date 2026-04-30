@@ -47,7 +47,10 @@ export function QuotePrintDocument({
               {quote.customerName}
             </p>
             <p className="mt-1 break-all text-sm leading-6 text-muted-foreground">
-              {quote.customerEmail}
+              {quote.customerEmail ??
+                (quote.customerContactMethod === "email"
+                  ? quote.customerContactHandle
+                  : "No email saved")}
             </p>
           </div>
 

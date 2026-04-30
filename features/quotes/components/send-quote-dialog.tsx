@@ -291,13 +291,13 @@ export function SendQuoteDialog({
                     </p>
                   </div>
                   <div>
-                    <p className="meta-label">Contact</p>
-                    <p className="mt-0.5 text-foreground capitalize">
-                      {quote.customerContactMethod}
+                    <p className="meta-label">Channel</p>
+                    <p className="mt-0.5 text-foreground">
+                      {quoteSendChannelLabels[detectedChannel]}
                     </p>
                   </div>
                   <div>
-                    <p className="meta-label">Handle</p>
+                    <p className="meta-label">Send to</p>
                     <p className="mt-0.5 truncate text-foreground">
                       {quote.customerContactHandle}
                     </p>
