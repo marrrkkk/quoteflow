@@ -425,6 +425,7 @@ export function BusinessInquiryFormForm({
     fieldId: string,
     patch: Partial<InquiryFormFieldDefinition>,
   ) {
+    skipNextProjectFieldLayoutAnimationRef.current = true;
     setProjectFields((currentFields) =>
       currentFields.map((field) =>
         getFieldId(field) === fieldId ? ({ ...field, ...patch } as InquiryFormFieldDefinition) : field,
@@ -541,6 +542,7 @@ export function BusinessInquiryFormForm({
     fieldId: string,
     fieldType: InquiryCustomFieldType,
   ) {
+    skipNextProjectFieldLayoutAnimationRef.current = true;
     setProjectFields((currentFields) =>
       currentFields.map((field) => {
         if (getFieldId(field) !== fieldId || field.kind !== "custom") {
@@ -570,6 +572,7 @@ export function BusinessInquiryFormForm({
     optionId: string,
     patch: Partial<InquiryFieldOption>,
   ) {
+    skipNextProjectFieldLayoutAnimationRef.current = true;
     setProjectFields((currentFields) =>
       currentFields.map((field) => {
         if (
@@ -591,6 +594,7 @@ export function BusinessInquiryFormForm({
   }
 
   function addCustomFieldOption(fieldId: string) {
+    skipNextProjectFieldLayoutAnimationRef.current = true;
     setProjectFields((currentFields) =>
       currentFields.map((field) => {
         if (
@@ -610,6 +614,7 @@ export function BusinessInquiryFormForm({
   }
 
   function removeCustomFieldOption(fieldId: string, optionId: string) {
+    skipNextProjectFieldLayoutAnimationRef.current = true;
     setProjectFields((currentFields) =>
       currentFields.map((field) => {
         if (
@@ -981,32 +986,21 @@ function ContactFieldCard({
 }) {
   const fieldId =
     contactKey === "customerName" ? "inquiry-customerName" : "inquiry-contactMethod";
-  const fallbackLabel = getContactFieldFallbackLabel(contactKey);
 
   return (
     <Field>
       <FieldTitle className="w-full min-w-0 justify-between gap-2">
-        <input
-          aria-label={`${field.label} label`}
-          className="h-auto min-w-0 flex-1 bg-transparent px-0 py-0 text-sm font-medium text-foreground outline-none"
-          disabled={isPending}
-          id={`contact-${contactKey}-label`}
-          maxLength={80}
-          onBlur={(event) => {
-            const trimmed = event.currentTarget.value.trim();
-
-            onUpdate(contactKey, {
-              label: trimmed || fallbackLabel,
-            });
-          }}
-          onChange={(event) =>
-            onUpdate(contactKey, { label: event.currentTarget.value })
-          }
-          value={field.label}
-        />
-        <Badge className="shrink-0" variant={field.required ? "secondary" : "outline"}>
-          {field.required ? "Required" : "Optional"}
-        </Badge>
+        <span
+          className="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
+        >
+          {field.label}
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          <Badge variant="outline">Contact field</Badge>
+          <Badge className="shrink-0" variant={field.required ? "secondary" : "outline"}>
+            {field.required ? "Required" : "Optional"}
+          </Badge>
+        </span>
       </FieldTitle>
       <FieldContent>
         {contactKey === "preferredContact" ? (
@@ -1034,6 +1028,9 @@ function ContactFieldCard({
           />
         )}
       </FieldContent>
+      <p className="text-xs leading-5 text-muted-foreground">
+        Used by Requo for customer contact details. This label cannot be changed.
+      </p>
     </Field>
   );
 }
@@ -1218,6 +1215,9 @@ function ProjectFieldCard({
                 : field.required
                   ? "Required"
                   : "Optional"}
+            </Badge>
+            <Badge variant="outline">
+              {isSystem ? "Default field" : "Custom field"}
             </Badge>
             <FieldCardMenu
               deleteDisabled={isSystem || isPending}

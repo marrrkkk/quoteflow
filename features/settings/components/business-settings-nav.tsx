@@ -3,7 +3,6 @@
 import {
   BookCopy,
   Bell,
-  Cable,
   CreditCard,
   FileText,
   Mail,
@@ -46,7 +45,6 @@ const settingsNavigationIcons: Record<BusinessSettingsNavigationIcon, typeof Set
   quote: FileText,
   email: Mail,
   pricing: Tags,
-  integrations: Cable,
   billing: CreditCard,
 };
 
