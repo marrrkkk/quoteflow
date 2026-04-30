@@ -521,6 +521,7 @@ function buildSubmittedFieldSnapshot(
       label: field.label,
       value,
       displayValue: getInquirySubmittedFieldValueDisplay(value),
+      fieldKind: "contact",
     });
   }
 
@@ -536,6 +537,7 @@ function buildSubmittedFieldSnapshot(
       label: field.label,
       value,
       displayValue: getInquirySubmittedFieldValueDisplay(value),
+      fieldKind: field.kind === "system" ? "system" : "custom",
     });
   }
 

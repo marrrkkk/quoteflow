@@ -175,8 +175,8 @@ export function ManualInquiryEditor({
             </>
           }
           contentClassName="flex flex-col gap-5"
-          description="Choose the inquiry form this quick-add should belong to. Only the essentials are required here."
-          title="Quick-add setup"
+          description="Choose the intake form this manual inquiry should follow."
+          title="Intake setup"
         >
           <Field data-invalid={Boolean(getFieldMessage("formSlug")) || undefined}>
             <FieldLabel htmlFor="manual-inquiry-form">Inquiry form</FieldLabel>
@@ -208,7 +208,7 @@ export function ManualInquiryEditor({
 
         <DashboardSection
           contentClassName="flex flex-col gap-5"
-          description="Add the customer details you already have."
+          description="Add the customer's name and best way to reply."
           title={selectedForm.inquiryFormConfig.groupLabels.contact}
         >
           <FieldGroup>
@@ -320,8 +320,8 @@ export function ManualInquiryEditor({
 
         <DashboardSection
           contentClassName="flex flex-col gap-5"
-          description="Add enough context to decide the next step or start a quote. Detailed form customization stays in Forms."
-          title="Inquiry basics"
+          description="Capture the request clearly enough to reply, quote, or follow up."
+          title="Request details"
         >
           <FieldGroup>
             <div className="grid gap-5 sm:grid-cols-2">
