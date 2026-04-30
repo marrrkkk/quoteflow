@@ -18,8 +18,7 @@ const envSchema = z.object({
   APP_TOKEN_HASH_SECRET: emptyToUndefined(z.string().min(32)),
   ADMIN_EMAILS: emptyToUndefined(z.string().min(1)),
   VERCEL_URL: emptyToUndefined(z.string().min(1)),
-  GOOGLE_CLIENT_ID: emptyToUndefined(z.string().min(1)),
-  GOOGLE_CLIENT_SECRET: emptyToUndefined(z.string().min(1)),
+
   MICROSOFT_CLIENT_ID: emptyToUndefined(z.string().min(1)),
   MICROSOFT_CLIENT_SECRET: emptyToUndefined(z.string().min(1)),
   MICROSOFT_TENANT_ID: emptyToUndefined(z.string().min(1)).default("common"),
@@ -104,9 +103,7 @@ export const isGroqConfigured = Boolean(env.GROQ_API_KEY);
 export const isGeminiConfigured = Boolean(env.GEMINI_API_KEY);
 export const isOpenRouterConfigured = Boolean(env.OPENROUTER_API_KEY);
 export const isSupabaseRealtimeConfigured = Boolean(env.SUPABASE_JWT_SECRET);
-export const isGoogleCalendarConfigured = Boolean(
-  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
-);
+
 export const isPayMongoConfigured = Boolean(
   env.PAYMONGO_SECRET_KEY && env.PAYMONGO_PUBLIC_KEY,
 );
