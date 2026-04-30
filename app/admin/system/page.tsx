@@ -57,10 +57,6 @@ export default async function AdminSystemPage() {
             ["Groq", system.providers.ai.groq ? "Yes" : "No"],
             ["Gemini", system.providers.ai.gemini ? "Yes" : "No"],
             ["OpenRouter", system.providers.ai.openRouter ? "Yes" : "No"],
-            [
-              "Google Calendar",
-              system.providers.googleCalendar ? "Yes" : "No",
-            ],
             ["Push", system.providers.push ? "Yes" : "No"],
             [
               "Supabase realtime",

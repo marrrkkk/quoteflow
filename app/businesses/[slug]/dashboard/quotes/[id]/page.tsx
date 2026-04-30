@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Printer } from "lucide-react";
+import { AtSign, ExternalLink, Mail, Printer } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -17,10 +17,7 @@ import {
 } from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
 import { Button } from "@/components/ui/button";
-import { AddToCalendarButton } from "@/features/calendar/components/add-to-calendar-button";
-import { CalendarEventSummary } from "@/features/calendar/components/calendar-event-summary";
-import { prefillFromQuote, prefillFromAcceptedQuote } from "@/features/calendar/prefill";
-import { getCalendarConnectionForUser, getCalendarEventsForQuote } from "@/features/calendar/queries";
+
 import {
   archiveQuoteAction,
   cancelAcceptedQuoteAction,
@@ -40,6 +37,10 @@ import { createQuoteFollowUpAction } from "@/features/follow-ups/actions";
 import { FollowUpPanel } from "@/features/follow-ups/components/follow-up-panel";
 import { InquiryRecordStateBadge } from "@/features/inquiries/components/inquiry-record-state-badge";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
+import {
+  inquiryContactMethodLabels,
+  type InquiryContactMethod,
+} from "@/features/inquiries/form-config";
 import { QuoteActivityPanel } from "@/features/quotes/components/quote-activity-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
 import { CopyQuoteLinkButton } from "@/features/quotes/components/copy-quote-link-button";
@@ -71,7 +72,7 @@ import {
   getBusinessQuotesPath,
 } from "@/features/businesses/routes";
 import { workspacesHubPath } from "@/features/workspaces/routes";
-import { env, isEmailConfigured, isGoogleCalendarConfigured } from "@/lib/env";
+import { env, isEmailConfigured } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
@@ -168,33 +169,7 @@ export default async function QuoteDetailPage({
     }),
   ]);
 
-  const [calendarConnection, calendarEvents] = await Promise.all([
-    isGoogleCalendarConfigured
-      ? getCalendarConnectionForUser(session.user.id)
-      : Promise.resolve({ connected: false, googleEmail: null, selectedCalendarId: null }),
-    isGoogleCalendarConfigured
-      ? getCalendarEventsForQuote(businessContext.business.id, quote.id)
-      : Promise.resolve([]),
-  ]);
 
-  const calendarPrefill = isGoogleCalendarConfigured
-    && quote.publicToken
-    ? (quote.status === "accepted"
-        ? prefillFromAcceptedQuote
-        : prefillFromQuote)(
-        {
-          title: quote.title,
-          customerName: quote.customerName,
-          customerEmail: quote.customerEmail ?? "",
-          publicToken: quote.publicToken,
-        },
-        {
-          name: businessContext.business.name,
-          contactEmail: null,
-        },
-        env.BETTER_AUTH_URL,
-      )
-    : null;
 
   const linkedInquiry = quote.linkedInquiry
     ? {
@@ -289,6 +264,11 @@ export default async function QuoteDetailPage({
     quote.status === "sent"
       ? "Use void for sent quotes and archive for safe cleanup."
       : "Preserve the quote history and archive it when you want to hide it from active lists.";
+  const quoteContactEmail = getCustomerContactEmail(quote);
+  const showQuotePreferredContact = shouldShowPreferredContactTile(quote);
+  const quotePreferredContactLabel = getContactMethodLabel(
+    quote.customerContactMethod,
+  );
 
   const linkedInquirySection = (
     <DashboardSection
@@ -320,7 +300,10 @@ export default async function QuoteDetailPage({
               }
               meta={
                 <>
-                  <span>{quote.linkedInquiry.customerEmail}</span>
+                  <span>
+                    {getCustomerContactEmail(quote.linkedInquiry) ??
+                      quote.linkedInquiry.customerContactHandle}
+                  </span>
                   <span aria-hidden="true">|</span>
                   <span>{quote.linkedInquiry.serviceCategory}</span>
                 </>
@@ -366,14 +349,7 @@ export default async function QuoteDetailPage({
         }
         actions={
           <div className="flex flex-nowrap items-center gap-2.5">
-            {isGoogleCalendarConfigured && calendarPrefill ? (
-              <AddToCalendarButton
-                businessId={businessContext.business.id}
-                connected={calendarConnection.connected}
-                prefill={calendarPrefill}
-                quoteId={quote.id}
-              />
-            ) : null}
+
             <QuoteExportPopover
               pdfHref={getBusinessQuoteExportPath(businessSlug, quote.id, "pdf")}
               pngHref={getBusinessQuoteExportPath(businessSlug, quote.id, "png")}
@@ -545,8 +521,8 @@ export default async function QuoteDetailPage({
           <DashboardSidebarStack>
             <DashboardSection
               contentClassName="!grid !grid-cols-2 gap-3"
-              description="Key totals and lifecycle dates."
-              title="Summary"
+              description="Totals, deadline, and response milestones."
+              title="Quote brief"
             >
               <InfoTile
                 label="Total"
@@ -571,8 +547,41 @@ export default async function QuoteDetailPage({
             </DashboardSection>
 
             <DashboardSection
+              contentClassName="grid gap-3 sm:grid-cols-2"
+              description="Saved customer channel for sending and follow-up."
+              title="Customer contact"
+            >
+              <InfoTile
+                className={showQuotePreferredContact ? undefined : "sm:col-span-2"}
+                icon={Mail}
+                label="Email"
+                value={
+                  quoteContactEmail ? (
+                    <a
+                      className="underline-offset-4 hover:underline"
+                      href={`mailto:${quoteContactEmail}`}
+                    >
+                      {quoteContactEmail}
+                    </a>
+                  ) : (
+                    "Not provided"
+                  )
+                }
+                valueClassName="break-all"
+              />
+              {showQuotePreferredContact ? (
+                <InfoTile
+                  icon={AtSign}
+                  label={quotePreferredContactLabel}
+                  value={quote.customerContactHandle}
+                  valueClassName="break-all"
+                />
+              ) : null}
+            </DashboardSection>
+
+            <DashboardSection
               contentClassName="flex flex-col gap-4"
-              description="Share and track the public quote."
+              description="Share, open, and track the secure quote page."
               title="Customer view"
             >
               {customerQuoteUrl ? (
@@ -699,9 +708,7 @@ export default async function QuoteDetailPage({
               />
             ) : null}
 
-            {isGoogleCalendarConfigured ? (
-              <CalendarEventSummary events={calendarEvents} />
-            ) : null}
+
 
             <DashboardSection
               description={lifecycleSectionDescription}
@@ -726,5 +733,43 @@ export default async function QuoteDetailPage({
         userName={session.user.name || "You"}
       />
     </DashboardPage>
+  );
+}
+
+function getContactMethodLabel(method: string) {
+  const normalized = method.trim().toLowerCase();
+
+  if (normalized in inquiryContactMethodLabels) {
+    return inquiryContactMethodLabels[normalized as InquiryContactMethod];
+  }
+
+  return method.trim() || "Contact details";
+}
+
+function getCustomerContactEmail(contact: {
+  customerEmail: string | null;
+  customerContactMethod: string;
+  customerContactHandle: string;
+}) {
+  const savedEmail = contact.customerEmail?.trim();
+
+  if (savedEmail) {
+    return savedEmail;
+  }
+
+  if (contact.customerContactMethod.trim().toLowerCase() === "email") {
+    return contact.customerContactHandle.trim() || null;
+  }
+
+  return null;
+}
+
+function shouldShowPreferredContactTile(contact: {
+  customerContactMethod: string;
+  customerContactHandle: string;
+}) {
+  return (
+    contact.customerContactHandle.trim().length > 0 &&
+    contact.customerContactMethod.trim().toLowerCase() !== "email"
   );
 }

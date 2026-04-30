@@ -34,10 +34,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { InfoTile } from "@/components/shared/info-tile";
-import { AddToCalendarButton } from "@/features/calendar/components/add-to-calendar-button";
-import { CalendarEventSummary } from "@/features/calendar/components/calendar-event-summary";
-import { prefillFromInquiry } from "@/features/calendar/prefill";
-import { getCalendarConnectionForUser, getCalendarEventsForInquiry } from "@/features/calendar/queries";
 import { CustomerHistoryPanel } from "@/features/customers/components/customer-history-panel";
 import { getCustomerHistoryForBusiness } from "@/features/customers/queries";
 import { createInquiryFollowUpAction } from "@/features/follow-ups/actions";
@@ -80,7 +76,6 @@ import {
   getBusinessQuotePath,
 } from "@/features/businesses/routes";
 import { Button } from "@/components/ui/button";
-import { isGoogleCalendarConfigured } from "@/lib/env";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 
@@ -149,7 +144,7 @@ export default async function InquiryDetailPage({
   const additionalFields = getAdditionalInquirySubmittedFields(
     inquiry.submittedFieldSnapshot,
   );
-  const [customerHistory, calendarConnection, calendarEvents, followUps] = await Promise.all([
+  const [customerHistory, followUps] = await Promise.all([
     getCustomerHistoryForBusiness({
       businessId: businessContext.business.id,
       customerEmail: inquiry.customerEmail,
@@ -157,33 +152,12 @@ export default async function InquiryDetailPage({
       excludeInquiryId: inquiry.id,
       excludeQuoteId: inquiry.relatedQuote?.id ?? null,
     }),
-    isGoogleCalendarConfigured
-      ? getCalendarConnectionForUser(session.user.id)
-      : Promise.resolve({ connected: false, googleEmail: null, selectedCalendarId: null }),
-    isGoogleCalendarConfigured
-      ? getCalendarEventsForInquiry(businessContext.business.id, inquiry.id)
-      : Promise.resolve([]),
     getFollowUpsForInquiry({
       businessId: businessContext.business.id,
       inquiryId: inquiry.id,
     }),
   ]);
 
-  const calendarPrefill = isGoogleCalendarConfigured
-    ? prefillFromInquiry(
-        {
-          customerName: inquiry.customerName,
-          customerEmail: inquiry.customerEmail ?? "",
-          serviceCategory: inquiry.serviceCategory,
-          subject: inquiry.subject,
-          details: inquiry.details,
-        },
-        {
-          name: businessContext.business.name,
-          contactEmail: null,
-        },
-      )
-    : null;
   const canGenerateQuote = inquiry.recordState !== "trash";
   const workflowStatus: InquiryWorkflowStatus =
     inquiry.status === "quoted" ||
@@ -216,14 +190,6 @@ export default async function InquiryDetailPage({
         }
         actions={
           <div className="flex flex-nowrap items-center gap-2.5">
-            {isGoogleCalendarConfigured && calendarPrefill ? (
-              <AddToCalendarButton
-                businessId={businessContext.business.id}
-                connected={calendarConnection.connected}
-                inquiryId={inquiry.id}
-                prefill={calendarPrefill}
-              />
-            ) : null}
             <InquiryExportPopover
               pdfHref={getBusinessInquiryExportPath(
                 businessSlug,
@@ -486,7 +452,6 @@ export default async function InquiryDetailPage({
         <DashboardSidebarStack>
           <DashboardSection
             contentClassName="flex flex-col gap-4"
-            description="Reach out directly from the business."
             footer={
               inquiry.customerEmail ? (
                 <>
@@ -608,9 +573,7 @@ export default async function InquiryDetailPage({
             businessSlug={businessSlug}
           />
 
-          {isGoogleCalendarConfigured ? (
-            <CalendarEventSummary events={calendarEvents} />
-          ) : null}
+
 
           <DashboardSection
             description="Move the inquiry through your workflow."
@@ -670,7 +633,7 @@ function getInquiryHeaderDescription(inquiry: {
       ? "inquiry created"
       : "inquiry received";
 
-  return `${inquiry.serviceCategory} ${eventLabel} ${formatInquiryDate(
+  return `${inquiry.serviceCategory} ${eventLabel} ${formatInquiryDateTime(
     inquiry.submittedAt,
   )}.`;
 }

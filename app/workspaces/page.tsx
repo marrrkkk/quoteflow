@@ -159,8 +159,8 @@ export default async function WorkspacesPage() {
                         <CardDescription className="max-w-full">
                           Create a separate workspace for a different team, client, or project.
                         </CardDescription>
-                        <Button className="w-full sm:w-auto" variant="secondary">
-                          Create workspace
+                        <Button className="w-full sm:w-auto" variant="secondary" asChild>
+                          <div>Create workspace</div>
                         </Button>
                       </CardContent>
                     </Card>

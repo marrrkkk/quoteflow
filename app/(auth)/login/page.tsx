@@ -44,7 +44,11 @@ export default async function LoginPage({
   const socialProviders: SocialAuthProvider[] = ["google", "microsoft"];
 
   return (
-    <AuthShell badge="Log in" title="Sign in" layout="centered">
+    <AuthShell
+      title="Welcome back"
+      description="Sign in to your account to continue"
+      layout="centered"
+    >
       <LoginForm socialProviders={socialProviders} />
     </AuthShell>
   );

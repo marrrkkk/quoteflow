@@ -40,7 +40,11 @@ export default async function SignupPage({
   const socialProviders: SocialAuthProvider[] = ["google", "microsoft"];
 
   return (
-    <AuthShell badge="Sign up" title="Create account" layout="signup">
+    <AuthShell
+      title="Create your account"
+      description="Start managing inquiries and quotes in one place."
+      layout="signup"
+    >
       <SignupForm socialProviders={socialProviders} />
     </AuthShell>
   );
