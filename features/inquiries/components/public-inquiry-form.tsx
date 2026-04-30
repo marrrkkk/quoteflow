@@ -149,6 +149,8 @@ export function PublicInquiryForm({
   const [canSubmit, setCanSubmit] = useState(false);
   const [contactMethod, setContactMethod] = useState<InquiryContactMethod>("email");
   const inquiryFormConfig = business.inquiryFormConfig;
+  const customerNameField = inquiryFormConfig.contactFields.customerName;
+  const preferredContactField = inquiryFormConfig.contactFields.preferredContact;
   const attachmentField = useMemo<InquiryFormSystemFieldDefinition | null>(
     () =>
       inquiryFormConfig.projectFields.find(
@@ -239,7 +241,10 @@ export function PublicInquiryForm({
             <div className="grid gap-5 sm:grid-cols-2">
               <Field data-invalid={Boolean(getFieldMessage("customerName")) || undefined}>
                 <FieldLabel htmlFor="inquiry-customerName">
-                  <FieldLabelText label="Your name" required />
+                  <FieldLabelText
+                    label={customerNameField.label}
+                    required={customerNameField.required}
+                  />
                 </FieldLabel>
                 <FieldContent>
                   <Input
@@ -249,8 +254,8 @@ export function PublicInquiryForm({
                     maxLength={120}
                     minLength={2}
                     name="customerName"
-                    placeholder="e.g. Alicia Cruz"
-                    required
+                    placeholder={customerNameField.placeholder}
+                    required={customerNameField.required}
                   />
                   <FieldError errors={getFieldMessage("customerName") ? [{ message: getFieldMessage("customerName")! }] : undefined} />
                 </FieldContent>
@@ -258,7 +263,10 @@ export function PublicInquiryForm({
 
               <Field data-invalid={Boolean(getFieldMessage("customerContactMethod")) || undefined}>
                 <FieldLabel htmlFor="inquiry-contactMethod">
-                  <FieldLabelText label="Preferred contact method" required />
+                  <FieldLabelText
+                    label={preferredContactField.label}
+                    required={preferredContactField.required}
+                  />
                 </FieldLabel>
                 <FieldContent>
                   <input type="hidden" name="customerContactMethod" value={contactMethod} />
@@ -266,7 +274,9 @@ export function PublicInquiryForm({
                     id="inquiry-contactMethod"
                     disabled={isPending}
                     options={contactMethodOptions}
-                    placeholder="Choose how to reach you"
+                    placeholder={
+                      preferredContactField.placeholder ?? "Choose how to reach you"
+                    }
                     value={contactMethod}
                     onValueChange={(value) => {
                       setContactMethod(value as InquiryContactMethod);
@@ -294,7 +304,7 @@ export function PublicInquiryForm({
                     maxLength={320}
                     name="customerContactHandle"
                     placeholder={getContactHandlePlaceholder(contactMethod)}
-                    required
+                    required={preferredContactField.required}
                     type={getContactHandleInputType(contactMethod)}
                   />
                   <FieldError errors={getFieldMessage("customerContactHandle") ? [{ message: getFieldMessage("customerContactHandle")! }] : undefined} />
