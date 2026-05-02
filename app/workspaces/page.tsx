@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarClock, PlusCircle } from "lucide-react";
+import { ArrowRight, CalendarClock } from "lucide-react";
 
 import { BrandMark } from "@/components/shared/brand-mark";
 import { PlanBadge } from "@/components/shared/paywall";
@@ -143,29 +143,7 @@ export default async function WorkspacesPage() {
                   </Card>
                 ))}
 
-                <CreateWorkspaceDialog
-                  trigger={
-                    <Card
-                      role="button"
-                      className="group flex flex-col border-dashed border-border/80 bg-transparent transition-colors hover:border-border hover:bg-card/50 cursor-pointer"
-                    >
-                      <CardHeader className="gap-4">
-                        <div className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
-                          <PlusCircle className="size-5" />
-                          <CardTitle className="text-lg">New workspace</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex flex-1 flex-col justify-end space-y-5">
-                        <CardDescription className="max-w-full">
-                          Create a separate workspace for a different team, client, or project.
-                        </CardDescription>
-                        <Button className="w-full sm:w-auto" variant="secondary" asChild>
-                          <div>Create workspace</div>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  }
-                />
+                <CreateWorkspaceDialog triggerVariant="card" />
               </div>
             </section>
 
