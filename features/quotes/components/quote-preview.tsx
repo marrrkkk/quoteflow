@@ -56,12 +56,18 @@ export function QuotePreview({
             <div className="flex flex-col gap-1">
               <span className="meta-label">{metaLabel}</span>
               <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance">
-                {title}
+                <TruncatedTextWithTooltip text={title} lines={2} />
               </h2>
-              <p className="text-sm text-muted-foreground">{businessName}</p>
+              <TruncatedTextWithTooltip
+                className="text-sm text-muted-foreground"
+                text={businessName}
+              />
             </div>
             <div className="soft-panel w-full px-4 py-3 text-sm shadow-none sm:w-auto sm:min-w-52">
-              <p className="text-sm font-semibold text-foreground">{quoteNumber}</p>
+              <TruncatedTextWithTooltip
+                className="text-sm font-semibold text-foreground"
+                text={quoteNumber}
+              />
               <p className="mt-1 text-muted-foreground">
                 Valid until {formatQuoteDate(validUntil)}
               </p>
@@ -102,9 +108,11 @@ export function QuotePreview({
                 <div className="soft-panel px-4 py-4 shadow-none" key={item.id}>
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <p className="text-sm font-medium text-foreground">
-                        {item.description || "Untitled item"}
-                      </p>
+                      <TruncatedTextWithTooltip
+                        className="text-sm font-medium text-foreground"
+                        lines={3}
+                        text={item.description || "Untitled item"}
+                      />
                       <span className="dashboard-meta-pill self-start">
                         Qty {item.quantity}
                       </span>
@@ -156,8 +164,11 @@ export function QuotePreview({
                 {items.length ? (
                   items.map((item) => (
                     <tr className="border-t border-border/75" key={item.id}>
-                      <td className="px-4 py-3 align-top text-foreground">
-                        {item.description || "Untitled item"}
+                      <td className="max-w-0 px-4 py-3 align-top text-foreground">
+                        <TruncatedTextWithTooltip
+                          lines={2}
+                          text={item.description || "Untitled item"}
+                        />
                       </td>
                       <td className="px-4 py-3 text-center text-muted-foreground">
                         {item.quantity}
@@ -207,9 +218,11 @@ export function QuotePreview({
         {notes ? (
           <div className="soft-panel px-4 py-4 shadow-none">
             <p className="meta-label">Notes</p>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
-              {notes}
-            </p>
+            <TruncatedTextWithTooltip
+              className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground"
+              lines={6}
+              text={notes}
+            />
           </div>
         ) : null}
       </div>
