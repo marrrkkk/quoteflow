@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
@@ -63,12 +63,6 @@ function getTextValue(formData: FormData, key: string) {
 function updateCacheTags(tags: string[]) {
   for (const tag of uniqueCacheTags(tags)) {
     updateTag(tag);
-  }
-}
-
-function revalidateCacheTags(tags: string[]) {
-  for (const tag of uniqueCacheTags(tags)) {
-    revalidateTag(tag, "max");
   }
 }
 
@@ -147,8 +141,8 @@ export async function submitPublicInquiryAction(
       submission: validationResult.data,
     });
 
-    revalidateCacheTags([
-      ...getBusinessInquiryListCacheTags(business.id),
+    updateCacheTags([
+      ...getInquiryMutationCacheTags(business.id, createdInquiry.inquiryId),
       ...getBusinessInquiryFormsCacheTags(business.id),
     ]);
 
