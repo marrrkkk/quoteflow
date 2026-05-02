@@ -21,6 +21,7 @@ import {
   DashboardSection,
   DashboardSidebarStack,
 } from "@/components/shared/dashboard-layout";
+import { TruncatedTextWithTooltip } from "@/components/shared/truncated-text-with-tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -267,18 +268,22 @@ export default async function InquiryDetailPage({
               <p className="meta-label">
                 {systemFieldDefaultLabels.serviceCategory}
               </p>
-              <p className="mt-3 text-sm leading-7 text-foreground">
-                {inquiry.serviceCategory}
-              </p>
+              <TruncatedTextWithTooltip
+                className="mt-3 text-sm leading-7 text-foreground"
+                lines={3}
+                text={inquiry.serviceCategory}
+              />
             </div>
 
             <div className="soft-panel px-5 py-5 shadow-none">
               <p className="meta-label">
                 {systemFieldDefaultLabels.details}
               </p>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
-                {inquiry.details}
-              </p>
+              <TruncatedTextWithTooltip
+                className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground"
+                lines={6}
+                text={inquiry.details}
+              />
             </div>
 
             {customFields.length ? (
@@ -361,7 +366,10 @@ export default async function InquiryDetailPage({
                               <>
                                 <span>{formatFileSize(attachment.fileSize)}</span>
                                 <span aria-hidden="true">|</span>
-                                <span>{attachment.contentType}</span>
+                                <TruncatedTextWithTooltip
+                                  className="max-w-44"
+                                  text={attachment.contentType}
+                                />
                                 <span aria-hidden="true">|</span>
                                 <span>
                                   {formatInquiryDateTime(attachment.createdAt)}
@@ -482,12 +490,12 @@ export default async function InquiryDetailPage({
               valueClassName="break-all"
               value={
                 customerContactEmail ? (
-                  <a
+                  <TruncatedTextWithTooltip
                     className="underline-offset-4 hover:underline"
                     href={`mailto:${customerContactEmail}`}
-                  >
-                    {customerContactEmail}
-                  </a>
+                    prefetch={false}
+                    text={customerContactEmail}
+                  />
                 ) : (
                   "Not provided"
                 )
@@ -658,7 +666,11 @@ function InquiryNotesSheetSection({
             meta={formatInquiryDateTime(latestNote.createdAt)}
             title={latestNote.authorName ?? "Business owner"}
           >
-            <p className="whitespace-pre-wrap">{latestNote.body}</p>
+            <TruncatedTextWithTooltip
+              className="whitespace-pre-wrap"
+              lines={6}
+              text={latestNote.body}
+            />
           </DashboardDetailFeedItem>
         </DashboardDetailFeed>
       ) : (
@@ -693,7 +705,11 @@ function InquiryNotesSheetSection({
                       meta={formatInquiryDateTime(note.createdAt)}
                       title={note.authorName ?? "Business owner"}
                     >
-                      <p className="whitespace-pre-wrap">{note.body}</p>
+                      <TruncatedTextWithTooltip
+                        className="whitespace-pre-wrap"
+                        lines={6}
+                        text={note.body}
+                      />
                     </DashboardDetailFeedItem>
                   ))}
                 </DashboardDetailFeed>

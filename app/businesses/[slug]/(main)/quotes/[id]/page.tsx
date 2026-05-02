@@ -16,6 +16,7 @@ import {
   DashboardSidebarStack,
 } from "@/components/shared/dashboard-layout";
 import { InfoTile } from "@/components/shared/info-tile";
+import { TruncatedTextWithTooltip } from "@/components/shared/truncated-text-with-tooltip";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -310,12 +311,18 @@ export default async function QuoteDetailPage({
               }
               meta={
                 <>
-                  <span>
-                    {getCustomerContactEmail(quote.linkedInquiry) ??
-                      quote.linkedInquiry.customerContactHandle}
-                  </span>
+                  <TruncatedTextWithTooltip
+                    className="max-w-52"
+                    text={
+                      getCustomerContactEmail(quote.linkedInquiry) ??
+                      quote.linkedInquiry.customerContactHandle
+                    }
+                  />
                   <span aria-hidden="true">|</span>
-                  <span>{quote.linkedInquiry.serviceCategory}</span>
+                  <TruncatedTextWithTooltip
+                    className="max-w-52"
+                    text={quote.linkedInquiry.serviceCategory}
+                  />
                 </>
               }
               title={quote.linkedInquiry.customerName}
@@ -577,12 +584,12 @@ export default async function QuoteDetailPage({
                 label="Email"
                 value={
                   quoteContactEmail ? (
-                    <a
+                    <TruncatedTextWithTooltip
                       className="underline-offset-4 hover:underline"
                       href={`mailto:${quoteContactEmail}`}
-                    >
-                      {quoteContactEmail}
-                    </a>
+                      prefetch={false}
+                      text={quoteContactEmail}
+                    />
                   ) : (
                     "Not provided"
                   )
@@ -622,9 +629,11 @@ export default async function QuoteDetailPage({
 
                   <div className="soft-panel px-4 py-4 shadow-none">
                     <p className="meta-label">Public quote URL</p>
-                    <p className="mt-2 break-all text-sm text-muted-foreground">
-                      {customerQuoteUrl}
-                    </p>
+                    <TruncatedTextWithTooltip
+                      className="mt-2 break-all text-sm text-muted-foreground"
+                      lines={2}
+                      text={customerQuoteUrl}
+                    />
                   </div>
                 </>
               ) : (
@@ -667,9 +676,11 @@ export default async function QuoteDetailPage({
               {quote.customerResponseMessage ? (
                 <div className="soft-panel px-4 py-4 shadow-none">
                   <p className="meta-label">Customer message</p>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
-                    {quote.customerResponseMessage}
-                  </p>
+                  <TruncatedTextWithTooltip
+                    className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground"
+                    lines={6}
+                    text={quote.customerResponseMessage}
+                  />
                 </div>
               ) : null}
 

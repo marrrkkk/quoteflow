@@ -149,8 +149,13 @@ async function NotificationBellStreamedSection({
       businessId={businessId}
       businessSlug={businessSlug}
       initialView={notificationView}
+      key={[
+        businessId,
+        notificationView.unreadCount,
+        notificationView.lastReadAt ?? "unread",
+        notificationView.items[0]?.id ?? "empty",
+      ].join(":")}
       userId={userId}
     />
   );
 }
-
