@@ -35,7 +35,7 @@ export function QuoteExportPopover({
         <div className="grid gap-0.5">
           <a
             aria-label="Export PDF"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[var(--control-accent-bg)] hover:text-foreground"
+            className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[var(--control-accent-bg)] hover:text-foreground"
             href={pdfHref}
             onClick={() => setOpen(false)}
           >
@@ -45,7 +45,7 @@ export function QuoteExportPopover({
 
           <a
             aria-label="Export PNG"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[var(--control-accent-bg)] hover:text-foreground"
+            className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[var(--control-accent-bg)] hover:text-foreground"
             href={pngHref}
             onClick={() => setOpen(false)}
           >
