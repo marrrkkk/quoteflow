@@ -5,17 +5,15 @@ import {
   CircleCheck,
   Eye,
   FileText,
-  Target,
+  TrendingUp,
 } from "lucide-react";
 
-import {
-  DashboardEmptyState,
-  DashboardStatsGrid,
-} from "@/components/shared/dashboard-layout";
+import { DashboardStatsGrid } from "@/components/shared/dashboard-layout";
 import { AnalyticsConversionTrend } from "@/features/analytics/components/analytics-conversion-trend";
 import { AnalyticsFormPerformanceTable } from "@/features/analytics/components/analytics-form-performance-table";
 import { AnalyticsFunnelCard } from "@/features/analytics/components/analytics-funnel-card";
 import { AnalyticsMetricCard } from "@/features/analytics/components/analytics-metric-card";
+import { AnalyticsRevenueTrend } from "@/features/analytics/components/analytics-revenue-trend";
 import { AnalyticsValueCard } from "@/features/analytics/components/analytics-value-card";
 import type { ConversionAnalyticsData } from "@/features/analytics/types";
 import {
@@ -44,10 +42,10 @@ export function AnalyticsConversionTab({
         />
         <AnalyticsMetricCard
           icon={Eye}
-          title="Quotes viewed"
-          value={`${data.summary.quotesViewed}`}
-          description={`${data.summary.quotePageViews} public quote page views recorded from those inquiries`}
-          tooltip="Distinct quotes that have been opened by customers, plus total public quote page views recorded in the last 30 days."
+          title="Quote view rate"
+          value={formatAnalyticsPercent(data.summary.quoteViewRate)}
+          description={`${data.summary.quotesViewed} viewed of ${data.summary.quotesSent} sent — ${data.summary.quotePageViews} total page views`}
+          tooltip="Percentage of sent quotes that were opened by customers, plus total public quote page views."
         />
         <AnalyticsMetricCard
           icon={CheckCircle2}
@@ -62,6 +60,13 @@ export function AnalyticsConversionTab({
           value={formatAnalyticsMoney(data.summary.acceptedValueInCents, currency)}
           description="Total value of accepted quotes"
           tooltip="Sum of accepted quote totals across the recent inquiry pipeline."
+        />
+        <AnalyticsValueCard
+          icon={TrendingUp}
+          title="Avg quote value"
+          value={formatAnalyticsMoney(data.summary.averageAcceptedValueInCents, currency)}
+          description={`Across ${data.summary.quotesAccepted} accepted quotes`}
+          tooltip="Average total of accepted quotes in the recent pipeline."
         />
         {data.summary.completedValueInCents > 0 ? (
           <AnalyticsValueCard
@@ -121,6 +126,8 @@ export function AnalyticsConversionTab({
           ]}
         />
       </div>
+
+      <AnalyticsRevenueTrend points={data.revenueTrend} />
 
       <AnalyticsFormPerformanceTable rows={data.formPerformance} />
     </div>

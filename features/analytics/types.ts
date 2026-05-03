@@ -1,6 +1,24 @@
 import type { InquiryStatus } from "@/features/inquiries/types";
 import type { QuoteStatus } from "@/features/quotes/types";
 
+export type PeriodDeltaDirection = "up" | "down" | "flat";
+
+export type PeriodDelta = {
+  value: number;
+  direction: PeriodDeltaDirection;
+};
+
+export type OverviewPriorPeriod = {
+  formViews: number;
+  uniqueVisitors: number;
+  inquirySubmissions: number;
+  quotesSent: number;
+  quotesAccepted: number;
+  avgFirstResponseHours: number | null;
+  avgTimeToFirstQuoteHours: number | null;
+};
+
+
 export type BusinessAnalyticsStatusCount = {
   status: InquiryStatus;
   count: number;
@@ -45,6 +63,7 @@ export type BusinessAnalyticsData = {
     staleInquiryCount: number;
     pendingQuotesOverSevenDays: number;
   };
+  priorPeriod: OverviewPriorPeriod;
 };
 
 export type ConversionTrendPoint = {
@@ -103,7 +122,14 @@ export type ConversionAnalyticsData = {
     quotesAccepted: number;
   };
   quotesTrend: ConversionTrendPoint[];
+  revenueTrend: RevenueTrendPoint[];
   formPerformance: FormPerformanceAnalyticsRow[];
+};
+
+export type RevenueTrendPoint = {
+  label: string;
+  weekStart: string;
+  acceptedValueInCents: number;
 };
 
 export type WorkflowAnalyticsData = {
@@ -130,5 +156,13 @@ export type WorkflowAnalyticsData = {
   alerts: {
     staleInquiryCount: number;
     pendingQuotesOverSevenDays: number;
+  };
+  followUpSummary: {
+    created: number;
+    completed: number;
+    skipped: number;
+    overdue: number;
+    completionRate: number;
+    avgDaysToComplete: number | null;
   };
 };
