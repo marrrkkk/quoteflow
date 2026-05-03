@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, beforeEach, expect, it, vi } from "vitest";
 
 import { DashboardNotificationBell } from "@/features/notifications/components/dashboard-notification-bell";
@@ -12,6 +13,7 @@ const {
   refreshMock,
   removeChannelMock,
   setAuthMock,
+  useIsMobileMock,
 } = vi.hoisted(() => ({
   channelMock: vi.fn(),
   fetchMock: vi.fn(),
@@ -21,6 +23,7 @@ const {
   refreshMock: vi.fn(),
   removeChannelMock: vi.fn(),
   setAuthMock: vi.fn(),
+  useIsMobileMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -43,6 +46,10 @@ vi.mock("@/lib/supabase/browser", () => ({
 vi.mock("@/features/notifications/actions", () => ({
   loadMoreBusinessNotificationsAction: loadMoreBusinessNotificationsActionMock,
   markBusinessNotificationsReadAction: markBusinessNotificationsReadActionMock,
+}));
+
+vi.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: useIsMobileMock,
 }));
 
 type NotificationInsertHandler = (payload: {
@@ -74,6 +81,8 @@ describe("DashboardNotificationBell", () => {
     refreshMock.mockReset();
     removeChannelMock.mockReset();
     setAuthMock.mockReset();
+    useIsMobileMock.mockReset();
+    useIsMobileMock.mockReturnValue(false);
     loadMoreBusinessNotificationsActionMock.mockReset();
     markBusinessNotificationsReadActionMock.mockReset();
 
@@ -186,5 +195,46 @@ describe("DashboardNotificationBell", () => {
     });
 
     expect(refreshMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens notifications in a mobile sheet", async () => {
+    useIsMobileMock.mockReturnValue(true);
+    const user = userEvent.setup();
+
+    render(
+      <DashboardNotificationBell
+        businessId="biz_123"
+        businessSlug="acme"
+        initialView={{
+          items: [
+            {
+              id: "ntf_123",
+              type: "quote_customer_accepted",
+              title: "Quote accepted by a customer with a long name",
+              summary:
+                "The customer accepted the quote and left enough detail to wrap cleanly on a phone.",
+              href: "/businesses/acme/quotes/quote_123",
+              createdAt: new Date().toISOString(),
+              unread: true,
+            },
+          ],
+          unreadCount: 1,
+          lastReadAt: null,
+          hasMore: false,
+        }}
+        userId="user_123"
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "1 unread notifications" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Notifications" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Quote accepted by a customer with a long name"),
+    ).toBeInTheDocument();
   });
 });
