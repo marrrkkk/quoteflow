@@ -79,7 +79,7 @@ export function AuthShell({
               <h1 className="font-heading text-5xl font-semibold leading-[0.96] tracking-tight text-balance">
                 Capture inquiries, qualify leads, and send quotes from one place.
               </h1>
-              <p className="max-w-xl text-base leading-8 text-muted-foreground">
+              <p className="max-w-xl text-base leading-normal sm:leading-8 text-muted-foreground">
                 Requo keeps inbound inquiries, pricing, and follow-up organized
                 for owner-led service businesses and lean teams.
               </p>
@@ -126,7 +126,7 @@ function AuthFormCard({
           {badge ? <span className="eyebrow">{badge}</span> : null}
           <CardTitle className="text-[1.95rem] sm:text-[2.35rem]">{title}</CardTitle>
           {description ? (
-            <CardDescription className="max-w-md text-sm leading-7">
+            <CardDescription className="max-w-md text-sm leading-normal sm:leading-7">
               {description}
             </CardDescription>
           ) : null}
@@ -154,7 +154,7 @@ function AuthFormPlain({
             {title}
           </h1>
           {description ? (
-            <p className="max-w-md text-sm leading-7 text-muted-foreground">
+            <p className="max-w-md text-sm leading-normal sm:leading-7 text-muted-foreground">
               {description}
             </p>
           ) : null}
@@ -173,7 +173,7 @@ function SignupBenefits() {
           <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Built for service businesses.
           </h2>
-          <p className="text-base leading-7 text-muted-foreground sm:text-lg">
+          <p className="text-base leading-normal sm:leading-7 text-muted-foreground sm:text-lg">
             Stop losing track of inquiries and scattered quotes.
           </p>
         </div>

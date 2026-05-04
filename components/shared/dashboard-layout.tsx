@@ -120,7 +120,7 @@ export function DashboardDetailHeader({
               )}
             </h1>
             {description ? (
-              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[0.96rem]">
+              <p className="max-w-2xl text-sm leading-normal sm:leading-7 text-muted-foreground sm:text-[0.96rem]">
                 {plainDescription ? (
                   <TruncatedTextWithTooltip text={plainDescription} lines={2} />
                 ) : (

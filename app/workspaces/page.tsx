@@ -81,7 +81,7 @@ export default async function WorkspacesPage() {
             <h1 className="font-heading text-[2rem] font-semibold tracking-tight text-foreground sm:text-[2.35rem]">
               Your workspaces
             </h1>
-            <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[0.96rem]">
+            <p className="max-w-2xl text-sm leading-normal sm:leading-7 text-muted-foreground sm:text-[0.96rem]">
               Manage your businesses, plans, and team access across different workspaces.
             </p>
           </div>

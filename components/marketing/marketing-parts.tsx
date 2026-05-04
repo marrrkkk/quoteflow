@@ -49,13 +49,13 @@ export function MarketingFeatureRow({
             <h3 className="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
               {title}
             </h3>
-            <p className="text-sm leading-7 text-muted-foreground sm:text-base">
+            <p className="text-sm leading-normal sm:leading-7 text-muted-foreground sm:text-base">
               {description}
             </p>
           </div>
         </div>
 
-        <div className={cn("min-w-0", reverse && "lg:order-1")}>
+        <div className={cn("min-w-0 px-[var(--page-gutter)] lg:px-0", reverse && "lg:order-1")}>
           <MarketingFeaturePreview
             description={previewDescription}
             featureId={featureId}
@@ -93,7 +93,7 @@ export function WorkflowStep({
         <h3 className="font-heading text-xl font-semibold tracking-tight text-foreground">
           {title}
         </h3>
-        <p className="mt-3 text-sm leading-7 text-muted-foreground">
+        <p className="mt-3 text-sm leading-normal sm:leading-7 text-muted-foreground">
           {description}
         </p>
       </div>
@@ -141,7 +141,7 @@ function MarketingFeaturePreview({
 function QuotePreviewMock() {
   return (
     <div className="grid gap-3">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         {[
           { label: "Status", value: "Ready to send" },
           { label: "Valid for", value: "30 days" },
@@ -172,7 +172,7 @@ function QuotePreviewMock() {
               { desc: "Labor & Demo", qty: "40h", price: "$650.00" },
             ].map((row, i) => (
               <div
-                className="soft-panel grid cursor-pointer gap-3 px-3 py-3 shadow-none transition-colors hover:border-primary/40 sm:grid-cols-[minmax(0,1fr)_4rem_5rem]"
+                className="soft-panel grid cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] gap-2 px-3 py-3 shadow-none transition-colors hover:border-primary/40 sm:grid-cols-[minmax(0,1fr)_4rem_5rem] sm:gap-3"
                 key={i}
               >
                 <span className="text-xs font-medium text-foreground">{row.desc}</span>
@@ -277,7 +277,7 @@ function AnalyticsPreviewMock() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <PreviewStatCard label="Inquiries" value={range === "30d" ? "42" : "315"} />
         <PreviewStatCard label="Quotes sent" value={range === "30d" ? "18" : "142"} />
         <PreviewStatCard label="Won rate" value={range === "30d" ? "34%" : "38%"} />
@@ -292,9 +292,9 @@ function AnalyticsPreviewMock() {
             </div>
           </div>
 
-          <div className="mt-6 flex h-40 items-end gap-3 transition-all duration-300">
+          <div className="mt-6 flex h-40 items-end gap-1.5 transition-all duration-300 sm:gap-3">
             {data.map((height, index) => (
-              <div className="flex flex-1 flex-col justify-end gap-2 group cursor-crosshair" key={index}>
+              <div className="group flex flex-1 cursor-crosshair flex-col justify-end gap-2" key={index}>
                 <div
                   className="rounded-t-sm bg-primary/20 transition-all duration-500 group-hover:bg-primary/50"
                   style={{ height: `${height * 1.5}px` }}

@@ -119,7 +119,7 @@ export function MarketingHero() {
               <h1 className="max-w-4xl font-heading text-4xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-6xl xl:text-[4.15rem]">
                 Turn customer inquiries into tracked quotes.
               </h1>
-              <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
+              <p className="max-w-2xl text-base leading-normal sm:leading-8 text-muted-foreground sm:text-lg">
                 Requo helps service businesses capture inquiries, create professional quotes, share quote links, track customer activity, and follow up before jobs go cold.
               </p>
             </div>
@@ -154,7 +154,7 @@ export function MarketingHero() {
           <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
             Most quotes are not lost at the price. They are lost in the process.
           </h2>
-          <p className="text-sm leading-8 text-muted-foreground sm:text-lg">
+          <p className="text-sm leading-normal sm:leading-8 text-muted-foreground sm:text-lg">
             Customer details get scattered across forms, calls, emails, DMs, and notes. Requo keeps every inquiry, quote, share link, customer response, and follow-up in one clear workflow.
           </p>
         </InViewReveal>
@@ -229,7 +229,7 @@ export function MarketingHero() {
             <h2 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
               From inquiry to accepted quote in one workflow.
             </h2>
-            <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
+            <p className="mt-4 text-sm leading-normal sm:leading-7 text-muted-foreground sm:text-base">
               Requo keeps every customer request connected to the quote, share link, response status, and next follow-up.
             </p>
           </InViewReveal>
@@ -310,7 +310,7 @@ export function MarketingHero() {
           <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
             Everything you need between inquiry and quote.
           </h2>
-          <p className="text-sm leading-8 text-muted-foreground sm:text-lg">
+          <p className="text-sm leading-normal sm:leading-8 text-muted-foreground sm:text-lg">
             Collect the right details, send quotes faster, stay on top of
             follow-up, and keep your team in sync.
           </p>
@@ -339,7 +339,7 @@ export function MarketingHero() {
             <h2 className="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
               Questions service owners ask before using Requo.
             </h2>
-            <p className="text-base leading-8 text-muted-foreground sm:text-lg">
+            <p className="text-base leading-normal sm:leading-8 text-muted-foreground sm:text-lg">
               Short answers about inquiries, quotes, sharing, follow-ups, and how Requo fits your current workflow.
             </p>
           </InViewReveal>
@@ -355,7 +355,7 @@ export function MarketingHero() {
                   <AccordionTrigger className="py-5 text-left text-base font-medium tracking-tight text-foreground sm:text-lg hover:text-foreground/80 transition-colors">
                     {item.question}
                   </AccordionTrigger>
-                  <AccordionContent className="pb-6 text-sm leading-7 text-muted-foreground sm:text-base">
+                  <AccordionContent className="pb-6 text-sm leading-normal sm:leading-7 text-muted-foreground sm:text-base">
                     {item.answer}
                   </AccordionContent>
                 </AccordionItem>
@@ -385,12 +385,12 @@ export function MarketingHero() {
         </section>
       </InViewReveal>
 
-      <InViewReveal className="mx-auto mt-24 w-full max-w-6xl sm:mt-32 lg:mt-40" delay={160}>
+      <InViewReveal className="mx-auto mt-8 w-full max-w-6xl sm:mt-12 lg:mt-16" delay={160}>
         <footer className="section-panel overflow-hidden">
           <div className="grid gap-10 border-b border-border/70 px-5 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,0.72fr))] lg:gap-8 xl:gap-12">
             <div className="flex max-w-md flex-col gap-4">
               <BrandMark subtitle="Inquiry-to-quote workflow" />
-              <p className="text-sm leading-7 text-muted-foreground">
+              <p className="text-sm leading-normal sm:leading-7 text-muted-foreground">
                 Requo helps owner-led service businesses capture better
                 inquiries, send clearer quotes, and keep follow-up visible from
                 first inquiry to customer response.

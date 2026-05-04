@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
+  formatUsageLimitValue,
   getUsageLimit,
   planFeatureLabels,
 } from "@/lib/plans";
@@ -68,6 +69,27 @@ const pricingCategories: PricingFeatureCategory[] = [
         pro: "Unlimited",
         business: "Unlimited",
       },
+      {
+        label: "Custom fields per form",
+        free: `${getUsageLimit("free", "customFieldsPerForm")}`,
+        pro: `${getUsageLimit("pro", "customFieldsPerForm")}`,
+        business: `${getUsageLimit("business", "customFieldsPerForm")}`,
+      },
+      {
+        label: "Public inquiry upload size",
+        free: formatUsageLimitValue(
+          "publicInquiryAttachmentMaxBytes",
+          getUsageLimit("free", "publicInquiryAttachmentMaxBytes"),
+        ),
+        pro: formatUsageLimitValue(
+          "publicInquiryAttachmentMaxBytes",
+          getUsageLimit("pro", "publicInquiryAttachmentMaxBytes"),
+        ),
+        business: formatUsageLimitValue(
+          "publicInquiryAttachmentMaxBytes",
+          getUsageLimit("business", "publicInquiryAttachmentMaxBytes"),
+        ),
+      },
     ],
   },
   {
@@ -92,6 +114,7 @@ const pricingCategories: PricingFeatureCategory[] = [
     features: [
       { label: "Public inquiry pages", free: true, pro: true, business: true },
       { label: "Public quote pages", free: true, pro: true, business: true },
+      { label: "Logo and business/form name", free: true, pro: true, business: true },
       {
         label: planFeatureLabels.branding,
         free: false,
@@ -106,7 +129,7 @@ const pricingCategories: PricingFeatureCategory[] = [
       },
       {
         label: planFeatureLabels.attachments,
-        free: false,
+        free: true,
         pro: true,
         business: true,
       },
@@ -128,6 +151,12 @@ const pricingCategories: PricingFeatureCategory[] = [
         business: true,
       },
       {
+        label: planFeatureLabels.emailTemplates,
+        free: false,
+        pro: true,
+        business: true,
+      },
+      {
         label: planFeatureLabels.quoteLibrary,
         free: false,
         pro: true,
@@ -141,6 +170,18 @@ const pricingCategories: PricingFeatureCategory[] = [
       },
       {
         label: planFeatureLabels.aiAssistant,
+        free: false,
+        pro: true,
+        business: true,
+      },
+      {
+        label: planFeatureLabels.customerHistory,
+        free: false,
+        pro: true,
+        business: true,
+      },
+      {
+        label: planFeatureLabels.pushNotifications,
         free: false,
         pro: true,
         business: true,
@@ -216,7 +257,7 @@ export function PricingPage({ currency }: { currency: BillingCurrency }) {
             <h1 className="max-w-3xl font-heading text-4xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-5xl xl:text-[3.5rem]">
               Run the full inquiry-to-quote workflow from day one.
             </h1>
-            <p className="max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
+            <p className="max-w-2xl text-base leading-normal sm:leading-8 text-muted-foreground sm:text-lg">
               Capture inquiries, create quotes, share them with customers,
               follow up on time, and track outcomes. Start free, then upgrade
               when you need more capacity and workflow tools.
@@ -292,7 +333,7 @@ export function PricingPage({ currency }: { currency: BillingCurrency }) {
             <h2 className="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
               Ready to stop losing inquiries?
             </h2>
-            <p className="text-sm leading-7 text-muted-foreground sm:text-base">
+            <p className="text-sm leading-normal sm:leading-7 text-muted-foreground sm:text-base">
               Start with the Free plan today. Upgrade to Pro or Business when
               you need unlimited inquiries, quote capacity, and advanced tools.
             </p>

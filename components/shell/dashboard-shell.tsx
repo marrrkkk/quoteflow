@@ -275,6 +275,7 @@ export function DashboardShell({
           businessId={business.id}
           businessSlug={business.slug}
           userName={user.name || "You"}
+          workspacePlan={business.workspacePlan}
         />
       </SidebarInset>
     </SidebarProvider>
