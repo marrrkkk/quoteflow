@@ -21,7 +21,7 @@ export default async function BusinessNotificationSettingsPage() {
       <PageHeader
         eyebrow="Business"
         title="Notifications"
-        description="Choose how you get notified — email, in-app, or push."
+        description="Choose how you get notified — in-app or push."
       />
 
       <BusinessNotificationSettingsForm

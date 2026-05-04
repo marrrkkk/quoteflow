@@ -60,7 +60,7 @@ export function getBusinessSettingsNavigation(
               ? [
                   {
                     href: getBusinessSettingsPath(slug, "general"),
-                    label: "Business profile",
+                    label: "Profile",
                     icon: "general" as const,
                   },
                 ]
@@ -79,7 +79,7 @@ export function getBusinessSettingsNavigation(
           items: [
             {
               href: getBusinessSettingsPath(slug, "replies"),
-              label: "Saved replies",
+              label: "Replies",
               icon: "replies" as const,
             },
             {
@@ -96,12 +96,12 @@ export function getBusinessSettingsNavigation(
           items: [
             {
               href: getBusinessSettingsPath(slug, "quote"),
-              label: "Quote defaults",
+              label: "Quotes",
               icon: "quote" as const,
             },
             {
               href: getBusinessSettingsPath(slug, "email"),
-              label: "Email templates",
+              label: "Email",
               icon: "email" as const,
             },
             {
@@ -122,7 +122,7 @@ export function getBusinessSettingsNavigation(
 
 /**
  * Returns the billing navigation group for workspace owners.
- * Billing is workspace-scoped but rendered within the business settings sidebar.
+ * Billing is workspace-scoped but rendered within the business settings navigation.
  */
 export function getWorkspaceSettingsNavigation(
   businessSlug: string,
@@ -138,7 +138,7 @@ export function getWorkspaceSettingsNavigation(
       items: [
         {
           href: getBusinessSettingsPath(businessSlug, "billing"),
-          label: "Plan & billing",
+          label: "Billing",
           icon: "billing" as const,
         },
       ],
