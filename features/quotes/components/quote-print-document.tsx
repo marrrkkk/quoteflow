@@ -129,7 +129,7 @@ export function QuotePrintDocument({
           {notes ? (
             <section className="soft-panel px-4 py-4 shadow-none print:border-border/70">
               <p className="meta-label">Notes</p>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-normal sm:leading-7 text-foreground">
                 {notes}
               </p>
             </section>

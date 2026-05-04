@@ -20,6 +20,7 @@ import {
 import { workspacesHubPath } from "@/features/workspaces/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
+import { hasFeatureAccess } from "@/lib/plans";
 
 type QuotesPageProps = {
   params: Promise<{ slug: string }>;
@@ -123,6 +124,10 @@ export default async function QuotesPage({
     };
   });
   const businessSlug = businessContext.business.slug;
+  const canExport = hasFeatureAccess(
+    businessContext.business.workspacePlan,
+    "exports",
+  );
   const hasNonViewFilters = Boolean(
     baseFilters.q || baseFilters.status !== "all" || baseFilters.sort !== "newest",
   );
@@ -148,6 +153,7 @@ export default async function QuotesPage({
       <Suspense fallback={<QuoteListControlsFallback />}>
         <QuoteListControlsSection
           businessSlug={businessSlug}
+          canExport={canExport}
           filters={filters}
           searchParams={resolvedSearchParams}
           totalItemsPromise={quoteCountPromise}

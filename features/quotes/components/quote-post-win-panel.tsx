@@ -157,7 +157,7 @@ export function QuotePostWinPanel({
             {cancellationNote ? (
               <>
                 <p className="meta-label mt-3">Notes</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-foreground">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-normal sm:leading-7 text-foreground">
                   {cancellationNote}
                 </p>
               </>

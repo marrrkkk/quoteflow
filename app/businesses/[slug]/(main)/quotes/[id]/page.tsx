@@ -57,11 +57,13 @@ import { CopyQuoteLinkButton } from "@/features/quotes/components/copy-quote-lin
 import { QuoteEditor } from "@/features/quotes/components/quote-editor";
 import { QuoteExportPopover } from "@/features/quotes/components/quote-export-popover";
 import { QuoteLifecycleActions } from "@/features/quotes/components/quote-lifecycle-actions";
+import { hasFeatureAccess } from "@/lib/plans/entitlements";
 import { QuotePostAcceptanceStatusBadge } from "@/features/quotes/components/quote-post-acceptance-status-badge";
 import { QuotePostWinPanel } from "@/features/quotes/components/quote-post-win-panel";
 import { QuotePreview } from "@/features/quotes/components/quote-preview";
 import { QuoteRecordStateBadge } from "@/features/quotes/components/quote-record-state-badge";
 import { QuoteReminderBadge } from "@/features/quotes/components/quote-reminder-badge";
+import { DismissibleQuoteAlert } from "@/features/quotes/components/dismissible-quote-alert";
 import { SendQuoteDialog } from "@/features/quotes/components/send-quote-dialog";
 import { QuoteStatusBadge } from "@/features/quotes/components/quote-status-badge";
 import { getFollowUpsForQuote } from "@/features/follow-ups/queries";
@@ -368,6 +370,7 @@ export default async function QuoteDetailPage({
           <div className="grid w-full gap-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center [&_[data-slot=button]]:w-full sm:[&_[data-slot=button]]:w-auto">
 
             <QuoteExportPopover
+              canExport={hasFeatureAccess(businessContext.business.workspacePlan, "exports")}
               pdfHref={getBusinessQuoteExportPath(businessSlug, quote.id, "pdf")}
               pngHref={getBusinessQuoteExportPath(businessSlug, quote.id, "png")}
             />
@@ -407,10 +410,11 @@ export default async function QuoteDetailPage({
       />
 
       {quoteNextAction ? (
-        <Alert>
-          <AlertTitle>{quoteNextAction.title}</AlertTitle>
-          <AlertDescription>{quoteNextAction.description}</AlertDescription>
-        </Alert>
+        <DismissibleQuoteAlert
+          id={`quote-${quote.id}-next-action`}
+          title={quoteNextAction.title}
+          description={quoteNextAction.description}
+        />
       ) : null}
 
       {quote.status === "draft" ? (
@@ -467,22 +471,7 @@ export default async function QuoteDetailPage({
                 sharedQuoteWithoutFollowUp={false}
               />
 
-              <DashboardSection
-                contentClassName="grid gap-3 sm:grid-cols-2"
-                description="Key commercial details before sending."
-                title="Draft summary"
-              >
-                <InfoTile label="Quote number" value={quote.quoteNumber} />
-                <InfoTile
-                  label="Valid until"
-                  value={formatQuoteDate(quote.validUntil)}
-                />
-                <InfoTile label="Customer" value={quote.customerName} />
-                <InfoTile
-                  label="Current total"
-                  value={formatQuoteMoney(quote.totalInCents, quote.currency)}
-                />
-              </DashboardSection>
+
 
               <DashboardSection
                 description="Delete unneeded drafts before they enter the quote lifecycle."
@@ -504,23 +493,6 @@ export default async function QuoteDetailPage({
       ) : (
         <DashboardDetailLayout className="xl:grid-cols-[minmax(0,1.05fr)_0.95fr]">
           <DashboardSidebarStack>
-            {viewedWithoutResponse && !hasPendingFollowUp ? (
-              <Alert>
-                <AlertTitle>Viewed, no response</AlertTitle>
-                <AlertDescription>
-                  This customer has opened the quote but has not accepted or rejected it yet. Set a follow-up reminder in the panel on the right.
-                </AlertDescription>
-              </Alert>
-            ) : null}
-
-            {visibleQuoteReminders.includes("expiring_soon") ? (
-              <Alert>
-                <AlertTitle>Quote expiring soon</AlertTitle>
-                <AlertDescription>
-                  This quote expires on {formatQuoteDate(quote.validUntil)}.
-                </AlertDescription>
-              </Alert>
-            ) : null}
 
             <QuotePreview
               businessName={businessContext.business.name}
@@ -546,33 +518,6 @@ export default async function QuoteDetailPage({
           </DashboardSidebarStack>
 
           <DashboardSidebarStack>
-            <DashboardSection
-              contentClassName="grid gap-3 sm:grid-cols-2"
-              description="Totals, deadline, and response milestones."
-              title="Quote brief"
-            >
-              <InfoTile
-                label="Total"
-                value={formatQuoteMoney(quote.totalInCents, quote.currency)}
-              />
-              <InfoTile
-                label="Discount"
-                value={formatQuoteMoney(quote.discountInCents, quote.currency)}
-              />
-              <InfoTile
-                label="Valid until"
-                value={formatQuoteDate(quote.validUntil)}
-              />
-              <InfoTile
-                label="Accepted"
-                value={
-                  quote.acceptedAt
-                    ? formatQuoteDateTime(quote.acceptedAt)
-                    : "Not accepted"
-                }
-              />
-            </DashboardSection>
-
             <DashboardSection
               contentClassName="grid gap-3 sm:grid-cols-2"
               description="Saved customer channel for sending and follow-up."
@@ -716,6 +661,16 @@ export default async function QuoteDetailPage({
               sharedQuoteWithoutFollowUp={quote.status === "sent" && !hasPendingFollowUp}
             />
 
+
+
+            {visibleQuoteReminders.includes("expiring_soon") ? (
+              <DismissibleQuoteAlert
+                id={`quote-${quote.id}-expiring`}
+                title="Quote expiring soon"
+                description={`This quote expires on ${formatQuoteDate(quote.validUntil)}.`}
+              />
+            ) : null}
+
             {quote.status === "accepted" ? (
               <QuotePostWinSheetSection
                 key={quote.postAcceptanceStatus}
@@ -762,6 +717,7 @@ export default async function QuoteDetailPage({
         businessSlug={businessSlug}
         quoteId={quote.id}
         userName={session.user.name || "You"}
+        workspacePlan={businessContext.business.workspacePlan}
       />
     </DashboardPage>
   );
