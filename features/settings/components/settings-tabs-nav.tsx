@@ -79,7 +79,7 @@ export function SettingsTabsNav<TIcon extends string>({
   const ActiveIcon = icons[activeItem.icon] as LucideIcon;
 
   return (
-    <nav aria-label={ariaLabel} className="min-w-0">
+    <nav aria-label={ariaLabel} className="min-w-0 w-full">
       {/* Mobile: combobox dropdown */}
       <SettingsMobileSelect
         activeItem={activeItem}
@@ -92,17 +92,24 @@ export function SettingsTabsNav<TIcon extends string>({
       {/* Desktop: horizontal tabs */}
       <Tabs
         activationMode="manual"
-        className="hidden min-w-0 sm:block"
+        className="hidden min-w-0 w-full sm:block"
         onValueChange={handleTabChange}
         value={activeItem.href}
       >
-        <div className="min-w-0 overflow-x-auto pb-1 hover-scrollbar">
-          <TabsList aria-label={ariaLabel} className="justify-start">
+        <div className="min-w-0 w-full overflow-x-auto pb-1 hover-scrollbar">
+          <TabsList
+            aria-label={ariaLabel}
+            className="w-full justify-start"
+          >
             {flatItems.map((item) => {
               const Icon = icons[item.icon] as LucideIcon;
 
               return (
-                <TabsTrigger key={item.href} value={item.href}>
+                <TabsTrigger
+                  className="min-w-max flex-1 group-data-horizontal/tabs:flex-1"
+                  key={item.href}
+                  value={item.href}
+                >
                   <Icon className="size-4" />
                   {item.label}
                 </TabsTrigger>
