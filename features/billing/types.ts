@@ -1,6 +1,7 @@
 import type { WorkspacePlan } from "@/lib/plans/plans";
 import type {
   BillingCurrency,
+  BillingInterval,
   BillingProvider,
   BillingRegion,
   PaymentAttemptStatus,
@@ -35,6 +36,7 @@ export type CheckoutDialogProps = {
   workspaceSlug: string;
   currentPlan: WorkspacePlan;
   plan: PaidPlan;
+  interval?: BillingInterval;
   region: BillingRegion;
   defaultCurrency: BillingCurrency;
 };

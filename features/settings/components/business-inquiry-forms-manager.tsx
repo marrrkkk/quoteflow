@@ -69,7 +69,7 @@ import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { hasFeatureAccess } from "@/lib/plans";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
+import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
 import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
@@ -117,6 +117,7 @@ export function BusinessInquiryFormsManager({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isPlanSheetOpen, setIsPlanSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
+  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>('monthly');
   const [/* unarchiveState */, unarchiveFormAction, isUnarchivePending] = useActionStateWithSonner(
     unarchiveAction,
     initialState,
@@ -374,8 +375,9 @@ export function BusinessInquiryFormsManager({
                     currentPlan={billingProps.currentPlan}
                     defaultCurrency={billingProps.defaultCurrency}
                     onOpenChange={setIsPlanSheetOpen}
-                    onSelectPlan={(plan) => {
+                    onSelectPlan={(plan, interval) => {
                       setSelectedPlan(plan);
+                      setSelectedInterval(interval);
                       setIsPlanSheetOpen(false);
                       setIsCheckoutOpen(true);
                     }}
@@ -389,6 +391,7 @@ export function BusinessInquiryFormsManager({
                       onOpenChange={setIsCheckoutOpen}
                       open={isCheckoutOpen}
                       plan={selectedPlan}
+                      interval={selectedInterval}
                       region={billingProps.region}
                       workspaceId={billingProps.workspaceId}
                       workspaceSlug={billingProps.workspaceSlug}
@@ -636,3 +639,4 @@ function FormShareDialog({
     </Dialog>
   );
 }
+

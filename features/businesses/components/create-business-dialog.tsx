@@ -20,7 +20,7 @@ import { useWorkspaceCheckout } from "@/features/billing/components/workspace-ch
 import { CreateBusinessForm } from "@/features/businesses/components/create-business-form";
 import type { CreateBusinessActionState } from "@/features/businesses/types";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
+import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 
 type CreateBusinessDialogProps = {
   action: (
@@ -49,6 +49,7 @@ export function CreateBusinessDialog({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
+  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>("monthly");
   const useSharedCheckout = Boolean(
     workspaceCheckout &&
       billingProps &&
@@ -135,8 +136,9 @@ export function CreateBusinessDialog({
               currentPlan={effectiveCurrentPlan ?? billingProps.currentPlan}
               defaultCurrency={billingProps.defaultCurrency}
               onOpenChange={setPlanSheetOpen}
-              onSelectPlan={(plan) => {
+              onSelectPlan={(plan, interval) => {
                 setSelectedPlan(plan);
+                setSelectedInterval(interval);
                 setPlanSheetOpen(false);
                 setCheckoutOpen(true);
               }}
@@ -150,6 +152,7 @@ export function CreateBusinessDialog({
                 onOpenChange={setCheckoutOpen}
                 open={checkoutOpen}
                 plan={selectedPlan}
+                interval={selectedInterval}
                 region={billingProps.region}
                 workspaceId={billingProps.workspaceId}
                 workspaceSlug={billingProps.workspaceSlug}
@@ -184,3 +187,4 @@ export function CreateBusinessDialog({
     </Dialog>
   );
 }
+

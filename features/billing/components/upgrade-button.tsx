@@ -13,7 +13,7 @@ import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
 import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
+import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { cn } from "@/lib/utils";
 
 type UpgradeButtonProps = {
@@ -45,6 +45,7 @@ export function UpgradeButton({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
+  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>('monthly');
   const effectiveCurrentPlan =
     workspaceCheckout?.workspaceId === workspaceId
       ? workspaceCheckout.currentPlan
@@ -108,8 +109,9 @@ export function UpgradeButton({
         defaultCurrency={defaultCurrency}
         currentPlan={effectiveCurrentPlan}
         onOpenChange={setSheetOpen}
-        onSelectPlan={(plan) => {
+        onSelectPlan={(plan, interval) => {
           setSelectedPlan(plan);
+          setSelectedInterval(interval);
           setSheetOpen(false);
           setCheckoutOpen(true);
         }}
@@ -121,9 +123,15 @@ export function UpgradeButton({
         <CheckoutDialog
           currentPlan={effectiveCurrentPlan}
           defaultCurrency={defaultCurrency}
+          onChangePlan={() => {
+            setCheckoutOpen(false);
+            setSelectedPlan(null);
+            setSheetOpen(true);
+          }}
           onOpenChange={setCheckoutOpen}
           open={checkoutOpen}
           plan={selectedPlan}
+          interval={selectedInterval}
           region={region}
           workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}
@@ -132,3 +140,4 @@ export function UpgradeButton({
     </>
   );
 }
+

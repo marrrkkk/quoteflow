@@ -45,7 +45,7 @@ import type {
 } from "@/features/billing/types";
 import { planMeta } from "@/lib/plans";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { PaidPlan } from "@/lib/billing/types";
+import type { BillingInterval, PaidPlan } from "@/lib/billing/types";
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -74,7 +74,7 @@ type WorkspaceCheckoutContextValue = {
   workspaceId: string;
   workspaceSlug: string;
   openPlanSelection: (targetPlan?: PaidPlan) => void;
-  openCheckout: (plan: PaidPlan) => void;
+  openCheckout: (plan: PaidPlan, interval?: BillingInterval) => void;
   continueCheckout: () => void;
 };
 
@@ -257,11 +257,10 @@ export function WorkspaceCheckoutProvider({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
+  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>('monthly');
   const [targetPlan, setTargetPlan] = useState<PaidPlan | undefined>(undefined);
-  const [pendingCheckout, setPendingCheckout] =
-    useState<PersistedPendingCheckout | null>(null);
-  const [activePaddleCheckout, setActivePaddleCheckout] =
-    useState<ActivePaddleCheckout | null>(null);
+  const [pendingCheckout, setPendingCheckout] = useState<PersistedPendingCheckout | null>(null);
+  const [activePaddleCheckout, setActivePaddleCheckout] = useState<ActivePaddleCheckout | null>(null);
   const [processingState, setProcessingState] = useState<ProcessingState | null>(
     null,
   );
@@ -283,12 +282,21 @@ export function WorkspaceCheckoutProvider({
     setSheetOpen(true);
   }, []);
 
-  const openCheckout = useCallback((plan: PaidPlan) => {
+  const openCheckout = useCallback((plan: PaidPlan, interval?: BillingInterval) => {
     checkoutKeyRef.current += 1;
     setCheckoutError(null);
     setSheetOpen(false);
     setSelectedPlan(plan);
+    setSelectedInterval(interval ?? "monthly");
     setCheckoutOpen(true);
+  }, []);
+
+  const changeCheckoutPlan = useCallback(() => {
+    checkoutKeyRef.current += 1;
+    setCheckoutError(null);
+    setCheckoutOpen(false);
+    setSelectedPlan(null);
+    setSheetOpen(true);
   }, []);
 
   const continueCheckout = useCallback(() => {
@@ -856,11 +864,13 @@ export function WorkspaceCheckoutProvider({
           currentPlan={currentPlan}
           defaultCurrency={billing.defaultCurrency}
           onCheckoutErrorChange={setCheckoutError}
+          onChangePlan={changeCheckoutPlan}
           onOpenChange={setCheckoutOpen}
           onPaymentProcessingStart={beginCheckoutProcessing}
           onPaddleTransactionChange={setActivePaddleCheckout}
           open={checkoutOpen}
           pendingCheckout={pendingCheckout}
+          interval={selectedInterval}
           plan={selectedPlan}
           region={billing.region}
           workspaceId={billing.workspaceId}
@@ -990,3 +1000,4 @@ function UpgradeSuccessDialog({
     </Dialog>
   );
 }
+
