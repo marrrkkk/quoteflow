@@ -28,7 +28,7 @@ export default async function WorkspaceSettingsBillingPage({
           Manage your workspace subscription, payment method, and billing lifecycle separately from business operations.
         </p>
       </div>
-      <BillingStatusCard billing={billingOverview} showPlanComparison={false} />
+      <BillingStatusCard billing={billingOverview} />
     </div>
   );
 }

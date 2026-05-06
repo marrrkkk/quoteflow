@@ -185,7 +185,7 @@ export function WorkspaceOverviewContent({
 
       <aside className="xl:col-span-1">
         <div className="sticky top-6">
-          <BillingStatusCard billing={billingOverview} showPlanComparison={false} variant="overview" />
+          <BillingStatusCard billing={billingOverview} variant="overview" />
         </div>
       </aside>
     </div>
