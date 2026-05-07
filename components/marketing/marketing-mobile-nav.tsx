@@ -12,7 +12,7 @@ import {
 } from "@/components/marketing/marketing-data";
 import { Button } from "@/components/ui/button";
 import { useOverlayPresence } from "@/components/ui/overlay-state";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 
 type MarketingMobileNavProps = {
   isAuthenticated: boolean;

@@ -15,9 +15,9 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessSavedRepliesPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "replySnippets")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "replySnippets")) {
     const billingOverview = await getWorkspaceBillingOverview(
-      businessContext.business.workspaceId,
+      businessContext.business.id,
     );
 
     return (
@@ -29,13 +29,13 @@ export default async function BusinessSavedRepliesPage() {
         />
         <LockedFeaturePage
           feature="replySnippets"
-          plan={businessContext.business.workspacePlan}
+          plan={businessContext.business.plan}
           description="Upgrade to save reusable follow-up messages and respond faster."
           upgradeAction={
             billingOverview
               ? {
-                  workspaceId: billingOverview.workspaceId,
-                  workspaceSlug: billingOverview.workspaceSlug,
+                  businessId: billingOverview.businessId,
+                  businessSlug: billingOverview.businessSlug,
                   currentPlan: billingOverview.currentPlan,
                   region: billingOverview.region,
                   defaultCurrency: billingOverview.defaultCurrency,

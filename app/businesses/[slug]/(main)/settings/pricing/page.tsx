@@ -17,9 +17,9 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessPricingPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "quoteLibrary")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "quoteLibrary")) {
     const billingOverview = await getWorkspaceBillingOverview(
-      businessContext.business.workspaceId,
+      businessContext.business.id,
     );
 
     return (
@@ -31,13 +31,13 @@ export default async function BusinessPricingPage() {
         />
         <LockedFeaturePage
           feature="quoteLibrary"
-          plan={businessContext.business.workspacePlan}
+          plan={businessContext.business.plan}
           description="Upgrade to build reusable pricing blocks and speed up quote creation."
           upgradeAction={
             billingOverview
               ? {
-                  workspaceId: billingOverview.workspaceId,
-                  workspaceSlug: billingOverview.workspaceSlug,
+                  businessId: billingOverview.businessId,
+                  businessSlug: billingOverview.businessSlug,
                   currentPlan: billingOverview.currentPlan,
                   region: billingOverview.region,
                   defaultCurrency: billingOverview.defaultCurrency,

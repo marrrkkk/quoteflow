@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import {
@@ -36,15 +37,10 @@ export default async function BusinessFormPage({
     getBusinessOperationalPageContext(),
     params,
   ]);
-  // Settings and profile are independent — fetch in parallel.
-  const [settings, profile] = await Promise.all([
-    getBusinessInquiryFormEditorForBusiness(
-      businessContext.business.id,
-      formSlug,
-    ),
-    getAccountProfileForUser(session.user.id),
-  ]);
-  const showTour = Boolean(profile && !profile.formEditorTourCompletedAt);
+  const settings = await getBusinessInquiryFormEditorForBusiness(
+    businessContext.business.id,
+    formSlug,
+  );
 
   if (!settings) {
     notFound();
@@ -99,7 +95,16 @@ export default async function BusinessFormPage({
         archiveAction={archiveBusinessInquiryFormFromDetailAction}
         deleteAction={deleteBusinessInquiryFormAction}
       />
-      <FormEditorTour show={showTour} />
+      <Suspense fallback={null}>
+        <FormEditorTourSection userId={session.user.id} />
+      </Suspense>
     </>
   );
+}
+
+async function FormEditorTourSection({ userId }: { userId: string }) {
+  const profile = await getAccountProfileForUser(userId);
+  const showTour = Boolean(profile && !profile.formEditorTourCompletedAt);
+
+  return <FormEditorTour show={showTour} />;
 }

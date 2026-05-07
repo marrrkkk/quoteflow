@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AtSign, ExternalLink, Mail, Printer } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import {
   DashboardDetailLayout,
@@ -85,7 +86,7 @@ import {
   getBusinessQuotePrintPath,
   getBusinessQuotesPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { env, isEmailConfigured } from "@/lib/env";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireSession } from "@/lib/auth/session";
@@ -174,16 +175,15 @@ export default async function QuoteDetailPage({
   const customerQuoteUrl = customerQuotePath
     ? new URL(customerQuotePath, env.BETTER_AUTH_URL).toString()
     : null;
-  const [customerHistory, followUps] = await Promise.all([
-    getCustomerHistoryForBusiness({
-      businessId: businessContext.business.id,
-      customerEmail: quote.customerEmail,
-      customerContactHandle: quote.customerContactHandle,
-      excludeInquiryId: quote.inquiryId,
-      excludeQuoteId: quote.id,
-    }),
-    followUpsPromise,
-  ]);
+  // Customer history streams via Suspense — start early, don't block page render.
+  const customerHistoryPromise = getCustomerHistoryForBusiness({
+    businessId: businessContext.business.id,
+    customerEmail: quote.customerEmail,
+    customerContactHandle: quote.customerContactHandle,
+    excludeInquiryId: quote.inquiryId,
+    excludeQuoteId: quote.id,
+  });
+  const followUps = await followUpsPromise;
 
 
 
@@ -286,7 +286,7 @@ export default async function QuoteDetailPage({
     quote.customerContactMethod,
   );
   const canExportData = hasFeatureAccess(
-    businessContext.business.workspacePlan,
+    businessContext.business.plan,
     "exports",
   );
 
@@ -456,10 +456,12 @@ export default async function QuoteDetailPage({
             <DashboardSidebarStack>
               {linkedInquirySection}
               <QuoteActivitySheetSection activities={quote.activities} />
-              <CustomerHistorySheetSection
-                history={customerHistory}
-                businessSlug={businessSlug}
-              />
+              <Suspense fallback={<QuoteCustomerHistoryFallback />}>
+                <StreamedQuoteCustomerHistory
+                  historyPromise={customerHistoryPromise}
+                  businessSlug={businessSlug}
+                />
+              </Suspense>
             </DashboardSidebarStack>
 
             <DashboardSidebarStack>
@@ -535,10 +537,12 @@ export default async function QuoteDetailPage({
 
             {linkedInquirySection}
             <QuoteActivitySheetSection activities={quote.activities} />
-            <CustomerHistorySheetSection
-              history={customerHistory}
-              businessSlug={businessSlug}
-            />
+            <Suspense fallback={<QuoteCustomerHistoryFallback />}>
+              <StreamedQuoteCustomerHistory
+                historyPromise={customerHistoryPromise}
+                businessSlug={businessSlug}
+              />
+            </Suspense>
           </DashboardSidebarStack>
 
           <DashboardSidebarStack>
@@ -741,7 +745,7 @@ export default async function QuoteDetailPage({
         businessSlug={businessSlug}
         quoteId={quote.id}
         userName={session.user.name || "You"}
-        workspacePlan={businessContext.business.workspacePlan}
+        plan={businessContext.business.plan}
       />
     </DashboardPage>
   );
@@ -957,5 +961,47 @@ function shouldShowPreferredContactTile(contact: {
   return (
     contact.customerContactHandle.trim().length > 0 &&
     contact.customerContactMethod.trim().toLowerCase() !== "email"
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Streamed sections — async components wrapped in Suspense above            */
+/* -------------------------------------------------------------------------- */
+
+async function StreamedQuoteCustomerHistory({
+  historyPromise,
+  businessSlug,
+}: {
+  historyPromise: Promise<Awaited<ReturnType<typeof getCustomerHistoryForBusiness>>>;
+  businessSlug: string;
+}) {
+  const history = await historyPromise;
+
+  return (
+    <CustomerHistorySheetSection
+      history={history}
+      businessSlug={businessSlug}
+    />
+  );
+}
+
+function QuoteCustomerHistoryFallback() {
+  return (
+    <DashboardSection
+      contentClassName="flex flex-col gap-4"
+      description="Past records for this customer."
+      title="Customer history"
+    >
+      <div className="grid animate-pulse gap-3 sm:grid-cols-2">
+        <div className="soft-panel px-4 py-4 shadow-none">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="mt-2 h-5 w-8 rounded bg-muted" />
+        </div>
+        <div className="soft-panel px-4 py-4 shadow-none">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="mt-2 h-5 w-8 rounded bg-muted" />
+        </div>
+      </div>
+    </DashboardSection>
   );
 }

@@ -33,7 +33,7 @@ export default async function QuotePrintPage({
 
   if (
     !hasFeatureAccess(
-      requestContext.businessContext.business.workspacePlan,
+      requestContext.businessContext.business.plan,
       "exports",
     )
   ) {

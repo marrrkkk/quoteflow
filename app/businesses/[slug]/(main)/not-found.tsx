@@ -7,7 +7,7 @@ import {
   getBusinessDashboardPath,
   getBusinessInquiriesPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { getCurrentBusinessRequestContext } from "@/lib/db/business-access";
 
 export default async function DashboardNotFound() {

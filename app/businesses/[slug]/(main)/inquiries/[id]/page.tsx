@@ -9,6 +9,7 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import {
   DashboardDetailLayout,
@@ -76,7 +77,7 @@ import {
   type InquiryWorkflowStatus,
 } from "@/features/inquiries/types";
 import { formatQuoteMoney } from "@/features/quotes/utils";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import {
   getBusinessInquiryExportPath,
   getBusinessNewQuotePath,
@@ -159,25 +160,23 @@ export default async function InquiryDetailPage({
     inquiry.submittedFieldSnapshot,
   );
   const canViewCustomerHistory = hasFeatureAccess(
-    businessContext.business.workspacePlan,
+    businessContext.business.plan,
     "customerHistory",
   );
   const canExportData = hasFeatureAccess(
-    businessContext.business.workspacePlan,
+    businessContext.business.plan,
     "exports",
   );
-  const [customerHistory, followUps] = await Promise.all([
-    canViewCustomerHistory
-      ? getCustomerHistoryForBusiness({
-          businessId: businessContext.business.id,
-          customerEmail: inquiry.customerEmail,
-          customerContactHandle: inquiry.customerContactHandle,
-          excludeInquiryId: inquiry.id,
-          excludeQuoteId: inquiry.relatedQuote?.id ?? null,
-        })
-      : Promise.resolve(null),
-    followUpsPromise,
-  ]);
+  // Customer history + follow-ups stream via Suspense — don't block page render.
+  const customerHistoryPromise = canViewCustomerHistory
+    ? getCustomerHistoryForBusiness({
+        businessId: businessContext.business.id,
+        customerEmail: inquiry.customerEmail,
+        customerContactHandle: inquiry.customerContactHandle,
+        excludeInquiryId: inquiry.id,
+        excludeQuoteId: inquiry.relatedQuote?.id ?? null,
+      })
+    : Promise.resolve(null);
 
   const canGenerateQuote = inquiry.recordState !== "trash";
   const workflowStatus: InquiryWorkflowStatus =
@@ -422,11 +421,13 @@ export default async function InquiryDetailPage({
               noteAction={noteAction}
             />
 
-            <CustomerHistorySheetSection
-              businessSlug={businessSlug}
-              history={customerHistory}
-              locked={!canViewCustomerHistory}
-            />
+            <Suspense fallback={<CustomerHistoryFallback locked={!canViewCustomerHistory} />}>
+              <StreamedCustomerHistory
+                businessSlug={businessSlug}
+                historyPromise={customerHistoryPromise}
+                locked={!canViewCustomerHistory}
+              />
+            </Suspense>
 
             <DashboardSection
               description="Submission and owner actions."
@@ -542,15 +543,17 @@ export default async function InquiryDetailPage({
             ) : null}
           </DashboardSection>
 
-          <FollowUpPanel
-            businessSlug={businessSlug}
-            createAction={createFollowUpAction}
-            ctaDescription="Set a reminder for the next customer touchpoint on this inquiry."
-            defaultChannel={inquiry.customerContactMethod}
-            defaultReason="Follow up with the customer to keep this inquiry moving."
-            defaultTitle={`Follow up with ${inquiry.customerName}`}
-            followUps={followUps}
-          />
+          <Suspense fallback={<FollowUpPanelFallback />}>
+            <StreamedFollowUpPanel
+              businessSlug={businessSlug}
+              createAction={createFollowUpAction}
+              ctaDescription="Set a reminder for the next customer touchpoint on this inquiry."
+              defaultChannel={inquiry.customerContactMethod}
+              defaultReason="Follow up with the customer to keep this inquiry moving."
+              defaultTitle={`Follow up with ${inquiry.customerName}`}
+              followUpsPromise={followUpsPromise}
+            />
+          </Suspense>
 
           <DashboardSection
             contentClassName="flex flex-col gap-4"
@@ -667,7 +670,7 @@ export default async function InquiryDetailPage({
         businessSlug={businessSlug}
         inquiryId={inquiry.id}
         userName={session.user.name || "You"}
-        workspacePlan={businessContext.business.workspacePlan}
+        plan={businessContext.business.plan}
       />
     </DashboardPage>
   );
@@ -867,5 +870,97 @@ function getContactMethodLabel(method: string | null) {
   if (!method) return "Contact";
   return (
     inquiryContactMethodLabels[method as InquiryContactMethod] ?? "Contact"
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Streamed sections — async components wrapped in Suspense above            */
+/* -------------------------------------------------------------------------- */
+
+async function StreamedFollowUpPanel({
+  followUpsPromise,
+  ...props
+}: Omit<React.ComponentProps<typeof FollowUpPanel>, "followUps"> & {
+  followUpsPromise: Promise<Awaited<ReturnType<typeof getFollowUpsForInquiry>>>;
+}) {
+  const followUps = await followUpsPromise;
+
+  return <FollowUpPanel {...props} followUps={followUps} />;
+}
+
+async function StreamedCustomerHistory({
+  businessSlug,
+  historyPromise,
+  locked,
+}: {
+  businessSlug: string;
+  historyPromise: Promise<Awaited<ReturnType<typeof getCustomerHistoryForBusiness>> | null>;
+  locked: boolean;
+}) {
+  const history = await historyPromise;
+
+  return (
+    <CustomerHistorySheetSection
+      businessSlug={businessSlug}
+      history={history}
+      locked={locked}
+    />
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Fallbacks                                                                  */
+/* -------------------------------------------------------------------------- */
+
+function FollowUpPanelFallback() {
+  return (
+    <DashboardSection
+      description="Loading follow-up reminders..."
+      title="Follow-ups"
+    >
+      <div className="flex flex-col gap-3">
+        <div className="soft-panel animate-pulse px-4 py-4 shadow-none">
+          <div className="h-4 w-40 rounded bg-muted" />
+          <div className="mt-2 h-3 w-64 rounded bg-muted" />
+        </div>
+      </div>
+    </DashboardSection>
+  );
+}
+
+function CustomerHistoryFallback({ locked }: { locked: boolean }) {
+  if (locked) {
+    return (
+      <DashboardSection
+        contentClassName="flex flex-col gap-4"
+        description="Past records for this customer email inside the current business."
+        title="Customer history"
+      >
+        <DashboardEmptyState
+          description="Upgrade to Pro to review prior inquiries and quotes for this customer."
+          title="Customer history is a Pro feature"
+          variant="section"
+        />
+      </DashboardSection>
+    );
+  }
+
+  return (
+    <DashboardSection
+      contentClassName="flex flex-col gap-4"
+      description="Past records for this customer email inside the current business."
+      title="Customer history"
+    >
+      <div className="grid animate-pulse gap-3 sm:grid-cols-2">
+        <div className="soft-panel px-4 py-4 shadow-none">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="mt-2 h-5 w-8 rounded bg-muted" />
+        </div>
+        <div className="soft-panel px-4 py-4 shadow-none">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="mt-2 h-5 w-8 rounded bg-muted" />
+        </div>
+      </div>
+    </DashboardSection>
   );
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { RecentBusinessTracker } from "@/features/businesses/components/recent-business-tracker";
 
 import { DashboardShell } from "@/components/shell/dashboard-shell";
+import { DashboardShellSkeleton } from "@/components/shell/dashboard-shell-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeButton } from "@/features/billing/components/upgrade-button";
 import { WorkspaceCheckoutProvider } from "@/features/billing/components/workspace-checkout-provider";
@@ -13,16 +14,18 @@ import { getThemePreferenceForUser } from "@/features/theme/queries";
 import { getWorkspaceBillingOverview } from "@/features/billing/queries";
 import { getBusinessNotificationBellView } from "@/features/notifications/queries";
 import { DashboardNotificationBell } from "@/features/notifications/components/dashboard-notification-bell";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
 import {
   getBusinessContextForMembershipSlug,
   getBusinessMembershipsForUser,
 } from "@/lib/db/business-access";
-import { timed } from "@/lib/dev/server-timing";
 
-export const unstable_instant = false;
-
+/**
+ * Auth gate: resolves session + business membership.
+ * Kept thin so loading.tsx can show fallback instantly during client nav.
+ * Shell data (theme, profile, billing, memberships) streams in via Suspense.
+ */
 export default async function BusinessDashboardLayout({
   children,
   params,
@@ -37,58 +40,92 @@ export default async function BusinessDashboardLayout({
     redirect(workspacesHubPath);
   }
 
-  // Shell data — all use "use cache" so these resolve from cache on repeat navs.
-  // Billing is fetched in parallel so it never blocks shell + page rendering.
-  const [themePreference, allBusinessMemberships, profile, billing] = await timed(
-    "layout:shellData",
-    Promise.all([
-      getThemePreferenceForUser(session.user.id),
-      getBusinessMembershipsForUser(session.user.id),
-      getAccountProfileForUser(session.user.id),
-      getWorkspaceBillingOverview(businessContext.business.workspaceId).catch(
+  // Stream entire shell: sidebar + topbar + children arrive as shell data resolves.
+  // This lets loading.tsx show the DashboardShellSkeleton immediately while
+  // theme, memberships, profile, and billing load in the background.
+  return (
+    <Suspense fallback={<DashboardShellSkeleton>{children}</DashboardShellSkeleton>}>
+      <StreamedDashboardShell
+        userId={session.user.id}
+        userEmail={session.user.email}
+        userName={session.user.name}
+        userImage={session.user.image ?? null}
+        businessContext={businessContext}
+      >
+        {children}
+      </StreamedDashboardShell>
+    </Suspense>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Streamed shell — async server component that resolves shell data          */
+/* -------------------------------------------------------------------------- */
+
+async function StreamedDashboardShell({
+  userId,
+  userEmail,
+  userName,
+  userImage,
+  businessContext,
+  children,
+}: {
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userImage: string | null;
+  businessContext: Awaited<ReturnType<typeof getBusinessContextForMembershipSlug>> & {};
+  children: React.ReactNode;
+}) {
+  // All use "use cache" so these resolve from cache on repeat navs.
+  const [themePreference, allBusinessMemberships, profile, billing] =
+    await Promise.all([
+      getThemePreferenceForUser(userId),
+      getBusinessMembershipsForUser(userId),
+      getAccountProfileForUser(userId),
+      getWorkspaceBillingOverview(businessContext.business.id).catch(
         () => null,
       ),
-    ]),
-  );
+    ]);
 
   // Filter to only show businesses in the current workspace
   const businessMemberships = allBusinessMemberships.filter(
-    (membership) => membership.business.workspaceId === businessContext.business.workspaceId
+    (membership) =>
+      membership.business.id === businessContext.business.id,
   );
 
   const avatarSrc = resolveUserAvatarSrc({
     avatarStoragePath: profile?.avatarStoragePath,
     profileUpdatedAt: profile?.updatedAt,
-    oauthImage: session.user.image ?? null,
+    oauthImage: userImage,
   });
 
   // Notification bell streams independently via Suspense.
-  // The shell renders immediately with a skeleton placeholder for this slot,
-  // then it streams in as its data resolves — no blocking the layout.
   const notificationSlot = (
     <Suspense fallback={<Skeleton className="size-9 rounded-lg" />}>
       <NotificationBellStreamedSection
         businessId={businessContext.business.id}
         businessSlug={businessContext.business.slug}
-        userId={session.user.id}
+        userId={userId}
       />
     </Suspense>
   );
 
-  // Upgrade button uses the already-fetched billing data — no extra fetch needed
-  const upgradeSlot = billing && billing.currentPlan !== "business" ? (
-    <div className="shrink-0">
-      <UpgradeButton
-        className="whitespace-nowrap"
-        currentPlan={billing.currentPlan}
-        defaultCurrency={billing.defaultCurrency}
-        region={billing.region}
-        size="sm"
-        workspaceId={billing.workspaceId}
-        workspaceSlug={billing.workspaceSlug}
-      />
-    </div>
-  ) : null;
+  // Upgrade button uses the already-fetched billing data
+  const upgradeSlot =
+    billing && billing.currentPlan !== "business" ? (
+      <div className="shrink-0">
+        <UpgradeButton
+          className="whitespace-nowrap"
+          currentPlan={billing.currentPlan}
+          defaultCurrency={billing.defaultCurrency}
+          region={billing.region}
+          size="sm"
+          businessId={billing.businessId}
+          businessSlug={billing.businessSlug}
+        />
+      </div>
+    ) : null;
 
   const shellContent = (
     <>
@@ -98,9 +135,9 @@ export default async function BusinessDashboardLayout({
       <DashboardShell
         themePreference={themePreference}
         user={{
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name,
+          id: userId,
+          email: userEmail,
+          name: userName,
           avatarSrc,
         }}
         businessContext={businessContext}
@@ -114,7 +151,6 @@ export default async function BusinessDashboardLayout({
   );
 
   // Wrap with checkout context when billing data is available.
-  // Billing is already fetched in parallel above, so this never blocks.
   if (billing) {
     return (
       <WorkspaceCheckoutProvider billing={billing}>

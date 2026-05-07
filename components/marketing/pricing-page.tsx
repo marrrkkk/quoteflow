@@ -58,6 +58,21 @@ const pricingCategories: PricingFeatureCategory[] = [
     category: "Usage Limits",
     features: [
       {
+        label: "Businesses across workspaces",
+        free: formatUsageLimitValue(
+          "businessesPerWorkspace",
+          getUsageLimit("free", "businessesPerWorkspace"),
+        ),
+        pro: formatUsageLimitValue(
+          "businessesPerWorkspace",
+          getUsageLimit("pro", "businessesPerWorkspace"),
+        ),
+        business: formatUsageLimitValue(
+          "businessesPerWorkspace",
+          getUsageLimit("business", "businessesPerWorkspace"),
+        ),
+      },
+      {
         label: "Inquiries per month",
         free: `${getUsageLimit("free", "inquiriesPerMonth")}`,
         pro: "Unlimited",

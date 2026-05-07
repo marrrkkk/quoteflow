@@ -9,7 +9,7 @@ import { getBusinessMembershipsForUser } from "@/lib/db/business-access";
 import { getSafeAuthRedirectPath } from "@/lib/auth/redirects";
 import { getOptionalSession } from "@/lib/auth/session";
 import { onboardingPath } from "@/features/onboarding/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { createPageMetadata } from "@/lib/seo/site";
 
 export const metadata: Metadata = createPageMetadata({

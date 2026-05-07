@@ -14,9 +14,9 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessKnowledgePage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "knowledgeBase")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "knowledgeBase")) {
     const billingOverview = await getWorkspaceBillingOverview(
-      businessContext.business.workspaceId,
+      businessContext.business.id,
     );
 
     return (
@@ -28,13 +28,13 @@ export default async function BusinessKnowledgePage() {
         />
         <LockedFeaturePage
           feature="knowledgeBase"
-          plan={businessContext.business.workspacePlan}
+          plan={businessContext.business.plan}
           description="Upgrade to save reusable context and train better AI drafts."
           upgradeAction={
             billingOverview
               ? {
-                  workspaceId: billingOverview.workspaceId,
-                  workspaceSlug: billingOverview.workspaceSlug,
+                  businessId: billingOverview.businessId,
+                  businessSlug: billingOverview.businessSlug,
                   currentPlan: billingOverview.currentPlan,
                   region: billingOverview.region,
                   defaultCurrency: billingOverview.defaultCurrency,
@@ -51,7 +51,7 @@ export default async function BusinessKnowledgePage() {
     getMemoryDashboardData(businessContext.business.id),
     getMemorySummaryForBusiness(
       businessContext.business.id,
-      businessContext.business.workspacePlan,
+      businessContext.business.plan,
     ),
   ]);
 

@@ -16,7 +16,7 @@ import {
 import { followUpListFiltersSchema } from "@/features/follow-ups/schemas";
 import type { FollowUpListFilters } from "@/features/follow-ups/types";
 import { getBusinessFollowUpsPath } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 

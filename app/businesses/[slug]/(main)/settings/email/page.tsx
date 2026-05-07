@@ -12,9 +12,9 @@ import { getBusinessOperationalPageContext } from "../_lib/page-context";
 export default async function BusinessEmailTemplateSettingsPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "emailTemplates")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "emailTemplates")) {
     const billingOverview = await getWorkspaceBillingOverview(
-      businessContext.business.workspaceId,
+      businessContext.business.id,
     );
 
     return (
@@ -26,13 +26,13 @@ export default async function BusinessEmailTemplateSettingsPage() {
         />
         <LockedFeaturePage
           feature="emailTemplates"
-          plan={businessContext.business.workspacePlan}
+          plan={businessContext.business.plan}
           description="Upgrade to customize the email message used when sending quotes through Requo."
           upgradeAction={
             billingOverview
               ? {
-                  workspaceId: billingOverview.workspaceId,
-                  workspaceSlug: billingOverview.workspaceSlug,
+                  businessId: billingOverview.businessId,
+                  businessSlug: billingOverview.businessSlug,
                   currentPlan: billingOverview.currentPlan,
                   region: billingOverview.region,
                   defaultCurrency: billingOverview.defaultCurrency,

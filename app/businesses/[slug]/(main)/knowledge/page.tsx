@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import {
   getBusinessSettingsPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 

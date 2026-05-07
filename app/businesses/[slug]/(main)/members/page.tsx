@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { Users } from "lucide-react";
 
 import { DashboardEmptyState } from "@/components/shared/dashboard-layout";
@@ -10,14 +11,13 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getWorkspaceBillingOverview } from "@/features/billing/queries";
 import { getBusinessMembersSettingsForBusiness } from "@/features/business-members/queries";
 import { getBusinessOwnerPageContext } from "@/app/businesses/[slug]/(main)/settings/_lib/page-context";
 import { hasFeatureAccess } from "@/lib/plans";
-import { businessMemberRoleMeta, canManageBusinessMembers } from "@/lib/business-members";
-import { createWorkspaceMemberInviteAction } from "@/features/workspace-members/actions";
-import { BusinessMembersInviteButton } from "@/features/workspace-members/components/business-members-invite-button";
-import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
+import { canManageBusinessMembers } from "@/lib/business-members";
+import { getBusinessContextForUser } from "@/lib/db/business-access";
 
 function getInitials(name: string) {
   return name
@@ -35,44 +35,81 @@ export default async function BusinessMembersPage({
   const { slug } = await params;
   const { user, businessContext } = await getBusinessOwnerPageContext(slug);
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "members")) {
-    const billingOverview = await getWorkspaceBillingOverview(
-      businessContext.business.workspaceId,
-    );
-
+  if (!hasFeatureAccess(businessContext.business.plan, "members")) {
     return (
       <>
         <PageHeader title="Members" />
-        <LockedFeaturePage
-          feature="members"
-          plan={businessContext.business.workspacePlan}
-          description="Upgrade to invite teammates and assign business roles."
-          upgradeAction={
-            billingOverview
-              ? {
-                  workspaceId: billingOverview.workspaceId,
-                  workspaceSlug: billingOverview.workspaceSlug,
-                  currentPlan: billingOverview.currentPlan,
-                  region: billingOverview.region,
-                  defaultCurrency: billingOverview.defaultCurrency,
-                  ctaLabel: "Upgrade to invite members",
-                }
-              : undefined
-          }
-        />
+        <Suspense fallback={<MemberPaywallFallback />}>
+          <StreamedMemberPaywall businessContext={businessContext} />
+        </Suspense>
       </>
     );
   }
 
+  // Stream the member list — header renders immediately.
+  return (
+    <div className="flex flex-col gap-6 lg:gap-8">
+      <PageHeader title="Members" description="Members with access to this business." />
+      <Suspense fallback={<MemberListFallback />}>
+        <StreamedMemberList
+          userId={user.id}
+          businessContext={businessContext}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Streamed sections                                                          */
+/* -------------------------------------------------------------------------- */
+
+async function StreamedMemberPaywall({
+  businessContext,
+}: {
+  businessContext: Awaited<ReturnType<typeof getBusinessOwnerPageContext>>["businessContext"];
+}) {
+  const billingOverview = await getWorkspaceBillingOverview(
+    businessContext.business.id,
+  );
+
+  return (
+    <LockedFeaturePage
+      feature="members"
+      plan={businessContext.business.plan}
+      description="Upgrade to invite teammates and assign business roles."
+      upgradeAction={
+        billingOverview
+          ? {
+              businessId: billingOverview.businessId,
+              businessSlug: billingOverview.businessSlug,
+              currentPlan: billingOverview.currentPlan,
+              region: billingOverview.region,
+              defaultCurrency: billingOverview.defaultCurrency,
+              ctaLabel: "Upgrade to invite members",
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+async function StreamedMemberList({
+  userId,
+  businessContext,
+}: {
+  userId: string;
+  businessContext: Awaited<ReturnType<typeof getBusinessOwnerPageContext>>["businessContext"];
+}) {
   // Members view and workspace context are independent — fetch in parallel.
   const [view, workspaceContext] = await Promise.all([
     getBusinessMembersSettingsForBusiness(
       businessContext.business.id,
-      user.id,
+      userId,
     ),
-    getWorkspaceContextForUser(
-      user.id,
-      businessContext.business.workspaceId,
+    getBusinessContextForUser(
+      userId,
+      businessContext.business.id,
     ),
   ]);
 
@@ -80,32 +117,12 @@ export default async function BusinessMembersPage({
     notFound();
   }
 
-  // Determine if the current user can invite into this business:
-  // - workspace owner/admin can always invite
-  // - business owner/manager can invite (scoped to this business)
-  const isWorkspaceAdmin =
-    workspaceContext?.memberRole === "owner" ||
-    workspaceContext?.memberRole === "admin";
-  const isBusinessManager = canManageBusinessMembers(businessContext.role);
-  const canInvite = isWorkspaceAdmin || isBusinessManager;
+  // Business owner/manager can invite members
+  const canInvite = canManageBusinessMembers(businessContext.role);
 
   return (
-    <div className="flex flex-col gap-6 lg:gap-8">
-      <PageHeader
-        title="Members"
-        description="Members with access to this business."
-        actions={
-          canInvite ? (
-            <BusinessMembersInviteButton
-              workspaceId={businessContext.business.workspaceId}
-              businessId={businessContext.business.id}
-              businessName={businessContext.business.name}
-              createInviteAction={createWorkspaceMemberInviteAction}
-              maxWorkspaceRole={isWorkspaceAdmin ? "admin" : "member"}
-            />
-          ) : undefined
-        }
-      />
+    <>
+      {/* TODO: Re-implement business member invite button */}
 
       <div className="flex flex-col gap-4">
         {view.members.length > 0 ? (
@@ -135,7 +152,7 @@ export default async function BusinessMembersPage({
                               member.role === "owner" ? "secondary" : "outline"
                             }
                           >
-                            {businessMemberRoleMeta[member.role].label}
+                            {member.role === "owner" ? "Owner" : member.role === "manager" ? "Manager" : "Staff"}
                           </Badge>
                           {member.isCurrentUser ? (
                             <Badge variant="outline">You</Badge>
@@ -160,6 +177,40 @@ export default async function BusinessMembersPage({
           />
         )}
       </div>
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Fallbacks                                                                  */
+/* -------------------------------------------------------------------------- */
+
+function MemberListFallback() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-background/50 shadow-sm">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div
+            key={i}
+            className={`flex animate-pulse items-center gap-4 px-4 py-3.5 ${i > 0 ? "border-t border-border/70" : ""}`}
+          >
+            <Skeleton className="size-10 shrink-0 rounded-full" />
+            <div className="flex-1">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="mt-1.5 h-3.5 w-48" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MemberPaywallFallback() {
+  return (
+    <div className="animate-pulse rounded-2xl border border-border/70 bg-background/50 p-8">
+      <Skeleton className="h-5 w-48" />
+      <Skeleton className="mt-3 h-4 w-64" />
     </div>
   );
 }

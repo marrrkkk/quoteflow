@@ -10,7 +10,7 @@ import {
   getBusinessDashboardPath,
   getBusinessDashboardSlugFromPathname,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 
 type DashboardErrorProps = {
   error: Error & { digest?: string };

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db/client";
 import { pushSubscriptions } from "@/lib/db/schema/push-subscriptions";
-import { businessMembers, businesses, workspaces } from "@/lib/db/schema";
+import { businessMembers, businesses } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { isPushConfigured } from "@/lib/env";
 
@@ -62,13 +62,12 @@ export async function POST(request: Request) {
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
-    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(
       and(
         eq(businessMembers.businessId, businessId),
         eq(businessMembers.userId, user.id),
         isNull(businesses.deletedAt),
-        isNull(workspaces.deletedAt),
+        isNull(businesses.deletedAt),
       ),
     )
     .limit(1);

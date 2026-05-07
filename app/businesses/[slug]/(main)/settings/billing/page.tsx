@@ -11,7 +11,7 @@ import { getBusinessOwnerPageContext } from "../_lib/page-context";
 
 export default async function BillingSettingsPage() {
   const { businessContext } = await getBusinessOwnerPageContext();
-  const workspaceId = businessContext.business.workspaceId;
+  const businessId = businessContext.business.id;
 
   const [
     billingOverview,
@@ -20,10 +20,10 @@ export default async function BillingSettingsPage() {
     requoQuoteEmailsThisMonth,
   ] =
     await Promise.all([
-      getWorkspaceBillingOverview(workspaceId),
-      getMonthlyInquiryCount(workspaceId),
-      getMonthlyQuoteCount(workspaceId),
-      getMonthlyRequoQuoteSendCount(workspaceId),
+      getWorkspaceBillingOverview(businessId),
+      getMonthlyInquiryCount(businessId),
+      getMonthlyQuoteCount(businessId),
+      getMonthlyRequoQuoteSendCount(businessId),
     ]);
 
   return (

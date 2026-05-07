@@ -12,7 +12,7 @@ import {
   getBusinessDashboardPath,
   getBusinessInquiryPageEditorPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 
 
 export default async function BusinessInquiryFormPreviewPage({

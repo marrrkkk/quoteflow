@@ -17,7 +17,7 @@ import { quoteListFiltersSchema } from "@/features/quotes/schemas";
 import {
   getBusinessQuotesPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 import { hasFeatureAccess } from "@/lib/plans";
@@ -125,7 +125,7 @@ export default async function QuotesPage({
   });
   const businessSlug = businessContext.business.slug;
   const canExport = hasFeatureAccess(
-    businessContext.business.workspacePlan,
+    businessContext.business.plan,
     "exports",
   );
   const hasNonViewFilters = Boolean(

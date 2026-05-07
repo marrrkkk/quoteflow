@@ -8,7 +8,7 @@ import { getQuoteLibraryForBusiness } from "@/features/quotes/quote-library-quer
 import { getInquiryQuotePrefillForBusiness } from "@/features/quotes/queries";
 import { getBusinessSettingsForBusiness } from "@/features/settings/queries";
 import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import {
   createQuoteEditorLineItem,
   getDefaultQuoteValidityDate,

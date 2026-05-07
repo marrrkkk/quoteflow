@@ -7,7 +7,7 @@ import type { SocialAuthProvider } from "@/features/auth/components/social-auth-
 import { getAccountProfileForUser } from "@/features/account/queries";
 import { getBusinessMembershipsForUser } from "@/lib/db/business-access";
 import { onboardingPath } from "@/features/onboarding/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { getOptionalSession } from "@/lib/auth/session";
 import { createPageMetadata } from "@/lib/seo/site";
 

@@ -35,11 +35,10 @@ import {
   getBusinessNewQuotePath,
 } from "@/features/businesses/routes";
 import { DashboardTour } from "@/features/onboarding/components/dashboard-tour";
-import { getAccountProfileForUser } from "@/features/account/queries";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 import { redirect } from "next/navigation";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 
 type DashboardOverviewPageProps = {
   params: Promise<{ slug: string }>;
@@ -68,10 +67,6 @@ export default async function DashboardOverviewPage({
   const followUpOverviewPromise = getFollowUpOverviewForBusiness(
     businessContext.business.id,
   );
-  // Profile is cached — start it in parallel, only needed for tour-check.
-  const profilePromise = getAccountProfileForUser(session.user.id);
-  const profile = await profilePromise;
-  const showTour = Boolean(profile && !profile.dashboardTourCompletedAt);
 
   return (
     <DashboardPage className="gap-5 xl:gap-6">
@@ -145,7 +140,7 @@ export default async function DashboardOverviewPage({
         />
       </Suspense>
 
-      <DashboardTour show={showTour} />
+      <DashboardTour businessId={businessContext.business.id} />
     </DashboardPage>
   );
 }

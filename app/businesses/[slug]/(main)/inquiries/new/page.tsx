@@ -11,7 +11,7 @@ import { getInquiryEditorFormsForBusiness } from "@/features/inquiries/queries";
 import {
   getBusinessFormsPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
 import { getBusinessContextForMembershipSlug } from "@/lib/db/business-access";
 import Link from "next/link";
@@ -50,7 +50,7 @@ export default async function NewInquiryPage({
       inquiryForms.find((form) => form.slug === requestedFormSlug)?.slug) ??
     inquiryForms[0]?.slug;
   const uploadHelpText = getPublicInquiryAttachmentHelpText(
-    businessContext.business.workspacePlan,
+    businessContext.business.plan,
   );
 
   return (

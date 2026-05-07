@@ -10,12 +10,12 @@ import {
 } from "@/lib/billing/webhook-processor";
 import {
   activateSubscription,
-  getWorkspaceSubscription,
+  getBusinessSubscription,
   updateSubscriptionStatus,
 } from "@/lib/billing/subscription-service";
 import type { BillingInterval } from "@/lib/billing/types";
 import { writeSubscriptionTransitionAuditLogs } from "@/features/audit/subscription";
-import { finalizeScheduledWorkspaceDeletionIfDue } from "@/features/workspaces/mutations";
+
 
 function runAfterResponse(task: () => Promise<unknown> | unknown) {
   try {
@@ -34,7 +34,7 @@ async function getPaymongoAttempt(providerPaymentId: string) {
     .select({
       amount: paymentAttempts.amount,
       plan: paymentAttempts.plan,
-      workspaceId: paymentAttempts.workspaceId,
+      businessId: paymentAttempts.businessId,
     })
     .from(paymentAttempts)
     .where(eq(paymentAttempts.providerPaymentId, providerPaymentId))
@@ -75,7 +75,7 @@ function addBillingPeriod(start: Date, interval: BillingInterval) {
   return end;
 }
 
-async function getLatestPendingPaymongoAttempt(workspaceId: string) {
+async function getLatestPendingPaymongoAttempt(businessId: string) {
   const { db } = await import("@/lib/db/client");
   const { paymentAttempts } = await import("@/lib/db/schema/subscriptions");
   const { and, desc, eq } = await import("drizzle-orm");
@@ -88,7 +88,7 @@ async function getLatestPendingPaymongoAttempt(workspaceId: string) {
     .from(paymentAttempts)
     .where(
       and(
-        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.businessId, businessId),
         eq(paymentAttempts.provider, "paymongo"),
         eq(paymentAttempts.status, "pending"),
       ),
@@ -100,7 +100,7 @@ async function getLatestPendingPaymongoAttempt(workspaceId: string) {
 }
 
 async function expireOtherPendingPaymongoAttempts(
-  workspaceId: string,
+  businessId: string,
   excludeProviderPaymentId?: string | null,
 ) {
   const { db } = await import("@/lib/db/client");
@@ -108,7 +108,7 @@ async function expireOtherPendingPaymongoAttempts(
   const { and, eq, ne } = await import("drizzle-orm");
 
   const conditions = [
-    eq(paymentAttempts.workspaceId, workspaceId),
+    eq(paymentAttempts.businessId, businessId),
     eq(paymentAttempts.provider, "paymongo"),
     eq(paymentAttempts.status, "pending"),
   ];
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
   const matchedAttempt = providerPaymentId
     ? await getPaymongoAttempt(providerPaymentId)
     : null;
-  const workspaceId = matchedAttempt?.workspaceId ?? metadata?.workspace_id;
+  const businessId = matchedAttempt?.businessId ?? metadata?.workspace_id;
   const plan = matchedAttempt?.plan ?? metadata?.plan;
 
   const { eventId: storedEventId, isNew } = await recordWebhookEvent({
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
     provider: "paymongo",
     eventType,
     payload,
-    workspaceId: workspaceId ?? null,
+    businessId: businessId ?? null,
   });
 
   if (!isNew) {
@@ -193,8 +193,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (eventType === "payment.paid" && workspaceId && plan) {
-      const previousSubscription = await getWorkspaceSubscription(workspaceId);
+    if (eventType === "payment.paid" && businessId && plan) {
+      const previousSubscription = await getBusinessSubscription(businessId);
       const amount = (paymentAttributes?.amount as number) ?? 0;
       const billingInterval = inferPaymongoBillingInterval(
         plan,
@@ -205,7 +205,7 @@ export async function POST(request: Request) {
       const periodEnd = addBillingPeriod(now, billingInterval);
       const latestPendingAttempt = paymentIntentId
         ? null
-        : await getLatestPendingPaymongoAttempt(workspaceId);
+        : await getLatestPendingPaymongoAttempt(businessId);
       const resolvedPaymentAttemptId =
         paymentIntentId ?? latestPendingAttempt?.providerPaymentId ?? paymentId;
 
@@ -223,13 +223,13 @@ export async function POST(request: Request) {
             provider: "paymongo",
             providerPaymentId: resolvedPaymentAttemptId,
             status: "succeeded",
-            workspaceId,
+            businessId,
           });
         }
       }
 
       await expireOtherPendingPaymongoAttempts(
-        workspaceId,
+        businessId,
         resolvedPaymentAttemptId,
       );
 
@@ -241,22 +241,22 @@ export async function POST(request: Request) {
         provider: "paymongo",
         providerCheckoutId: paymentId,
         status: "active",
-        workspaceId,
+        businessId,
       });
 
       runAfterResponse(() =>
         writeSubscriptionTransitionAuditLogs({
-          workspaceId,
+          businessId,
           previousSubscription,
           nextSubscription,
           source: "webhook",
           providerEventId: eventId,
         }),
       );
-    } else if (eventType === "payment.failed" && workspaceId) {
+    } else if (eventType === "payment.failed" && businessId) {
       const latestPendingAttempt = providerPaymentId
         ? null
-        : await getLatestPendingPaymongoAttempt(workspaceId);
+        : await getLatestPendingPaymongoAttempt(businessId);
       const resolvedPaymentAttemptId =
         providerPaymentId ?? latestPendingAttempt?.providerPaymentId ?? null;
 
@@ -274,20 +274,20 @@ export async function POST(request: Request) {
             provider: "paymongo",
             providerPaymentId: resolvedPaymentAttemptId,
             status: "failed",
-            workspaceId,
+            businessId,
           });
         }
       }
 
-      const subscription = await getWorkspaceSubscription(workspaceId);
+      const subscription = await getBusinessSubscription(businessId);
 
       if (subscription?.status === "pending") {
-        await updateSubscriptionStatus(workspaceId, "incomplete");
+        await updateSubscriptionStatus(businessId, "incomplete");
       }
-    } else if (eventType === "qrph.expired" && workspaceId) {
+    } else if (eventType === "qrph.expired" && businessId) {
       const latestPendingAttempt = providerPaymentId
         ? null
-        : await getLatestPendingPaymongoAttempt(workspaceId);
+        : await getLatestPendingPaymongoAttempt(businessId);
       const resolvedPaymentAttemptId =
         providerPaymentId ?? latestPendingAttempt?.providerPaymentId ?? null;
 
@@ -305,27 +305,27 @@ export async function POST(request: Request) {
             provider: "paymongo",
             providerPaymentId: resolvedPaymentAttemptId,
             status: "expired",
-            workspaceId,
+            businessId,
           });
         }
       }
 
-      const subscription = await getWorkspaceSubscription(workspaceId);
+      const subscription = await getBusinessSubscription(businessId);
 
       if (subscription?.status === "pending") {
-        await updateSubscriptionStatus(workspaceId, "expired");
+        await updateSubscriptionStatus(businessId, "expired");
       }
     }
 
-    if (workspaceId) {
-      runAfterResponse(() => finalizeScheduledWorkspaceDeletionIfDue(workspaceId));
+    if (businessId) {
+      runAfterResponse(() =>(businessId));
     }
 
     await markEventProcessed(storedEventId);
   } catch {
     console.error("[PayMongo Webhook] Processing error.", {
       eventType,
-      workspaceId: workspaceId ?? null,
+      businessId: businessId ?? null,
     });
     return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   }

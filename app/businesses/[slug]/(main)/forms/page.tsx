@@ -14,7 +14,7 @@ export default async function BusinessFormsPage() {
   const { businessContext } = await getBusinessOperationalPageContext();
   const [settings, billingOverview] = await Promise.all([
     getBusinessInquiryFormsSettingsForBusiness(businessContext.business.id),
-    getWorkspaceBillingOverview(businessContext.business.workspaceId),
+    getWorkspaceBillingOverview(businessContext.business.id),
   ]);
 
   if (!settings) {
@@ -32,12 +32,12 @@ export default async function BusinessFormsPage() {
         createAction={createBusinessInquiryFormAction}
         unarchiveAction={unarchiveBusinessInquiryFormAction}
         settings={settings}
-        workspacePlan={businessContext.business.workspacePlan}
+        plan={businessContext.business.plan}
         billingProps={
           billingOverview
             ? {
-                workspaceId: billingOverview.workspaceId,
-                workspaceSlug: billingOverview.workspaceSlug,
+                businessId: billingOverview.businessId,
+                businessSlug: billingOverview.businessSlug,
                 currentPlan: billingOverview.currentPlan,
                 region: billingOverview.region,
                 defaultCurrency: billingOverview.defaultCurrency,

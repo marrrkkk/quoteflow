@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import {
   getBusinessDashboardPath,
 } from "@/features/businesses/routes";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import {
   getBusinessContextForMembershipSlug,
   hasOperationalBusinessAccess,

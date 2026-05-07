@@ -4,7 +4,7 @@ import { DashboardPage } from "@/components/shared/dashboard-layout";
 import { PageHeader } from "@/components/shared/page-header";
 import { analyticsSections } from "@/features/analytics/config";
 import { AnalyticsTabPanel } from "@/features/analytics/components/analytics-tab-panel";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
 import {
   getBusinessContextForMembershipSlug,
@@ -59,7 +59,7 @@ export default async function AnalyticsPage({
   const activeTab = getAnalyticsTab(resolvedSearchParams.tab);
   const businessId = businessContext.business.id;
   const businessSlug = businessContext.business.slug;
-  const plan = businessContext.business.workspacePlan;
+  const plan = businessContext.business.plan;
   const currency = businessContext.business.defaultCurrency;
 
   return (
@@ -72,11 +72,10 @@ export default async function AnalyticsPage({
 
       <AnalyticsTabPanel
         activeTab={activeTab}
-        businessId={businessId}
+        businessId={businessContext.business.id}
         businessSlug={businessSlug}
         currency={currency}
         plan={plan}
-        workspaceId={businessContext.business.workspaceId}
       />
     </DashboardPage>
   );

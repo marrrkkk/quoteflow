@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { MarketingMobileNav } from "@/components/marketing/marketing-mobile-nav";
 import { Button } from "@/components/ui/button";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 import { getOptionalSession } from "@/lib/auth/session";
 
 export async function PublicHeaderActions() {

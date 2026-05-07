@@ -23,7 +23,7 @@ const SHOW_DELAY_MS = 180;
 const INCREMENT_INTERVAL_MS = 140;
 const COMPLETE_DELAY_MS = 160;
 const RESET_DELAY_MS = 260;
-const STALL_TIMEOUT_MS = 8000;
+const STALL_TIMEOUT_MS = 15000;
 const MIN_VISIBLE_MS = 160;
 const INITIAL_PROGRESS = 16;
 const MAX_PROGRESS = 90;
@@ -177,13 +177,12 @@ export function RouteProgressBar() {
 
     stallRef.current = window.setTimeout(() => {
       if (activeRouteRef.current === nextRoute) {
-        activeRouteRef.current = null;
-        startedAtRef.current = null;
-        setBarState(false, 0);
-        clearPendingWork();
+        // Stalled — complete gracefully instead of hiding abruptly.
+        // This avoids the skeleton-disappears-into-blank-page problem.
+        completeNavigation();
       }
     }, STALL_TIMEOUT_MS);
-  }, [clearPendingWork, setBarState, startVisibleProgress]);
+  }, [clearPendingWork, completeNavigation, setBarState, startVisibleProgress]);
 
   const maybeBeginNavigation = useCallback(
     (nextRoute: string | null, options?: { force?: boolean }) => {
