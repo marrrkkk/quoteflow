@@ -9,7 +9,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 
 /* ── Enums ────────────────────────────────────────────────────────────────── */
 
@@ -54,19 +54,19 @@ export const paymentAttemptStatusEnum = pgEnum("payment_attempt_status", [
   ...paymentAttemptStatuses,
 ]);
 
-/* ── workspace_subscriptions ──────────────────────────────────────────────── */
+/* ── business_subscriptions ──────────────────────────────────────────────── */
 
 /**
- * One row per workspace. The billing source of truth for subscription state.
- * Workspaces without a row are implicitly on the free plan.
+ * One row per business. The billing source of truth for subscription state.
+ * Businesses without a row are implicitly on the free plan.
  */
-export const workspaceSubscriptions = pgTable(
-  "workspace_subscriptions",
+export const businessSubscriptions = pgTable(
+  "business_subscriptions",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     status: subscriptionStatusEnum("status").notNull().default("free"),
     plan: text("plan").notNull(), // "pro" | "business"
     billingProvider: billingProviderEnum("billing_provider").notNull(),
@@ -88,15 +88,18 @@ export const workspaceSubscriptions = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("workspace_subscriptions_workspace_id_unique").on(
-      table.workspaceId,
+    uniqueIndex("business_subscriptions_business_id_unique").on(
+      table.businessId,
     ),
-    index("workspace_subscriptions_status_idx").on(table.status),
-    index("workspace_subscriptions_provider_subscription_id_idx").on(
+    index("business_subscriptions_status_idx").on(table.status),
+    index("business_subscriptions_provider_subscription_id_idx").on(
       table.providerSubscriptionId,
     ),
   ],
 );
+
+/** @deprecated Use `businessSubscriptions` instead. */
+export const workspaceSubscriptions = businessSubscriptions;
 
 /* ── billing_events ───────────────────────────────────────────────────────── */
 
@@ -112,7 +115,7 @@ export const billingEvents = pgTable(
     providerEventId: text("provider_event_id").notNull(),
     provider: billingProviderEnum("provider").notNull(),
     eventType: text("event_type").notNull(),
-    workspaceId: text("workspace_id").references(() => workspaces.id, {
+    businessId: text("business_id").references(() => businesses.id, {
       onDelete: "set null",
     }),
     payload: jsonb("payload").notNull(),
@@ -125,7 +128,7 @@ export const billingEvents = pgTable(
     uniqueIndex("billing_events_provider_event_id_unique").on(
       table.providerEventId,
     ),
-    index("billing_events_workspace_id_idx").on(table.workspaceId),
+    index("billing_events_business_id_idx").on(table.businessId),
     index("billing_events_provider_idx").on(table.provider),
   ],
 );
@@ -139,9 +142,9 @@ export const paymentAttempts = pgTable(
   "payment_attempts",
   {
     id: text("id").primaryKey(),
-    workspaceId: text("workspace_id")
+    businessId: text("business_id")
       .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+      .references(() => businesses.id, { onDelete: "cascade" }),
     plan: text("plan").notNull(),
     provider: billingProviderEnum("provider").notNull(),
     providerPaymentId: text("provider_payment_id").notNull(),
@@ -153,7 +156,7 @@ export const paymentAttempts = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("payment_attempts_workspace_id_idx").on(table.workspaceId),
+    index("payment_attempts_business_id_idx").on(table.businessId),
     index("payment_attempts_provider_payment_id_idx").on(
       table.providerPaymentId,
     ),
