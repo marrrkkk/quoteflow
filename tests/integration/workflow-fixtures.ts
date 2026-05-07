@@ -16,8 +16,6 @@ import {
   quotes,
   user,
   userRecentBusinesses,
-  workspaceMembers,
-  workspaces,
 } from "@/lib/db/schema";
 
 import { testDb } from "./db";
@@ -27,8 +25,6 @@ export type WorkflowFixtureIds = {
   managerUserId: string;
   staffUserId: string;
   outsiderUserId: string;
-  workspaceId: string;
-  otherWorkspaceId: string;
   businessId: string;
   otherBusinessId: string;
   archivedBusinessId: string;
@@ -41,7 +37,6 @@ export type WorkflowFixtureIds = {
   businessSlug: string;
   otherBusinessSlug: string;
   archivedBusinessSlug: string;
-  workspaceSlug: string;
 };
 
 function slugFromPrefix(prefix: string) {
@@ -56,8 +51,6 @@ export function getWorkflowFixtureIds(prefix: string): WorkflowFixtureIds {
     managerUserId: `${prefix}_manager`,
     staffUserId: `${prefix}_staff`,
     outsiderUserId: `${prefix}_outsider`,
-    workspaceId: `${prefix}_workspace`,
-    otherWorkspaceId: `${prefix}_workspace_other`,
     businessId: `${prefix}_business`,
     otherBusinessId: `${prefix}_business_other`,
     archivedBusinessId: `${prefix}_business_archived`,
@@ -70,7 +63,6 @@ export function getWorkflowFixtureIds(prefix: string): WorkflowFixtureIds {
     businessSlug: `${slugPrefix}-business`,
     otherBusinessSlug: `${slugPrefix}-other-business`,
     archivedBusinessSlug: `${slugPrefix}-archived-business`,
-    workspaceSlug: `${slugPrefix}-workspace`,
   };
 }
 
@@ -82,7 +74,6 @@ export async function cleanupWorkflowFixture(prefix: string) {
     ids.staffUserId,
     ids.outsiderUserId,
   ];
-  const workspaceIds = [ids.workspaceId, ids.otherWorkspaceId];
   const businessIds = [
     ids.businessId,
     ids.otherBusinessId,
@@ -107,7 +98,7 @@ export async function cleanupWorkflowFixture(prefix: string) {
     .where(inArray(userRecentBusinesses.businessId, businessIds));
   await testDb
     .delete(auditLogs)
-    .where(inArray(auditLogs.workspaceId, workspaceIds));
+    .where(inArray(auditLogs.businessId, businessIds));
   await testDb.delete(quoteItems).where(inArray(quoteItems.businessId, businessIds));
   await testDb.delete(quotes).where(inArray(quotes.businessId, businessIds));
   await testDb.delete(inquiries).where(inArray(inquiries.businessId, businessIds));
@@ -118,10 +109,6 @@ export async function cleanupWorkflowFixture(prefix: string) {
     .delete(businessMembers)
     .where(inArray(businessMembers.businessId, businessIds));
   await testDb.delete(businesses).where(inArray(businesses.id, businessIds));
-  await testDb
-    .delete(workspaceMembers)
-    .where(inArray(workspaceMembers.workspaceId, workspaceIds));
-  await testDb.delete(workspaces).where(inArray(workspaces.id, workspaceIds));
   await testDb.delete(user).where(inArray(user.id, userIds));
 }
 
@@ -167,68 +154,13 @@ export async function createWorkflowFixture(prefix: string) {
     },
   ]);
 
-  await testDb.insert(workspaces).values([
-    {
-      id: ids.workspaceId,
-      name: "Workflow Workspace",
-      slug: ids.workspaceSlug,
-      plan: "pro",
-      ownerUserId: ids.ownerUserId,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: ids.otherWorkspaceId,
-      name: "Other Workflow Workspace",
-      slug: `${ids.workspaceSlug}-other`,
-      plan: "free",
-      ownerUserId: ids.outsiderUserId,
-      createdAt: now,
-      updatedAt: now,
-    },
-  ]);
-
-  await testDb.insert(workspaceMembers).values([
-    {
-      id: `${prefix}_workspace_member_owner`,
-      workspaceId: ids.workspaceId,
-      userId: ids.ownerUserId,
-      role: "owner",
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: `${prefix}_workspace_member_manager`,
-      workspaceId: ids.workspaceId,
-      userId: ids.managerUserId,
-      role: "member",
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: `${prefix}_workspace_member_staff`,
-      workspaceId: ids.workspaceId,
-      userId: ids.staffUserId,
-      role: "member",
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: `${prefix}_workspace_member_outsider`,
-      workspaceId: ids.otherWorkspaceId,
-      userId: ids.outsiderUserId,
-      role: "owner",
-      createdAt: now,
-      updatedAt: now,
-    },
-  ]);
-
   await testDb.insert(businesses).values([
     {
       id: ids.businessId,
-      workspaceId: ids.workspaceId,
+      ownerUserId: ids.ownerUserId,
       name: "Workflow Business",
       slug: ids.businessSlug,
+      plan: "pro",
       businessType: "general_project_services",
       defaultCurrency: "USD",
       publicInquiryEnabled: true,
@@ -239,9 +171,10 @@ export async function createWorkflowFixture(prefix: string) {
     },
     {
       id: ids.otherBusinessId,
-      workspaceId: ids.otherWorkspaceId,
+      ownerUserId: ids.outsiderUserId,
       name: "Other Workflow Business",
       slug: ids.otherBusinessSlug,
+      plan: "free",
       businessType: "general_project_services",
       defaultCurrency: "USD",
       publicInquiryEnabled: true,
@@ -250,9 +183,10 @@ export async function createWorkflowFixture(prefix: string) {
     },
     {
       id: ids.archivedBusinessId,
-      workspaceId: ids.workspaceId,
+      ownerUserId: ids.ownerUserId,
       name: "Archived Workflow Business",
       slug: ids.archivedBusinessSlug,
+      plan: "pro",
       businessType: "general_project_services",
       defaultCurrency: "USD",
       publicInquiryEnabled: true,

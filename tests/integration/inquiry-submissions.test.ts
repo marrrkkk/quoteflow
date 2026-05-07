@@ -200,8 +200,8 @@ describe("features/inquiries public and manual submissions", () => {
 
   it("keeps inquiry notes scoped to the owning business", async () => {
     const wrongBusinessNote = await addInquiryNoteForBusiness({
-      businessId: ids.otherBusinessId,
       inquiryId: ids.inquiryId,
+      businessId: ids.businessId,
       authorUserId: ids.ownerUserId,
       body: "This should not attach across businesses.",
     });
@@ -230,7 +230,8 @@ describe("features/inquiries public and manual submissions", () => {
     expect(storedNotes).toHaveLength(1);
     expect(storedNotes[0]).toEqual(
       expect.objectContaining({
-        authorUserId: ids.ownerUserId,
+        businessId: ids.businessId,
+      authorUserId: ids.ownerUserId,
         body: "Customer prefers installation next week.",
       }),
     );

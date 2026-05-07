@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   revalidatePathMock,
   requireUserMock,
-  getWorkspaceContextForUserMock,
+  getBusinessContextForUserMock,
   createPendingSubscriptionMock,
-  getWorkspaceSubscriptionMock,
+  getBusinessSubscriptionMock,
   cancelSubscriptionMock,
   updateSubscriptionStatusMock,
   recordPaymentAttemptMock,
@@ -25,9 +25,9 @@ const {
 } = vi.hoisted(() => ({
   revalidatePathMock: vi.fn(),
   requireUserMock: vi.fn(),
-  getWorkspaceContextForUserMock: vi.fn(),
+  getBusinessContextForUserMock: vi.fn(),
   createPendingSubscriptionMock: vi.fn(),
-  getWorkspaceSubscriptionMock: vi.fn(),
+  getBusinessSubscriptionMock: vi.fn(),
   cancelSubscriptionMock: vi.fn(),
   updateSubscriptionStatusMock: vi.fn(),
   recordPaymentAttemptMock: vi.fn(),
@@ -54,8 +54,8 @@ vi.mock("@/lib/auth/session", () => ({
   requireUser: requireUserMock,
 }));
 
-vi.mock("@/lib/db/workspace-access", () => ({
-  getWorkspaceContextForUser: getWorkspaceContextForUserMock,
+vi.mock("@/lib/db/business-access", () => ({
+  getBusinessContextForUser: getBusinessContextForUserMock,
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -65,7 +65,7 @@ vi.mock("@/lib/env", () => ({
 
 vi.mock("@/lib/billing/subscription-service", () => ({
   createPendingSubscription: createPendingSubscriptionMock,
-  getWorkspaceSubscription: getWorkspaceSubscriptionMock,
+  getBusinessSubscription: getBusinessSubscriptionMock,
   cancelSubscription: cancelSubscriptionMock,
   resolveEffectivePlanFromSubscription: (subscription: {
     plan: string;
@@ -107,7 +107,7 @@ vi.mock("@/lib/db/schema/subscriptions", () => ({
     provider: "provider",
     providerPaymentId: "providerPaymentId",
     status: "status",
-    workspaceId: "workspaceId",
+    businessId: "businessId",
   },
 }));
 
@@ -140,7 +140,7 @@ describe("billing actions", () => {
       email: "owner@example.com",
       name: "Owner Example",
     });
-    getWorkspaceContextForUserMock.mockResolvedValue({
+    getBusinessContextForUserMock.mockResolvedValue({
       id: "workspace_123",
       slug: "workspace-123",
       plan: "free",
@@ -166,12 +166,12 @@ describe("billing actions", () => {
       status: "canceled",
     });
     dbSelectLimitMock.mockResolvedValue([]);
-    getWorkspaceSubscriptionMock.mockResolvedValue(null);
+    getBusinessSubscriptionMock.mockResolvedValue(null);
   });
 
   it("routes USD checkout requests to Paddle for workspace owners", async () => {
     const formData = new FormData();
-    formData.set("workspaceId", "workspace_123");
+    formData.set("businessId", "workspace_123");
     formData.set("plan", "pro");
     formData.set("currency", "USD");
 
@@ -180,7 +180,7 @@ describe("billing actions", () => {
     expect(result).toEqual({ paddleTransactionId: "txn_123" });
     expect(createPaddleTransactionMock).toHaveBeenCalledWith({
       plan: "pro",
-      workspaceId: "workspace_123",
+      businessId: "workspace_123",
       userEmail: "owner@example.com",
       userName: "Owner Example",
       interval: "monthly",
@@ -190,7 +190,7 @@ describe("billing actions", () => {
 
   it("creates pending PayMongo state only after a valid QR checkout response", async () => {
     const formData = new FormData();
-    formData.set("workspaceId", "workspace_123");
+    formData.set("businessId", "workspace_123");
     formData.set("plan", "business");
     formData.set("currency", "PHP");
     formData.set("interval", "yearly");
@@ -208,17 +208,17 @@ describe("billing actions", () => {
     });
     expect(createQrPhCheckoutMock).toHaveBeenCalledWith({
       plan: "business",
-      workspaceId: "workspace_123",
+      businessId: "workspace_123",
       interval: "yearly",
     });
     expect(createPendingSubscriptionMock).toHaveBeenCalledWith({
-      workspaceId: "workspace_123",
+      businessId: "workspace_123",
       plan: "business",
       provider: "paymongo",
       currency: "PHP",
     });
     expect(recordPaymentAttemptMock).toHaveBeenCalledWith({
-      workspaceId: "workspace_123",
+      businessId: "workspace_123",
       plan: "business",
       provider: "paymongo",
       providerPaymentId: "pi_123",
@@ -229,7 +229,7 @@ describe("billing actions", () => {
   });
 
   it("reuses an existing pending PayMongo checkout instead of creating a new QR code", async () => {
-    getWorkspaceSubscriptionMock.mockResolvedValue({
+    getBusinessSubscriptionMock.mockResolvedValue({
       status: "pending",
       billingProvider: "paymongo",
     });
@@ -254,7 +254,7 @@ describe("billing actions", () => {
     });
 
     const formData = new FormData();
-    formData.set("workspaceId", "workspace_123");
+    formData.set("businessId", "workspace_123");
     formData.set("plan", "pro");
     formData.set("currency", "PHP");
 
@@ -294,7 +294,7 @@ describe("billing actions", () => {
     });
 
     const formData = new FormData();
-    formData.set("workspaceId", "workspace_123");
+    formData.set("businessId", "workspace_123");
     formData.set("plan", "pro");
     formData.set("currency", "USD");
 
@@ -304,7 +304,7 @@ describe("billing actions", () => {
     expect(getPaddleTransactionMock).not.toHaveBeenCalled();
     expect(createPaddleTransactionMock).toHaveBeenCalledWith({
       plan: "pro",
-      workspaceId: "workspace_123",
+      businessId: "workspace_123",
       userEmail: "owner@example.com",
       userName: "Owner Example",
       interval: "monthly",
@@ -312,7 +312,7 @@ describe("billing actions", () => {
   });
 
   it("returns the current subscription and payment attempt status for checkout sync", async () => {
-    getWorkspaceSubscriptionMock.mockResolvedValue({
+    getBusinessSubscriptionMock.mockResolvedValue({
       plan: "pro",
       status: "active",
     });
@@ -339,14 +339,14 @@ describe("billing actions", () => {
   });
 
   it("cancels pending PayMongo subscriptions locally and revalidates the workspace page", async () => {
-    getWorkspaceSubscriptionMock.mockResolvedValue({
+    getBusinessSubscriptionMock.mockResolvedValue({
       status: "pending",
       billingProvider: "paymongo",
       providerSubscriptionId: null,
     });
 
     const formData = new FormData();
-    formData.set("workspaceId", "workspace_123");
+    formData.set("businessId", "workspace_123");
 
     const result = await cancelSubscriptionAction({}, formData);
 
@@ -354,12 +354,12 @@ describe("billing actions", () => {
     expect(result).toEqual({
       success: "Pending payment canceled.",
     });
-    expect(revalidatePathMock).toHaveBeenCalledWith("/workspaces/workspace-123");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/businesses/workspace-123");
     expect(cancelPaddleSubscriptionMock).not.toHaveBeenCalled();
   });
 
   it("cancels pending QR Ph checkout state when the modal is closed", async () => {
-    getWorkspaceSubscriptionMock.mockResolvedValue({
+    getBusinessSubscriptionMock.mockResolvedValue({
       status: "pending",
       billingProvider: "paymongo",
       providerSubscriptionId: null,
@@ -384,11 +384,11 @@ describe("billing actions", () => {
       "workspace_123",
       "incomplete",
     );
-    expect(revalidatePathMock).toHaveBeenCalledWith("/workspaces/workspace-123");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/businesses/workspace-123");
   });
 
   it("returns already_paid when PayMongo confirms the QR checkout was already completed", async () => {
-    getWorkspaceSubscriptionMock.mockResolvedValue({
+    getBusinessSubscriptionMock.mockResolvedValue({
       status: "pending",
       billingProvider: "paymongo",
       providerSubscriptionId: null,
@@ -413,11 +413,11 @@ describe("billing actions", () => {
       "workspace_123",
       "incomplete",
     );
-    expect(revalidatePathMock).toHaveBeenCalledWith("/workspaces/workspace-123");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/businesses/workspace-123");
   });
 
   it("falls back to local cleanup when PayMongo cancel does not succeed", async () => {
-    getWorkspaceSubscriptionMock.mockResolvedValue({
+    getBusinessSubscriptionMock.mockResolvedValue({
       status: "pending",
       billingProvider: "paymongo",
       providerSubscriptionId: null,

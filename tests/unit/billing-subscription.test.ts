@@ -7,11 +7,11 @@ vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }));
 
 // Mock db module — we only test the pure resolveEffectivePlanFromSubscription function
 vi.mock('@/lib/db/client', () => ({ db: {} }));
-vi.mock('@/lib/db/schema/workspaces', () => ({
-  workspaces: { id: 'id', plan: 'plan', updatedAt: 'updatedAt' },
+vi.mock('@/lib/db/schema/businesses', () => ({
+  businesses: { id: 'id', plan: 'plan', updatedAt: 'updatedAt' },
 }));
 vi.mock('@/lib/db/schema/subscriptions', () => ({
-  workspaceSubscriptions: { workspaceId: 'workspaceId', id: 'id' },
+  businessSubscriptions: { businessId: 'businessId', id: 'id' },
 }));
 
 import { resolveEffectivePlanFromSubscription } from '@/lib/billing/subscription-service';
@@ -27,7 +27,7 @@ function mockSubscription(overrides: Partial<{
 }> = {}) {
   return {
     id: 'sub_test123',
-    workspaceId: 'ws_test123',
+    businessId: 'ws_test123',
     status: overrides.status ?? 'active',
     plan: overrides.plan ?? 'pro',
     billingProvider: 'paymongo' as const,

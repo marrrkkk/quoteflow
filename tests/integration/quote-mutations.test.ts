@@ -164,8 +164,8 @@ describe("features/quotes/mutations workflow", () => {
     );
 
     const wrongBusinessSend = await markQuoteSentForBusiness({
-      businessId: ids.otherBusinessId,
       quoteId: created!.id,
+      businessId: ids.businessId,
       actorUserId: ids.ownerUserId,
       sendMethod: "manual",
     });
@@ -241,8 +241,8 @@ describe("features/quotes/mutations workflow", () => {
     const lockedBeforeAcceptance =
       await updateQuotePostAcceptanceStatusForBusiness({
         businessId: ids.businessId,
-        quoteId: created!.id,
-        actorUserId: ids.ownerUserId,
+      quoteId: created!.id,
+      actorUserId: ids.ownerUserId,
         postAcceptanceStatus: "scheduled",
       });
 

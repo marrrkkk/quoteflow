@@ -47,8 +47,8 @@ import {
   getWorkspaceBusinessActionContext,
   getBusinessContextForMembershipSlug,
 } from "@/lib/db/business-access";
-import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
-import { workspaceSubscriptions, workspaces } from "@/lib/db/schema";
+import { getBusinessContextForUser } from "@/lib/db/business-access";
+import { businessSubscriptions, businesses } from "@/lib/db/schema";
 
 import { closeTestDb, testDb } from "./db";
 import {
@@ -179,13 +179,13 @@ describe("business and workspace access control", () => {
 
   it("uses the authoritative subscription row when cached workspace plan lags", async () => {
     await testDb
-      .update(workspaces)
+      .update(businesses)
       .set({ plan: "free", updatedAt: new Date() })
-      .where(eq(workspaces.id, ids.workspaceId));
+      .where(eq(businesses.id, ids.businessId));
 
-    await testDb.insert(workspaceSubscriptions).values({
+    await testDb.insert(businessSubscriptions).values({
       id: `${prefix}_subscription_active`,
-      workspaceId: ids.workspaceId,
+      businessId: ids.businessId,
       status: "active",
       plan: "business",
       billingProvider: "paddle",
@@ -199,19 +199,18 @@ describe("business and workspace access control", () => {
     try {
       const [businessContext, workspaceContext] = await Promise.all([
         getBusinessContextForMembershipSlug(ids.ownerUserId, ids.businessSlug),
-        getWorkspaceContextForUser(ids.ownerUserId, ids.workspaceId),
+        getBusinessContextForUser(ids.ownerUserId, ids.businessId),
       ]);
 
-      expect(businessContext?.business.workspacePlan).toBe("business");
-      expect(workspaceContext?.plan).toBe("business");
+      expect(businessContext?.business.plan).toBe("business");
     } finally {
       await testDb
-        .delete(workspaceSubscriptions)
-        .where(eq(workspaceSubscriptions.workspaceId, ids.workspaceId));
+        .delete(businessSubscriptions)
+        .where(eq(businessSubscriptions.businessId, ids.businessId));
       await testDb
-        .update(workspaces)
+        .update(businesses)
         .set({ plan: "pro", updatedAt: new Date() })
-        .where(eq(workspaces.id, ids.workspaceId));
+        .where(eq(businesses.id, ids.businessId));
     }
   });
 });

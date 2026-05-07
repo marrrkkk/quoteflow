@@ -109,11 +109,11 @@ describe("quote actions", () => {
           id: "business_123",
           name: "BrightSide Print Studio",
           slug: "brightside-print-studio",
-          workspaceId: "workspace_123",
-          workspacePlan: "free",
+          businessId: "workspace_123",
+          plan: "free",
         },
       },
-    } as Awaited<ReturnType<typeof getWorkspaceBusinessActionContext>>);
+    } as any);
     vi.mocked(getBusinessMessagingSettings).mockResolvedValue({
       defaultEmailSignature: "Thanks, BrightSide Print Studio",
       quoteEmailTemplate: null,

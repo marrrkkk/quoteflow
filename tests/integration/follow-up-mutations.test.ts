@@ -17,8 +17,6 @@ import {
   inquiries,
   quotes,
   user,
-  workspaceMembers,
-  workspaces,
 } from "@/lib/db/schema";
 
 import { closeTestDb, testDb } from "./db";
@@ -30,7 +28,6 @@ vi.mock("@/lib/db/client", async () => {
 });
 
 const ownerUserId = "test_follow_up_owner";
-const workspaceId = "test_follow_up_workspace";
 const businessId = "test_follow_up_business";
 const formId = "test_follow_up_form";
 const inquiryId = "test_follow_up_inquiry";
@@ -44,8 +41,8 @@ async function cleanFixtures() {
   await testDb.delete(businessInquiryForms).where(eq(businessInquiryForms.id, formId));
   await testDb.delete(businessMembers).where(eq(businessMembers.businessId, businessId));
   await testDb.delete(businesses).where(eq(businesses.id, businessId));
-  await testDb.delete(workspaceMembers).where(eq(workspaceMembers.workspaceId, workspaceId));
-  await testDb.delete(workspaces).where(eq(workspaces.id, workspaceId));
+  await testDb.delete(businessMembers).where(eq(businessMembers.businessId, businessId));
+  await testDb.delete(businesses).where(eq(businesses.id, businessId));
   await testDb.delete(user).where(eq(user.id, ownerUserId));
 }
 
@@ -64,8 +61,8 @@ describe("features/follow-ups/mutations", () => {
       updatedAt: now,
     });
 
-    await testDb.insert(workspaces).values({
-      id: workspaceId,
+    await testDb.insert(businesses).values({
+      id: businessId,
       name: "Follow Up Workspace",
       slug: "follow-up-workspace",
       plan: "free",
@@ -74,9 +71,9 @@ describe("features/follow-ups/mutations", () => {
       updatedAt: now,
     });
 
-    await testDb.insert(workspaceMembers).values({
+    await testDb.insert(businessMembers).values({
       id: "test_follow_up_workspace_member",
-      workspaceId,
+      businessId,
       userId: ownerUserId,
       role: "owner",
       createdAt: now,
@@ -85,7 +82,7 @@ describe("features/follow-ups/mutations", () => {
 
     await testDb.insert(businesses).values({
       id: businessId,
-      workspaceId,
+      ownerUserId,
       name: "Follow Up Business",
       slug: "follow-up-business",
       businessType: "general_project_services",
@@ -168,7 +165,6 @@ describe("features/follow-ups/mutations", () => {
 
   it("creates an inquiry follow-up without changing the inquiry", async () => {
     const result = await createFollowUpForBusiness({
-      workspaceId,
       businessId,
       inquiryId,
       actorUserId: ownerUserId,
@@ -191,7 +187,6 @@ describe("features/follow-ups/mutations", () => {
     expect(followUp).toEqual(
       expect.objectContaining({
         businessId,
-        workspaceId,
         inquiryId,
         quoteId: null,
         status: "pending",
@@ -209,7 +204,6 @@ describe("features/follow-ups/mutations", () => {
 
   it("creates a quote follow-up and links the quote's inquiry for history", async () => {
     const result = await createFollowUpForBusiness({
-      workspaceId,
       businessId,
       quoteId,
       actorUserId: ownerUserId,
@@ -233,7 +227,6 @@ describe("features/follow-ups/mutations", () => {
 
   it("completes, reschedules, and skips only pending follow-ups", async () => {
     const created = await createFollowUpForBusiness({
-      workspaceId,
       businessId,
       inquiryId,
       actorUserId: ownerUserId,
@@ -292,7 +285,6 @@ describe("features/follow-ups/mutations", () => {
     );
 
     const createdForSkip = await createFollowUpForBusiness({
-      workspaceId,
       businessId,
       inquiryId,
       actorUserId: ownerUserId,
@@ -322,7 +314,6 @@ describe("features/follow-ups/mutations", () => {
 
   it("does not create follow-ups for records outside the scoped business", async () => {
     const result = await createFollowUpForBusiness({
-      workspaceId,
       businessId,
       inquiryId: "missing_inquiry",
       actorUserId: ownerUserId,

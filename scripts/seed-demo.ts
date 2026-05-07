@@ -3,8 +3,7 @@
  *
  * Complete dev/demo database seeder for Requo.
  *
- * Creates 3 plan-level users (Free, Pro, Business) with realistic workspaces,
- * businesses, subscriptions, inquiries, quotes, and supporting data.
+ * Creates 3 plan-level users (Free, Pro, Business) with realistic  * businesses, subscriptions, inquiries, quotes, and supporting data.
  *
  * Run:  npm run db:seed-demo
  * Reqs: DATABASE_URL + BETTER_AUTH_SECRET in .env
@@ -32,12 +31,10 @@ import {
   quotes,
   replySnippets,
   user,
-  workspaceMembers,
-  workspaces,
-  workspaceSubscriptions,
+      businessSubscriptions,
 } from "../lib/db/schema";
 import { env } from "../lib/env";
-import type { WorkspacePlan } from "../lib/plans/plans";
+import type { BusinessPlan as plan } from "../lib/plans/plans";
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * Constants
@@ -53,7 +50,7 @@ const primaryDemoUser: SeedUserConfig = {
   email: env.DEMO_OWNER_EMAIL ?? "demo@requo.local",
   plan: "business",
   workspaceName: "BrightSide Workspace",
-  workspaceSlug: "brightside-workspace",
+  businessSlug: "brightside-workspace",
   businesses: [
     {
       name: env.DEMO_BUSINESS_NAME ?? "BrightSide Print Studio",
@@ -86,9 +83,9 @@ const primaryDemoUser: SeedUserConfig = {
 type SeedUserConfig = {
   name: string;
   email: string;
-  plan: WorkspacePlan;
+  plan: plan;
   workspaceName: string;
-  workspaceSlug: string;
+  businessSlug: string;
   businesses: SeedBusinessConfig[];
   teamMembers?: SeedTeamMember[];
 };
@@ -119,7 +116,7 @@ const USERS: SeedUserConfig[] = [
     email: "free@requo.dev",
     plan: "free",
     workspaceName: "Maria's Workspace",
-    workspaceSlug: "maria-ws",
+    businessSlug: "maria-ws",
     businesses: [
       {
         name: "Santos Print Shop",
@@ -140,7 +137,7 @@ const USERS: SeedUserConfig[] = [
     email: "pro@requo.dev",
     plan: "pro",
     workspaceName: "Carter Interiors",
-    workspaceSlug: "carter-interiors-ws",
+    businessSlug: "carter-interiors-ws",
     businesses: [
       {
         name: "Carter Interior Design",
@@ -161,7 +158,7 @@ const USERS: SeedUserConfig[] = [
     email: "business@requo.dev",
     plan: "business",
     workspaceName: "Reyes Group",
-    workspaceSlug: "reyes-group-ws",
+    businessSlug: "reyes-group-ws",
     businesses: [
       {
         name: "Reyes Contractors",
@@ -430,7 +427,7 @@ async function resetDatabase() {
     "account",
     "verification",
     "profiles",
-    "workspaces",
+    "businesses",
     "workspace_members",
     "workspace_subscriptions",
     "billing_events",
@@ -932,19 +929,19 @@ async function createWorkspace(
   const wsId = id("ws");
   const now = new Date();
 
-  await db.insert(workspaces).values({
+  await db.insert(businesses).values({
     id: wsId,
     name: config.workspaceName,
-    slug: config.workspaceSlug,
+    slug: config.businessSlug,
     plan: config.plan,
     ownerUserId: ownerId,
     createdAt: daysAgo(180),
     updatedAt: now,
   });
 
-  await db.insert(workspaceMembers).values({
+  await db.insert(businessMembers).values({
     id: id("wm"),
-    workspaceId: wsId,
+    businessId: wsId,
     userId: ownerId,
     role: "owner",
     createdAt: daysAgo(180),
@@ -956,15 +953,15 @@ async function createWorkspace(
     const periodStart = daysAgo(15);
     const periodEnd = addDays(periodStart, 30);
 
-    await db.insert(workspaceSubscriptions).values({
+    await db.insert(businessSubscriptions).values({
       id: id("sub"),
-      workspaceId: wsId,
+      businessId: wsId,
       status: "active",
       plan: config.plan,
       billingProvider: config.plan === "business" ? "paymongo" : "paddle",
       billingCurrency: config.plan === "business" ? "PHP" : "USD",
-      providerCustomerId: `cus_demo_${config.workspaceSlug}`,
-      providerSubscriptionId: `sub_demo_${config.workspaceSlug}`,
+      providerCustomerId: `cus_demo_${config.businessSlug}`,
+      providerSubscriptionId: `sub_demo_${config.businessSlug}`,
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
       createdAt: daysAgo(90),
@@ -995,7 +992,7 @@ async function createBusiness(
 
   await db.insert(businesses).values({
     id: bizId,
-    workspaceId: wsId,
+    ownerUserId: ownerId,
     name: config.name,
     slug: config.slug,
     businessType: config.businessType,
@@ -1327,11 +1324,11 @@ async function main() {
     if (userConfig.teamMembers) {
       for (const tm of userConfig.teamMembers) {
         const tmId = await createUser(tm.name, tm.email);
-        await db.insert(workspaceMembers).values({
+        await db.insert(businessMembers).values({
           id: id("wm"),
-          workspaceId: wsId,
+          businessId: wsId,
           userId: tmId,
-          role: "member",
+          role: "staff",
           createdAt: daysAgo(90),
           updatedAt: new Date(),
         });

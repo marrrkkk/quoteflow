@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { hasFeatureAccess, getRequiredPlan } from "@/lib/plans/entitlements";
-import { getUpgradePlan, isWorkspacePlan } from "@/lib/plans/plans";
+import { getUpgradePlan, isBusinessPlan } from "@/lib/plans/plans";
 import { getUsageLimit, isUsageLimited } from "@/lib/plans/usage-limits";
 
 describe("workspace plan access", () => {
   it("keeps owner-led free limits tight while preserving the upgrade path", () => {
-    expect(isWorkspacePlan("free")).toBe(true);
-    expect(isWorkspacePlan("enterprise")).toBe(false);
+    expect(isBusinessPlan("free")).toBe(true);
+    expect(isBusinessPlan("enterprise")).toBe(false);
     expect(getUpgradePlan("free")).toBe("pro");
 
     expect(getUsageLimit("free", "businessesPerWorkspace")).toBe(1);

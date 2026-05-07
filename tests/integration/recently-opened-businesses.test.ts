@@ -53,7 +53,7 @@ import {
   recordRecentlyOpenedBusiness,
 } from "@/features/businesses/recently-opened";
 import { userRecentBusinesses } from "@/lib/db/schema";
-import { workspacesHubPath } from "@/features/workspaces/routes";
+import { workspacesHubPath } from "@/features/businesses/routes";
 
 import { closeTestDb, testDb } from "./db";
 import {
