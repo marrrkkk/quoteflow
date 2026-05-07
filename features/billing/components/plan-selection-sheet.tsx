@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowUpRight, Briefcase, Building2, XIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +21,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { getPlanPriceLabel } from "@/lib/billing/plans";
-import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getMonthlyEquivalentLabel,
+  getPlanPriceLabel,
+  getYearlySavingsPercent,
+} from "@/lib/billing/plans";
+import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { planMeta } from "@/lib/plans";
 import type { WorkspacePlan } from "@/lib/plans/plans";
 import { cn } from "@/lib/utils";
@@ -49,7 +55,7 @@ type PlanSelectionSheetProps = {
   defaultCurrency: BillingCurrency;
   region: BillingRegion;
   targetPlan?: PaidPlan;
-  onSelectPlan: (plan: PaidPlan) => void;
+  onSelectPlan: (plan: PaidPlan, interval: BillingInterval) => void;
 };
 
 export function PlanSelectionSheet({
@@ -61,6 +67,7 @@ export function PlanSelectionSheet({
   targetPlan,
   onSelectPlan,
 }: PlanSelectionSheetProps) {
+  const [interval, setInterval] = useState<BillingInterval>("monthly");
   const preferredPlan =
     targetPlan && targetPlan !== currentPlan
       ? targetPlan
@@ -92,6 +99,26 @@ export function PlanSelectionSheet({
         </DrawerClose>
 
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+          {/* Billing interval toggle */}
+          <Tabs
+            onValueChange={(value) =>
+              setInterval(value === "yearly" ? "yearly" : "monthly")
+            }
+            value={interval}
+          >
+            <TabsList className="w-full max-w-xs">
+              <TabsTrigger className="flex-1" value="monthly">
+                Monthly
+              </TabsTrigger>
+              <TabsTrigger className="flex-1" value="yearly">
+                Yearly
+                <Badge variant="secondary">
+                  -{getYearlySavingsPercent("pro", defaultCurrency)}%
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <div className="grid gap-5 md:grid-cols-2">
             {paidPlans.map((plan) => {
               const isCurrentPlan = currentPlan === plan;
@@ -140,10 +167,17 @@ export function PlanSelectionSheet({
                   <CardContent className="flex flex-1 flex-col gap-4">
                     <div className="flex items-end justify-between gap-3">
                       <div>
-                        <p className="meta-label">Monthly starting price</p>
-                        <p className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-                          {getPlanPriceLabel(plan, defaultCurrency, "monthly")}
+                        <p className="meta-label">
+                          {interval === "yearly" ? "Yearly price" : "Monthly price"}
                         </p>
+                        <p className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+                          {getPlanPriceLabel(plan, defaultCurrency, interval)}
+                        </p>
+                        {interval === "yearly" ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {getMonthlyEquivalentLabel(plan, defaultCurrency)} per month
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     <div className="grid gap-2">
@@ -158,7 +192,7 @@ export function PlanSelectionSheet({
                     <Button
                       className="w-full"
                       disabled={isCurrentPlan}
-                      onClick={() => onSelectPlan(plan)}
+                      onClick={() => onSelectPlan(plan, interval)}
                       size="lg"
                       type="button"
                     >

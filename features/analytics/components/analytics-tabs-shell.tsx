@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import React, { useState, useTransition, type ReactNode } from "react";
 import {
   BarChart3,
   GitCompareArrows,
   Timer,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
+import { MobileTabsCombobox } from "@/components/shared/mobile-tabs-combobox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { analyticsSections, type AnalyticsSectionId } from "@/features/analytics/config";
 import { AnalyticsTabContentFallback } from "@/features/analytics/components/analytics-tab-content-fallback";
+import { useProgressRouter } from "@/hooks/use-progress-router";
+import { cn } from "@/lib/utils";
 
 const analyticsTabItems = [
   {
@@ -58,7 +60,7 @@ export function AnalyticsTabsShell({
   pathname,
   children,
 }: AnalyticsTabsShellProps) {
-  const router = useRouter();
+  const router = useProgressRouter();
   const [isPending, startTransition] = useTransition();
   const [requestedTab, setRequestedTab] = useState<AnalyticsSectionId | null>(null);
 
@@ -83,24 +85,35 @@ export function AnalyticsTabsShell({
     });
   }
 
+  const activeTabItem =
+    analyticsTabItems.find((item) => item.id === displayedTab) ?? analyticsTabItems[0];
+
   return (
     <Tabs
       className="flex flex-col gap-6"
       onValueChange={handleValueChange}
       value={displayedTab}
     >
-      <TabsList>
-        {analyticsTabItems.map((tab) => {
-          const Icon = tab.icon;
+      <MobileTabsCombobox
+        groups={[{ items: analyticsTabItems.map(t => ({ label: t.label, value: t.id, icon: t.icon })) }]}
+        activeValue={activeTabItem.id}
+        onValueChange={handleValueChange}
+      />
 
-          return (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              <Icon className="size-4" />
-              {tab.label}
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
+      <div className="hidden sm:block">
+        <TabsList>
+          {analyticsTabItems.map((tab) => {
+            const Icon = tab.icon;
+
+            return (
+              <TabsTrigger key={tab.id} value={tab.id}>
+                <Icon className="size-4" />
+                {tab.label}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </div>
 
       <TabsContent forceMount value={displayedTab}>
         {showFallback ? (
@@ -112,3 +125,5 @@ export function AnalyticsTabsShell({
     </Tabs>
   );
 }
+
+

@@ -34,7 +34,8 @@ export default async function BillingSettingsPage() {
         description="Manage your workspace subscription, payment method, and billing details."
       />
 
-      {billingOverview ? (
+      <div className="mx-auto w-full max-w-5xl">
+        {billingOverview ? (
         <BillingStatusCard
           billing={billingOverview}
           freePlanUsage={
@@ -47,7 +48,8 @@ export default async function BillingSettingsPage() {
               : undefined
           }
         />
-      ) : null}
+        ) : null}
+      </div>
     </>
   );
 }

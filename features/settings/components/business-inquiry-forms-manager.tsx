@@ -69,7 +69,7 @@ import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { hasFeatureAccess } from "@/lib/plans";
 import type { WorkspacePlan } from "@/lib/plans/plans";
-import type { BillingCurrency, BillingRegion, PaidPlan } from "@/lib/billing/types";
+import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
 import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
@@ -117,21 +117,27 @@ export function BusinessInquiryFormsManager({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isPlanSheetOpen, setIsPlanSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
+  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>('monthly');
   const [/* unarchiveState */, unarchiveFormAction, isUnarchivePending] = useActionStateWithSonner(
     unarchiveAction,
     initialState,
   );
-  const nameError = createState.fieldErrors?.name?.[0];
-  const businessTypeError = createState.fieldErrors?.businessType?.[0];
-  const activeForms = settings.forms.filter((form) => !form.archivedAt);
-  const archivedForms = settings.forms.filter((form) => form.archivedAt);
-  const canCreateAdditionalForms =
-    hasFeatureAccess(workspacePlan, "multipleForms") || activeForms.length === 0;
   const useSharedCheckout = Boolean(
     workspaceCheckout &&
       billingProps &&
       workspaceCheckout.workspaceId === billingProps.workspaceId,
   );
+  const effectiveWorkspacePlan =
+    useSharedCheckout && workspaceCheckout
+      ? workspaceCheckout.currentPlan
+      : workspacePlan;
+  const nameError = createState.fieldErrors?.name?.[0];
+  const businessTypeError = createState.fieldErrors?.businessType?.[0];
+  const activeForms = settings.forms.filter((form) => !form.archivedAt);
+  const archivedForms = settings.forms.filter((form) => form.archivedAt);
+  const canCreateAdditionalForms =
+    hasFeatureAccess(effectiveWorkspacePlan, "multipleForms") ||
+    activeForms.length === 0;
 
   return (
     <TooltipProvider>
@@ -369,8 +375,9 @@ export function BusinessInquiryFormsManager({
                     currentPlan={billingProps.currentPlan}
                     defaultCurrency={billingProps.defaultCurrency}
                     onOpenChange={setIsPlanSheetOpen}
-                    onSelectPlan={(plan) => {
+                    onSelectPlan={(plan, interval) => {
                       setSelectedPlan(plan);
+                      setSelectedInterval(interval);
                       setIsPlanSheetOpen(false);
                       setIsCheckoutOpen(true);
                     }}
@@ -384,6 +391,7 @@ export function BusinessInquiryFormsManager({
                       onOpenChange={setIsCheckoutOpen}
                       open={isCheckoutOpen}
                       plan={selectedPlan}
+                      interval={selectedInterval}
                       region={billingProps.region}
                       workspaceId={billingProps.workspaceId}
                       workspaceSlug={billingProps.workspaceSlug}
@@ -455,13 +463,14 @@ export function BusinessInquiryFormsManager({
                       </Button>
                     )}
 
-                    <Button asChild type="button" variant="outline">
+                    <Button asChild type="button" variant="outline" className="px-3 sm:px-4">
                       <Link
                         href={getBusinessInquiryFormEditorPath(settings.slug, form.slug)}
                         prefetch={true}
                       >
-                        <PencilLine data-icon="inline-start" />
-                        Edit
+                        <PencilLine className="size-4 sm:-ml-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Edit</span>
+                        <span className="sr-only">Edit</span>
                       </Link>
                     </Button>
                   </div>
@@ -589,9 +598,10 @@ function FormShareDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" type="button">
-          <Link2 data-icon="inline-start" />
-          Share
+        <Button variant="outline" type="button" className="px-3 sm:px-4">
+          <Link2 className="size-4 sm:-ml-1 sm:mr-2" />
+          <span className="hidden sm:inline">Share</span>
+          <span className="sr-only">Share</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -629,3 +639,4 @@ function FormShareDialog({
     </Dialog>
   );
 }
+

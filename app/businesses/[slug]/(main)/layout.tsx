@@ -38,13 +38,16 @@ export default async function BusinessDashboardLayout({
   }
 
   // Shell data — all use "use cache" so these resolve from cache on repeat navs.
-  // Profile + memberships run in parallel; theme is also parallelized.
-  const [themePreference, allBusinessMemberships, profile] = await timed(
+  // Billing is fetched in parallel so it never blocks shell + page rendering.
+  const [themePreference, allBusinessMemberships, profile, billing] = await timed(
     "layout:shellData",
     Promise.all([
       getThemePreferenceForUser(session.user.id),
       getBusinessMembershipsForUser(session.user.id),
       getAccountProfileForUser(session.user.id),
+      getWorkspaceBillingOverview(businessContext.business.workspaceId).catch(
+        () => null,
+      ),
     ]),
   );
 
@@ -59,9 +62,9 @@ export default async function BusinessDashboardLayout({
     oauthImage: session.user.image ?? null,
   });
 
-  // Notification bell and upgrade button stream independently via Suspense.
-  // The shell renders immediately with skeleton placeholders for these slots,
-  // then each streams in as its data resolves — no blocking the layout.
+  // Notification bell streams independently via Suspense.
+  // The shell renders immediately with a skeleton placeholder for this slot,
+  // then it streams in as its data resolves — no blocking the layout.
   const notificationSlot = (
     <Suspense fallback={<Skeleton className="size-9 rounded-lg" />}>
       <NotificationBellStreamedSection
@@ -72,39 +75,55 @@ export default async function BusinessDashboardLayout({
     </Suspense>
   );
 
-  // Upgrade button streams via Suspense — billing calls headers() which is dynamic
-  const upgradeSlot = (
-    <Suspense fallback={null}>
-      <UpgradeButtonStreamedSection
-        workspaceId={businessContext.business.workspaceId}
+  // Upgrade button uses the already-fetched billing data — no extra fetch needed
+  const upgradeSlot = billing && billing.currentPlan !== "business" ? (
+    <div className="shrink-0">
+      <UpgradeButton
+        className="whitespace-nowrap"
+        currentPlan={billing.currentPlan}
+        defaultCurrency={billing.defaultCurrency}
+        region={billing.region}
+        size="sm"
+        workspaceId={billing.workspaceId}
+        workspaceSlug={billing.workspaceSlug}
       />
-    </Suspense>
+    </div>
+  ) : null;
+
+  const shellContent = (
+    <>
+      <RecentBusinessTracker
+        businessSlug={businessContext.business.slug}
+      />
+      <DashboardShell
+        themePreference={themePreference}
+        user={{
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name,
+          avatarSrc,
+        }}
+        businessContext={businessContext}
+        businessMemberships={businessMemberships}
+        notificationSlot={notificationSlot}
+        upgradeSlot={upgradeSlot}
+      >
+        {children}
+      </DashboardShell>
+    </>
   );
 
-  return (
-    <Suspense fallback={null}>
-      <BillingShellProvider workspaceId={businessContext.business.workspaceId}>
-        <RecentBusinessTracker
-          businessSlug={businessContext.business.slug}
-        />
-        <DashboardShell
-          themePreference={themePreference}
-          user={{
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.name,
-            avatarSrc,
-          }}
-          businessContext={businessContext}
-          businessMemberships={businessMemberships}
-          notificationSlot={notificationSlot}
-          upgradeSlot={upgradeSlot}
-        >
-          {children}
-        </DashboardShell>
-      </BillingShellProvider>
-    </Suspense>
-  );
+  // Wrap with checkout context when billing data is available.
+  // Billing is already fetched in parallel above, so this never blocks.
+  if (billing) {
+    return (
+      <WorkspaceCheckoutProvider billing={billing}>
+        {shellContent}
+      </WorkspaceCheckoutProvider>
+    );
+  }
+
+  return shellContent;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -141,50 +160,3 @@ async function NotificationBellStreamedSection({
     />
   );
 }
-
-async function UpgradeButtonStreamedSection({
-  workspaceId,
-}: {
-  workspaceId: string;
-}) {
-  const billing = await getWorkspaceBillingOverview(workspaceId);
-
-  if (!billing || billing.currentPlan === "business") {
-    return null;
-  }
-
-  return (
-    <div className="shrink-0">
-      <UpgradeButton
-        className="whitespace-nowrap"
-        currentPlan={billing.currentPlan}
-        defaultCurrency={billing.defaultCurrency}
-        region={billing.region}
-        size="sm"
-        workspaceId={billing.workspaceId}
-        workspaceSlug={billing.workspaceSlug}
-      />
-    </div>
-  );
-}
-
-async function BillingShellProvider({
-  children,
-  workspaceId,
-}: {
-  children: React.ReactNode;
-  workspaceId: string;
-}) {
-  const billing = await getWorkspaceBillingOverview(workspaceId);
-
-  if (!billing) {
-    return <>{children}</>;
-  }
-
-  return (
-    <WorkspaceCheckoutProvider billing={billing}>
-      {children}
-    </WorkspaceCheckoutProvider>
-  );
-}
-

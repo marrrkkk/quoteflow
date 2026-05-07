@@ -15,13 +15,7 @@ import {
   Clock,
   CircleMinus,
   CircleDashed,
-  Briefcase,
-  Building2,
   CalendarDays,
-  Receipt,
-  Shield,
-  Check,
-  X,
   ArrowUpRight,
 } from "lucide-react";
 
@@ -40,19 +34,16 @@ import { Alert } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { PlanBadge } from "@/components/shared/paywall";
+import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 import { UpgradeButton } from "@/features/billing/components/upgrade-button";
 import { cancelSubscriptionAction } from "@/features/billing/actions";
 import { clearCachedPendingCheckout, clearCachedPendingQrCheckout } from "@/features/billing/pending-checkout";
 import type { WorkspaceBillingOverview, CancelActionState } from "@/features/billing/types";
-import { planMeta, getUsageLimit, planFeatures, hasFeatureAccess, planFeatureLabels, formatUsageLimitValue } from "@/lib/plans";
-import type { UsageLimitKey } from "@/lib/plans";
-import { getPlanPriceLabel, getCurrencySymbol } from "@/lib/billing/plans";
+import { planMeta, getUsageLimit } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 type BillingStatusCardProps = {
   billing: WorkspaceBillingOverview;
-  /** When false, hides the plan comparison grid (e.g. workspace overview). */
-  showPlanComparison?: boolean;
   /** Free plan usage meters (workspace-wide). */
   freePlanUsage?: {
     inquiries: number;
@@ -64,12 +55,16 @@ type BillingStatusCardProps = {
 
 export function BillingStatusCard({
   billing,
-  showPlanComparison = true,
   freePlanUsage,
   variant = "full",
 }: BillingStatusCardProps) {
-  const { subscription, currentPlan, workspaceId, workspaceSlug, region, defaultCurrency } =
+  const { subscription, currentPlan: billingCurrentPlan, workspaceId, workspaceSlug, region, defaultCurrency } =
     billing;
+  const workspaceCheckout = useWorkspaceCheckout();
+  const currentPlan =
+    workspaceCheckout?.workspaceId === workspaceId
+      ? workspaceCheckout.currentPlan
+      : billingCurrentPlan;
   const [cancelState, cancelAction, isCanceling] = useActionState(
     cancelSubscriptionAction,
     {} as CancelActionState,
@@ -104,7 +99,8 @@ export function BillingStatusCard({
   }, [hasPendingSubscription, subscription?.provider, workspaceId]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:justify-center">
+      <div className="flex flex-col gap-6">
       {/* Current plan overview */}
       <Card className={cn(isOverviewVariant && "gap-0")}>
         {isOverviewVariant ? (
@@ -178,44 +174,7 @@ export function BillingStatusCard({
         ) : null}
       </Card>
 
-      {/* Plan Features */}
-      {variant === "full" ? (
-        <Card>
-          <CardHeader>
-          <CardTitle className="text-lg">Plan features</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-3">
-            {planFeatures.map((feature) => {
-              const hasAccess = hasFeatureAccess(currentPlan, feature);
-              return (
-                <div key={feature} className="flex items-center gap-3 text-sm">
-                  {hasAccess ? (
-                    <Check className="size-4 shrink-0 text-emerald-500" />
-                  ) : (
-                    <X className="size-4 shrink-0 text-muted-foreground/60" />
-                  )}
-                  <span className={cn(hasAccess ? "text-foreground" : "text-muted-foreground")}>
-                    {planFeatureLabels[feature]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="my-1 border-t border-border/40" />
-
-          <div className="flex flex-col gap-2">
-            <PlanLimit label="Inquiries limit" limitKey="inquiriesPerMonth" value={getUsageLimit(currentPlan, "inquiriesPerMonth")} />
-            <PlanLimit label="Quotes limit" limitKey="quotesPerMonth" value={getUsageLimit(currentPlan, "quotesPerMonth")} />
-            <PlanLimit label="Businesses limit" limitKey="businessesPerWorkspace" value={getUsageLimit(currentPlan, "businessesPerWorkspace")} />
-            <PlanLimit label="Members limit" limitKey="membersPerWorkspace" value={getUsageLimit(currentPlan, "membersPerWorkspace")} />
-            <PlanLimit label="Custom fields" limitKey="customFieldsPerForm" value={getUsageLimit(currentPlan, "customFieldsPerForm")} />
-            <PlanLimit label="Upload size" limitKey="publicInquiryAttachmentMaxBytes" value={getUsageLimit(currentPlan, "publicInquiryAttachmentMaxBytes")} />
-          </div>
-        </CardContent>
-      </Card>
-      ) : null}
+      
 
       {/* Billing Details */}
       {hasSubscription && variant === "full" ? (
@@ -224,10 +183,10 @@ export function BillingStatusCard({
             <CardTitle className="text-lg">Billing details</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
-            <div className="soft-panel grid gap-0 divide-y divide-border/60 overflow-hidden rounded-xl px-0 py-0">
+            <div className="grid gap-3">
               {subscription.provider ? (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/20 px-4 py-3">
+                  <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
                     {subscription.provider === "paymongo" ? (
                       <QrCode className="size-4" />
                     ) : (
@@ -237,27 +196,15 @@ export function BillingStatusCard({
                   </div>
                   <span className="text-sm font-medium text-foreground">
                     {subscription.provider === "paymongo"
-                      ? "QR Ph (GCash, Maya)"
-                      : "Credit / debit card"}
-                  </span>
-                </div>
-              ) : null}
-
-              {subscription.currency ? (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Receipt className="size-4" />
-                    <span>Billing currency</span>
-                  </div>
-                  <span className="text-sm font-medium text-foreground">
-                    {subscription.currency}
+                      ? "QR Ph"
+                      : "Card"}
                   </span>
                 </div>
               ) : null}
 
               {subscription.currentPeriodEnd ? (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/20 px-4 py-3">
+                  <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
                     <CalendarDays className="size-4" />
                     <span>
                       {subscription.canceledAt || subscription.status === "canceled"
@@ -267,23 +214,7 @@ export function BillingStatusCard({
                   </div>
                   <span className="text-sm font-medium text-foreground">
                     {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              ) : null}
-
-              {subscription.currentPeriodStart ? (
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Shield className="size-4" />
-                    <span>Billing period started</span>
-                  </div>
-                  <span className="text-sm font-medium text-foreground">
-                    {new Date(subscription.currentPeriodStart).toLocaleDateString("en-US", {
-                      month: "long",
+                      month: "short",
                       day: "numeric",
                       year: "numeric",
                     })}
@@ -350,14 +281,14 @@ export function BillingStatusCard({
       ) : null}
 
       {isFreePlan && freePlanUsage ? (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Free plan usage</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Monthly counts reset on the first day of each month (UTC).
+        <Card className="self-start">
+          <CardHeader>
+            <CardTitle className="text-lg">Usage</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Resets monthly on the 1st (UTC)
             </p>
           </CardHeader>
-          <CardContent className="grid gap-6">
+          <CardContent className="grid gap-5">
             <UsageMeter
               current={freePlanUsage.inquiries}
               label="Inquiries"
@@ -370,72 +301,13 @@ export function BillingStatusCard({
             />
             <UsageMeter
               current={freePlanUsage.requoQuoteEmailsThisMonth}
-              label="Email sent"
+              label="Emails sent"
               limit={getUsageLimit("free", "requoQuoteEmailsPerMonth") ?? 30}
             />
           </CardContent>
         </Card>
       ) : null}
-
-      {/* Plan comparison — optional; hidden on workspace overview */}
-      {showPlanComparison && (isFreePlan || currentPlan === "pro") ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Compare plans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {(["free", "pro", "business"] as const).map((plan) => {
-                const isCurrent = plan === currentPlan;
-                const meta = planMeta[plan];
-                const PlanIcon = plan === "pro" ? Briefcase : plan === "business" ? Building2 : null;
-
-                return (
-                  <div
-                    className={cn(
-                      "relative flex flex-col gap-3 rounded-xl border p-4",
-                      isCurrent
-                        ? "border-primary/30 bg-accent/20 shadow-[0_0_0_1px_hsl(var(--primary)/0.1)]"
-                        : "border-border/60 bg-card/40",
-                    )}
-                    key={plan}
-                  >
-                    {isCurrent ? (
-                      <Badge variant="secondary" className="absolute -top-2.5 right-3 border-primary/20 bg-primary/10 text-primary dark:border-primary/25 dark:bg-primary/15">
-                        Current
-                      </Badge>
-                    ) : null}
-                    <div className="flex items-center gap-2">
-                      {PlanIcon ? <PlanIcon className={cn("size-4", plan === "pro" ? "text-primary" : "text-violet-500")} /> : null}
-                      <p className="text-sm font-semibold text-foreground">{meta.label}</p>
-                    </div>
-                    <p className="font-heading text-xl font-semibold tracking-tight text-foreground">
-                      {plan === "free"
-                        ? `${getCurrencySymbol(defaultCurrency)}0`
-                        : getPlanPriceLabel(plan, defaultCurrency).replace("/mo", "")}
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {plan === "free" ? " /forever" : " /mo"}
-                      </span>
-                    </p>
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {meta.description}
-                    </p>
-                    {/* Key limits */}
-                    <div className="mt-auto flex flex-col gap-1.5 pt-2">
-                      <PlanLimit label="Inquiries" limitKey="inquiriesPerMonth" value={getUsageLimit(plan, "inquiriesPerMonth")} />
-                      <PlanLimit label="Quotes" limitKey="quotesPerMonth" value={getUsageLimit(plan, "quotesPerMonth")} />
-                      <PlanLimit label="Businesses" limitKey="businessesPerWorkspace" value={getUsageLimit(plan, "businessesPerWorkspace")} />
-                      <PlanLimit label="Members" limitKey="membersPerWorkspace" value={getUsageLimit(plan, "membersPerWorkspace")} />
-                      <PlanLimit label="Fields" limitKey="customFieldsPerForm" value={getUsageLimit(plan, "customFieldsPerForm")} />
-                      <PlanLimit label="Uploads" limitKey="publicInquiryAttachmentMaxBytes" value={getUsageLimit(plan, "publicInquiryAttachmentMaxBytes")} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+      </div>
     </div>
   );
 }
@@ -473,26 +345,6 @@ function UsageMeter({
   );
 }
 
-/* ── Plan limit row ──────────────────────────────────────────────────────── */
-
-function PlanLimit({
-  label,
-  limitKey,
-  value,
-}: {
-  label: string;
-  limitKey: UsageLimitKey;
-  value: number | null;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-foreground">
-        {formatUsageLimitValue(limitKey, value)}
-      </span>
-    </div>
-  );
-}
 
 /* ── Status badge ─────────────────────────────────────────────────────────── */
 

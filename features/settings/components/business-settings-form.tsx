@@ -800,7 +800,7 @@ function BusinessLogoField({
   return (
     <>
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center xl:flex-col xl:items-start">
+        <div className="flex min-w-0 flex-col items-center text-center gap-4 xl:flex-col xl:items-center xl:text-center">
           <div className="group relative shrink-0">
             <input
               ref={inputRef}
@@ -830,7 +830,7 @@ function BusinessLogoField({
             </div>
             <label
               className={cn(
-                "absolute inset-0 flex cursor-pointer items-end justify-end rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15",
+                "absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15",
                 disabled && "pointer-events-none cursor-default opacity-60",
               )}
               htmlFor="settings-logo"
@@ -848,8 +848,8 @@ function BusinessLogoField({
               role="button"
               tabIndex={disabled ? -1 : 0}
             >
-              <span className="absolute inset-0 rounded-xl bg-foreground/0 transition-colors duration-150 sm:group-hover:bg-foreground/10 sm:group-focus-within:bg-foreground/10" />
-              <span className="relative m-1.5 inline-flex size-9 items-center justify-center rounded-full border border-border/80 bg-background/95 text-foreground shadow-[var(--surface-shadow-sm)] transition-[transform,opacity] duration-150 opacity-100 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100">
+              <span className="absolute inset-0 rounded-xl bg-foreground/0 transition-colors duration-150 sm:group-hover:bg-foreground/20 sm:group-focus-within:bg-foreground/20" />
+              <span className="relative inline-flex size-9 items-center justify-center rounded-full border border-border/80 bg-background/95 text-foreground shadow-[var(--surface-shadow-sm)] transition-[transform,opacity] duration-150 opacity-100 sm:scale-95 sm:opacity-0 sm:group-hover:scale-100 sm:group-hover:opacity-100 sm:group-focus-within:scale-100 sm:group-focus-within:opacity-100">
                 <Camera aria-hidden="true" className="size-4" />
                 <span className="sr-only">
                   {currentPreviewUrl ? "Update logo" : "Upload logo"}
@@ -858,7 +858,7 @@ function BusinessLogoField({
             </label>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col items-center gap-1.5">
             <p className="meta-label">Logo</p>
             <h3 className="text-[0.95rem] font-semibold tracking-tight text-foreground">
               Business logo

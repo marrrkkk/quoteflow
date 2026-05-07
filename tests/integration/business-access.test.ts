@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 
 const authState = vi.hoisted(() => ({
   currentUserId: "test_workflow_access_owner",
@@ -13,6 +14,11 @@ vi.mock("@/lib/db/client", async () => {
 
   return { db: mockedDb };
 });
+
+vi.mock("next/cache", () => ({
+  cacheLife: vi.fn(),
+  cacheTag: vi.fn(),
+}));
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({
@@ -39,9 +45,12 @@ import {
   getBusinessActionContext,
   getBusinessRequestContextForSlug,
   getWorkspaceBusinessActionContext,
+  getBusinessContextForMembershipSlug,
 } from "@/lib/db/business-access";
+import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
+import { workspaceSubscriptions, workspaces } from "@/lib/db/schema";
 
-import { closeTestDb } from "./db";
+import { closeTestDb, testDb } from "./db";
 import {
   cleanupWorkflowFixture,
   createWorkflowFixture,
@@ -165,6 +174,44 @@ describe("business and workspace access control", () => {
     expect(context.ok).toBe(true);
     if (context.ok) {
       expect(context.businessContext.business.id).toBe(ids.businessId);
+    }
+  });
+
+  it("uses the authoritative subscription row when cached workspace plan lags", async () => {
+    await testDb
+      .update(workspaces)
+      .set({ plan: "free", updatedAt: new Date() })
+      .where(eq(workspaces.id, ids.workspaceId));
+
+    await testDb.insert(workspaceSubscriptions).values({
+      id: `${prefix}_subscription_active`,
+      workspaceId: ids.workspaceId,
+      status: "active",
+      plan: "business",
+      billingProvider: "paddle",
+      billingCurrency: "USD",
+      currentPeriodStart: new Date("2026-05-01T00:00:00.000Z"),
+      currentPeriodEnd: new Date("2026-06-01T00:00:00.000Z"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    try {
+      const [businessContext, workspaceContext] = await Promise.all([
+        getBusinessContextForMembershipSlug(ids.ownerUserId, ids.businessSlug),
+        getWorkspaceContextForUser(ids.ownerUserId, ids.workspaceId),
+      ]);
+
+      expect(businessContext?.business.workspacePlan).toBe("business");
+      expect(workspaceContext?.plan).toBe("business");
+    } finally {
+      await testDb
+        .delete(workspaceSubscriptions)
+        .where(eq(workspaceSubscriptions.workspaceId, ids.workspaceId));
+      await testDb
+        .update(workspaces)
+        .set({ plan: "pro", updatedAt: new Date() })
+        .where(eq(workspaces.id, ids.workspaceId));
     }
   });
 });

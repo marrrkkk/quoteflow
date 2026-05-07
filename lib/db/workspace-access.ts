@@ -14,14 +14,17 @@ import { cache } from "react";
 import type { WorkspacePlan } from "@/lib/plans/plans";
 import type { WorkspaceMemberRole } from "@/lib/db/schema/workspaces";
 import {
+  getWorkspaceScopeTag,
   getUserMembershipsCacheTags,
   membershipShellCacheLife,
 } from "@/lib/cache/shell-tags";
+import { uniqueCacheTags } from "@/lib/cache/business-tags";
 import { db } from "@/lib/db/client";
 import {
   workspaceMembers,
   workspaces,
 } from "@/lib/db/schema";
+import { getEffectivePlan } from "@/lib/billing/subscription-service";
 
 export type WorkspaceContext = {
   id: string;
@@ -63,6 +66,14 @@ async function getCachedWorkspacesForUser(userId: string) {
     )
     .orderBy(asc(workspaces.name), asc(workspaces.createdAt));
 
+  const workspaceTags = uniqueCacheTags(
+    rows.map((row) => getWorkspaceScopeTag(row.workspaceId)),
+  );
+
+  if (workspaceTags.length > 0) {
+    cacheTag(...workspaceTags);
+  }
+
   return rows.map((row) => ({
     id: row.workspaceId,
     name: row.workspaceName,
@@ -77,7 +88,9 @@ async function getCachedWorkspacesForUser(userId: string) {
 }
 
 export const getWorkspacesForUser = cache(async (userId: string) => {
-  return getCachedWorkspacesForUser(userId);
+  const contexts = await getCachedWorkspacesForUser(userId);
+
+  return applyEffectiveWorkspacePlans(contexts);
 });
 
 /**
@@ -129,6 +142,8 @@ async function getCachedWorkspaceContextForUser(
     return null;
   }
 
+  cacheTag(getWorkspaceScopeTag(row.workspaceId));
+
   return {
     id: row.workspaceId,
     name: row.workspaceName,
@@ -144,7 +159,13 @@ async function getCachedWorkspaceContextForUser(
 
 export const getWorkspaceContextForUser = cache(
   async (userId: string, workspaceId?: string, workspaceSlug?: string) => {
-    return getCachedWorkspaceContextForUser(userId, workspaceId, workspaceSlug);
+    const context = await getCachedWorkspaceContextForUser(
+      userId,
+      workspaceId,
+      workspaceSlug,
+    );
+
+    return applyEffectiveWorkspacePlan(context);
   },
 );
 
@@ -174,7 +195,7 @@ export const getWorkspaceForBusiness = cache(
       return null;
     }
 
-    return {
+    const workspace = {
       id: row.workspaceId,
       name: row.workspaceName,
       slug: row.workspaceSlug,
@@ -183,8 +204,88 @@ export const getWorkspaceForBusiness = cache(
       scheduledDeletionAt: row.scheduledDeletionAt,
       deletedAt: row.deletedAt,
     };
+
+    const effectivePlan = await getEffectivePlan(workspace.id).catch(
+      (error) => {
+        console.error(
+          "Failed to resolve effective workspace plan.",
+          { workspaceId: workspace.id },
+          error,
+        );
+
+        return workspace.plan;
+      },
+    );
+
+    return {
+      ...workspace,
+      plan: effectivePlan,
+    };
   },
 );
+
+async function getEffectiveWorkspacePlanMap(workspaceIds: string[]) {
+  const uniqueWorkspaceIds = Array.from(new Set(workspaceIds));
+  const entries = await Promise.all(
+    uniqueWorkspaceIds.map(async (workspaceId) => {
+      try {
+        return [workspaceId, await getEffectivePlan(workspaceId)] as const;
+      } catch (error) {
+        console.error(
+          "Failed to resolve effective workspace plan.",
+          { workspaceId },
+          error,
+        );
+
+        return [workspaceId, null] as const;
+      }
+    }),
+  );
+
+  return new Map(entries);
+}
+
+async function applyEffectiveWorkspacePlans(contexts: WorkspaceContext[]) {
+  if (contexts.length === 0) {
+    return contexts;
+  }
+
+  const planByWorkspaceId = await getEffectiveWorkspacePlanMap(
+    contexts.map((context) => context.id),
+  );
+
+  return contexts.map((context) => {
+    const plan = planByWorkspaceId.get(context.id) ?? context.plan;
+
+    if (plan === context.plan) {
+      return context;
+    }
+
+    return {
+      ...context,
+      plan,
+    };
+  }) satisfies WorkspaceContext[];
+}
+
+async function applyEffectiveWorkspacePlan(context: WorkspaceContext | null) {
+  if (!context) {
+    return null;
+  }
+
+  const plan =
+    (await getEffectiveWorkspacePlanMap([context.id])).get(context.id) ??
+    context.plan;
+
+  if (plan === context.plan) {
+    return context;
+  }
+
+  return {
+    ...context,
+    plan,
+  } satisfies WorkspaceContext;
+}
 
 /**
  * Checks whether a user is the workspace owner.

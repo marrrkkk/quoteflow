@@ -6,10 +6,13 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 
 import {
+  getWorkspaceScopeTag,
   getUserBusinessContextCacheTags,
   getUserMembershipsCacheTags,
   membershipShellCacheLife,
 } from "@/lib/cache/shell-tags";
+import { uniqueCacheTags } from "@/lib/cache/business-tags";
+import { getEffectivePlan } from "@/lib/billing/subscription-service";
 
 import type {
   BusinessRecordState,
@@ -162,6 +165,16 @@ async function getCachedBusinessMemberships(
       asc(businesses.createdAt),
     );
 
+  const workspaceTags = uniqueCacheTags(
+    memberships.map((membership) =>
+      getWorkspaceScopeTag(membership.workspaceId),
+    ),
+  );
+
+  if (workspaceTags.length > 0) {
+    cacheTag(...workspaceTags);
+  }
+
   return memberships.map((membership) => ({
     membershipId: membership.membershipId,
     role: membership.role,
@@ -187,7 +200,9 @@ export const getBusinessMembershipsForUser = cache(async (
   userId: string,
   view: BusinessRecordView | "all" = "active",
 ) => {
-  return getCachedBusinessMemberships(userId, view);
+  const memberships = await getCachedBusinessMemberships(userId, view);
+
+  return applyEffectiveWorkspacePlans(memberships);
 });
 
 async function getCachedBusinessContextForMembershipSlug(
@@ -244,6 +259,8 @@ async function getCachedBusinessContextForMembershipSlug(
     return null;
   }
 
+  cacheTag(getWorkspaceScopeTag(context.workspaceId));
+
   return {
     membershipId: context.membershipId,
     role: context.role,
@@ -270,8 +287,86 @@ export const getBusinessContextForMembershipSlug = cache(async (
   businessSlug: string,
   includeInactive = true,
 ) => {
-  return getCachedBusinessContextForMembershipSlug(userId, businessSlug, includeInactive);
+  const context = await getCachedBusinessContextForMembershipSlug(
+    userId,
+    businessSlug,
+    includeInactive,
+  );
+
+  return applyEffectiveWorkspacePlan(context);
 });
+
+async function getEffectiveWorkspacePlanMap(workspaceIds: string[]) {
+  const uniqueWorkspaceIds = Array.from(new Set(workspaceIds));
+  const entries = await Promise.all(
+    uniqueWorkspaceIds.map(async (workspaceId) => {
+      try {
+        return [workspaceId, await getEffectivePlan(workspaceId)] as const;
+      } catch (error) {
+        console.error(
+          "Failed to resolve effective workspace plan.",
+          { workspaceId },
+          error,
+        );
+
+        return [workspaceId, null] as const;
+      }
+    }),
+  );
+
+  return new Map(entries);
+}
+
+async function applyEffectiveWorkspacePlans(contexts: BusinessContext[]) {
+  if (contexts.length === 0) {
+    return contexts;
+  }
+
+  const planByWorkspaceId = await getEffectiveWorkspacePlanMap(
+    contexts.map((context) => context.business.workspaceId),
+  );
+
+  return contexts.map((context) => {
+    const workspacePlan =
+      planByWorkspaceId.get(context.business.workspaceId) ??
+      context.business.workspacePlan;
+
+    if (workspacePlan === context.business.workspacePlan) {
+      return context;
+    }
+
+    return {
+      ...context,
+      business: {
+        ...context.business,
+        workspacePlan,
+      },
+    };
+  }) satisfies BusinessContext[];
+}
+
+async function applyEffectiveWorkspacePlan(context: BusinessContext | null) {
+  if (!context) {
+    return null;
+  }
+
+  const workspacePlan =
+    (await getEffectiveWorkspacePlanMap([context.business.workspaceId])).get(
+      context.business.workspaceId,
+    ) ?? context.business.workspacePlan;
+
+  if (workspacePlan === context.business.workspacePlan) {
+    return context;
+  }
+
+  return {
+    ...context,
+    business: {
+      ...context.business,
+      workspacePlan,
+    },
+  } satisfies BusinessContext;
+}
 
 const getActiveBusinessSlug = cache(async () => {
   const cookieStore = await cookies();

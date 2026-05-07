@@ -8,13 +8,17 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   AlertCircle,
-  Check,
   Briefcase,
   Building2,
+  Clock3,
+  CreditCard,
+  Layers,
   QrCode,
-  ShoppingCart,
+  ReceiptText,
+  ShieldCheck,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 
@@ -40,20 +44,16 @@ import {
   DialogBody,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
+
 import { Spinner } from "@/components/ui/spinner";
 import {
   cancelPendingQrCheckoutAction,
   createCheckoutAction,
 } from "@/features/billing/actions";
-import {
-  CardAndMoreBrandMarks,
-  QrPhBrandMark,
-} from "@/features/billing/components/payment-method-brands";
+
 import {
   PaddleProvider,
   usePaddle,
@@ -71,10 +71,7 @@ import type {
 } from "@/features/billing/types";
 import {
   formatPrice,
-  getMonthlyEquivalentLabel,
   getPlanPrice,
-  getPlanPriceLabel,
-  getYearlySavingsPercent,
 } from "@/lib/billing/plans";
 import type {
   BillingCurrency,
@@ -87,31 +84,20 @@ import { cn } from "@/lib/utils";
 type ControlledCheckoutDialogProps = CheckoutDialogProps & {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onChangePlan?: () => void;
   pendingCheckout?: PersistedPendingCheckout | null;
   checkoutError?: string | null;
   onCheckoutErrorChange?: (error: string | null) => void;
   onPaddleTransactionChange?: (
     checkout: { plan: PaidPlan; transactionId: string } | null,
   ) => void;
+  onPaymentProcessingStart?: (plan: PaidPlan) => void;
 };
 
-type PaymentMethod = "qrph" | "card";
+type SubmittedPaymentMethod = "qrph" | "card";
 type CheckoutView = "selection" | "qr" | "paddle";
 
-const planHighlightsShort: Record<PaidPlan, string[]> = {
-  pro: [
-    "Unlimited inquiries and quotes",
-    "Multiple inquiry forms",
-    "AI assistant and knowledge",
-    "Data exports and branding",
-  ],
-  business: [
-    "Everything in Pro",
-    "Team members and roles",
-    "Priority support",
-    "Unlimited businesses",
-  ],
-};
+
 
 const PADDLE_FRAME_TARGET = "requo-paddle-checkout";
 const isDevelopment = process.env.NODE_ENV === "development";
@@ -158,8 +144,12 @@ function CheckoutDialogInner({
   plan,
   region,
   workspaceId,
+  workspaceName,
   checkoutError,
+  interval: intervalProp,
+  onChangePlan,
   onCheckoutErrorChange,
+  onPaymentProcessingStart,
   onPaddleTransactionChange,
   pendingCheckout,
 }: ControlledCheckoutDialogProps) {
@@ -170,14 +160,7 @@ function CheckoutDialogInner({
       ? pendingCheckout
       : getCachedPendingCheckoutForPlan(workspaceId, plan);
   const initialPendingQr = toPendingQrData(initialPendingCheckout);
-  const [interval, setInterval] = useState<BillingInterval>("monthly");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
-    if (initialPendingCheckout?.provider === "paymongo") {
-      return "qrph";
-    }
-
-    return region === "PH" ? "qrph" : "card";
-  });
+  const [interval] = useState<BillingInterval>(intervalProp ?? "monthly");
   const [view, setView] = useState<CheckoutView>(() => {
     if (initialPendingCheckout?.provider === "paymongo") {
       return "qr";
@@ -198,18 +181,22 @@ function CheckoutDialogInner({
     useState(false);
   const [isCancelingQr, setIsCancelingQr] = useState(false);
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false);
+  const [submittedPaymentMethod, setSubmittedPaymentMethod] =
+    useState<SubmittedPaymentMethod | null>(null);
   const [state, formAction, isPending] = useActionState(
     createCheckoutAction,
     {} as CheckoutActionState,
   );
   const openedPaddleTransactionRef = useRef<string | null>(null);
+  const cardFormRef = useRef<HTMLFormElement>(null);
+  const autoStartedRef = useRef(false);
   const isPH = region === "PH";
-  const isQrPh = paymentMethod === "qrph";
-  const currency: BillingCurrency = isQrPh ? "PHP" : "USD";
-  const effectiveInterval: BillingInterval = isQrPh ? "monthly" : interval;
-  const totalPrice = getPlanPrice(plan, currency, effectiveInterval);
-  const savingsPercent = getYearlySavingsPercent(plan, currency);
+  const cardCurrency: BillingCurrency = "USD";
+  const qrCurrency: BillingCurrency = "PHP";
+  const cardPrice = getPlanPrice(plan, cardCurrency, interval);
+  const qrPrice = getPlanPrice(plan, qrCurrency, interval);
   const PlanIcon = plan === "pro" ? Briefcase : Building2;
+  const intervalLabel = interval === "yearly" ? "Yearly" : "Monthly";
 
   const updateCheckoutError = useCallback(
     (message: string | null) => {
@@ -235,7 +222,7 @@ function CheckoutDialogInner({
         setActivePaddleTransactionId(null);
         onPaddleTransactionChange?.(null);
         setIsAwaitingPaddleConfirmation(false);
-        setPaymentMethod("qrph");
+        setSubmittedPaymentMethod(null);
         setView("qr");
       }
     });
@@ -268,6 +255,7 @@ function CheckoutDialogInner({
       setActivePaddleTransactionId(null);
       onPaddleTransactionChange?.(null);
       setIsAwaitingPaddleConfirmation(false);
+      setSubmittedPaymentMethod(null);
       updateCheckoutError(null);
       setIsCancelingQr(false);
       setView("qr");
@@ -292,6 +280,7 @@ function CheckoutDialogInner({
       setActivePaddleTransactionId(transactionId);
       onPaddleTransactionChange?.({ plan, transactionId });
       setIsAwaitingPaddleConfirmation(false);
+      setSubmittedPaymentMethod(null);
       updateCheckoutError(null);
       setView("paddle");
     });
@@ -312,6 +301,7 @@ function CheckoutDialogInner({
     queueMicrotask(() => {
       setIsCancelingQr(false);
       setIsAwaitingPaddleConfirmation(false);
+      setSubmittedPaymentMethod(null);
       setView("selection");
       updateCheckoutError(error);
     });
@@ -338,9 +328,9 @@ function CheckoutDialogInner({
             onOpenChange(false);
           },
           onComplete: () => {
-            setIsAwaitingPaddleConfirmation(true);
             updateCheckoutError(null);
-            setView("paddle");
+            setIsAwaitingPaddleConfirmation(false);
+            onPaymentProcessingStart?.(plan);
           },
           onError: () => {
             setIsAwaitingPaddleConfirmation(false);
@@ -366,10 +356,29 @@ function CheckoutDialogInner({
     activePaddleTransactionId,
     isAwaitingPaddleConfirmation,
     onOpenChange,
+    onPaymentProcessingStart,
     paddle,
+    plan,
     open,
     updateCheckoutError,
   ]);
+
+  // Auto-start card checkout when dialog opens (skip selection placeholder).
+  // Only for non-PH so QR option stays clickable for PH users.
+  useEffect(() => {
+    if (
+      open &&
+      view === "selection" &&
+      !autoStartedRef.current &&
+      !pendingQr &&
+      !isPH
+    ) {
+      autoStartedRef.current = true;
+      requestAnimationFrame(() => {
+        cardFormRef.current?.requestSubmit();
+      });
+    }
+  }, [open, view, pendingQr, isPH]);
 
   const handleQrCancel = useCallback(async () => {
     if (!pendingQr) {
@@ -414,6 +423,7 @@ function CheckoutDialogInner({
     setActivePaddleTransactionId(null);
     onPaddleTransactionChange?.(null);
     setIsAwaitingPaddleConfirmation(false);
+    setSubmittedPaymentMethod(null);
     setView("selection");
     updateCheckoutError(null);
   }, [
@@ -422,6 +432,13 @@ function CheckoutDialogInner({
     paddle,
     updateCheckoutError,
   ]);
+
+  const handleChangePlan = useCallback(() => {
+    resetPaddleCheckout();
+    setPendingQr(null);
+    onOpenChange(false);
+    onChangePlan?.();
+  }, [onChangePlan, onOpenChange, resetPaddleCheckout]);
 
   const confirmPaddleCheckoutClose = useCallback(() => {
     setIsCloseConfirmOpen(false);
@@ -465,266 +482,189 @@ function CheckoutDialogInner({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-lg gap-0 overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="px-2 text-xl">
-            {view === "paddle"
-              ? "Complete your payment"
-              : view === "qr"
-                ? "Scan to pay"
-                : `Upgrade to ${planMeta[plan].label}`}
-          </DialogTitle>
-          <DialogDescription className="px-2">
-            {view === "paddle"
-              ? "Finish the payment in the inline checkout below."
-              : view === "qr"
-                ? "Scan the QR code with your banking app. You can close this dialog and continue from the same QR code later."
-                : "Choose how you want to pay for this plan upgrade."}
-          </DialogDescription>
-        </DialogHeader>
-
-        {view === "paddle" ? (
-          <DialogBody className="overflow-y-auto p-0">
-            {isAwaitingPaddleConfirmation ? (
-              <div className="flex flex-col items-center gap-4 px-6 py-10">
-                <Spinner aria-hidden="true" className="size-8" />
-                <div className="space-y-1 text-center">
-                  <p className="text-sm font-medium text-foreground">
-                    Waiting for payment confirmation
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    We&apos;ll update this workspace as soon as Paddle confirms
-                    the payment.
-                  </p>
-                </div>
-              </div>
-            ) : activePaddleTransactionId ? (
-              <>
-                <div className="flex items-center justify-between border-b border-border/40 px-6 py-4 text-sm">
-                  <span className="text-muted-foreground">
-                    {planMeta[plan].label} plan
-                    <span className="ml-1 text-xs">
-                      ({effectiveInterval === "monthly" ? "monthly" : "yearly"})
-                    </span>
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {getPlanPriceLabel(plan, currency, effectiveInterval)}
-                  </span>
-                </div>
-                <div className="px-4 py-4">
-                  <div className={PADDLE_FRAME_TARGET} />
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-4 px-6 py-10">
-                <Spinner aria-hidden="true" className="size-8" />
-                <p className="text-center text-sm text-muted-foreground">
-                  Restoring your checkout session.
-                </p>
-              </div>
-            )}
-          </DialogBody>
-        ) : view === "qr" && pendingQr ? (
-          <DialogBody className="overflow-y-auto pb-6">
-            <QrPhPaymentView
-              error={resolvedCheckoutError}
-              isCanceling={isCancelingQr}
-              onCancel={() => {
-                void handleQrCancel();
-              }}
-              plan={plan}
-              qrData={pendingQr}
-            />
-          </DialogBody>
-        ) : (
+        <DialogContent
+          className={cn(
+            "gap-0 overflow-hidden p-0",
+            view === "qr" && pendingQr
+              ? "max-w-lg"
+              : "max-w-2xl",
+          )}
+        >
+          {view === "qr" && pendingQr ? (
+            <>
+              <DialogHeader className="border-b border-border/60 px-6 py-5">
+                <DialogTitle className="text-xl">Scan to pay</DialogTitle>
+                <DialogDescription>
+                  Scan the QR code with your banking app. You can return to the same QR code while it is active.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogBody className="overflow-y-auto pb-6">
+                <QrPhPaymentView
+                  error={resolvedCheckoutError}
+                  isCanceling={isCancelingQr}
+                  onCancel={() => {
+                    void handleQrCancel();
+                  }}
+                  plan={plan}
+                  qrData={pendingQr}
+                />
+              </DialogBody>
+            </>
+          ) : (
           <>
-            <DialogBody className="overflow-y-auto bg-muted/10 p-0">
-              <div className="flex flex-col gap-6 px-6 py-6">
-                <div className="soft-panel grid gap-4 rounded-2xl px-4 py-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background">
-                      <PlanIcon
-                        className={cn(
-                          "size-4",
-                          plan === "pro"
-                            ? "text-primary"
-                            : "text-foreground",
-                        )}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">
-                          {planMeta[plan].label}
-                        </p>
-                        <Badge variant="outline">Selected plan</Badge>
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {planMeta[plan].description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    {planHighlightsShort[plan].map((feature) => (
-                      <p className="text-sm text-muted-foreground" key={feature}>
-                        {feature}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-
-                {!isQrPh ? (
-                  <div className="flex items-center justify-center">
-                    <div className="inline-flex rounded-full border border-border/70 bg-muted/40 p-1">
-                      <button
-                        className={cn(
-                          "relative rounded-full px-4 py-1.5 text-sm font-medium transition-all",
-                          effectiveInterval === "monthly"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                        onClick={() => {
-                          setInterval("monthly");
-                          updateCheckoutError(null);
-                        }}
-                        type="button"
-                      >
-                        Monthly
-                      </button>
-                      <button
-                        className={cn(
-                          "relative flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-all",
-                          effectiveInterval === "yearly"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                        onClick={() => {
-                          setInterval("yearly");
-                          updateCheckoutError(null);
-                        }}
-                        type="button"
-                      >
-                        Yearly
-                        <Badge
-                          className="border-primary/20 bg-primary/10 px-1.5 py-0 text-[10px] text-primary"
-                          variant="secondary"
-                        >
-                          -{savingsPercent}%
-                        </Badge>
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="flex flex-col gap-2.5">
-                  <p className="meta-label">Payment method</p>
-                  <div className={cn("grid gap-2", isPH && "sm:grid-cols-2")}>
-                    {isPH ? (
-                      <button
-                        className={cn(
-                          "flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all",
-                          paymentMethod === "qrph"
-                            ? "border-primary/40 bg-accent/30 shadow-[0_0_0_1px_hsl(var(--primary)/0.12)]"
-                            : "border-border/60 bg-card/60 hover:border-border hover:bg-accent/10",
-                        )}
-                        onClick={() => {
-                          setPaymentMethod("qrph");
-                          updateCheckoutError(null);
-                        }}
-                        type="button"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <QrPhBrandMark />
-                        </div>
-                        {paymentMethod === "qrph" ? (
-                          <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                            <Check className="size-3" />
-                          </div>
-                        ) : (
-                          <div className="size-5 shrink-0 rounded-full border-2 border-border/70" />
-                        )}
-                      </button>
-                    ) : null}
-                    <button
+            <DialogHeader className="border-b border-border/60 px-5 py-5 sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background">
+                    <PlanIcon
                       className={cn(
-                        "flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all",
-                        paymentMethod === "card"
-                          ? "border-primary/40 bg-accent/30 shadow-[0_0_0_1px_hsl(var(--primary)/0.12)]"
-                          : "border-border/60 bg-card/60 hover:border-border hover:bg-accent/10",
+                        "size-4",
+                        plan === "pro" ? "text-primary" : "text-foreground",
                       )}
-                      onClick={() => {
-                        setPaymentMethod("card");
-                        updateCheckoutError(null);
-                      }}
-                      type="button"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          Card, PayPal, and more
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {isPH ? "Billed in USD via Paddle" : "Visa, Mastercard, PayPal, Google Pay"}
-                        </p>
-                        <div className="mt-2.5">
-                          <CardAndMoreBrandMarks />
-                        </div>
-                      </div>
-                      {paymentMethod === "card" ? (
-                        <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                          <Check className="size-3" />
-                        </div>
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <DialogTitle className="text-xl">
+                      {planMeta[plan].label} Plan ({intervalLabel})
+                    </DialogTitle>
+                    <DialogDescription className="mt-1">
+                      {workspaceName ? (
+                        <span className="inline-flex max-w-full items-center gap-2">
+                          <Layers className="size-3.5 shrink-0" />
+                          <span className="truncate">{workspaceName}</span>
+                        </span>
                       ) : (
-                        <div className="size-5 shrink-0 rounded-full border-2 border-border/70" />
+                        "Complete your workspace upgrade."
                       )}
-                    </button>
+                    </DialogDescription>
                   </div>
-                  {isQrPh ? (
-                    <p className="px-1 text-xs text-muted-foreground">
-                      QR Ph is a one-time payment for one month of access.
-                    </p>
-                  ) : effectiveInterval === "yearly" ? (
-                    <p className="px-1 text-xs text-muted-foreground">
-                      {getMonthlyEquivalentLabel(plan, currency)} billed yearly.
-                    </p>
-                  ) : null}
-
                 </div>
-              </div>
-            </DialogBody>
-            <Separator className="bg-border/40" />
-            <DialogFooter className="bg-card px-6 py-6 sm:px-6 sm:py-6">
-              <div className="flex w-full flex-col gap-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {planMeta[plan].label} plan
-                    <span className="ml-1 text-xs">
-                      ({isQrPh ? "one-time payment" : effectiveInterval})
-                    </span>
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {getPlanPriceLabel(plan, currency, effectiveInterval)}
-                  </span>
-                </div>
-                {!isQrPh && effectiveInterval === "yearly" ? (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">You save</span>
-                    <span className="font-medium text-foreground">
-                      {formatPrice(
-                        getPlanPrice(plan, currency, "monthly") * 12 - totalPrice,
-                        currency,
-                      )}
-                      /yr
-                    </span>
-                  </div>
+                {onChangePlan ? (
+                  <Button
+                    className="h-auto shrink-0 px-0"
+                    onClick={handleChangePlan}
+                    size="sm"
+                    type="button"
+                    variant="link"
+                  >
+                    Change plan
+                  </Button>
                 ) : null}
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-sm font-medium text-foreground">
-                    Due today
-                  </span>
-                  <span className="font-heading text-lg font-semibold text-foreground">
-                    {formatPrice(totalPrice, currency)}
-                  </span>
+              </div>
+            </DialogHeader>
+
+            <DialogBody className="max-h-[72vh] overflow-y-auto p-0">
+              <div className="grid gap-4 px-5 py-5 sm:px-6 sm:py-6">
+                {/* Paddle inline frame */}
+                <div className="flex min-h-[28rem] items-center justify-center rounded-xl border border-border/70 bg-background/80 p-3">
+                  {view === "paddle" ? (
+                    activePaddleTransactionId ? (
+                      <div className="w-full">
+                        <div className={PADDLE_FRAME_TARGET} />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 text-center">
+                        <Spinner aria-hidden="true" className="size-8" />
+                        <p className="text-sm text-muted-foreground">
+                          Restoring your checkout session.
+                        </p>
+                      </div>
+                    )
+                  ) : isPending && submittedPaymentMethod === "card" ? (
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <Spinner aria-hidden="true" className="size-8" />
+                      <p className="text-sm text-muted-foreground">
+                        Preparing checkout...
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <div className="flex size-12 items-center justify-center rounded-xl border border-border/70 bg-card">
+                        <CreditCard className="size-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Secure card form opens here.
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {/* Card checkout form */}
+                {view === "selection" ? (
+                  <form
+                    ref={cardFormRef}
+                    action={formAction}
+                    onSubmit={() => setSubmittedPaymentMethod("card")}
+                  >
+                    <input name="workspaceId" type="hidden" value={workspaceId} />
+                    <input name="plan" type="hidden" value={plan} />
+                    <input name="currency" type="hidden" value={cardCurrency} />
+                    <input name="interval" type="hidden" value={interval} />
+                    <Button
+                      className="w-full"
+                      disabled={isPending}
+                      size="lg"
+                      type="submit"
+                    >
+                      {isPending && submittedPaymentMethod === "card" ? (
+                        <>
+                          <Spinner aria-hidden="true" />
+                          Preparing checkout...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard data-icon="inline-start" />
+                          Pay with Card
+                          <span className="ml-1 opacity-70">
+                            — {formatPrice(cardPrice, cardCurrency)}
+                          </span>
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                ) : null}
+
+                {/* QR Ph option — PH region only */}
+                {isPH && view === "selection" ? (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1 bg-border/60" />
+                      <span className="text-xs text-muted-foreground">or</span>
+                      <div className="h-px flex-1 bg-border/60" />
+                    </div>
+                    <form
+                      action={formAction}
+                      onSubmit={() => setSubmittedPaymentMethod("qrph")}
+                    >
+                      <input name="workspaceId" type="hidden" value={workspaceId} />
+                      <input name="plan" type="hidden" value={plan} />
+                      <input name="currency" type="hidden" value={qrCurrency} />
+                      <input name="interval" type="hidden" value={interval} />
+                      <Button
+                        className="w-full"
+                        disabled={isPending}
+                        size="lg"
+                        type="submit"
+                        variant="outline"
+                      >
+                        {isPending && submittedPaymentMethod === "qrph" ? (
+                          <>
+                            <Spinner aria-hidden="true" />
+                            Preparing QRPh...
+                          </>
+                        ) : (
+                          <>
+                            <QrCode data-icon="inline-start" />
+                            Pay with QRPh
+                            <span className="ml-1 opacity-70">
+                              — {formatPrice(qrPrice, qrCurrency)}
+                            </span>
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </>
+                ) : null}
 
                 {resolvedCheckoutError ? (
                   <Alert variant="destructive">
@@ -733,35 +673,8 @@ function CheckoutDialogInner({
                     <AlertDescription>{resolvedCheckoutError}</AlertDescription>
                   </Alert>
                 ) : null}
-
-                <form action={formAction} className="mt-2">
-                  <input name="workspaceId" type="hidden" value={workspaceId} />
-                  <input name="plan" type="hidden" value={plan} />
-                  <input name="currency" type="hidden" value={currency} />
-                  <input
-                    name="interval"
-                    type="hidden"
-                    value={effectiveInterval}
-                  />
-                  <Button className="w-full" disabled={isPending} size="lg" type="submit">
-                    {isPending ? (
-                      <>
-                        <Spinner aria-hidden="true" />
-                        Preparing checkout...
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart data-icon="inline-start" />
-                        {isQrPh ? "Upgrade with QR Ph" : `Upgrade to ${planMeta[plan].label}`}
-                        <span className="ml-1 opacity-70">
-                          - {formatPrice(totalPrice, currency)}
-                        </span>
-                      </>
-                    )}
-                  </Button>
-                </form>
               </div>
-            </DialogFooter>
+            </DialogBody>
           </>
         )}
         </DialogContent>
@@ -814,16 +727,22 @@ function QrPhPaymentView({
   qrData: PendingQrPhData;
 }) {
   return (
-    <div className="grid gap-5 pt-4 pb-2">
-      <div className="mx-auto flex flex-col items-center gap-4">
-        <div className="rounded-xl border border-border/70 bg-white p-4 shadow-sm">
-          <QRCode level="M" size={200} value={qrData.qrCodeData} />
+    <div className="grid gap-5 pt-2 pb-2">
+      <div className="soft-panel grid gap-5 rounded-xl px-4 py-4 sm:grid-cols-[auto_1fr] sm:items-center">
+        <div className="mx-auto rounded-xl border border-border/70 bg-white p-4 shadow-sm sm:mx-0">
+          <QRCode level="M" size={208} value={qrData.qrCodeData} />
         </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-foreground">
-            {formatPrice(qrData.amount, "PHP")} - {planMeta[plan].label}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <div className="grid gap-4 text-center sm:text-left">
+          <div>
+            <p className="meta-label">QR Ph checkout</p>
+            <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
+              {formatPrice(qrData.amount, "PHP")}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {planMeta[plan].label} workspace access
+            </p>
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground">
             Scan with GCash, Maya, or any QR Ph supported app.
           </p>
         </div>
@@ -839,30 +758,37 @@ function QrPhPaymentView({
         </div>
       ) : null}
 
-      <div className="soft-panel overflow-hidden rounded-xl px-0 py-0 text-sm">
-        <div className="grid divide-y divide-border/60">
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground">Status</span>
-            <Badge className="bg-background" variant="outline">
-              Awaiting payment
-            </Badge>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-border/60 bg-card/70 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock3 className="size-4" />
+            <span>Status</span>
           </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground">Expires</span>
-            <span className="font-medium text-foreground">
-              {new Date(qrData.expiresAt).toLocaleTimeString([], {
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
+          <Badge className="mt-2" variant="outline">
+            Awaiting payment
+          </Badge>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-card/70 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ReceiptText className="size-4" />
+            <span>Expires</span>
           </div>
+          <p className="mt-2 text-sm font-medium text-foreground">
+            {new Date(qrData.expiresAt).toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </p>
         </div>
       </div>
 
-      <p className="text-center text-xs leading-relaxed text-muted-foreground">
-        This workspace will upgrade automatically once the payment webhook is
-        confirmed.
-      </p>
+      <Alert>
+        <ShieldCheck />
+        <AlertTitle>Automatic activation</AlertTitle>
+        <AlertDescription>
+          The workspace will upgrade once PayMongo confirms the payment.
+        </AlertDescription>
+      </Alert>
 
       {error ? (
         <Alert variant="destructive">
