@@ -19,7 +19,7 @@ export const userShellCacheLife = {
   expire: 600,
 } as const;
 
-/** Business memberships — invalidated by business/workspace mutations. */
+/** Business memberships — invalidated by business mutations. */
 export const membershipShellCacheLife = {
   stale: 60,
   revalidate: 60,
@@ -41,8 +41,13 @@ function getUserScopeTag(userId: string) {
   return `user:${userId}`;
 }
 
-export function getWorkspaceScopeTag(workspaceId: string) {
-  return `workspace:${workspaceId}`;
+function getBusinessScopeTag(businessId: string) {
+  return `business:${businessId}`;
+}
+
+/** @deprecated Use `getBusinessScopeTag` via `getBusinessBillingCacheTags`. */
+export function getWorkspaceScopeTag(workspaceOrBusinessId: string) {
+  return `business:${workspaceOrBusinessId}`;
 }
 
 export function getUserThemeCacheTags(userId: string) {
@@ -76,8 +81,11 @@ export function getUserBusinessContextCacheTags(
   ]);
 }
 
-export function getWorkspaceBillingCacheTags(workspaceId: string) {
-  const scopeTag = getWorkspaceScopeTag(workspaceId);
+export function getBusinessBillingCacheTags(businessId: string) {
+  const scopeTag = getBusinessScopeTag(businessId);
 
   return uniqueCacheTags([scopeTag, `${scopeTag}:billing`]);
 }
+
+/** @deprecated Use `getBusinessBillingCacheTags` instead. */
+export const getWorkspaceBillingCacheTags = getBusinessBillingCacheTags;

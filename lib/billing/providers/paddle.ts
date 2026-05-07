@@ -100,7 +100,7 @@ type PaddleTransactionResponse = {
  */
 export async function createPaddleTransaction(params: {
   plan: PaidPlan;
-  workspaceId: string;
+  businessId: string;
   userEmail: string;
   userName?: string;
   interval?: BillingInterval;
@@ -120,7 +120,7 @@ export async function createPaddleTransaction(params: {
         ],
         custom_data: {
           interval: params.interval ?? "monthly",
-          workspace_id: params.workspaceId,
+          workspace_id: params.businessId,
           plan: params.plan,
         },
         ...(params.userEmail

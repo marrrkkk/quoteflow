@@ -1,5 +1,6 @@
 import type { BusinessRecordState } from "@/features/businesses/lifecycle";
 import type { InquiryStatus } from "@/features/inquiries/types";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import type {
   QuotePostAcceptanceStatus,
   QuoteReminderKind,
@@ -74,8 +75,17 @@ export type CreateBusinessActionState = {
     name?: string[] | undefined;
     businessType?: string[] | undefined;
     defaultCurrency?: string[] | undefined;
-    workspaceId?: string[] | undefined;
+    businessId?: string[] | undefined;
   };
+};
+
+export type BusinessQuotaSnapshot = {
+  ownerUserId: string;
+  plan: plan;
+  current: number;
+  limit: number | null;
+  allowed: boolean;
+  upgradePlan: plan | null;
 };
 
 export type BusinessRecordActionState = {
@@ -90,8 +100,8 @@ export type BusinessLifecycleView = {
   id: string;
   name: string;
   slug: string;
-  workspaceId: string;
-  workspaceSlug: string;
+  businessId: string;
+  businessSlug: string;
   recordState: BusinessRecordState;
   archivedAt: Date | null;
   deletedAt: Date | null;

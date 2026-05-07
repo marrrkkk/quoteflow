@@ -4,8 +4,8 @@
  * Limits are defined per workspace plan. A `null` limit means unlimited.
  * Usage enforcement uses the helpers in `./usage.ts`.
  *
- * Usage is counted at the workspace level and aggregated across all businesses
- * in the workspace where applicable.
+ * Usage is counted at the workspace level except business creation, which is
+ * capped globally across businesses owned by the account.
  */
 
 import type { WorkspacePlan } from "@/lib/plans/plans";
@@ -92,7 +92,7 @@ export const usageLimitLabels: Record<UsageLimitKey, string> = {
   quotesPerMonth: "Quotes per month",
   requoQuoteEmailsPerDay: "Requo quote sends per day",
   requoQuoteEmailsPerMonth: "Requo quote sends per month",
-  businessesPerWorkspace: "Businesses per workspace",
+  businessesPerWorkspace: "Businesses across workspaces",
   membersPerWorkspace: "Members per workspace",
   liveFormsPerWorkspace: "Live inquiry forms",
   memoriesPerBusiness: "Knowledge items per business",

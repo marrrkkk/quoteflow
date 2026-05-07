@@ -17,7 +17,7 @@ import {
 } from "@/lib/db/business-access";
 import { env } from "@/lib/env";
 import { hasFeatureAccess } from "@/lib/plans";
-import { getWorkspacePlanByBusinessId } from "@/lib/plans/queries";
+import { getplanByBusinessId } from "@/lib/plans/queries";
 import { checkUsageAllowance } from "@/lib/plans/usage";
 import { assertPublicActionRateLimit } from "@/lib/public-action-rate-limit";
 import { sendPublicInquiryNotificationEmail } from "@/lib/resend/client";
@@ -105,10 +105,10 @@ export async function submitPublicInquiryAction(
     };
   }
 
-  const { plan: workspacePlan, workspaceId } = await getWorkspacePlanByBusinessId(business.id);
+  const { plan: plan, businessId } = await getplanByBusinessId(business.id);
   const inquiryAllowance = await checkUsageAllowance(
-    workspaceId,
-    workspacePlan,
+    businessId,
+    plan,
     "inquiriesPerMonth",
   );
 
@@ -120,14 +120,14 @@ export async function submitPublicInquiryAction(
 
   const effectiveFormConfig = resolveInquiryFormConfigForPlan(
     business.inquiryFormConfig,
-    workspacePlan,
+    plan,
   );
   const validationResult = validatePublicInquirySubmission(
     effectiveFormConfig,
     formData,
     {
       maxAttachmentSizeBytes:
-        getPublicInquiryAttachmentMaxBytes(workspacePlan),
+        getPublicInquiryAttachmentMaxBytes(plan),
     },
   );
 
@@ -191,7 +191,6 @@ export async function submitPublicInquiryAction(
               label: field.label,
               value: field.displayValue,
             })),
-            workspaceId,
             businessId: business.id,
           });
         } catch (error) {
@@ -205,7 +204,7 @@ export async function submitPublicInquiryAction(
       // Push notification
       if (
         businessSettings?.notifyPushOnNewInquiry &&
-        hasFeatureAccess(workspacePlan, "pushNotifications")
+        hasFeatureAccess(plan, "pushNotifications")
       ) {
         try {
           const { sendPushToBusinessSubscribers } = await import("@/lib/push/send");
@@ -272,8 +271,8 @@ export async function createManualInquiryAction(
   }
 
   const inquiryAllowance = await checkUsageAllowance(
-    businessContext.business.workspaceId,
-    businessContext.business.workspacePlan,
+    businessContext.business.id,
+    businessContext.business.plan,
     "inquiriesPerMonth",
   );
 
@@ -285,14 +284,14 @@ export async function createManualInquiryAction(
 
   const effectiveFormConfig = resolveInquiryFormConfigForPlan(
     selectedForm.inquiryFormConfig,
-    businessContext.business.workspacePlan,
+    businessContext.business.plan,
   );
   const validationResult = validateManualQuickInquirySubmission(
     effectiveFormConfig,
     formData,
     {
       maxAttachmentSizeBytes: getPublicInquiryAttachmentMaxBytes(
-        businessContext.business.workspacePlan,
+        businessContext.business.plan,
       ),
     },
   );

@@ -68,7 +68,7 @@ import { getBusinessInquiryFormEditorPath } from "@/features/businesses/routes";
 import { getBusinessPublicInquiryUrl } from "@/features/settings/utils";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { hasFeatureAccess } from "@/lib/plans";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
@@ -84,11 +84,11 @@ type BusinessInquiryFormsManagerProps = {
     state: BusinessInquiryFormDangerActionState,
     formData: FormData,
   ) => Promise<BusinessInquiryFormDangerActionState>;
-  workspacePlan: WorkspacePlan;
+  plan: plan;
   billingProps?: {
-    workspaceId: string;
-    workspaceSlug: string;
-    currentPlan: WorkspacePlan;
+    businessId: string;
+    businessSlug: string;
+    currentPlan: plan;
     region: BillingRegion;
     defaultCurrency: BillingCurrency;
   };
@@ -100,7 +100,7 @@ export function BusinessInquiryFormsManager({
   settings,
   createAction,
   unarchiveAction,
-  workspacePlan,
+  plan,
   billingProps,
 }: BusinessInquiryFormsManagerProps) {
   const workspaceCheckout = useWorkspaceCheckout();
@@ -125,18 +125,18 @@ export function BusinessInquiryFormsManager({
   const useSharedCheckout = Boolean(
     workspaceCheckout &&
       billingProps &&
-      workspaceCheckout.workspaceId === billingProps.workspaceId,
+      workspaceCheckout.businessId === billingProps.businessId,
   );
-  const effectiveWorkspacePlan =
+  const effectiveplan =
     useSharedCheckout && workspaceCheckout
       ? workspaceCheckout.currentPlan
-      : workspacePlan;
+      : plan;
   const nameError = createState.fieldErrors?.name?.[0];
   const businessTypeError = createState.fieldErrors?.businessType?.[0];
   const activeForms = settings.forms.filter((form) => !form.archivedAt);
   const archivedForms = settings.forms.filter((form) => form.archivedAt);
   const canCreateAdditionalForms =
-    hasFeatureAccess(effectiveWorkspacePlan, "multipleForms") ||
+    hasFeatureAccess(effectiveplan, "multipleForms") ||
     activeForms.length === 0;
 
   return (
@@ -393,8 +393,8 @@ export function BusinessInquiryFormsManager({
                       plan={selectedPlan}
                       interval={selectedInterval}
                       region={billingProps.region}
-                      workspaceId={billingProps.workspaceId}
-                      workspaceSlug={billingProps.workspaceSlug}
+                      businessId={billingProps.businessId}
+                      businessSlug={billingProps.businessSlug}
                     />
                   ) : null}
                 </>

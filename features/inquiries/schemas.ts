@@ -16,7 +16,7 @@ import {
   getPublicInquiryAttachmentHelpText,
   getPublicInquiryAttachmentMaxBytes,
 } from "@/features/inquiries/plan-rules";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import {
   inquiryRecordViews,
   inquiryStatusFilterValues,
@@ -415,7 +415,7 @@ function createCustomFieldSchema(field: InquiryFormCustomFieldDefinition) {
 
 type PublicInquiryValidationOptions = {
   maxAttachmentSizeBytes?: number;
-  plan?: WorkspacePlan;
+  plan?: plan;
 };
 
 function resolveAttachmentMaxSizeBytes(

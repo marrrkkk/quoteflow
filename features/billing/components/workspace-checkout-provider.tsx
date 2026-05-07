@@ -44,7 +44,7 @@ import type {
   WorkspaceBillingOverview,
 } from "@/features/billing/types";
 import { planMeta } from "@/lib/plans";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import type { BillingInterval, PaidPlan } from "@/lib/billing/types";
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -67,12 +67,12 @@ const planUpgradeHighlights: Record<PaidPlan, string[]> = {
 };
 
 type WorkspaceCheckoutContextValue = {
-  currentPlan: WorkspacePlan;
+  currentPlan: plan;
   defaultCurrency: WorkspaceBillingOverview["defaultCurrency"];
   pendingCheckout: PersistedPendingCheckout | null;
   region: WorkspaceBillingOverview["region"];
-  workspaceId: string;
-  workspaceSlug: string;
+  businessId: string;
+  businessSlug: string;
   openPlanSelection: (targetPlan?: PaidPlan) => void;
   openCheckout: (plan: PaidPlan, interval?: BillingInterval) => void;
   continueCheckout: () => void;
@@ -105,15 +105,15 @@ const CHECKOUT_STATUS_POLL_INTERVAL_MS = 2500;
 const PROCESSING_REFRESH_DELAY_MS = 250;
 const PROCESSING_REFRESH_RETRY_MS = 3000;
 const PROCESSING_FALLBACK_MS = 15000;
-const PLAN_OVERRIDE_STORAGE_KEY = "requo.workspacePlanOverrides";
+const PLAN_OVERRIDE_STORAGE_KEY = "requo.planOverrides";
 const PLAN_OVERRIDE_TTL_MS = 10 * 60 * 1000;
 
 type PersistedPlanOverride = {
   expiresAt: number;
-  plan: WorkspacePlan;
+  plan: plan;
 };
 
-const planRank: Record<WorkspacePlan, number> = {
+const planRank: Record<plan, number> = {
   free: 0,
   pro: 1,
   business: 2,
@@ -156,11 +156,11 @@ function getPendingCheckoutFailureMessage(
     : "QR Ph payment failed. Please try again.";
 }
 
-function isWorkspacePlan(value: unknown): value is WorkspacePlan {
+function isplan(value: unknown): value is plan {
   return value === "free" || value === "pro" || value === "business";
 }
 
-function readPersistedPlanOverride(workspaceId: string) {
+function readPersistedPlanOverride(businessId: string) {
   if (typeof window === "undefined") {
     return null;
   }
@@ -170,14 +170,14 @@ function readPersistedPlanOverride(workspaceId: string) {
     const overrides = rawValue
       ? (JSON.parse(rawValue) as Record<string, PersistedPlanOverride>)
       : {};
-    const override = overrides[workspaceId];
+    const override = overrides[businessId];
 
-    if (!override || !isWorkspacePlan(override.plan)) {
+    if (!override || !isplan(override.plan)) {
       return null;
     }
 
     if (override.expiresAt <= Date.now()) {
-      delete overrides[workspaceId];
+      delete overrides[businessId];
       window.localStorage.setItem(
         PLAN_OVERRIDE_STORAGE_KEY,
         JSON.stringify(overrides),
@@ -191,7 +191,7 @@ function readPersistedPlanOverride(workspaceId: string) {
   }
 }
 
-function persistPlanOverride(workspaceId: string, plan: WorkspacePlan) {
+function persistPlanOverride(businessId: string, plan: plan) {
   if (typeof window === "undefined") {
     return;
   }
@@ -202,7 +202,7 @@ function persistPlanOverride(workspaceId: string, plan: WorkspacePlan) {
       ? (JSON.parse(rawValue) as Record<string, PersistedPlanOverride>)
       : {};
 
-    overrides[workspaceId] = {
+    overrides[businessId] = {
       expiresAt: Date.now() + PLAN_OVERRIDE_TTL_MS,
       plan,
     };
@@ -216,7 +216,7 @@ function persistPlanOverride(workspaceId: string, plan: WorkspacePlan) {
   }
 }
 
-function clearPersistedPlanOverride(workspaceId: string) {
+function clearPersistedPlanOverride(businessId: string) {
   if (typeof window === "undefined") {
     return;
   }
@@ -227,11 +227,11 @@ function clearPersistedPlanOverride(workspaceId: string) {
       ? (JSON.parse(rawValue) as Record<string, PersistedPlanOverride>)
       : {};
 
-    if (!overrides[workspaceId]) {
+    if (!overrides[businessId]) {
       return;
     }
 
-    delete overrides[workspaceId];
+    delete overrides[businessId];
     window.localStorage.setItem(
       PLAN_OVERRIDE_STORAGE_KEY,
       JSON.stringify(overrides),
@@ -253,7 +253,7 @@ export function WorkspaceCheckoutProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const workspaceId = billing.workspaceId;
+  const businessId = billing.businessId;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
@@ -264,7 +264,7 @@ export function WorkspaceCheckoutProvider({
   const [processingState, setProcessingState] = useState<ProcessingState | null>(
     null,
   );
-  const [currentPlan, setCurrentPlan] = useState<WorkspacePlan>(
+  const [currentPlan, setCurrentPlan] = useState<plan>(
     billing.currentPlan,
   );
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -317,12 +317,12 @@ export function WorkspaceCheckoutProvider({
     setProcessingState({ awaitingActivation: true, plan });
   }, []);
 
-  const confirmWorkspacePlan = useCallback(
-    (plan: WorkspacePlan) => {
+  const confirmplan = useCallback(
+    (plan: plan) => {
       setCurrentPlan(plan);
-      persistPlanOverride(workspaceId, plan);
+      persistPlanOverride(businessId, plan);
     },
-    [workspaceId],
+    [businessId],
   );
 
   const queueRefresh = useCallback(() => {
@@ -379,7 +379,7 @@ export function WorkspaceCheckoutProvider({
   const handleCheckoutFailure = useCallback(
     (message: string, failedCheckout: PersistedPendingCheckout | null) => {
       clearActivationFallback();
-      clearCachedPendingCheckout(workspaceId);
+      clearCachedPendingCheckout(businessId);
       setProcessingState(null);
       setSelectedPlan(failedCheckout?.plan ?? selectedPlan);
       setCheckoutError(message);
@@ -388,7 +388,7 @@ export function WorkspaceCheckoutProvider({
         toast.error(message);
       }
     },
-    [checkoutOpen, clearActivationFallback, selectedPlan, workspaceId],
+    [checkoutOpen, clearActivationFallback, selectedPlan, businessId],
   );
 
   useEffect(() => {
@@ -396,7 +396,7 @@ export function WorkspaceCheckoutProvider({
   }, [clearActivationFallback]);
 
   useEffect(() => {
-    const persistedPlan = readPersistedPlanOverride(workspaceId);
+    const persistedPlan = readPersistedPlanOverride(businessId);
 
     if (
       persistedPlan &&
@@ -409,30 +409,30 @@ export function WorkspaceCheckoutProvider({
     setCurrentPlan(billing.currentPlan);
 
     if (persistedPlan) {
-      clearPersistedPlanOverride(workspaceId);
+      clearPersistedPlanOverride(businessId);
     }
-  }, [billing.currentPlan, workspaceId]);
+  }, [billing.currentPlan, businessId]);
 
   useEffect(() => {
-    const initialCachedCheckout = getCachedPendingCheckout(workspaceId);
+    const initialCachedCheckout = getCachedPendingCheckout(businessId);
 
     if (initialCachedCheckout) {
       pendingCheckoutVersionRef.current += 1;
       setPendingCheckout(initialCachedCheckout);
     }
 
-    return subscribeToPendingCheckout(workspaceId, (nextCheckout) => {
+    return subscribeToPendingCheckout(businessId, (nextCheckout) => {
       pendingCheckoutVersionRef.current += 1;
       setPendingCheckout(nextCheckout);
     });
-  }, [workspaceId]);
+  }, [businessId]);
 
   useEffect(() => {
     let isActive = true;
     const recoveryVersion = pendingCheckoutVersionRef.current;
 
     async function recoverPendingCheckout() {
-      const recovered = await getPendingCheckoutAction(workspaceId);
+      const recovered = await getPendingCheckoutAction(businessId);
 
       if (!isActive) {
         return;
@@ -443,13 +443,13 @@ export function WorkspaceCheckoutProvider({
       }
 
       if (!recovered) {
-        clearCachedPendingCheckout(workspaceId);
+        clearCachedPendingCheckout(businessId);
         return;
       }
 
       const normalizedCheckout = normalizePendingCheckout(recovered);
       setSelectedPlan((currentPlan) => currentPlan ?? normalizedCheckout.plan);
-      setCachedPendingCheckout(workspaceId, normalizedCheckout);
+      setCachedPendingCheckout(businessId, normalizedCheckout);
     }
 
     void recoverPendingCheckout();
@@ -457,7 +457,7 @@ export function WorkspaceCheckoutProvider({
     return () => {
       isActive = false;
     };
-  }, [workspaceId]);
+  }, [businessId]);
 
   useEffect(() => {
     if (!pendingCheckout || pendingCheckout.provider !== "paymongo") {
@@ -478,7 +478,7 @@ export function WorkspaceCheckoutProvider({
         "This QR Ph payment expired. Generate a new QR code to try again.",
         pendingCheckout,
       );
-      void cleanupExpiredPendingAction(workspaceId);
+      void cleanupExpiredPendingAction(businessId);
     };
 
     if (expiresInMs <= 0) {
@@ -491,7 +491,7 @@ export function WorkspaceCheckoutProvider({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [handleCheckoutFailure, pendingCheckout, workspaceId]);
+  }, [handleCheckoutFailure, pendingCheckout, businessId]);
 
   useEffect(() => {
     const activeStatus = billing.subscription?.status;
@@ -505,11 +505,11 @@ export function WorkspaceCheckoutProvider({
       return;
     }
 
-    clearCachedPendingCheckout(workspaceId);
+    clearCachedPendingCheckout(businessId);
     clearActivationFallback();
     refreshQueuedRef.current = false;
     const upgradedPlan = processingState.plan;
-    confirmWorkspacePlan(upgradedPlan);
+    confirmplan(upgradedPlan);
     queueMicrotask(() => {
       setProcessingState(null);
       setCheckoutOpen(false);
@@ -521,9 +521,9 @@ export function WorkspaceCheckoutProvider({
     billing.currentPlan,
     billing.subscription?.status,
     clearActivationFallback,
-    confirmWorkspacePlan,
+    confirmplan,
     processingState,
-    workspaceId,
+    businessId,
   ]);
 
   useEffect(() => {
@@ -625,9 +625,9 @@ export function WorkspaceCheckoutProvider({
         (rowPlan === planToTrack || effectivePlan === planToTrack) &&
         (status === "active" || status === "past_due")
       ) {
-        confirmWorkspacePlan(planToTrack);
+        confirmplan(planToTrack);
         beginProcessing(planToTrack, false);
-        clearCachedPendingCheckout(workspaceId);
+        clearCachedPendingCheckout(businessId);
         scheduleActivationFallback(planToTrack);
         queueRefresh();
         return;
@@ -662,7 +662,7 @@ export function WorkspaceCheckoutProvider({
       if (row.status === "succeeded") {
         if (pendingCheckout) {
           beginProcessing(pendingCheckout.plan, true);
-          clearCachedPendingCheckout(workspaceId);
+          clearCachedPendingCheckout(businessId);
           return;
         }
 
@@ -695,7 +695,7 @@ export function WorkspaceCheckoutProvider({
 
       try {
         const snapshot = await getCheckoutStatusAction(
-          workspaceId,
+          businessId,
           trackedPaymentAttemptId,
         );
 
@@ -733,12 +733,12 @@ export function WorkspaceCheckoutProvider({
       await supabase.realtime.setAuth(tokenData.token);
 
       subscriptionChannel = supabase
-        .channel(`workspace-subscription:${workspaceId}:${planToTrack ?? "any"}:${channelSuffix}`)
+        .channel(`workspace-subscription:${businessId}:${planToTrack ?? "any"}:${channelSuffix}`)
         .on(
           "postgres_changes",
           {
             event: "INSERT",
-            filter: `workspace_id=eq.${workspaceId}`,
+            filter: `workspace_id=eq.${businessId}`,
             schema: "public",
             table: "workspace_subscriptions",
           },
@@ -750,7 +750,7 @@ export function WorkspaceCheckoutProvider({
           "postgres_changes",
           {
             event: "UPDATE",
-            filter: `workspace_id=eq.${workspaceId}`,
+            filter: `workspace_id=eq.${businessId}`,
             schema: "public",
             table: "workspace_subscriptions",
           },
@@ -762,12 +762,12 @@ export function WorkspaceCheckoutProvider({
 
       if (trackedPaymentAttemptId) {
         paymentAttemptsChannel = supabase
-          .channel(`payment-attempt:${workspaceId}:${trackedPaymentAttemptId}:${channelSuffix}`)
+          .channel(`payment-attempt:${businessId}:${trackedPaymentAttemptId}:${channelSuffix}`)
           .on(
             "postgres_changes",
             {
               event: "INSERT",
-              filter: `workspace_id=eq.${workspaceId}`,
+              filter: `workspace_id=eq.${businessId}`,
               schema: "public",
               table: "payment_attempts",
             },
@@ -779,7 +779,7 @@ export function WorkspaceCheckoutProvider({
             "postgres_changes",
             {
               event: "UPDATE",
-              filter: `workspace_id=eq.${workspaceId}`,
+              filter: `workspace_id=eq.${businessId}`,
               schema: "public",
               table: "payment_attempts",
             },
@@ -811,13 +811,13 @@ export function WorkspaceCheckoutProvider({
   }, [
     activePaddleCheckout,
     billing.currentPlan,
-    confirmWorkspacePlan,
+    confirmplan,
     handleCheckoutFailure,
     pendingCheckout,
     processingState,
     queueRefresh,
     scheduleActivationFallback,
-    workspaceId,
+    businessId,
   ]);
 
   const contextValue = useMemo<WorkspaceCheckoutContextValue>(
@@ -826,8 +826,8 @@ export function WorkspaceCheckoutProvider({
       defaultCurrency: billing.defaultCurrency,
       pendingCheckout,
       region: billing.region,
-      workspaceId: billing.workspaceId,
-      workspaceSlug: billing.workspaceSlug,
+      businessId: billing.businessId,
+      businessSlug: billing.businessSlug,
       openPlanSelection,
       openCheckout,
       continueCheckout,
@@ -836,8 +836,8 @@ export function WorkspaceCheckoutProvider({
       currentPlan,
       billing.defaultCurrency,
       billing.region,
-      billing.workspaceId,
-      billing.workspaceSlug,
+      billing.businessId,
+      billing.businessSlug,
       continueCheckout,
       openCheckout,
       openPlanSelection,
@@ -873,9 +873,9 @@ export function WorkspaceCheckoutProvider({
           interval={selectedInterval}
           plan={selectedPlan}
           region={billing.region}
-          workspaceId={billing.workspaceId}
-          workspaceName={billing.workspaceName}
-          workspaceSlug={billing.workspaceSlug}
+          businessId={billing.businessId}
+          workspaceName={billing.businessName}
+          businessSlug={billing.businessSlug}
         />
       ) : null}
       <Dialog open={Boolean(processingState)} onOpenChange={() => {}}>

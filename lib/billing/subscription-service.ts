@@ -1,81 +1,84 @@
 import "server-only";
 
 /**
- * Core subscription operations. All workspace plan state mutations go
+ * Core subscription operations. All business plan state mutations go
  * through this module so the logic stays centralized.
  *
- * The workspace `plan` column is kept in sync as a denormalized read
- * cache. The authoritative state lives in `workspace_subscriptions`.
+ * The business `plan` column is kept in sync as a denormalized read
+ * cache. The authoritative state lives in `business_subscriptions`.
  */
 
 import { eq } from "drizzle-orm";
 import { revalidateTag } from "next/cache";
 
 import { db } from "@/lib/db/client";
-import { workspaces } from "@/lib/db/schema/workspaces";
-import { getWorkspaceBillingCacheTags } from "@/lib/cache/shell-tags";
+import { businesses } from "@/lib/db/schema/businesses";
+import { getBusinessBillingCacheTags } from "@/lib/cache/shell-tags";
 import {
-  workspaceSubscriptions,
+  businessSubscriptions,
   type BillingCurrency,
   type BillingProvider,
   type SubscriptionStatus,
 } from "@/lib/db/schema/subscriptions";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan } from "@/lib/plans/plans";
 
-type SubscriptionRow = typeof workspaceSubscriptions.$inferSelect;
+type SubscriptionRow = typeof businessSubscriptions.$inferSelect;
 
 /* ── Read ──────────────────────────────────────────────────────────────────── */
 
 /**
- * Returns the subscription row for a workspace, or `null` if no
- * subscription exists (workspace is implicitly free).
+ * Returns the subscription row for a business, or `null` if no
+ * subscription exists (business is implicitly free).
  */
-export async function getWorkspaceSubscription(
-  workspaceId: string,
+export async function getBusinessSubscription(
+  businessId: string,
 ): Promise<SubscriptionRow | null> {
   const [row] = await db
     .select()
-    .from(workspaceSubscriptions)
-    .where(eq(workspaceSubscriptions.workspaceId, workspaceId))
+    .from(businessSubscriptions)
+    .where(eq(businessSubscriptions.businessId, businessId))
     .limit(1);
 
   return row ?? null;
 }
 
+/** @deprecated Use `getBusinessSubscription` instead. */
+export const getWorkspaceSubscription = getBusinessSubscription;
+
 /**
  * Resolves the effective plan from the subscription state.
- * Falls back to the `workspaces.plan` column for backward compatibility
- * with existing free workspaces that don't have a subscription row.
+ * Falls back to the `businesses.plan` column for backward compatibility
+ * with existing free businesses that don't have a subscription row.
  */
 export async function getEffectivePlan(
-  workspaceId: string,
-): Promise<WorkspacePlan> {
-  const subscription = await getWorkspaceSubscription(workspaceId);
+  businessId: string,
+): Promise<BusinessPlan> {
+  const subscription = await getBusinessSubscription(businessId);
 
   if (!subscription) {
-    // No subscription row → read from workspace.plan (backward compat)
-    const [ws] = await db
-      .select({ plan: workspaces.plan })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId))
+    // No subscription row → read from business.plan (backward compat)
+    const [biz] = await db
+      .select({ plan: businesses.plan })
+      .from(businesses)
+      .where(eq(businesses.id, businessId))
       .limit(1);
 
-    return (ws?.plan as WorkspacePlan) ?? "free";
+    return (biz?.plan as BusinessPlan) ?? "free";
   }
 
   return resolveEffectivePlanFromSubscription(subscription);
 }
 
 /**
- * Pure function that resolves the effective workspace plan from a
+ * Pure function that resolves the effective business plan from a
  * subscription row. Exported for unit testing.
  */
 export function resolveEffectivePlanFromSubscription(
   subscription: SubscriptionRow,
-): WorkspacePlan {
+): BusinessPlan {
   switch (subscription.status) {
     case "active":
-      return subscription.plan as WorkspacePlan;
+      return subscription.plan as BusinessPlan;
 
     case "canceled":
       // Still active until end of billing period
@@ -83,13 +86,13 @@ export function resolveEffectivePlanFromSubscription(
         subscription.currentPeriodEnd &&
         subscription.currentPeriodEnd > new Date()
       ) {
-        return subscription.plan as WorkspacePlan;
+        return subscription.plan as BusinessPlan;
       }
       return "free";
 
     case "past_due":
       // Grace period: keep paid access
-      return subscription.plan as WorkspacePlan;
+      return subscription.plan as BusinessPlan;
 
     case "pending":
     case "expired":
@@ -107,8 +110,8 @@ function generateId(prefix: string): string {
 }
 
 type ActivateSubscriptionParams = {
-  workspaceId: string;
-  plan: WorkspacePlan;
+  businessId: string;
+  plan: BusinessPlan;
   provider: BillingProvider;
   currency: BillingCurrency;
   status?: SubscriptionStatus;
@@ -120,20 +123,20 @@ type ActivateSubscriptionParams = {
 };
 
 /**
- * Creates or updates a workspace subscription to an active state.
- * Also syncs the workspace `plan` column.
+ * Creates or updates a business subscription to an active state.
+ * Also syncs the business `plan` column.
  */
 export async function activateSubscription(
   params: ActivateSubscriptionParams,
 ): Promise<SubscriptionRow> {
   const now = new Date();
-  const existing = await getWorkspaceSubscription(params.workspaceId);
+  const existing = await getBusinessSubscription(params.businessId);
 
   let subscription: SubscriptionRow;
 
   if (existing) {
     const [updated] = await db
-      .update(workspaceSubscriptions)
+      .update(businessSubscriptions)
       .set({
         status: params.status ?? "active",
         plan: params.plan,
@@ -149,16 +152,16 @@ export async function activateSubscription(
         canceledAt: null,
         updatedAt: now,
       })
-      .where(eq(workspaceSubscriptions.id, existing.id))
+      .where(eq(businessSubscriptions.id, existing.id))
       .returning();
 
     subscription = updated!;
   } else {
     const [created] = await db
-      .insert(workspaceSubscriptions)
+      .insert(businessSubscriptions)
       .values({
         id: generateId("sub"),
-        workspaceId: params.workspaceId,
+        businessId: params.businessId,
         status: params.status ?? "active",
         plan: params.plan,
         billingProvider: params.provider,
@@ -172,7 +175,7 @@ export async function activateSubscription(
         updatedAt: now,
       })
       .onConflictDoUpdate({
-        target: workspaceSubscriptions.workspaceId,
+        target: businessSubscriptions.businessId,
         set: {
           status: params.status ?? "active",
           plan: params.plan,
@@ -192,13 +195,13 @@ export async function activateSubscription(
     subscription = created!;
   }
 
-  // Sync workspace plan column — only upgrade when status grants access
+  // Sync business plan column — only upgrade when status grants access
   const effectiveStatus = params.status ?? "active";
   const planToSync =
     effectiveStatus === "active" || effectiveStatus === "past_due"
       ? params.plan
       : "free";
-  await syncWorkspacePlanColumn(params.workspaceId, planToSync);
+  await syncBusinessPlanColumn(params.businessId, planToSync);
 
   return subscription;
 }
@@ -216,7 +219,7 @@ export async function createPendingSubscription(
  * Updates a subscription status from a provider event.
  */
 export async function updateSubscriptionStatus(
-  workspaceId: string,
+  businessId: string,
   status: SubscriptionStatus,
   updates?: {
     providerSubscriptionId?: string | null;
@@ -226,14 +229,14 @@ export async function updateSubscriptionStatus(
     canceledAt?: Date | null;
   },
 ): Promise<SubscriptionRow | null> {
-  const existing = await getWorkspaceSubscription(workspaceId);
+  const existing = await getBusinessSubscription(businessId);
 
   if (!existing) {
     return null;
   }
 
   const [updated] = await db
-    .update(workspaceSubscriptions)
+    .update(businessSubscriptions)
     .set({
       status,
       providerSubscriptionId:
@@ -247,53 +250,53 @@ export async function updateSubscriptionStatus(
       canceledAt: updates?.canceledAt ?? existing.canceledAt,
       updatedAt: new Date(),
     })
-    .where(eq(workspaceSubscriptions.id, existing.id))
+    .where(eq(businessSubscriptions.id, existing.id))
     .returning();
 
-  // Sync workspace plan column
+  // Sync business plan column
   const effectivePlan = resolveEffectivePlanFromSubscription(updated!);
-  await syncWorkspacePlanColumn(workspaceId, effectivePlan);
+  await syncBusinessPlanColumn(businessId, effectivePlan);
 
   return updated!;
 }
 
 /**
- * Marks a subscription as canceled. The workspace keeps paid access
+ * Marks a subscription as canceled. The business keeps paid access
  * until `currentPeriodEnd`.
  */
 export async function cancelSubscription(
-  workspaceId: string,
+  businessId: string,
 ): Promise<SubscriptionRow | null> {
-  return updateSubscriptionStatus(workspaceId, "canceled", {
+  return updateSubscriptionStatus(businessId, "canceled", {
     canceledAt: new Date(),
   });
 }
 
 /**
- * Marks a subscription as expired and downgrades the workspace to free.
+ * Marks a subscription as expired and downgrades the business to free.
  */
 export async function expireSubscription(
-  workspaceId: string,
+  businessId: string,
 ): Promise<SubscriptionRow | null> {
-  return updateSubscriptionStatus(workspaceId, "expired");
+  return updateSubscriptionStatus(businessId, "expired");
 }
 
 /* ── Sync helper ───────────────────────────────────────────────────────────── */
 
 /**
- * Keeps the workspace `plan` column in sync with the subscription state.
+ * Keeps the business `plan` column in sync with the subscription state.
  * This column is used as a denormalized read cache by `lib/plans/queries.ts`.
  */
-async function syncWorkspacePlanColumn(
-  workspaceId: string,
-  plan: WorkspacePlan,
+async function syncBusinessPlanColumn(
+  businessId: string,
+  plan: BusinessPlan,
 ): Promise<void> {
   await db
-    .update(workspaces)
+    .update(businesses)
     .set({ plan, updatedAt: new Date() })
-    .where(eq(workspaces.id, workspaceId));
+    .where(eq(businesses.id, businessId));
 
-  for (const tag of getWorkspaceBillingCacheTags(workspaceId)) {
+  for (const tag of getBusinessBillingCacheTags(businessId)) {
     revalidateTag(tag, { expire: 0 });
   }
 }

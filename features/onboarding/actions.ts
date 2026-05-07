@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 
 import { getValidationActionState } from "@/lib/action-state";
 import { requireUser } from "@/lib/auth/session";
+import {
+  getBusinessQuotaExceededMessage,
+  isBusinessQuotaExceededError,
+} from "@/features/businesses/quota";
 import { getBusinessDashboardPath } from "@/features/businesses/routes";
 import {
   inquiryFormConfigSchema,
@@ -40,7 +44,6 @@ export async function completeOnboardingAction(
 
   const user = await requireUser();
   const validationResult = completeOnboardingSchema.safeParse({
-    workspaceName: formData.get("workspaceName"),
     businessName: formData.get("businessName"),
     businessType: formData.get("businessType"),
     countryCode: formData.get("countryCode"),
@@ -70,7 +73,6 @@ export async function completeOnboardingAction(
       jobTitle: validationResult.data.jobTitle,
       companySize: validationResult.data.companySize,
       referralSource: validationResult.data.referralSource,
-      workspaceName: validationResult.data.workspaceName,
       businessName: validationResult.data.businessName,
       businessType: validationResult.data.businessType,
       countryCode: validationResult.data.countryCode,
@@ -82,6 +84,12 @@ export async function completeOnboardingAction(
 
     dashboardPath = getBusinessDashboardPath(business.slug);
   } catch (error) {
+    if (isBusinessQuotaExceededError(error)) {
+      return {
+        error: getBusinessQuotaExceededMessage(error.quota),
+      };
+    }
+
     console.error("Failed to complete onboarding.", error);
 
     return {

@@ -1,5 +1,5 @@
-import type { WorkspaceMemberAssignableRole } from "@/features/workspace-members/types";
-import { workspaceMemberRoleMeta } from "@/features/workspace-members/types";
+import type { BusinessMemberRole } from "@/lib/business-members";
+import { businessMemberRoleMeta } from "@/lib/business-members";
 import {
   emailBrand,
   escapeHtml,
@@ -10,7 +10,7 @@ import {
 type WorkspaceMemberInviteTemplateInput = {
   workspaceName: string;
   inviterName: string;
-  workspaceRole: WorkspaceMemberAssignableRole;
+  workspaceRole: BusinessMemberRole;
   inviteUrl: string;
 };
 
@@ -20,7 +20,7 @@ export function renderWorkspaceMemberInviteEmail({
   workspaceRole,
   inviteUrl,
 }: WorkspaceMemberInviteTemplateInput) {
-  const roleLabel = workspaceMemberRoleMeta[workspaceRole].label;
+  const roleLabel = businessMemberRoleMeta[workspaceRole].label;
   const subject = `${inviterName} invited you to join ${workspaceName} on Requo`;
   const text = `Hi,
 

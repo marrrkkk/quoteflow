@@ -17,8 +17,7 @@ import {
   uniqueCacheTags,
 } from "@/lib/cache/business-tags";
 import { getBusinessActionContext } from "@/lib/db/business-access";
-import { getWorkspacesForUser } from "@/lib/db/workspace-access";
-import { checkUsageAllowance } from "@/lib/plans/usage";
+import { getBusinessMembershipsForUser } from "@/lib/db/business-access";
 import {
   archiveBusiness,
   createBusinessForUser,
@@ -26,6 +25,11 @@ import {
   trashBusiness,
   unarchiveBusiness,
 } from "@/features/businesses/mutations";
+import {
+  getBusinessQuotaExceededMessage,
+  getBusinessQuotaForUser,
+  isBusinessQuotaExceededError,
+} from "@/features/businesses/quota";
 import { recordRecentlyOpenedBusiness } from "@/features/businesses/recently-opened";
 import {
   createBusinessSchema,
@@ -33,20 +37,17 @@ import {
 } from "@/features/businesses/schemas";
 import {
   activeBusinessSlugCookieName,
+  businessesHubPath,
   getBusinessDashboardPath,
   getBusinessFormsPath,
+  getBusinessPath,
   getBusinessSettingsPath,
 } from "@/features/businesses/routes";
 import type {
   BusinessRecordActionState,
   CreateBusinessActionState,
 } from "@/features/businesses/types";
-import type { WorkspacePlan } from "@/lib/plans";
-import {
-  getWorkspacePath,
-  getWorkspaceSettingsPath,
-  workspacesHubPath,
-} from "@/features/workspaces/routes";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 
 const initialCreateState: CreateBusinessActionState = {};
 const initialBusinessRecordState: BusinessRecordActionState = {};
@@ -67,14 +68,12 @@ function updateBusinessCacheTags(businessId: string) {
 
 function revalidateBusinessLifecyclePaths({
   businessSlug,
-  workspaceSlug,
 }: {
   businessSlug: string;
-  workspaceSlug: string;
 }) {
-  revalidatePath(workspacesHubPath);
-  revalidatePath(getWorkspacePath(workspaceSlug));
-  revalidatePath(getWorkspaceSettingsPath(workspaceSlug));
+  revalidatePath(businessesHubPath);
+  revalidatePath(getBusinessPath(businessSlug));
+  revalidatePath(getBusinessSettingsPath(businessSlug));
   revalidatePath(getBusinessDashboardPath(businessSlug), "layout");
   revalidatePath(getBusinessSettingsPath(businessSlug));
   revalidatePath(getBusinessSettingsPath(businessSlug, "general"));
@@ -115,7 +114,7 @@ export async function recordRecentlyOpenedBusinessAction(
       businessId: access.businessContext.business.id,
       userId: access.user.id,
     });
-    revalidatePath(workspacesHubPath);
+    revalidatePath(businessesHubPath);
 
     return { ok: true };
   } catch (error) {
@@ -136,7 +135,6 @@ export async function createBusinessAction(
     name: formData.get("name"),
     businessType: formData.get("businessType"),
     defaultCurrency: formData.get("defaultCurrency"),
-    workspaceId: formData.get("workspaceId"),
   });
 
   if (!validationResult.success) {
@@ -146,38 +144,14 @@ export async function createBusinessAction(
     );
   }
 
-  const userWorkspaces = await getWorkspacesForUser(user.id);
-  const workspace = userWorkspaces.find(
-    (item) => item.id === validationResult.data.workspaceId,
-  );
-
-  if (!workspace) {
-    return {
-      error: "Selected workspace not found. Please try again.",
-    };
-  }
-
-  if (workspace.deletedAt) {
-    return {
-      error: "That workspace has already been deleted.",
-    };
-  }
-
-  if (workspace.scheduledDeletionAt) {
-    return {
-      error: "This workspace is scheduled for deletion. Cancel the deletion schedule before adding another business.",
-    };
-  }
-
-  const businessAllowance = await checkUsageAllowance(
-    workspace.id,
-    workspace.plan as WorkspacePlan,
-    "businessesPerWorkspace",
-  );
+  const businessAllowance = await getBusinessQuotaForUser({
+    ownerUserId: user.id,
+    plan: "free" as plan,
+  });
 
   if (!businessAllowance.allowed) {
     return {
-      error: `Your workspace's ${workspace.plan === "free" ? "Free" : "current"} plan supports ${businessAllowance.limit} business${businessAllowance.limit === 1 ? "" : "es"}. Upgrade your workspace to add more.`,
+      error: getBusinessQuotaExceededMessage(businessAllowance),
     };
   }
 
@@ -186,15 +160,21 @@ export async function createBusinessAction(
   try {
     const business = await createBusinessForUser({
       user,
-      workspaceId: workspace.id,
+      businessId: `biz_${crypto.randomUUID().replace(/-/g, "")}`,
       defaultCurrency: validationResult.data.defaultCurrency,
       name: validationResult.data.name,
       businessType: validationResult.data.businessType,
-      workspacePlan: workspace.plan as WorkspacePlan,
+      plan: "free" as plan,
     });
 
     dashboardPath = getBusinessDashboardPath(business.slug);
   } catch (error) {
+    if (isBusinessQuotaExceededError(error)) {
+      return {
+        error: getBusinessQuotaExceededMessage(error.quota),
+      };
+    }
+
     console.error("Failed to create business.", error);
 
     return {
@@ -210,6 +190,7 @@ export async function createBusinessAction(
     error: "We couldn't create that business right now.",
   };
 }
+
 
 export async function archiveBusinessAction(
   businessId: string,
@@ -235,7 +216,6 @@ export async function archiveBusinessAction(
   return archiveScopedBusiness(
     ownerAccess.user.id,
     ownerAccess.businessContext.business.id,
-    businessId,
     businessSlug,
   );
 }
@@ -243,12 +223,11 @@ export async function archiveBusinessAction(
 async function archiveScopedBusiness(
   actorUserId: string,
   scopedBusinessId: string,
-  businessId: string,
   businessSlug: string,
 ): Promise<BusinessRecordActionState> {
   try {
     const result = await archiveBusiness({
-      businessId,
+      businessId: scopedBusinessId,
       actorUserId,
     });
 
@@ -274,7 +253,6 @@ async function archiveScopedBusiness(
     updateBusinessCacheTags(scopedBusinessId);
     revalidateBusinessLifecyclePaths({
       businessSlug: result.businessSlug,
-      workspaceSlug: result.workspaceSlug,
     });
 
     return {
@@ -337,7 +315,6 @@ export async function unarchiveBusinessAction(
     updateBusinessCacheTags(ownerAccess.businessContext.business.id);
     revalidateBusinessLifecyclePaths({
       businessSlug: result.businessSlug,
-      workspaceSlug: result.workspaceSlug,
     });
 
     return {
@@ -416,7 +393,6 @@ export async function trashBusinessAction(
     updateBusinessCacheTags(ownerAccess.businessContext.business.id);
     revalidateBusinessLifecyclePaths({
       businessSlug: result.businessSlug,
-      workspaceSlug: result.workspaceSlug,
     });
 
     return {
@@ -473,7 +449,6 @@ export async function restoreBusinessAction(
     updateBusinessCacheTags(ownerAccess.businessContext.business.id);
     revalidateBusinessLifecyclePaths({
       businessSlug: result.businessSlug,
-      workspaceSlug: result.workspaceSlug,
     });
 
     return {

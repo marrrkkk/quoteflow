@@ -6,12 +6,10 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 
 import {
-  getWorkspaceScopeTag,
   getUserBusinessContextCacheTags,
   getUserMembershipsCacheTags,
   membershipShellCacheLife,
 } from "@/lib/cache/shell-tags";
-import { uniqueCacheTags } from "@/lib/cache/business-tags";
 import { getEffectivePlan } from "@/lib/billing/subscription-service";
 
 import type {
@@ -23,7 +21,7 @@ import {
   getBusinessViewCondition,
 } from "@/features/businesses/lifecycle";
 import type { BusinessType } from "@/features/inquiries/business-types";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan } from "@/lib/plans/plans";
 import {
   type BusinessMemberRole,
   businessMemberRoleMeta,
@@ -45,7 +43,6 @@ import {
   businessInquiryForms,
   businessMembers,
   businesses,
-  workspaces,
 } from "@/lib/db/schema";
 
 export type BusinessContext = {
@@ -53,9 +50,7 @@ export type BusinessContext = {
   role: BusinessMemberRole;
   business: {
     id: string;
-    workspaceId: string;
-    workspaceSlug: string;
-    workspacePlan: WorkspacePlan;
+    plan: BusinessPlan;
     name: string;
     slug: string;
     businessType: BusinessType;
@@ -136,9 +131,7 @@ async function getCachedBusinessMemberships(
       membershipId: businessMembers.id,
       role: businessMembers.role,
       businessId: businesses.id,
-      workspaceId: businesses.workspaceId,
-      workspaceSlug: workspaces.slug,
-      workspacePlan: workspaces.plan,
+      businessPlan: businesses.plan,
       businessName: businesses.name,
       businessSlug: businesses.slug,
       businessType: businesses.businessType,
@@ -151,11 +144,9 @@ async function getCachedBusinessMemberships(
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
-    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(
       and(
         eq(businessMembers.userId, userId),
-        isNull(workspaces.deletedAt),
         view === "all" ? undefined : getBusinessViewCondition(view),
       ),
     )
@@ -165,24 +156,12 @@ async function getCachedBusinessMemberships(
       asc(businesses.createdAt),
     );
 
-  const workspaceTags = uniqueCacheTags(
-    memberships.map((membership) =>
-      getWorkspaceScopeTag(membership.workspaceId),
-    ),
-  );
-
-  if (workspaceTags.length > 0) {
-    cacheTag(...workspaceTags);
-  }
-
   return memberships.map((membership) => ({
     membershipId: membership.membershipId,
     role: membership.role,
     business: {
       id: membership.businessId,
-      workspaceId: membership.workspaceId,
-      workspaceSlug: membership.workspaceSlug,
-      workspacePlan: membership.workspacePlan as WorkspacePlan,
+      plan: membership.businessPlan as BusinessPlan,
       name: membership.businessName,
       slug: membership.businessSlug,
       businessType: membership.businessType,
@@ -202,7 +181,7 @@ export const getBusinessMembershipsForUser = cache(async (
 ) => {
   const memberships = await getCachedBusinessMemberships(userId, view);
 
-  return applyEffectiveWorkspacePlans(memberships);
+  return applyEffectiveBusinessPlans(memberships);
 });
 
 async function getCachedBusinessContextForMembershipSlug(
@@ -229,9 +208,7 @@ async function getCachedBusinessContextForMembershipSlug(
       membershipId: businessMembers.id,
       role: businessMembers.role,
       businessId: businesses.id,
-      workspaceId: businesses.workspaceId,
-      workspaceSlug: workspaces.slug,
-      workspacePlan: workspaces.plan,
+      businessPlan: businesses.plan,
       businessName: businesses.name,
       businessSlug: businesses.slug,
       businessType: businesses.businessType,
@@ -244,12 +221,10 @@ async function getCachedBusinessContextForMembershipSlug(
     })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
-    .innerJoin(workspaces, eq(businesses.workspaceId, workspaces.id))
     .where(
       and(
         eq(businessMembers.userId, userId),
         eq(businesses.slug, businessSlug),
-        isNull(workspaces.deletedAt),
         includeInactive ? undefined : getBusinessViewCondition("active"),
       ),
     )
@@ -259,16 +234,12 @@ async function getCachedBusinessContextForMembershipSlug(
     return null;
   }
 
-  cacheTag(getWorkspaceScopeTag(context.workspaceId));
-
   return {
     membershipId: context.membershipId,
     role: context.role,
     business: {
       id: context.businessId,
-      workspaceId: context.workspaceId,
-      workspaceSlug: context.workspaceSlug,
-      workspacePlan: context.workspacePlan as WorkspacePlan,
+      plan: context.businessPlan as BusinessPlan,
       name: context.businessName,
       slug: context.businessSlug,
       businessType: context.businessType,
@@ -293,23 +264,23 @@ export const getBusinessContextForMembershipSlug = cache(async (
     includeInactive,
   );
 
-  return applyEffectiveWorkspacePlan(context);
+  return applyEffectiveBusinessPlan(context);
 });
 
-async function getEffectiveWorkspacePlanMap(workspaceIds: string[]) {
-  const uniqueWorkspaceIds = Array.from(new Set(workspaceIds));
+async function getEffectiveBusinessPlanMap(businessIds: string[]) {
+  const uniqueBusinessIds = Array.from(new Set(businessIds));
   const entries = await Promise.all(
-    uniqueWorkspaceIds.map(async (workspaceId) => {
+    uniqueBusinessIds.map(async (businessId) => {
       try {
-        return [workspaceId, await getEffectivePlan(workspaceId)] as const;
+        return [businessId, await getEffectivePlan(businessId)] as const;
       } catch (error) {
         console.error(
-          "Failed to resolve effective workspace plan.",
-          { workspaceId },
+          "Failed to resolve effective business plan.",
+          { businessId },
           error,
         );
 
-        return [workspaceId, null] as const;
+        return [businessId, null] as const;
       }
     }),
   );
@@ -317,21 +288,21 @@ async function getEffectiveWorkspacePlanMap(workspaceIds: string[]) {
   return new Map(entries);
 }
 
-async function applyEffectiveWorkspacePlans(contexts: BusinessContext[]) {
+async function applyEffectiveBusinessPlans(contexts: BusinessContext[]) {
   if (contexts.length === 0) {
     return contexts;
   }
 
-  const planByWorkspaceId = await getEffectiveWorkspacePlanMap(
-    contexts.map((context) => context.business.workspaceId),
+  const planByBusinessId = await getEffectiveBusinessPlanMap(
+    contexts.map((context) => context.business.id),
   );
 
   return contexts.map((context) => {
-    const workspacePlan =
-      planByWorkspaceId.get(context.business.workspaceId) ??
-      context.business.workspacePlan;
+    const plan =
+      planByBusinessId.get(context.business.id) ??
+      context.business.plan;
 
-    if (workspacePlan === context.business.workspacePlan) {
+    if (plan === context.business.plan) {
       return context;
     }
 
@@ -339,23 +310,23 @@ async function applyEffectiveWorkspacePlans(contexts: BusinessContext[]) {
       ...context,
       business: {
         ...context.business,
-        workspacePlan,
+        plan,
       },
     };
   }) satisfies BusinessContext[];
 }
 
-async function applyEffectiveWorkspacePlan(context: BusinessContext | null) {
+async function applyEffectiveBusinessPlan(context: BusinessContext | null) {
   if (!context) {
     return null;
   }
 
-  const workspacePlan =
-    (await getEffectiveWorkspacePlanMap([context.business.workspaceId])).get(
-      context.business.workspaceId,
-    ) ?? context.business.workspacePlan;
+  const plan =
+    (await getEffectiveBusinessPlanMap([context.business.id])).get(
+      context.business.id,
+    ) ?? context.business.plan;
 
-  if (workspacePlan === context.business.workspacePlan) {
+  if (plan === context.business.plan) {
     return context;
   }
 
@@ -363,7 +334,7 @@ async function applyEffectiveWorkspacePlan(context: BusinessContext | null) {
     ...context,
     business: {
       ...context.business,
-      workspacePlan,
+      plan,
     },
   } satisfies BusinessContext;
 }

@@ -63,8 +63,7 @@ export type AuditLogFilters = {
 
 export type WorkspaceAuditLogItem = {
   id: string;
-  workspaceId: string;
-  businessId: string | null;
+  businessId: string;
   businessName: string | null;
   businessSlug: string | null;
   actorUserId: string | null;

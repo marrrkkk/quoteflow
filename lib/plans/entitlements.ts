@@ -154,5 +154,5 @@ export const planFeatureDescriptions: Record<PlanFeature, string> = {
   branding:
     "Remove Requo branding and unlock advanced brand controls.",
   multiBusiness:
-    "Manage more than one business in this workspace.",
+    "Manage more than one total business across your businesses.",
 };

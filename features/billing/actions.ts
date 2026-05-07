@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/session";
 import { writeAuditLog } from "@/features/audit/mutations";
-import { getWorkspaceContextForUser } from "@/lib/db/workspace-access";
+import { getBusinessContextForUser } from "@/lib/db/business-access";
 import { isPayMongoConfigured, isPaddleConfigured } from "@/lib/env";
 import { getPlanPrice } from "@/lib/billing/plans";
 import { getProviderForCurrency } from "@/lib/billing/region";
 import {
   createPendingSubscription,
-  getWorkspaceSubscription,
+  getBusinessSubscription,
   resolveEffectivePlanFromSubscription,
 } from "@/lib/billing/subscription-service";
 import { recordPaymentAttempt } from "@/lib/billing/webhook-processor";
@@ -23,10 +23,10 @@ import type {
   PendingQrPhData,
 } from "@/features/billing/types";
 import type { BillingCurrency, BillingInterval, PaidPlan } from "@/lib/billing/types";
-import { getWorkspacePath } from "@/features/workspaces/routes";
+import { getBusinessPath } from "@/features/businesses/routes";
 
 async function getLatestPendingPaymentAttempt(
-  workspaceId: string,
+  businessId: string,
   provider: "paymongo" | "paddle",
 ) {
   const { db } = await import("@/lib/db/client");
@@ -38,7 +38,7 @@ async function getLatestPendingPaymentAttempt(
     .from(paymentAttempts)
     .where(
       and(
-        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.businessId, businessId),
         eq(paymentAttempts.provider, provider),
         eq(paymentAttempts.status, "pending"),
       ),
@@ -50,7 +50,7 @@ async function getLatestPendingPaymentAttempt(
 }
 
 async function getLatestPaymentAttemptForCheckout(
-  workspaceId: string,
+  businessId: string,
   providerPaymentId: string,
 ) {
   const { db } = await import("@/lib/db/client");
@@ -65,7 +65,7 @@ async function getLatestPaymentAttemptForCheckout(
     .from(paymentAttempts)
     .where(
       and(
-        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.businessId, businessId),
         eq(paymentAttempts.providerPaymentId, providerPaymentId),
       ),
     )
@@ -76,9 +76,9 @@ async function getLatestPaymentAttemptForCheckout(
 }
 
 async function getPendingPaymongoCheckoutForWorkspace(
-  workspaceId: string,
+  businessId: string,
 ): Promise<PendingCheckoutState | null> {
-  const subscription = await getWorkspaceSubscription(workspaceId);
+  const subscription = await getBusinessSubscription(businessId);
 
   if (
     !subscription ||
@@ -88,7 +88,7 @@ async function getPendingPaymongoCheckoutForWorkspace(
     return null;
   }
 
-  const latestAttempt = await getLatestPendingPaymentAttempt(workspaceId, "paymongo");
+  const latestAttempt = await getLatestPendingPaymentAttempt(businessId, "paymongo");
 
   if (!latestAttempt) {
     return null;
@@ -109,7 +109,7 @@ async function getPendingPaymongoCheckoutForWorkspace(
 
     await Promise.all([
       updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "expired"),
-      updateSubscriptionStatus(workspaceId, "expired"),
+      updateSubscriptionStatus(businessId, "expired"),
     ]);
 
     return null;
@@ -157,7 +157,7 @@ async function getPendingPaymongoCheckoutForWorkspace(
 
   await Promise.all([
     updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "expired"),
-    updateSubscriptionStatus(workspaceId, "expired"),
+    updateSubscriptionStatus(businessId, "expired"),
   ]);
 
   return null;
@@ -173,13 +173,13 @@ export async function createCheckoutAction(
 ): Promise<CheckoutActionState> {
   const user = await requireUser();
 
-  const workspaceId = formData.get("workspaceId");
+  const businessId = formData.get("businessId");
   const plan = formData.get("plan");
   const currency = formData.get("currency");
   const interval = (formData.get("interval") as BillingInterval) ?? "monthly";
 
   if (
-    typeof workspaceId !== "string" ||
+    typeof businessId !== "string" ||
     typeof plan !== "string" ||
     typeof currency !== "string"
   ) {
@@ -197,18 +197,18 @@ export async function createCheckoutAction(
   }
 
   // Verify workspace ownership
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+  const workspace = await getBusinessContextForUser(user.id, businessId);
 
   if (!workspace) {
     return { error: "Workspace not found." };
   }
 
-  if (workspace.memberRole !== "owner") {
+  if (workspace.role !== "owner") {
     return { error: "Only workspace owners can manage billing." };
   }
 
   // Check current plan
-  if (workspace.plan === plan) {
+  if (workspace.business.plan === plan) {
     return { error: `You're already on the ${plan} plan.` };
   }
 
@@ -224,7 +224,7 @@ export async function createCheckoutAction(
     }
 
     const existingPendingCheckout = await getPendingPaymongoCheckoutForWorkspace(
-      workspaceId,
+      businessId,
     );
 
     if (existingPendingCheckout?.provider === "paymongo") {
@@ -245,7 +245,7 @@ export async function createCheckoutAction(
 
     const result = await createQrPhCheckout({
       plan: typedPlan,
-      workspaceId,
+      businessId,
       interval: typedInterval,
     });
 
@@ -256,7 +256,7 @@ export async function createCheckoutAction(
     if (result.type === "qrph") {
       // Only create a pending subscription after we have a valid QR code
       await createPendingSubscription({
-        workspaceId,
+        businessId,
         plan: typedPlan,
         provider: "paymongo",
         currency: "PHP",
@@ -264,7 +264,7 @@ export async function createCheckoutAction(
 
       // Record pending payment
       await recordPaymentAttempt({
-        workspaceId,
+        businessId,
         plan: typedPlan,
         provider: "paymongo",
         providerPaymentId: result.paymentIntentId,
@@ -298,7 +298,7 @@ export async function createCheckoutAction(
 
   const result = await createPaddleTransaction({
     plan: typedPlan,
-    workspaceId,
+    businessId,
     userEmail: user.email,
     userName: user.name,
     interval: typedInterval,
@@ -316,7 +316,7 @@ export async function createCheckoutAction(
       provider: "paddle",
       providerPaymentId: result.url,
       status: "pending",
-      workspaceId,
+      businessId,
     });
 
     return { paddleTransactionId: result.url };
@@ -334,28 +334,28 @@ export async function cancelSubscriptionAction(
 ): Promise<CancelActionState> {
   const user = await requireUser();
 
-  const workspaceId = formData.get("workspaceId");
+  const businessId = formData.get("businessId");
 
-  if (typeof workspaceId !== "string") {
+  if (typeof businessId !== "string") {
     return { error: "Invalid input." };
   }
 
   // Verify workspace ownership
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+  const workspace = await getBusinessContextForUser(user.id, businessId);
 
   if (!workspace) {
     return { error: "Workspace not found." };
   }
 
-  if (workspace.memberRole !== "owner") {
+  if (workspace.role !== "owner") {
     return { error: "Only workspace owners can manage billing." };
   }
 
   // Get subscription
-  const { getWorkspaceSubscription } = await import(
+  const { getBusinessSubscription } = await import(
     "@/lib/billing/subscription-service"
   );
-  const subscription = await getWorkspaceSubscription(workspaceId);
+  const subscription = await getBusinessSubscription(businessId);
 
   if (!subscription || subscription.status === "free") {
     return { error: "No active subscription to cancel." };
@@ -384,13 +384,13 @@ export async function cancelSubscriptionAction(
     const { updateSubscriptionStatus } = await import(
       "@/lib/billing/subscription-service"
     );
-    await updateSubscriptionStatus(workspaceId, "active", {
+    await updateSubscriptionStatus(businessId, "active", {
       canceledAt: new Date(),
     });
     const { db } = await import("@/lib/db/client");
 
     await writeAuditLog(db, {
-      workspaceId,
+      businessId,
       actorUserId: user.id,
       actorName: user.name,
       actorEmail: user.email,
@@ -404,7 +404,7 @@ export async function cancelSubscriptionAction(
       },
     });
 
-    revalidatePath(getWorkspacePath(workspace.slug));
+    revalidatePath(getBusinessPath(workspace.business.slug));
 
     return { success: "Subscription canceled. You\u2019ll keep access until the end of your billing period." };
   }
@@ -413,12 +413,12 @@ export async function cancelSubscriptionAction(
   const { cancelSubscription } = await import(
     "@/lib/billing/subscription-service"
   );
-  const updatedSubscription = await cancelSubscription(workspaceId);
+  const updatedSubscription = await cancelSubscription(businessId);
 
   if (updatedSubscription) {
     const { db } = await import("@/lib/db/client");
     await writeAuditLog(db, {
-      workspaceId,
+      businessId,
       actorUserId: user.id,
       actorName: user.name,
       actorEmail: user.email,
@@ -433,7 +433,7 @@ export async function cancelSubscriptionAction(
     });
   }
 
-  revalidatePath(getWorkspacePath(workspace.slug));
+  revalidatePath(getBusinessPath(workspace.business.slug));
 
   if (isPending) {
     return { success: "Pending payment canceled." };
@@ -443,33 +443,33 @@ export async function cancelSubscriptionAction(
 }
 
 export async function getPendingCheckoutAction(
-  workspaceId: string,
+  businessId: string,
 ): Promise<PendingCheckoutState | null> {
   const user = await requireUser();
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+  const workspace = await getBusinessContextForUser(user.id, businessId);
 
-  if (!workspace || workspace.memberRole !== "owner") {
+  if (!workspace || workspace.role !== "owner") {
     return null;
   }
 
-  return getPendingPaymongoCheckoutForWorkspace(workspaceId);
+  return getPendingPaymongoCheckoutForWorkspace(businessId);
 }
 
 export async function getCheckoutStatusAction(
-  workspaceId: string,
+  businessId: string,
   providerPaymentId?: string | null,
 ): Promise<CheckoutStatusSnapshot | null> {
   const user = await requireUser();
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+  const workspace = await getBusinessContextForUser(user.id, businessId);
 
-  if (!workspace || workspace.memberRole !== "owner") {
+  if (!workspace || workspace.role !== "owner") {
     return null;
   }
 
   const [subscription, paymentAttempt] = await Promise.all([
-    getWorkspaceSubscription(workspaceId),
+    getBusinessSubscription(businessId),
     providerPaymentId
-      ? getLatestPaymentAttemptForCheckout(workspaceId, providerPaymentId)
+      ? getLatestPaymentAttemptForCheckout(businessId, providerPaymentId)
       : Promise.resolve(null),
   ]);
 
@@ -498,9 +498,9 @@ export async function getCheckoutStatusAction(
  * cleans up expired/failed states.
  */
 export async function getPendingQrPhCheckoutAction(
-  workspaceId: string,
+  businessId: string,
 ): Promise<PendingQrPhData | null> {
-  const pendingCheckout = await getPendingCheckoutAction(workspaceId);
+  const pendingCheckout = await getPendingCheckoutAction(businessId);
 
   if (!pendingCheckout || pendingCheckout.provider !== "paymongo") {
     return null;
@@ -539,7 +539,7 @@ export async function getPendingQrPhCheckoutAction(
     );
 
     await updatePaymentAttemptStatus(latestAttempt.providerPaymentId, "expired");
-    await updateSubscriptionStatus(workspaceId, "expired");
+    await updateSubscriptionStatus(businessId, "expired");
 
     return null;
   }
@@ -554,14 +554,14 @@ export async function getPendingQrPhCheckoutAction(
  * expires, so the workspace doesn't stay stuck in "pending" status.
  */
 export async function cleanupExpiredPendingAction(
-  workspaceId: string,
+  businessId: string,
 ): Promise<void> {
   const user = await requireUser();
 
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
-  if (!workspace || workspace.memberRole !== "owner") return;
+  const workspace = await getBusinessContextForUser(user.id, businessId);
+  if (!workspace || workspace.role !== "owner") return;
 
-  const subscription = await getWorkspaceSubscription(workspaceId);
+  const subscription = await getBusinessSubscription(businessId);
   if (
     !subscription ||
     subscription.status !== "pending" ||
@@ -573,13 +573,13 @@ export async function cleanupExpiredPendingAction(
   const { expireSubscription } = await import(
     "@/lib/billing/subscription-service"
   );
-  const pendingAttempt = await getLatestPendingPaymentAttempt(workspaceId, "paymongo");
+  const pendingAttempt = await getLatestPendingPaymentAttempt(businessId, "paymongo");
   const { updatePaymentAttemptStatus } = await import(
     "@/lib/billing/webhook-processor"
   );
 
   await Promise.all([
-    expireSubscription(workspaceId),
+    expireSubscription(businessId),
     pendingAttempt
       ? updatePaymentAttemptStatus(pendingAttempt.providerPaymentId, "expired")
       : Promise.resolve(false),
@@ -590,19 +590,19 @@ export async function cleanupExpiredPendingAction(
  * Cancels an active QRPh checkout from the explicit cancel action in the QR view.
  */
 export async function cancelPendingQrCheckoutAction(
-  workspaceId: string,
+  businessId: string,
   paymentIntentId: string,
 ): Promise<CancelPendingQrCheckoutResult> {
   const user = await requireUser();
 
-  if (!workspaceId || !paymentIntentId) {
+  if (!businessId || !paymentIntentId) {
     return {
       ok: false,
       error: "Missing checkout details.",
     };
   }
 
-  const workspace = await getWorkspaceContextForUser(user.id, workspaceId);
+  const workspace = await getBusinessContextForUser(user.id, businessId);
 
   if (!workspace) {
     return {
@@ -611,14 +611,14 @@ export async function cancelPendingQrCheckoutAction(
     };
   }
 
-  if (workspace.memberRole !== "owner") {
+  if (workspace.role !== "owner") {
     return {
       ok: false,
       error: "Only workspace owners can manage billing.",
     };
   }
 
-  const subscription = await getWorkspaceSubscription(workspaceId);
+  const subscription = await getBusinessSubscription(businessId);
 
   if (
     !subscription ||
@@ -640,7 +640,7 @@ export async function cancelPendingQrCheckoutAction(
     .from(paymentAttempts)
     .where(
       and(
-        eq(paymentAttempts.workspaceId, workspaceId),
+        eq(paymentAttempts.businessId, businessId),
         eq(paymentAttempts.provider, "paymongo"),
         eq(paymentAttempts.providerPaymentId, paymentIntentId),
         eq(paymentAttempts.status, "pending"),
@@ -661,7 +661,7 @@ export async function cancelPendingQrCheckoutAction(
   const result = await cancelPaymentIntent(paymentIntentId);
 
   if (result.ok && result.status === "active") {
-    revalidatePath(getWorkspacePath(workspace.slug));
+    revalidatePath(getBusinessPath(workspace.business.slug));
 
     return {
       ok: true,
@@ -678,7 +678,7 @@ export async function cancelPendingQrCheckoutAction(
 
   await Promise.all([
     updatePaymentAttemptStatus(paymentIntentId, "expired"),
-    updateSubscriptionStatus(workspaceId, "incomplete"),
+    updateSubscriptionStatus(businessId, "incomplete"),
   ]);
 
   if (!result.ok) {
@@ -687,12 +687,12 @@ export async function cancelPendingQrCheckoutAction(
       {
         error: result.message,
         paymentIntentId,
-        workspaceId,
+        businessId,
       },
     );
   }
 
-  revalidatePath(getWorkspacePath(workspace.slug));
+  revalidatePath(getBusinessPath(workspace.business.slug));
 
   return {
     ok: true,

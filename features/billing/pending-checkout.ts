@@ -22,15 +22,15 @@ const PENDING_QR_LEGACY_KEY = "requo:pending-qrph";
 const PENDING_CHECKOUT_CHANGE_EVENT = "requo:pending-checkout:change";
 
 type PendingCheckoutChangeDetail = {
-  workspaceId: string;
+  businessId: string;
 };
 
-function getPendingCheckoutStorageKey(workspaceId: string) {
-  return `${PENDING_CHECKOUT_KEY}:${workspaceId}`;
+function getPendingCheckoutStorageKey(businessId: string) {
+  return `${PENDING_CHECKOUT_KEY}:${businessId}`;
 }
 
-function getLegacyPendingQrStorageKey(workspaceId: string) {
-  return `${PENDING_QR_LEGACY_KEY}:${workspaceId}`;
+function getLegacyPendingQrStorageKey(businessId: string) {
+  return `${PENDING_QR_LEGACY_KEY}:${businessId}`;
 }
 
 function isPaidPlan(value: unknown): value is PaidPlan {
@@ -63,20 +63,20 @@ function isPersistedPendingCheckout(
   return isPendingPaymongoCheckout(value);
 }
 
-function dispatchPendingCheckoutChange(workspaceId: string) {
+function dispatchPendingCheckoutChange(businessId: string) {
   if (typeof window === "undefined") {
     return;
   }
 
   window.dispatchEvent(
     new CustomEvent<PendingCheckoutChangeDetail>(PENDING_CHECKOUT_CHANGE_EVENT, {
-      detail: { workspaceId },
+      detail: { businessId },
     }),
   );
 }
 
 function migrateLegacyPendingQr(
-  workspaceId: string,
+  businessId: string,
 ): PendingPaymongoCheckout | null {
   if (typeof window === "undefined") {
     return null;
@@ -84,7 +84,7 @@ function migrateLegacyPendingQr(
 
   try {
     const raw = window.sessionStorage.getItem(
-      getLegacyPendingQrStorageKey(workspaceId),
+      getLegacyPendingQrStorageKey(businessId),
     );
 
     if (!raw) {
@@ -101,7 +101,7 @@ function migrateLegacyPendingQr(
       typeof data.paymentIntentId !== "string" ||
       typeof data.qrCodeData !== "string"
     ) {
-      window.sessionStorage.removeItem(getLegacyPendingQrStorageKey(workspaceId));
+      window.sessionStorage.removeItem(getLegacyPendingQrStorageKey(businessId));
       return null;
     }
 
@@ -116,11 +116,11 @@ function migrateLegacyPendingQr(
     };
 
     window.sessionStorage.setItem(
-      getPendingCheckoutStorageKey(workspaceId),
+      getPendingCheckoutStorageKey(businessId),
       JSON.stringify(migrated),
     );
-    window.sessionStorage.removeItem(getLegacyPendingQrStorageKey(workspaceId));
-    dispatchPendingCheckoutChange(workspaceId);
+    window.sessionStorage.removeItem(getLegacyPendingQrStorageKey(businessId));
+    dispatchPendingCheckoutChange(businessId);
 
     return migrated;
   } catch {
@@ -129,7 +129,7 @@ function migrateLegacyPendingQr(
 }
 
 export function getCachedPendingCheckout(
-  workspaceId: string,
+  businessId: string,
 ): PersistedPendingCheckout | null {
   if (typeof window === "undefined") {
     return null;
@@ -137,17 +137,17 @@ export function getCachedPendingCheckout(
 
   try {
     const raw = window.sessionStorage.getItem(
-      getPendingCheckoutStorageKey(workspaceId),
+      getPendingCheckoutStorageKey(businessId),
     );
 
     if (!raw) {
-      return migrateLegacyPendingQr(workspaceId);
+      return migrateLegacyPendingQr(businessId);
     }
 
     const data = JSON.parse(raw) as unknown;
 
     if (!isPersistedPendingCheckout(data)) {
-      window.sessionStorage.removeItem(getPendingCheckoutStorageKey(workspaceId));
+      window.sessionStorage.removeItem(getPendingCheckoutStorageKey(businessId));
       return null;
     }
 
@@ -158,10 +158,10 @@ export function getCachedPendingCheckout(
 }
 
 export function getCachedPendingCheckoutForPlan(
-  workspaceId: string,
+  businessId: string,
   plan: PaidPlan,
 ): PersistedPendingCheckout | null {
-  const pendingCheckout = getCachedPendingCheckout(workspaceId);
+  const pendingCheckout = getCachedPendingCheckout(businessId);
 
   if (!pendingCheckout || pendingCheckout.plan !== plan) {
     return null;
@@ -171,7 +171,7 @@ export function getCachedPendingCheckoutForPlan(
 }
 
 export function setCachedPendingCheckout(
-  workspaceId: string,
+  businessId: string,
   checkout: PersistedPendingCheckout,
 ): void {
   if (typeof window === "undefined") {
@@ -180,17 +180,17 @@ export function setCachedPendingCheckout(
 
   try {
     window.sessionStorage.setItem(
-      getPendingCheckoutStorageKey(workspaceId),
+      getPendingCheckoutStorageKey(businessId),
       JSON.stringify(checkout),
     );
-    dispatchPendingCheckoutChange(workspaceId);
+    dispatchPendingCheckoutChange(businessId);
   } catch {
     // Ignore unavailable or full storage.
   }
 }
 
 export function clearCachedPendingCheckout(
-  workspaceId: string,
+  businessId: string,
   provider?: BillingProvider,
 ): void {
   if (typeof window === "undefined") {
@@ -199,27 +199,27 @@ export function clearCachedPendingCheckout(
 
   try {
     if (provider) {
-      const existing = getCachedPendingCheckout(workspaceId);
+      const existing = getCachedPendingCheckout(businessId);
 
       if (!existing || existing.provider !== provider) {
         return;
       }
     }
 
-    window.sessionStorage.removeItem(getPendingCheckoutStorageKey(workspaceId));
-    window.sessionStorage.removeItem(getLegacyPendingQrStorageKey(workspaceId));
-    dispatchPendingCheckoutChange(workspaceId);
+    window.sessionStorage.removeItem(getPendingCheckoutStorageKey(businessId));
+    window.sessionStorage.removeItem(getLegacyPendingQrStorageKey(businessId));
+    dispatchPendingCheckoutChange(businessId);
   } catch {
     // Ignore unavailable storage.
   }
 }
 
-export function clearCachedPendingQrCheckout(workspaceId: string): void {
-  clearCachedPendingCheckout(workspaceId, "paymongo");
+export function clearCachedPendingQrCheckout(businessId: string): void {
+  clearCachedPendingCheckout(businessId, "paymongo");
 }
 
 export function subscribeToPendingCheckout(
-  workspaceId: string,
+  businessId: string,
   callback: (checkout: PersistedPendingCheckout | null) => void,
 ): () => void {
   if (typeof window === "undefined") {
@@ -227,7 +227,7 @@ export function subscribeToPendingCheckout(
   }
 
   const handleChange = () => {
-    callback(getCachedPendingCheckout(workspaceId));
+    callback(getCachedPendingCheckout(businessId));
   };
 
   const handleStorage = (event: StorageEvent) => {
@@ -238,8 +238,8 @@ export function subscribeToPendingCheckout(
     const key = event.key;
     if (
       key !== null &&
-      key !== getPendingCheckoutStorageKey(workspaceId) &&
-      key !== getLegacyPendingQrStorageKey(workspaceId)
+      key !== getPendingCheckoutStorageKey(businessId) &&
+      key !== getLegacyPendingQrStorageKey(businessId)
     ) {
       return;
     }
@@ -250,7 +250,7 @@ export function subscribeToPendingCheckout(
   const handleCustomEvent = (event: Event) => {
     const customEvent = event as CustomEvent<PendingCheckoutChangeDetail>;
 
-    if (customEvent.detail.workspaceId !== workspaceId) {
+    if (customEvent.detail.businessId !== businessId) {
       return;
     }
 

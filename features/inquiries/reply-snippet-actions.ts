@@ -48,7 +48,7 @@ export async function createReplySnippetAction(
 
   const { user, businessContext } = ownerAccess;
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "replySnippets")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "replySnippets")) {
     return {
       error: "Upgrade to Pro to save reply snippets.",
     };
@@ -114,7 +114,7 @@ export async function updateReplySnippetAction(
 
   const { user, businessContext } = ownerAccess;
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "replySnippets")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "replySnippets")) {
     return {
       error: "Upgrade to Pro to update reply snippets.",
     };
@@ -188,7 +188,7 @@ export async function deleteReplySnippetAction(
 
   const { user, businessContext } = ownerAccess;
 
-  if (!hasFeatureAccess(businessContext.business.workspacePlan, "replySnippets")) {
+  if (!hasFeatureAccess(businessContext.business.plan, "replySnippets")) {
     return {
       error: "Upgrade to Pro to delete reply snippets.",
     };

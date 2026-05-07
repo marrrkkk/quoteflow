@@ -29,7 +29,7 @@ import {
 } from "@/lib/billing/plans";
 import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { planMeta } from "@/lib/plans";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import { cn } from "@/lib/utils";
 
 const paidPlans: PaidPlan[] = ["pro", "business"];
@@ -51,7 +51,7 @@ const planHighlights: Record<PaidPlan, string[]> = {
 type PlanSelectionSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentPlan: WorkspacePlan;
+  currentPlan: plan;
   defaultCurrency: BillingCurrency;
   region: BillingRegion;
   targetPlan?: PaidPlan;

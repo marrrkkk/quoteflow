@@ -1,4 +1,4 @@
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import type {
   BillingCurrency,
   BillingInterval,
@@ -11,10 +11,10 @@ import type {
 
 /** Billing overview for the workspace billing UI. */
 export type WorkspaceBillingOverview = {
-  workspaceId: string;
-  workspaceName: string;
-  workspaceSlug: string;
-  currentPlan: WorkspacePlan;
+  businessId: string;
+  businessName: string;
+  businessSlug: string;
+  currentPlan: plan;
   subscription: {
     status: SubscriptionStatus;
     plan: string;
@@ -31,10 +31,10 @@ export type WorkspaceBillingOverview = {
 
 /** Props for the checkout dialog. */
 export type CheckoutDialogProps = {
-  workspaceId: string;
+  businessId: string;
   workspaceName?: string;
-  workspaceSlug: string;
-  currentPlan: WorkspacePlan;
+  businessSlug: string;
+  currentPlan: plan;
   plan: PaidPlan;
   interval?: BillingInterval;
   region: BillingRegion;
@@ -86,7 +86,7 @@ export type CancelPendingQrCheckoutResult =
 
 export type CheckoutStatusSnapshot = {
   subscription: {
-    effectivePlan: WorkspacePlan;
+    effectivePlan: plan;
     plan: string;
     status: SubscriptionStatus;
   } | null;

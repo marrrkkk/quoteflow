@@ -5,70 +5,65 @@ import { cacheLife, cacheTag } from "next/cache";
 import { headers } from "next/headers";
 
 import { db } from "@/lib/db/client";
-import { workspaces } from "@/lib/db/schema/workspaces";
+import { businesses } from "@/lib/db/schema/businesses";
 import { paymentAttempts } from "@/lib/db/schema/subscriptions";
 import {
-  getWorkspaceSubscription,
+  getBusinessSubscription,
   resolveEffectivePlanFromSubscription,
 } from "@/lib/billing/subscription-service";
 import { getBillingRegion, getDefaultCurrency } from "@/lib/billing/region";
 import {
-  getWorkspaceBillingCacheTags,
+  getBusinessBillingCacheTags,
   billingShellCacheLife,
 } from "@/lib/cache/shell-tags";
 import type { WorkspaceBillingOverview } from "@/features/billing/types";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan } from "@/lib/plans/plans";
 import type { BillingRegion } from "@/lib/billing/types";
 
 /**
- * Cached workspace identity and fallback plan (no dynamic APIs like headers()).
- *
- * Subscription status is intentionally read outside this cache so checkout and
- * billing screens reflect provider webhook updates even if the denormalized
- * workspace plan or a shell cache entry lags behind the authoritative
- * subscription row.
+ * Cached business identity and fallback plan (no dynamic APIs like headers()).
  */
-async function getCachedWorkspaceBillingData(workspaceId: string) {
+async function getCachedBusinessBillingData(businessId: string) {
   "use cache";
 
   cacheLife(billingShellCacheLife);
-  cacheTag(...getWorkspaceBillingCacheTags(workspaceId));
+  cacheTag(...getBusinessBillingCacheTags(businessId));
 
-  const workspaceRows = await db
+  const rows = await db
     .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      slug: workspaces.slug,
-      plan: workspaces.plan,
+      id: businesses.id,
+      name: businesses.name,
+      slug: businesses.slug,
+      plan: businesses.plan,
     })
-    .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
     .limit(1);
 
-  const workspace = workspaceRows[0];
+  const biz = rows[0];
 
-  if (!workspace) {
+  if (!biz) {
     return null;
   }
 
   return {
-    workspaceId: workspace.id,
-    workspaceName: workspace.name,
-    workspaceSlug: workspace.slug,
-    fallbackPlan: workspace.plan as WorkspacePlan,
+    businessId: biz.id,
+    businessName: biz.name,
+    businessSlug: biz.slug,
+    fallbackPlan: biz.plan as BusinessPlan,
   };
 }
 
 /**
- * Returns a full billing overview for the workspace billing UI.
+ * Returns a full billing overview for the business billing UI.
  */
-export async function getWorkspaceBillingOverview(
-  workspaceId: string,
+export async function getBusinessBillingOverview(
+  businessId: string,
 ): Promise<WorkspaceBillingOverview | null> {
   try {
     const [billingData, subscription, requestHeaders] = await Promise.all([
-      getCachedWorkspaceBillingData(workspaceId),
-      getWorkspaceSubscription(workspaceId),
+      getCachedBusinessBillingData(businessId),
+      getBusinessSubscription(businessId),
       headers(),
     ]);
 
@@ -78,13 +73,13 @@ export async function getWorkspaceBillingOverview(
 
     const region = getBillingRegion(requestHeaders);
     const defaultCurrency = getDefaultCurrency(region);
-    const { fallbackPlan, ...workspaceBillingData } = billingData;
+    const { fallbackPlan, ...businessBillingData } = billingData;
     const currentPlan = subscription
       ? resolveEffectivePlanFromSubscription(subscription)
       : fallbackPlan;
 
     return {
-      ...workspaceBillingData,
+      ...businessBillingData,
       currentPlan,
       region,
       defaultCurrency,
@@ -103,8 +98,8 @@ export async function getWorkspaceBillingOverview(
     };
   } catch (error) {
     console.error(
-      "Failed to load workspace billing overview.",
-      { workspaceId },
+      "Failed to load business billing overview.",
+      { businessId },
       error,
     );
 
@@ -112,20 +107,26 @@ export async function getWorkspaceBillingOverview(
   }
 }
 
+/** @deprecated Use `getBusinessBillingOverview` instead. */
+export const getWorkspaceBillingOverview = getBusinessBillingOverview;
+
 /**
- * Returns payment history for a workspace.
+ * Returns payment history for a business.
  */
-export async function getWorkspacePaymentHistory(
-  workspaceId: string,
+export async function getBusinessPaymentHistory(
+  businessId: string,
   limit = 10,
 ) {
   return db
     .select()
     .from(paymentAttempts)
-    .where(eq(paymentAttempts.workspaceId, workspaceId))
+    .where(eq(paymentAttempts.businessId, businessId))
     .orderBy(desc(paymentAttempts.createdAt))
     .limit(limit);
 }
+
+/** @deprecated Use `getBusinessPaymentHistory` instead. */
+export const getWorkspacePaymentHistory = getBusinessPaymentHistory;
 
 /**
  * Detects the billing region for the current request.

@@ -58,11 +58,11 @@ export function BillingStatusCard({
   freePlanUsage,
   variant = "full",
 }: BillingStatusCardProps) {
-  const { subscription, currentPlan: billingCurrentPlan, workspaceId, workspaceSlug, region, defaultCurrency } =
+  const { subscription, currentPlan: billingCurrentPlan, businessId, businessSlug, region, defaultCurrency } =
     billing;
   const workspaceCheckout = useWorkspaceCheckout();
   const currentPlan =
-    workspaceCheckout?.workspaceId === workspaceId
+    workspaceCheckout?.businessId === businessId
       ? workspaceCheckout.currentPlan
       : billingCurrentPlan;
   const [cancelState, cancelAction, isCanceling] = useActionState(
@@ -76,9 +76,9 @@ export function BillingStatusCard({
   const cancelSuccess = cancelState.success;
   useEffect(() => {
     if (cancelSuccess) {
-      clearCachedPendingCheckout(workspaceId);
+      clearCachedPendingCheckout(businessId);
     }
-  }, [cancelSuccess, workspaceId]);
+  }, [cancelSuccess, businessId]);
 
   const hasActiveSubscription =
     subscription &&
@@ -94,9 +94,9 @@ export function BillingStatusCard({
   // cleared (e.g. user closed the tab or realtime was disconnected).
   useEffect(() => {
     if (subscription?.provider !== "paymongo" || !hasPendingSubscription) {
-      clearCachedPendingQrCheckout(workspaceId);
+      clearCachedPendingQrCheckout(businessId);
     }
-  }, [hasPendingSubscription, subscription?.provider, workspaceId]);
+  }, [hasPendingSubscription, subscription?.provider, businessId]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:justify-center">
@@ -160,8 +160,8 @@ export function BillingStatusCard({
               currentPlan={currentPlan}
               defaultCurrency={defaultCurrency}
               region={region}
-              workspaceId={workspaceId}
-              workspaceSlug={workspaceSlug}
+              businessId={businessId}
+              businessSlug={businessSlug}
             >
               {variant === "full" ? (
                 <>
@@ -256,7 +256,7 @@ export function BillingStatusCard({
           (subscription.status === "active" || subscription.status === "pending") ? (
             <CardFooter className="flex-wrap gap-2.5 border-t border-border/40 pt-6">
               <form action={cancelAction}>
-                <input name="workspaceId" type="hidden" value={workspaceId} />
+                <input name="businessId" type="hidden" value={businessId} />
                 <Button
                   disabled={isCanceling}
                   size="sm"

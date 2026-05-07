@@ -470,7 +470,7 @@ export function SecuritySettingsForm({
                 {security.deletion.blockers.map((blocker, index) => (
                   <Alert key={`${blocker.code}-${index}`}>
                     <AlertTitle>
-                      {blocker.workspaceName ?? blocker.businessName ?? "Blocking relationship"}
+                      {blocker.businessName ?? blocker.businessName ?? "Blocking relationship"}
                     </AlertTitle>
                     <AlertDescription>{blocker.message}</AlertDescription>
                   </Alert>

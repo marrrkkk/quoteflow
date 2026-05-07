@@ -7,7 +7,7 @@ import {
   type BusinessType,
 } from "@/features/inquiries/business-types";
 import { hasFeatureAccess } from "@/lib/plans/entitlements";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 
 function emptyToUndefined(value: unknown) {
   if (value == null) {
@@ -374,7 +374,7 @@ type InquiryPageConfigDefaultsInput = {
   legacyInquiryHeadline?: string | null;
   businessType?: BusinessType;
   template?: InquiryPageTemplate;
-  plan?: WorkspacePlan;
+  plan?: plan;
 };
 
 function createDefaultInquiryPageCards(

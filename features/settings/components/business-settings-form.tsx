@@ -54,7 +54,7 @@ import {
   businessCurrencyOptions,
   resolveCurrencyForCountry,
 } from "@/features/businesses/locale";
-import { getWorkspacePath } from "@/features/workspaces/routes";
+import { getBusinessPath } from "@/features/businesses/routes";
 import type {
   BusinessAiTonePreference,
   BusinessSettingsActionState,
@@ -592,12 +592,12 @@ export function BusinessSettingsForm({
       <BusinessDeleteZone
         activeWorkspaceBusinessCount={settings.activeWorkspaceBusinessCount}
         archiveAction={archiveAction}
-        archivedRedirectHref={`${getWorkspacePath(settings.workspaceSlug)}?view=archived`}
+        archivedRedirectHref={`${getBusinessPath(settings.businessSlug)}?view=archived`}
         businessName={settings.name}
         recordState={settings.recordState}
         restoreAction={restoreAction}
         trashAction={trashAction}
-        trashRedirectHref={`${getWorkspacePath(settings.workspaceSlug)}?view=trash`}
+        trashRedirectHref={`${getBusinessPath(settings.businessSlug)}?view=trash`}
         unarchiveAction={unarchiveAction}
       />
     </>

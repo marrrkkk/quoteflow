@@ -143,7 +143,7 @@ function CheckoutDialogInner({
   open,
   plan,
   region,
-  workspaceId,
+  businessId,
   workspaceName,
   checkoutError,
   interval: intervalProp,
@@ -158,7 +158,7 @@ function CheckoutDialogInner({
   const initialPendingCheckout =
     pendingCheckout?.plan === plan
       ? pendingCheckout
-      : getCachedPendingCheckoutForPlan(workspaceId, plan);
+      : getCachedPendingCheckoutForPlan(businessId, plan);
   const initialPendingQr = toPendingQrData(initialPendingCheckout);
   const [interval] = useState<BillingInterval>(intervalProp ?? "monthly");
   const [view, setView] = useState<CheckoutView>(() => {
@@ -249,7 +249,7 @@ function CheckoutDialogInner({
       qrCodeData: state.qrData.qrCodeData,
     };
 
-    setCachedPendingCheckout(workspaceId, nextPendingCheckout);
+    setCachedPendingCheckout(businessId, nextPendingCheckout);
     queueMicrotask(() => {
       setPendingQr(toPendingQrData(nextPendingCheckout));
       setActivePaddleTransactionId(null);
@@ -265,7 +265,7 @@ function CheckoutDialogInner({
     plan,
     state.qrData,
     updateCheckoutError,
-    workspaceId,
+    businessId,
   ]);
 
   useEffect(() => {
@@ -389,7 +389,7 @@ function CheckoutDialogInner({
     updateCheckoutError(null);
 
     const result = await cancelPendingQrCheckoutAction(
-      workspaceId,
+      businessId,
       pendingQr.paymentIntentId,
     );
 
@@ -406,13 +406,13 @@ function CheckoutDialogInner({
       return;
     }
 
-    clearCachedPendingCheckout(workspaceId, "paymongo");
+    clearCachedPendingCheckout(businessId, "paymongo");
     setPendingQr(null);
     setIsCancelingQr(false);
     setView("selection");
     onOpenChange(false);
     router.refresh();
-  }, [onOpenChange, pendingQr, router, updateCheckoutError, workspaceId]);
+  }, [onOpenChange, pendingQr, router, updateCheckoutError, businessId]);
 
   const resetPaddleCheckout = useCallback(() => {
     if (activePaddleTransactionId) {
@@ -596,7 +596,7 @@ function CheckoutDialogInner({
                     action={formAction}
                     onSubmit={() => setSubmittedPaymentMethod("card")}
                   >
-                    <input name="workspaceId" type="hidden" value={workspaceId} />
+                    <input name="businessId" type="hidden" value={businessId} />
                     <input name="plan" type="hidden" value={plan} />
                     <input name="currency" type="hidden" value={cardCurrency} />
                     <input name="interval" type="hidden" value={interval} />
@@ -636,7 +636,7 @@ function CheckoutDialogInner({
                       action={formAction}
                       onSubmit={() => setSubmittedPaymentMethod("qrph")}
                     >
-                      <input name="workspaceId" type="hidden" value={workspaceId} />
+                      <input name="businessId" type="hidden" value={businessId} />
                       <input name="plan" type="hidden" value={plan} />
                       <input name="currency" type="hidden" value={qrCurrency} />
                       <input name="interval" type="hidden" value={interval} />

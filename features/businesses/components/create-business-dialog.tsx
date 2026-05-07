@@ -18,8 +18,12 @@ import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
 import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
 import { CreateBusinessForm } from "@/features/businesses/components/create-business-form";
-import type { CreateBusinessActionState } from "@/features/businesses/types";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type {
+  BusinessQuotaSnapshot,
+  CreateBusinessActionState,
+} from "@/features/businesses/types";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
+import { getUpgradePlan, planMeta } from "@/lib/plans/plans";
 import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 
 type CreateBusinessDialogProps = {
@@ -27,12 +31,13 @@ type CreateBusinessDialogProps = {
     state: CreateBusinessActionState,
     formData: FormData,
   ) => Promise<CreateBusinessActionState>;
-  workspaceId: string;
+  businessId: string;
   isLocked?: boolean;
+  businessQuota?: BusinessQuotaSnapshot;
   billingProps?: {
-    workspaceId: string;
-    workspaceSlug: string;
-    currentPlan: WorkspacePlan;
+    businessId: string;
+    businessSlug: string;
+    currentPlan: plan;
     region: BillingRegion;
     defaultCurrency: BillingCurrency;
   };
@@ -40,8 +45,9 @@ type CreateBusinessDialogProps = {
 
 export function CreateBusinessDialog({
   action,
-  workspaceId,
+  businessId,
   isLocked,
+  businessQuota,
   billingProps,
 }: CreateBusinessDialogProps) {
   const workspaceCheckout = useWorkspaceCheckout();
@@ -53,17 +59,44 @@ export function CreateBusinessDialog({
   const useSharedCheckout = Boolean(
     workspaceCheckout &&
       billingProps &&
-      workspaceCheckout.workspaceId === billingProps.workspaceId,
+      workspaceCheckout.businessId === billingProps.businessId,
   );
   const effectiveCurrentPlan =
     useSharedCheckout && workspaceCheckout
       ? workspaceCheckout.currentPlan
       : billingProps?.currentPlan;
-  const isEffectivelyLocked = Boolean(
-    isLocked && billingProps && effectiveCurrentPlan === "free",
-  );
+  const quotaLocked = businessQuota ? !businessQuota.allowed : Boolean(isLocked);
+  const lockedPlan =
+    effectiveCurrentPlan ?? businessQuota?.plan ?? billingProps?.currentPlan ?? "free";
+  const upgradePlan = getUpgradePlan(lockedPlan);
+  const upgradeLabel = upgradePlan
+    ? `Upgrade to ${planMeta[upgradePlan].label}`
+    : "View billing";
+  const limitLabel =
+    businessQuota?.limit === null
+      ? "unlimited businesses"
+      : `${businessQuota?.limit ?? 1} total business${
+          (businessQuota?.limit ?? 1) === 1 ? "" : "es"
+        } across all workspaces`;
+  const lockedDescription = businessQuota
+    ? `Your ${planMeta[lockedPlan].label} plan supports ${limitLabel}. Upgrade this workspace to add more.`
+    : "Upgrade this workspace to add more businesses.";
+  const upgradeFeatures =
+    upgradePlan === "business"
+      ? [
+          "Unlimited businesses",
+          "Team members and roles",
+          "Higher knowledge and upload limits",
+          "Priority support",
+        ]
+      : [
+          "Up to 10 total businesses across workspaces",
+          "Unlimited inquiry forms",
+          "Custom branding and colors",
+          "AI-powered quote drafting",
+        ];
 
-  if (isEffectivelyLocked && billingProps) {
+  if (quotaLocked) {
     return (
       <>
         <Button onClick={() => setOpen(true)}>
@@ -74,21 +107,24 @@ export function CreateBusinessDialog({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Unlock unlimited businesses</DialogTitle>
+              <DialogTitle>
+                {upgradePlan === "business"
+                  ? "Unlock unlimited businesses"
+                  : "Add more businesses"}
+              </DialogTitle>
               <DialogDescription>
-                You&apos;ve reached the limit of your Free plan. Upgrade to Pro to manage up to 10 businesses, or Business for unlimited.
+                {lockedDescription}
               </DialogDescription>
             </DialogHeader>
               <DialogBody className="pt-2">
                 <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-                  <p className="meta-label mb-2.5">Pro plan includes</p>
+                  <p className="meta-label mb-2.5">
+                    {upgradePlan
+                      ? `${planMeta[upgradePlan].label} plan includes`
+                      : "Current plan"}
+                  </p>
                   <ul className="flex flex-col gap-2">
-                    {[
-                      "Up to 10 businesses per workspace",
-                      "Unlimited inquiry forms",
-                      "Custom branding and colors",
-                      "AI-powered quote drafting",
-                    ].map((feature) => (
+                    {upgradeFeatures.map((feature) => (
                       <li
                         className="flex items-center gap-2.5 text-sm text-foreground"
                         key={feature}
@@ -106,31 +142,33 @@ export function CreateBusinessDialog({
                 <Button className="w-full sm:w-auto" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    setOpen(false);
-                    if (useSharedCheckout && workspaceCheckout) {
-                      if (workspaceCheckout.pendingCheckout) {
-                        workspaceCheckout.continueCheckout();
+                {billingProps && upgradePlan ? (
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setOpen(false);
+                      if (useSharedCheckout && workspaceCheckout) {
+                        if (workspaceCheckout.pendingCheckout) {
+                          workspaceCheckout.continueCheckout();
+                          return;
+                        }
+
+                        workspaceCheckout.openPlanSelection();
                         return;
                       }
 
-                      workspaceCheckout.openPlanSelection();
-                      return;
-                    }
-
-                    setPlanSheetOpen(true);
-                  }}
-                >
-                  <ArrowUpRight data-icon="inline-start" />
-                  Upgrade to Pro
-                </Button>
+                      setPlanSheetOpen(true);
+                    }}
+                  >
+                    <ArrowUpRight data-icon="inline-start" />
+                    {upgradeLabel}
+                  </Button>
+                ) : null}
               </DialogFooter>
             </DialogContent>
         </Dialog>
 
-        {!useSharedCheckout ? (
+        {!useSharedCheckout && billingProps ? (
           <>
             <PlanSelectionSheet
               currentPlan={effectiveCurrentPlan ?? billingProps.currentPlan}
@@ -154,8 +192,8 @@ export function CreateBusinessDialog({
                 plan={selectedPlan}
                 interval={selectedInterval}
                 region={billingProps.region}
-                workspaceId={billingProps.workspaceId}
-                workspaceSlug={billingProps.workspaceSlug}
+                businessId={billingProps.businessId}
+                businessSlug={billingProps.businessSlug}
               />
             ) : null}
           </>
@@ -181,7 +219,7 @@ export function CreateBusinessDialog({
         </DialogHeader>
         <CreateBusinessForm
           action={action}
-          workspaceId={workspaceId}
+          businessId={businessId}
         />
       </DialogContent>
     </Dialog>

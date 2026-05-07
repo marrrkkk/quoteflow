@@ -18,7 +18,7 @@ import { sendEmailWithFallback } from "@/lib/email/send-email";
 import type { EmailType, SendEmailInput } from "@/lib/email/types";
 import { isEmailConfigured } from "@/lib/env";
 import type { BusinessMemberAssignableRole } from "@/lib/business-members";
-import type { WorkspaceMemberAssignableRole } from "@/features/workspace-members/types";
+import type { BusinessMemberRole } from "@/lib/business-members";
 
 type SendPasswordResetEmailInput = {
   userId: string;
@@ -44,7 +44,6 @@ type SendBusinessMemberInviteEmailInput = {
   inviterName: string;
   role: BusinessMemberAssignableRole;
   inviteUrl: string;
-  workspaceId?: string | null;
   businessId?: string | null;
   userId?: string | null;
 };
@@ -68,7 +67,6 @@ type SendPublicInquiryNotificationEmailInput = {
     label: string;
     value: string;
   }>;
-  workspaceId?: string | null;
   businessId?: string | null;
 };
 
@@ -98,7 +96,6 @@ type SendQuoteEmailInput = {
   }>;
   templateOverrides?: QuoteEmailTemplateConfig | null;
   replyToEmail?: string;
-  workspaceId?: string | null;
   businessId?: string | null;
   userId?: string | null;
 };
@@ -116,7 +113,6 @@ type SendQuoteSentOwnerNotificationEmailInput = {
   title: string;
   dashboardUrl: string;
   publicQuoteUrl: string;
-  workspaceId?: string | null;
   businessId?: string | null;
 };
 
@@ -134,7 +130,6 @@ type SendQuoteResponseOwnerNotificationEmailInput = {
   title: string;
   response: "accepted" | "rejected";
   dashboardUrl: string;
-  workspaceId?: string | null;
   businessId?: string | null;
 };
 
@@ -144,9 +139,9 @@ type SendWorkspaceMemberInviteEmailInput = {
   email: string;
   workspaceName: string;
   inviterName: string;
-  workspaceRole: WorkspaceMemberAssignableRole;
+  workspaceRole: BusinessMemberRole;
   inviteUrl: string;
-  workspaceId?: string | null;
+  businessId?: string | null;
   userId?: string | null;
 };
 
@@ -316,7 +311,6 @@ export async function sendBusinessMemberInviteEmail({
   inviterName,
   role,
   inviteUrl,
-  workspaceId,
   businessId,
   userId,
 }: SendBusinessMemberInviteEmailInput) {
@@ -353,12 +347,10 @@ export async function sendBusinessMemberInviteEmail({
     html: template.html,
     text: template.text,
     idempotencyKey: `business-member-invite:${inviteId}:${hashIdempotencyPart(token)}:${getRecipientKey(email)}`,
-    workspaceId,
     businessId,
     userId,
     metadata: {
       inviteId,
-      workspaceId,
       businessId,
       role,
     },
@@ -379,7 +371,7 @@ export async function sendWorkspaceMemberInviteEmail({
   inviterName,
   workspaceRole,
   inviteUrl,
-  workspaceId,
+  businessId,
   userId,
 }: SendWorkspaceMemberInviteEmailInput) {
   if (!isEmailConfigured) {
@@ -415,11 +407,11 @@ export async function sendWorkspaceMemberInviteEmail({
     html: template.html,
     text: template.text,
     idempotencyKey: `workspace-member-invite:${inviteId}:${hashIdempotencyPart(token)}:${getRecipientKey(email)}`,
-    workspaceId,
+    businessId,
     userId,
     metadata: {
       inviteId,
-      workspaceId,
+      businessId,
       workspaceRole,
     },
     tags: {
@@ -447,7 +439,6 @@ export async function sendPublicInquiryNotificationEmail({
   details,
   attachmentName,
   additionalFields,
-  workspaceId,
   businessId,
 }: SendPublicInquiryNotificationEmailInput) {
   if (!recipients.length) {
@@ -496,11 +487,9 @@ export async function sendPublicInquiryNotificationEmail({
     html: template.html,
     text: template.text,
     idempotencyKey: `inquiry:${inquiryId}:notification:${getRecipientSetKey(recipients)}`,
-    workspaceId,
     businessId,
     metadata: {
       inquiryId,
-      workspaceId,
       businessId,
       inquiryFormName,
     },
@@ -530,7 +519,6 @@ export async function sendQuoteEmail({
   items,
   templateOverrides,
   replyToEmail,
-  workspaceId,
   businessId,
   userId,
 }: SendQuoteEmailInput) {
@@ -573,13 +561,11 @@ export async function sendQuoteEmail({
     html: template.html,
     text: template.text,
     idempotencyKey: `quote:${quoteId}:sent:${getRecipientKey(customerEmail)}`,
-    workspaceId,
     businessId,
     userId,
     metadata: {
       quoteId,
       quoteNumber,
-      workspaceId,
       businessId,
       updatedAt: updatedAt.toISOString(),
     },
@@ -601,7 +587,6 @@ export async function sendQuoteSentOwnerNotificationEmail({
   title,
   dashboardUrl,
   publicQuoteUrl,
-  workspaceId,
   businessId,
 }: SendQuoteSentOwnerNotificationEmailInput) {
   if (!recipients.length) {
@@ -644,12 +629,10 @@ export async function sendQuoteSentOwnerNotificationEmail({
     html: template.html,
     text: template.text,
     idempotencyKey: `quote:${quoteId}:sent-owner-notification:${getRecipientSetKey(recipients)}`,
-    workspaceId,
     businessId,
     metadata: {
       quoteId,
       quoteNumber,
-      workspaceId,
       businessId,
       updatedAt: updatedAt.toISOString(),
     },
@@ -672,7 +655,6 @@ export async function sendQuoteResponseOwnerNotificationEmail({
   title,
   response,
   dashboardUrl,
-  workspaceId,
   businessId,
 }: SendQuoteResponseOwnerNotificationEmailInput) {
   if (!recipients.length) {
@@ -716,13 +698,11 @@ export async function sendQuoteResponseOwnerNotificationEmail({
     html: template.html,
     text: template.text,
     idempotencyKey: `quote:${quoteId}:response:${response}:${getRecipientSetKey(recipients)}`,
-    workspaceId,
     businessId,
     metadata: {
       quoteId,
       quoteNumber,
       response,
-      workspaceId,
       businessId,
       updatedAt: updatedAt.toISOString(),
     },

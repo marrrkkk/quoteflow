@@ -12,14 +12,14 @@ import { Button } from "@/components/ui/button";
 import { CheckoutDialog } from "@/features/billing/components/checkout-dialog";
 import { PlanSelectionSheet } from "@/features/billing/components/plan-selection-sheet";
 import { useWorkspaceCheckout } from "@/features/billing/components/workspace-checkout-provider";
-import type { WorkspacePlan } from "@/lib/plans/plans";
+import type { BusinessPlan as plan } from "@/lib/plans/plans";
 import type { BillingCurrency, BillingInterval, BillingRegion, PaidPlan } from "@/lib/billing/types";
 import { cn } from "@/lib/utils";
 
 type UpgradeButtonProps = {
-  workspaceId: string;
-  workspaceSlug: string;
-  currentPlan: WorkspacePlan;
+  businessId: string;
+  businessSlug: string;
+  currentPlan: plan;
   targetPlan?: "pro" | "business";
   region?: BillingRegion;
   defaultCurrency?: BillingCurrency;
@@ -30,8 +30,8 @@ type UpgradeButtonProps = {
 };
 
 export function UpgradeButton({
-  workspaceId,
-  workspaceSlug,
+  businessId,
+  businessSlug,
   currentPlan,
   targetPlan,
   region = "INTL",
@@ -47,7 +47,7 @@ export function UpgradeButton({
   const [selectedPlan, setSelectedPlan] = useState<PaidPlan | null>(null);
   const [selectedInterval, setSelectedInterval] = useState<BillingInterval>('monthly');
   const effectiveCurrentPlan =
-    workspaceCheckout?.workspaceId === workspaceId
+    workspaceCheckout?.businessId === businessId
       ? workspaceCheckout.currentPlan
       : currentPlan;
 
@@ -55,7 +55,7 @@ export function UpgradeButton({
     return null; // Already on highest plan
   }
 
-  if (workspaceCheckout && workspaceCheckout.workspaceId === workspaceId) {
+  if (workspaceCheckout && workspaceCheckout.businessId === businessId) {
     const hasPendingCheckout = Boolean(workspaceCheckout.pendingCheckout);
 
     return (
@@ -133,8 +133,8 @@ export function UpgradeButton({
           plan={selectedPlan}
           interval={selectedInterval}
           region={region}
-          workspaceId={workspaceId}
-          workspaceSlug={workspaceSlug}
+          businessId={businessId}
+          businessSlug={businessSlug}
         />
       ) : null}
     </>

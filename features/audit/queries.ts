@@ -27,7 +27,7 @@ import type {
   WorkspaceAuditLogPage,
 } from "@/features/audit/types";
 import { db } from "@/lib/db/client";
-import { auditLogs, businesses, user, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { auditLogs, businesses, businessMembers, user } from "@/lib/db/schema";
 
 function getDayStart(value: string) {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -79,33 +79,33 @@ export function parseAuditLogFilters(
   };
 }
 
-export async function getWorkspaceAuditLogPageBySlug(
+export async function getBusinessAuditLogPageBySlug(
   userId: string,
-  workspaceSlug: string,
+  businessSlug: string,
   filters: AuditLogFilters,
 ): Promise<WorkspaceAuditLogPage | null> {
-  const [workspace] = await db
+  const [membership] = await db
     .select({
-      id: workspaces.id,
-      slug: workspaces.slug,
-      memberRole: workspaceMembers.role,
+      businessId: businesses.id,
+      slug: businesses.slug,
+      role: businessMembers.role,
     })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
+    .from(businessMembers)
+    .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
     .where(
       and(
-        eq(workspaceMembers.userId, userId),
-        eq(workspaces.slug, workspaceSlug),
-        isNull(workspaces.deletedAt),
+        eq(businessMembers.userId, userId),
+        eq(businesses.slug, businessSlug),
+        isNull(businesses.deletedAt),
       ),
     )
     .limit(1);
 
-  if (!workspace) {
+  if (!membership) {
     return null;
   }
 
-  if (workspace.memberRole !== "owner") {
+  if (membership.role !== "owner") {
     return null;
   }
 
@@ -113,9 +113,8 @@ export async function getWorkspaceAuditLogPageBySlug(
   const toDate = filters.to ? getDayEnd(filters.to) : null;
   const offset = (filters.page - 1) * workspaceAuditPageSize;
   const where = and(
-    eq(auditLogs.workspaceId, workspace.id),
+    eq(auditLogs.businessId, membership.businessId),
     filters.actor ? eq(auditLogs.actorUserId, filters.actor) : undefined,
-    filters.business ? eq(auditLogs.businessId, filters.business) : undefined,
     filters.action ? eq(auditLogs.action, filters.action) : undefined,
     filters.entity ? eq(auditLogs.entityType, filters.entity) : undefined,
     fromDate ? gte(auditLogs.createdAt, fromDate) : undefined,
@@ -126,7 +125,6 @@ export async function getWorkspaceAuditLogPageBySlug(
     db
       .select({
         id: auditLogs.id,
-        workspaceId: auditLogs.workspaceId,
         businessId: auditLogs.businessId,
         businessName: businesses.name,
         businessSlug: businesses.slug,
@@ -167,35 +165,38 @@ export async function getWorkspaceAuditLogPageBySlug(
   };
 }
 
-export async function getWorkspaceAuditLogFiltersBySlug(
+/** @deprecated Use `getBusinessAuditLogPageBySlug` instead. */
+export const getWorkspaceAuditLogPageBySlug = getBusinessAuditLogPageBySlug;
+
+export async function getBusinessAuditLogFiltersBySlug(
   userId: string,
-  workspaceSlug: string,
+  businessSlug: string,
 ): Promise<WorkspaceAuditLogFiltersView | null> {
-  const [workspace] = await db
+  const [membership] = await db
     .select({
-      id: workspaces.id,
-      memberRole: workspaceMembers.role,
+      businessId: businesses.id,
+      role: businessMembers.role,
     })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
+    .from(businessMembers)
+    .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
     .where(
       and(
-        eq(workspaceMembers.userId, userId),
-        eq(workspaces.slug, workspaceSlug),
-        isNull(workspaces.deletedAt),
+        eq(businessMembers.userId, userId),
+        eq(businesses.slug, businessSlug),
+        isNull(businesses.deletedAt),
       ),
     )
     .limit(1);
 
-  if (!workspace) {
+  if (!membership) {
     return null;
   }
 
-  if (workspace.memberRole !== "owner") {
+  if (membership.role !== "owner") {
     return null;
   }
 
-  const [actorRows, businessRows] = await Promise.all([
+  const [actorRows] = await Promise.all([
     db
       .select({
         value: auditLogs.actorUserId,
@@ -205,7 +206,7 @@ export async function getWorkspaceAuditLogFiltersBySlug(
       .leftJoin(user, eq(auditLogs.actorUserId, user.id))
       .where(
         and(
-          eq(auditLogs.workspaceId, workspace.id),
+          eq(auditLogs.businessId, membership.businessId),
           sql`${auditLogs.actorUserId} is not null`,
         ),
       )
@@ -216,14 +217,6 @@ export async function getWorkspaceAuditLogFiltersBySlug(
         sql`${auditLogs.metadata}->>'actorEmail'`,
       )
       .orderBy(asc(sql<string>`coalesce(${user.name}, ${auditLogs.metadata}->>'actorName', ${auditLogs.metadata}->>'actorEmail', 'Former user')`)),
-    db
-      .select({
-        value: businesses.id,
-        label: businesses.name,
-      })
-      .from(businesses)
-      .where(eq(businesses.workspaceId, workspace.id))
-      .orderBy(asc(businesses.name)),
   ]);
 
   return {
@@ -233,48 +226,45 @@ export async function getWorkspaceAuditLogFiltersBySlug(
         value: row.value!,
         label: row.label,
       })),
-    businesses: businessRows
-      .filter((row): row is WorkspaceAuditLogFilterOption => Boolean(row.value))
-      .map((row) => ({
-        value: row.value!,
-        label: row.label,
-      })),
+    businesses: [], // Single-business context — no business filter needed
     actions: auditActionOptions,
     entities: auditEntityOptions,
   };
 }
 
-export async function getWorkspaceAuditLogExportRowsBySlug(
+/** @deprecated Use `getBusinessAuditLogFiltersBySlug` instead. */
+export const getWorkspaceAuditLogFiltersBySlug = getBusinessAuditLogFiltersBySlug;
+
+export async function getBusinessAuditLogExportRowsBySlug(
   userId: string,
-  workspaceSlug: string,
+  businessSlug: string,
   filters: AuditLogFilters,
 ): Promise<WorkspaceAuditLogItem[] | null> {
-  const [workspace] = await db
+  const [membership] = await db
     .select({
-      id: workspaces.id,
-      memberRole: workspaceMembers.role,
+      businessId: businesses.id,
+      role: businessMembers.role,
     })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
+    .from(businessMembers)
+    .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
     .where(
       and(
-        eq(workspaceMembers.userId, userId),
-        eq(workspaces.slug, workspaceSlug),
-        isNull(workspaces.deletedAt),
+        eq(businessMembers.userId, userId),
+        eq(businesses.slug, businessSlug),
+        isNull(businesses.deletedAt),
       ),
     )
     .limit(1);
 
-  if (!workspace || workspace.memberRole !== "owner") {
+  if (!membership || membership.role !== "owner") {
     return null;
   }
 
   const fromDate = filters.from ? getDayStart(filters.from) : null;
   const toDate = filters.to ? getDayEnd(filters.to) : null;
   const where = and(
-    eq(auditLogs.workspaceId, workspace.id),
+    eq(auditLogs.businessId, membership.businessId),
     filters.actor ? eq(auditLogs.actorUserId, filters.actor) : undefined,
-    filters.business ? eq(auditLogs.businessId, filters.business) : undefined,
     filters.action ? eq(auditLogs.action, filters.action) : undefined,
     filters.entity ? eq(auditLogs.entityType, filters.entity) : undefined,
     fromDate ? gte(auditLogs.createdAt, fromDate) : undefined,
@@ -284,7 +274,6 @@ export async function getWorkspaceAuditLogExportRowsBySlug(
   const rows = await db
     .select({
       id: auditLogs.id,
-      workspaceId: auditLogs.workspaceId,
       businessId: auditLogs.businessId,
       businessName: businesses.name,
       businessSlug: businesses.slug,
@@ -306,3 +295,6 @@ export async function getWorkspaceAuditLogExportRowsBySlug(
 
   return rows as WorkspaceAuditLogItem[];
 }
+
+/** @deprecated Use `getBusinessAuditLogExportRowsBySlug` instead. */
+export const getWorkspaceAuditLogExportRowsBySlug = getBusinessAuditLogExportRowsBySlug;
