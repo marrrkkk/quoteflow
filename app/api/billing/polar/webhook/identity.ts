@@ -30,15 +30,22 @@ import { accountSubscriptions } from "@/lib/db/schema/subscriptions";
  * `WebhookOrderPaidPayload`, etc.). Rather than thread that union here, we
  * accept a structurally-typed superset so the resolver stays resilient to
  * missing fields and forward-compatible with new event variants.
+ *
+ * Both casings are accepted — the SDK validator emits camelCase
+ * (`externalId`, `subscriptionId`) on typed payloads, while raw
+ * Standard-Webhooks bodies (and our test fixtures) keep snake_case
+ * (`external_id`, `subscription_id`).
  */
 export type PolarEventPayload = {
   type: string;
   data?: {
     id?: string | null;
     subscription_id?: string | null;
+    subscriptionId?: string | null;
     customer?: {
       id?: string | null;
       external_id?: string | null;
+      externalId?: string | null;
     } | null;
     metadata?: {
       userId?: unknown;
@@ -63,7 +70,10 @@ export function eventTypeIsSubscription(type: string): boolean {
 export async function resolvePolarUserId(
   payload: PolarEventPayload,
 ): Promise<string | null> {
-  const externalId = payload.data?.customer?.external_id ?? null;
+  const externalId =
+    payload.data?.customer?.externalId ??
+    payload.data?.customer?.external_id ??
+    null;
   if (typeof externalId === "string" && externalId.length > 0) {
     return externalId;
   }
@@ -78,7 +88,11 @@ export async function resolvePolarUserId(
     if (row) return row.userId;
   }
 
-  const subId = payload.data?.subscription_id ?? payload.data?.id ?? null;
+  const subId =
+    payload.data?.subscriptionId ??
+    payload.data?.subscription_id ??
+    payload.data?.id ??
+    null;
   if (
     typeof subId === "string" &&
     subId.length > 0 &&

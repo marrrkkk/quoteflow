@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { businessesHubPath } from "@/features/businesses/routes";
 import { requireSession } from "@/lib/auth/session";
+import { getUserBillingCacheTags } from "@/lib/cache/shell-tags";
 import { createNoIndexMetadata } from "@/lib/seo/site";
 
 export const metadata: Metadata = createNoIndexMetadata({
@@ -49,22 +51,44 @@ function resolveReturnTo(value: string | null): string {
  * Polar hosted-checkout return page.
  *
  * Polar redirects the user here after they finish (or abandon) the
- * hosted checkout. We do not show a processing UI — the webhook is
- * the source of truth and the user's effective plan revalidates via
- * cache tags as soon as the webhook lands. We simply redirect the
- * browser to the page they came from (`returnTo`) so they can
- * continue working.
+ * hosted checkout. The webhook is the source of truth for
+ * subscription state, so we don't show a processing UI — but we DO
+ * bust the user's billing cache tags right here, before redirecting,
+ * so the destination page (businesses hub, business dashboard,
+ * account billing) renders the freshly-activated plan instead of the
+ * pre-checkout cached value.
  *
- * Default fallback: the businesses hub. The caller (checkout API
- * route) embeds `returnTo` in the success URL when it creates the
- * Polar session.
+ * Two race conditions can happen:
+ *
+ * 1. Polar redirects the browser back faster than the webhook lands
+ *    in our DB. In that case the destination page shows the
+ *    pre-checkout state and the user has to refresh. To mitigate,
+ *    we revalidate the user's cache tags here so the next render
+ *    pulls fresh data — even if the webhook hasn't landed yet, the
+ *    next-after-that render will.
+ * 2. Webhook landed before the redirect, but the cache tag
+ *    revalidation it kicked off in the webhook context didn't
+ *    propagate to the dev/preview surface yet. Same mitigation.
+ *
+ * Default fallback: the businesses hub. The caller (canonical Polar
+ * Checkout adapter) embeds `returnTo` in the success URL when it
+ * creates the Polar session.
  */
 export default async function AccountBillingCheckoutPage({
   searchParams,
 }: CheckoutPageProps) {
   // Make sure the user is signed in before we redirect — the destination
   // routes all assume an authenticated session anyway.
-  await requireSession();
+  const session = await requireSession();
+
+  // Bust the user's billing cache tags so the destination page renders
+  // the post-checkout subscription state. Webhook does this too, but
+  // doing it on the return path closes the race for cases where the
+  // browser redirects back faster than the cache invalidation
+  // propagates from the webhook context.
+  for (const tag of getUserBillingCacheTags(session.user.id)) {
+    revalidateTag(tag, { expire: 0 });
+  }
 
   const resolvedSearchParams = await searchParams;
   const returnTo = resolveReturnTo(readParam(resolvedSearchParams.returnTo));
