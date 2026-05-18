@@ -125,7 +125,8 @@ const termsSections: LegalDocumentSection[] = [
         <LegalParagraph>
           The Service is designed for owner-led service businesses and related
           workflows such as inquiry intake, lead qualification, quote delivery,
-          follow-up, knowledge-file management, and internal drafting support.
+          follow-up scheduling, knowledge-file management, and internal drafting
+          support.
         </LegalParagraph>
       </>
     ),
@@ -204,14 +205,24 @@ const termsSections: LegalDocumentSection[] = [
           for the content, configuration, and collection practices of the public
           inquiry pages and forms you publish through the Service.
         </LegalParagraph>
-        <LegalSubheading>B. Public quote links</LegalSubheading>
+        <LegalSubheading>B. AI-powered conversational intake</LegalSubheading>
+        <LegalParagraph>
+          Businesses may enable an AI-powered conversational intake mode for
+          their inquiry form. In that mode, an AI assistant guides the visitor
+          through the inquiry in a chat interface. Messages exchanged in the
+          conversation are processed through an AI provider and the extracted
+          details are stored as part of the inquiry. You are responsible for
+          configuring conversational intake in a way that is appropriate for your
+          business and for reviewing the information collected.
+        </LegalParagraph>
+        <LegalSubheading>C. Public quote links</LegalSubheading>
         <LegalParagraph>
           Public quote links are designed to let a recipient view and respond to
           a quote without a separate customer login. Anyone who has the link may
           be able to access the corresponding quote page while the link remains
           active, so you should treat public quote links as sensitive.
         </LegalParagraph>
-        <LegalSubheading>C. Underlying business relationship</LegalSubheading>
+        <LegalSubheading>D. Underlying business relationship</LegalSubheading>
         <LegalParagraph>
           Requo is not a party to the underlying transaction or service
           relationship between a business using Requo and that business&rsquo;s
@@ -260,12 +271,21 @@ const termsSections: LegalDocumentSection[] = [
     content: (
       <>
         <LegalSectionHeading>10. AI Features</LegalSectionHeading>
+        <LegalSubheading>A. Internal AI drafting</LegalSubheading>
         <LegalParagraph>
           Requo includes AI-assisted drafting features intended for internal use
           by authorized business users. These features may send
           prompts and related business content through Groq, Gemini, or OpenRouter and,
           depending on configuration, to the model provider used
           to generate drafts, summaries, and suggestions.
+        </LegalParagraph>
+        <LegalSubheading>B. AI-powered conversational intake</LegalSubheading>
+        <LegalParagraph>
+          When conversational mode is enabled on an inquiry form, the public
+          intake chat is powered by an AI model. Visitor messages and AI
+          responses are processed through an AI provider. The AI extracts
+          structured inquiry details from the conversation for storage and
+          review by the business.
         </LegalParagraph>
         <LegalParagraph>
           AI outputs are provided for convenience only. They can be incomplete,

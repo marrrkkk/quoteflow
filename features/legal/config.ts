@@ -6,7 +6,7 @@ export const legalConfig = {
   domain: "https://requo.app",
   address: "Lucena City, Quezon, Philippines",
   country: "Philippines",
-  effectiveDate: "May 16, 2025",
+  effectiveDate: "May 19, 2025",
   hostingProvider: "Vercel",
   storageProvider: "Supabase",
   paymentProvider: "Polar",

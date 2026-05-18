@@ -84,6 +84,8 @@ export const businesses = pgTable(
       .notNull()
       .default("general_project_services"),
     countryCode: text("country_code"),
+    /** IANA timezone identifier (e.g. "America/New_York"). Defaults to UTC. */
+    timezone: text("timezone").notNull().default("UTC"),
     shortDescription: text("short_description"),
     /** How inbound customers typically reach this business (onboarding insight). */
     customerContactChannel: text("customer_contact_channel"),
