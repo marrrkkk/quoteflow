@@ -1867,6 +1867,48 @@ html[data-reload-loading="true"] [data-reload-loading-overlay] {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ * AI chat scrollbar — minimal, thin track for the full-page assistant.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+.ai-chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 12%, transparent) transparent;
+}
+
+.ai-chat-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ai-chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-chat-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 9999px;
+}
+
+.ai-chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+
+/* AI thinking dots animation */
+@keyframes ai-thinking-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.ai-thinking-dot {
+  animation: ai-thinking-pulse 1.2s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  * Mobile nav — outside @layer so these styles always win over Tailwind utils.
  * ───────────────────────────────────────────────────────────────────────────── */
 

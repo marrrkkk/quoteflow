@@ -23,6 +23,11 @@ const wordmarkSizeClass: Record<BrandMarkSize, string> = {
   lg: "text-[1.45rem] tracking-[-0.02em] sm:text-[1.55rem]",
 };
 
+const wordmarkNoSubtitleSizeClass: Record<BrandMarkSize, string> = {
+  default: "text-[1.35rem] tracking-[-0.025em]",
+  lg: "text-[1.65rem] tracking-[-0.025em] sm:text-[1.75rem]",
+};
+
 export function BrandMark({
   className,
   collapseLabel = false,
@@ -54,7 +59,7 @@ export function BrandMark({
           collapseLabel && "group-data-[collapsible=icon]:hidden",
         )}
       >
-        <BrandWordmark className={cn("truncate", wordmarkSizeClass[size])} />
+        <BrandWordmark className={cn("truncate", subtitle !== null ? wordmarkSizeClass[size] : wordmarkNoSubtitleSizeClass[size])} />
         {subtitle !== null ? (
           <span className="mt-0.5 truncate text-[0.6rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {subtitle}

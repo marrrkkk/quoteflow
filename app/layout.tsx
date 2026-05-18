@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
@@ -46,11 +47,11 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const brandFont = Plus_Jakarta_Sans({
+const brandFont = localFont({
+  src: "../public/fonts/ApfelGrotezk-Fett.woff2",
   variable: "--font-brand",
-  subsets: ["latin"],
   display: "swap",
-  weight: ["700"],
+  weight: "700",
 });
 
 export const viewport: Viewport = {
