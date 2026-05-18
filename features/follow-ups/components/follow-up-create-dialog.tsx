@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  ResponsiveOverlay,
+  ResponsiveOverlayClose,
+  ResponsiveOverlayContent,
+  ResponsiveOverlayDescription,
+  ResponsiveOverlayFooter,
+  ResponsiveOverlayHeader,
+  ResponsiveOverlayTitle,
+  ResponsiveOverlayTrigger,
+} from "@/components/ui/responsive-overlay";
 import {
   Field,
   FieldContent,
@@ -95,7 +95,7 @@ export function FollowUpCreateDialog({
   }
 
   return (
-    <Dialog
+    <ResponsiveOverlay
       open={open}
       onOpenChange={(nextOpen) => {
         if (nextOpen) {
@@ -105,17 +105,17 @@ export function FollowUpCreateDialog({
         setOpen(nextOpen);
       }}
     >
-      <DialogTrigger asChild>
+      <ResponsiveOverlayTrigger asChild>
         <Button type="button" variant={triggerVariant}>
           <CalendarPlus data-icon="inline-start" />
           {triggerLabel}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Set follow-up</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+      </ResponsiveOverlayTrigger>
+      <ResponsiveOverlayContent className="sm:max-w-lg">
+        <ResponsiveOverlayHeader>
+          <ResponsiveOverlayTitle>Set follow-up</ResponsiveOverlayTitle>
+          <ResponsiveOverlayDescription>{description}</ResponsiveOverlayDescription>
+        </ResponsiveOverlayHeader>
         <form action={formAction}>
           <div className="px-4 pb-4 sm:px-6 sm:pb-6">
             <FieldGroup>
@@ -215,12 +215,12 @@ export function FollowUpCreateDialog({
               </Field>
             </FieldGroup>
           </div>
-          <DialogFooter>
-            <DialogClose asChild>
+          <ResponsiveOverlayFooter>
+            <ResponsiveOverlayClose asChild>
               <Button disabled={isPending} type="button" variant="ghost">
                 Cancel
               </Button>
-            </DialogClose>
+            </ResponsiveOverlayClose>
             <Button disabled={isPending} type="submit">
               {isPending ? (
                 <Spinner data-icon="inline-start" aria-hidden="true" />
@@ -229,9 +229,9 @@ export function FollowUpCreateDialog({
               )}
               {isPending ? "Creating..." : "Create follow-up"}
             </Button>
-          </DialogFooter>
+          </ResponsiveOverlayFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveOverlayContent>
+    </ResponsiveOverlay>
   );
 }

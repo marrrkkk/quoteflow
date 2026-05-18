@@ -4,14 +4,14 @@ import { Archive, RotateCcw, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  ResponsiveOverlay,
+  ResponsiveOverlayBody,
+  ResponsiveOverlayContent,
+  ResponsiveOverlayDescription,
+  ResponsiveOverlayHeader,
+  ResponsiveOverlayTitle,
+  ResponsiveOverlayTrigger,
+} from "@/components/ui/responsive-overlay";
 import { InquiryStatusForm } from "@/features/inquiries/components/inquiry-status-form";
 import { ServerActionButton } from "@/components/shared/server-action-button";
 import type {
@@ -46,8 +46,8 @@ export function InquiryManageDialog({
   unarchiveAction,
 }: InquiryManageDialogProps) {
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <ResponsiveOverlay>
+      <ResponsiveOverlayTrigger asChild>
         <Button
           type="button"
           variant="outline"
@@ -56,15 +56,15 @@ export function InquiryManageDialog({
           <Settings data-icon="inline-start" className="sm:!m-0" />
           <span className="sm:hidden">Manage</span>
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[26rem]">
-        <DialogHeader>
-          <DialogTitle>Manage inquiry</DialogTitle>
-          <DialogDescription>
+      </ResponsiveOverlayTrigger>
+      <ResponsiveOverlayContent className="sm:max-w-[26rem]">
+        <ResponsiveOverlayHeader>
+          <ResponsiveOverlayTitle>Manage inquiry</ResponsiveOverlayTitle>
+          <ResponsiveOverlayDescription>
             Update status or organize this inquiry.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody className="flex flex-col gap-6 pt-1">
+          </ResponsiveOverlayDescription>
+        </ResponsiveOverlayHeader>
+        <ResponsiveOverlayBody className="flex flex-col gap-6 pt-1">
           {recordState === "active" ? (
             <>
               <section className="flex flex-col gap-3">
@@ -110,8 +110,8 @@ export function InquiryManageDialog({
               </div>
             </section>
           )}
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveOverlayBody>
+      </ResponsiveOverlayContent>
+    </ResponsiveOverlay>
   );
 }
