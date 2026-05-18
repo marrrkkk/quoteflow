@@ -58,12 +58,15 @@ import {
   unarchiveInquiryAction,
 } from "@/features/inquiries/actions";
 import { CopyEmailButton } from "@/features/inquiries/components/copy-email-button";
+import { InquiryDuplicateBanner } from "@/features/inquiries/components/inquiry-duplicate-banner";
 import { InquiryNoteForm } from "@/features/inquiries/components/inquiry-note-form";
 import { InquiryRecordStateBadge } from "@/features/inquiries/components/inquiry-record-state-badge";
 import { InquiryExportPopover } from "@/features/inquiries/components/inquiry-export-popover";
 import { InquiryManageDialog } from "@/features/inquiries/components/inquiry-manage-dialog";
 import { InquiryStatusBadge } from "@/features/inquiries/components/inquiry-status-badge";
-import { getInquiryDetailForBusiness } from "@/features/inquiries/queries";
+import { QualificationBreakdown } from "@/features/inquiries/components/qualification-breakdown";
+import { TemperatureBadge } from "@/features/inquiries/components/temperature-badge";
+import { getInquiryDetailForBusiness, getInquiryDuplicateForBusiness } from "@/features/inquiries/queries";
 import { inquiryRouteParamsSchema } from "@/features/inquiries/schemas";
 import {
   formatFileSize,
@@ -76,6 +79,8 @@ import {
   type InquiryNoteActionState,
   type InquiryWorkflowStatus,
 } from "@/features/inquiries/types";
+import type { DuplicateFlag, Temperature } from "@/features/inquiries/qualification/types";
+import { dismissDuplicateWarningAction } from "@/features/inquiries/qualification/actions";
 import { formatQuoteMoney } from "@/features/quotes/utils";
 import {
   getBusinessInquiryExportPath,
@@ -130,6 +135,10 @@ async function InquiryDetailContent({
     businessId: businessContext.business.id,
     inquiryId: parsedParams.data.id,
   });
+  const duplicatePromise = getInquiryDuplicateForBusiness({
+    businessId: businessContext.business.id,
+    inquiryId: parsedParams.data.id,
+  });
   const inquiry = await getInquiryDetailForBusiness({
     businessId: businessContext.business.id,
     inquiryId: parsedParams.data.id,
@@ -138,6 +147,8 @@ async function InquiryDetailContent({
   if (!inquiry) {
     notFound();
   }
+
+  const duplicateRecord = await duplicatePromise;
 
   const noteAction = addInquiryNoteAction.bind(null, inquiry.id);
   const statusAction = changeInquiryStatusAction.bind(null, inquiry.id);
@@ -185,6 +196,22 @@ async function InquiryDetailContent({
 
   return (
     <DashboardPage className="pb-24">
+      {duplicateRecord && !duplicateRecord.dismissedAt ? (
+        <InquiryDuplicateBanner
+          duplicate={{
+            originalInquiryId: duplicateRecord.originalInquiryId,
+            reason: duplicateRecord.reason as DuplicateFlag["reason"],
+            tokenOverlap: duplicateRecord.tokenOverlap,
+          }}
+          businessSlug={businessSlug}
+          dismissAction={dismissDuplicateWarningAction.bind(
+            null,
+            duplicateRecord.id,
+            businessContext.business.id,
+            inquiry.id,
+          )}
+        />
+      ) : null}
       {inquiry.recordState === "archived" ? (
         <ArchivedRecordBanner
           recordLabel="inquiry"
@@ -201,6 +228,14 @@ async function InquiryDetailContent({
             <InquiryStatusBadge status={inquiry.status} />
             {inquiry.recordState !== "active" ? (
               <InquiryRecordStateBadge state={inquiry.recordState} />
+            ) : null}
+            <TemperatureBadge
+              temperature={inquiry.qualificationTemperature as Temperature | null}
+            />
+            {inquiry.qualificationScore != null ? (
+              <span className="text-sm font-medium tabular-nums text-muted-foreground">
+                {inquiry.qualificationScore}/100
+              </span>
             ) : null}
           </>
         }
@@ -486,6 +521,16 @@ async function InquiryDetailContent({
         </DashboardSidebarStack>
 
         <DashboardSidebarStack>
+          {inquiry.qualificationSignals &&
+          inquiry.qualificationTemperature &&
+          inquiry.qualificationScore != null ? (
+            <QualificationBreakdown
+              signals={inquiry.qualificationSignals}
+              compositeScore={inquiry.qualificationScore}
+              temperature={inquiry.qualificationTemperature as Temperature}
+            />
+          ) : null}
+
           <DashboardSection
             contentClassName="grid gap-3 sm:grid-cols-2"
             footer={

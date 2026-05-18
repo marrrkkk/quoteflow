@@ -766,7 +766,7 @@ export const inquiryListFiltersSchema = z.object({
   sort: z
     .preprocess(
       (value) => firstString(value) ?? "newest",
-      z.enum(["newest", "oldest"]),
+      z.enum(["newest", "oldest", "score"]),
     )
     .catch("newest"),
   page: coercePositiveInteger("Page").catch(1),

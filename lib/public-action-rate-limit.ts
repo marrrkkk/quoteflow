@@ -13,6 +13,7 @@ type AssertPublicActionRateLimitInput = {
     | "ai-file-import"
     | "ai-quote-draft"
     | "business-inquiry-ai"
+    | "public-inquiry-chat"
     | "public-inquiry-submit"
     | "public-quote-respond";
   scope: string;

@@ -9,8 +9,10 @@ import {
   deleteBusinessInquiryFormAction,
   duplicateBusinessInquiryFormAction,
   setDefaultBusinessInquiryFormAction,
+  toggleBusinessInquiryFormConversationalAction,
   toggleBusinessInquiryFormPublicAction,
   updateBusinessInquiryFormAction,
+  updateBusinessInquiryFormChatbotSettingsAction,
   updateBusinessInquiryPageAction,
 } from "@/features/settings/actions";
 import { BusinessInquiryFormEditorTabs } from "@/features/settings/components/business-inquiry-form-editor-tabs";
@@ -104,6 +106,11 @@ export default async function BusinessFormPage({
         duplicateAction={duplicateBusinessInquiryFormAction}
         setDefaultAction={setDefaultBusinessInquiryFormAction}
         togglePublicAction={toggleBusinessInquiryFormPublicAction}
+        toggleConversationalAction={toggleBusinessInquiryFormConversationalAction}
+        saveChatbotSettingsAction={updateBusinessInquiryFormChatbotSettingsAction.bind(
+          null,
+          settings.formSlug,
+        )}
         archiveAction={archiveBusinessInquiryFormFromDetailAction}
         deleteAction={deleteBusinessInquiryFormAction}
       />

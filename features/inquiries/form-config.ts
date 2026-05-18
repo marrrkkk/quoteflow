@@ -250,12 +250,26 @@ export type InquiryFormGroupLabels = {
   project: string;
 };
 
+export type InquiryFormConversationalAvatarStyle = "brand" | "initials";
+
+export type InquiryFormConversationalMode = {
+  enabled: boolean;
+  /** Optional custom opening message. Defaults to an AI-generated greeting. */
+  openingMessage?: string;
+  /** Display name for the chatbot. Defaults to "{businessName} Assistant". */
+  assistantName?: string;
+  /** Avatar style in chat bubbles. Defaults to "brand". */
+  avatarStyle?: InquiryFormConversationalAvatarStyle;
+};
+
 export type InquiryFormConfig = {
   version: 1;
   businessType: BusinessType;
   groupLabels: InquiryFormGroupLabels;
   contactFields: Record<InquiryContactFieldKey, InquiryContactFieldConfig>;
   projectFields: InquiryFormFieldDefinition[];
+  /** Optional conversational AI intake mode. Undefined means disabled. */
+  conversationalMode?: InquiryFormConversationalMode;
 };
 
 export type InquirySubmittedFieldSnapshotField = {
@@ -387,6 +401,20 @@ export const inquiryFormConfigSchema = z
       preferredContact: inquiryContactFieldConfigSchema,
     }),
     projectFields: z.array(inquiryFormFieldSchema).max(24),
+    conversationalMode: z
+      .object({
+        enabled: z.boolean(),
+        openingMessage: z.preprocess(
+          emptyToUndefined,
+          z.string().trim().max(500).optional(),
+        ),
+        assistantName: z.preprocess(
+          emptyToUndefined,
+          z.string().trim().max(60).optional(),
+        ),
+        avatarStyle: z.enum(["brand", "initials"]).optional(),
+      })
+      .optional(),
   })
   .superRefine((value, context) => {
     const serviceCategoryFields = value.projectFields.filter(

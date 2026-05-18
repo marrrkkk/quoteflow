@@ -58,6 +58,7 @@ import {
   followUps,
   inquiries,
   inquiryAttachments,
+  inquiryDuplicates,
   inquiryNotes,
   quotes,
   user,
@@ -543,6 +544,11 @@ export async function getInquiryListPageForBusiness({
   const createdAtSort = filters.sort === "oldest" ? asc : desc;
   const offset = Math.max(0, (page - 1) * pageSize);
 
+  const orderByClause =
+    filters.sort === "score"
+      ? [desc(inquiries.qualificationScore), desc(inquiries.submittedAt), desc(inquiries.createdAt)]
+      : [submittedAtSort(inquiries.submittedAt), createdAtSort(inquiries.createdAt)];
+
   return db
     .select({
       id: inquiries.id,
@@ -571,6 +577,12 @@ export async function getInquiryListPageForBusiness({
           and ${followUps.inquiryId} = ${inquiries.id}
           and ${followUps.status} = 'pending'
       )`,
+      qualificationTemperature: inquiries.qualificationTemperature,
+      hasDuplicateFlag: sql<boolean>`exists(
+        select 1 from inquiry_duplicates
+        where inquiry_duplicates.inquiry_id = ${inquiries.id}
+          and inquiry_duplicates.dismissed_at is null
+      )`,
       submittedAt: inquiries.submittedAt,
       createdAt: inquiries.createdAt,
     })
@@ -580,7 +592,7 @@ export async function getInquiryListPageForBusiness({
       eq(inquiries.businessInquiryFormId, businessInquiryForms.id),
     )
     .where(and(...conditions))
-    .orderBy(submittedAtSort(inquiries.submittedAt), createdAtSort(inquiries.createdAt))
+    .orderBy(...orderByClause)
     .limit(pageSize)
     .offset(offset);
 }
@@ -690,6 +702,9 @@ export async function getInquiryDetailForBusiness({
       submittedAt: inquiries.submittedAt,
       createdAt: inquiries.createdAt,
       submittedFieldSnapshot: inquiries.submittedFieldSnapshot,
+      qualificationScore: inquiries.qualificationScore,
+      qualificationTemperature: inquiries.qualificationTemperature,
+      qualificationSignals: inquiries.qualificationSignals,
     })
     .from(inquiries)
     .innerJoin(
@@ -1026,4 +1041,39 @@ export async function listPublicInquirySitemapEntries(): Promise<
       row.formIsDefault ? undefined : row.formSlug,
     ),
   }));
+}
+
+export type InquiryDuplicateRecord = {
+  id: string;
+  originalInquiryId: string;
+  reason: string;
+  tokenOverlap: number | null;
+  dismissedAt: Date | null;
+};
+
+export async function getInquiryDuplicateForBusiness({
+  businessId,
+  inquiryId,
+}: {
+  businessId: string;
+  inquiryId: string;
+}): Promise<InquiryDuplicateRecord | null> {
+  const [duplicate] = await db
+    .select({
+      id: inquiryDuplicates.id,
+      originalInquiryId: inquiryDuplicates.originalInquiryId,
+      reason: inquiryDuplicates.reason,
+      tokenOverlap: inquiryDuplicates.tokenOverlap,
+      dismissedAt: inquiryDuplicates.dismissedAt,
+    })
+    .from(inquiryDuplicates)
+    .where(
+      and(
+        eq(inquiryDuplicates.businessId, businessId),
+        eq(inquiryDuplicates.inquiryId, inquiryId),
+      ),
+    )
+    .limit(1);
+
+  return duplicate ?? null;
 }

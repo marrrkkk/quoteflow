@@ -28,6 +28,7 @@ import { inquirySources } from "@/features/inquiries/types";
 import { getInquiryStatusLabel } from "@/features/inquiries/utils";
 import type { PublicInquiryBusiness } from "@/features/inquiries/types";
 import { and, eq } from "drizzle-orm";
+import { qualifyInquiry } from "./qualification/qualify-inquiry";
 
 type InquirySubmissionBusinessRef = Pick<
   PublicInquiryBusiness,
@@ -216,6 +217,28 @@ async function createInquirySubmission({
     }
 
     throw error;
+  }
+
+  // Run qualification after the transaction commits.
+  // Wrapped in try/catch so failures never block inquiry creation.
+  try {
+    await qualifyInquiry({
+      inquiryId,
+      businessId: business.id,
+      inquiry: {
+        customerName: submission.customerName,
+        customerEmail: submission.customerEmail ?? null,
+        serviceCategory: submission.serviceCategory,
+        requestedDeadline: submission.requestedDeadline ?? null,
+        budgetText: submission.budgetText ?? null,
+        details: submission.details,
+        subject: submission.serviceCategory,
+        submittedAt: now,
+      },
+    });
+  } catch (error) {
+    console.error("Inquiry qualification failed:", error);
+    // Inquiry is still created successfully
   }
 
   return {

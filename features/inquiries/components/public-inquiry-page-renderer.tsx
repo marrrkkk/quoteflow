@@ -6,6 +6,7 @@ import { ArrowUpRight, CircleCheckBig, Mail, Phone, Share2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PublicInquiryForm } from "@/features/inquiries/components/public-inquiry-form";
+import { ConversationalInquiryForm } from "@/features/inquiries/components/conversational-inquiry-form";
 import { InquiryShowcaseImageSurface } from "@/features/inquiries/components/inquiry-showcase-image-surface";
 import {
   inquiryPageBusinessContactSocialMeta,
@@ -60,6 +61,17 @@ export function PublicInquiryPageRenderer({
           ) : null}
         </header>
 
+        {business.inquiryFormConfig.conversationalMode?.enabled &&
+        hasFeatureAccess(business.plan, "aiAssistant") &&
+        !previewMode ? (
+          <section className="w-full py-4 sm:py-6 lg:py-8">
+            <ConversationalInquiryForm
+              business={business}
+              action={action}
+            />
+          </section>
+        ) : (
+          <>
         {config.template === "no_supporting_cards" ? (
           <NoSupportingCardsInquiryTemplate
             business={business}
@@ -81,6 +93,8 @@ export function PublicInquiryPageRenderer({
             previewMode={previewMode}
           />
         ) : null}
+          </>
+        )}
       </div>
       <InquiryBusinessContact business={business} centered />
 
