@@ -29,6 +29,20 @@
       "when": 1778940701437,
       "tag": "0003_drop_adaptive_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779009891493,
+      "tag": "0004_loud_blizzard",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779071407462,
+      "tag": "0005_cold_wonder_man",
+      "breakpoints": true
     }
   ]
 }
