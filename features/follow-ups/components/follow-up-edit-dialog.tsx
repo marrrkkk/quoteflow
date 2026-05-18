@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { CalendarPlus } from "lucide-react";
+import { useState } from "react";
+import { Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   ResponsiveOverlay,
   ResponsiveOverlayClose,
@@ -15,39 +16,35 @@ import {
   ResponsiveOverlayTitle,
   ResponsiveOverlayTrigger,
 } from "@/components/ui/responsive-overlay";
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
 import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
 import { useProgressRouter } from "@/hooks/use-progress-router";
 import type {
   FollowUpChannel,
-  FollowUpCreateActionState,
+  FollowUpEditActionState,
   FollowUpRecurrence,
+  FollowUpView,
 } from "@/features/follow-ups/types";
 import { followUpChannels, followUpRecurrences } from "@/features/follow-ups/types";
 import {
   followUpChannelLabels,
   followUpRecurrenceLabels,
-  getQuickFollowUpDueDate,
+  getDateInputValue,
 } from "@/features/follow-ups/utils";
-import {
-  createInquiryFollowUpAction,
-  createQuoteFollowUpAction,
-} from "@/features/follow-ups/actions";
 
-export type QuickCreateRecord = {
-  kind: "inquiry" | "quote";
-  id: string;
-  label: string;
-};
-
-type CreateFollowUpButtonProps = {
-  businessSlug: string;
-  records?: QuickCreateRecord[];
-};
+type FollowUpEditAction = (
+  state: FollowUpEditActionState,
+  formData: FormData,
+) => Promise<FollowUpEditActionState>;
 
 const channelOptions = followUpChannels.map((channel) => ({
   label: followUpChannelLabels[channel],
@@ -59,37 +56,25 @@ const recurrenceOptions = followUpRecurrences.map((r) => ({
   value: r,
 }));
 
-export function CreateFollowUpButton({
-  businessSlug: _businessSlug,
-  records = [],
-}: CreateFollowUpButtonProps) {
+export function FollowUpEditDialog({
+  action,
+  followUp,
+  disabled = false,
+}: {
+  action: FollowUpEditAction;
+  followUp: FollowUpView;
+  disabled?: boolean;
+}) {
   const router = useProgressRouter();
   const [open, setOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState("");
-  const [title, setTitle] = useState("");
-  const [reason, setReason] = useState("");
-  const [channel, setChannel] = useState<FollowUpChannel>("email");
-  const [dueDate, setDueDate] = useState(getQuickFollowUpDueDate("3d"));
-  const [recurrence, setRecurrence] = useState<FollowUpRecurrence>("none");
-  const [recurrenceLimit, setRecurrenceLimit] = useState("");
-
-  const action = useCallback(
-    async (prevState: FollowUpCreateActionState, formData: FormData) => {
-      const record = records.find((r) => `${r.kind}:${r.id}` === selectedRecord);
-
-      if (!record) {
-        return { error: "Select an inquiry or quote to follow up on." };
-      }
-
-      if (record.kind === "inquiry") {
-        return createInquiryFollowUpAction(record.id, prevState, formData);
-      }
-
-      return createQuoteFollowUpAction(record.id, prevState, formData);
-    },
-    [selectedRecord, records],
+  const [title, setTitle] = useState(followUp.title);
+  const [reason, setReason] = useState(followUp.reason);
+  const [channel, setChannel] = useState<FollowUpChannel>(followUp.channel);
+  const [dueDate, setDueDate] = useState(getDateInputValue(followUp.dueAt));
+  const [recurrence, setRecurrence] = useState<FollowUpRecurrence>(followUp.recurrence);
+  const [recurrenceLimit, setRecurrenceLimit] = useState(
+    followUp.recurrenceLimit?.toString() ?? "",
   );
-
   const [state, formAction, isPending] = useActionStateWithSonner(
     async (prevState, formData) => {
       const nextState = await action(prevState, formData);
@@ -101,23 +86,17 @@ export function CreateFollowUpButton({
 
       return nextState;
     },
-    {} as FollowUpCreateActionState,
+    {} as FollowUpEditActionState,
   );
 
   function resetFields() {
-    setSelectedRecord("");
-    setTitle("");
-    setReason("");
-    setChannel("email");
-    setDueDate(getQuickFollowUpDueDate("3d"));
-    setRecurrence("none");
-    setRecurrenceLimit("");
+    setTitle(followUp.title);
+    setReason(followUp.reason);
+    setChannel(followUp.channel);
+    setDueDate(getDateInputValue(followUp.dueAt));
+    setRecurrence(followUp.recurrence);
+    setRecurrenceLimit(followUp.recurrenceLimit?.toString() ?? "");
   }
-
-  const recordOptions = records.map((r) => ({
-    label: r.label,
-    value: `${r.kind}:${r.id}`,
-  }));
 
   return (
     <ResponsiveOverlay
@@ -131,46 +110,30 @@ export function CreateFollowUpButton({
       }}
     >
       <ResponsiveOverlayTrigger asChild>
-        <Button type="button">
-          <CalendarPlus data-icon="inline-start" />
-          Create follow-up
+        <Button disabled={disabled} size="sm" type="button" variant="ghost">
+          <Pencil data-icon="inline-start" />
+          Edit
         </Button>
       </ResponsiveOverlayTrigger>
       <ResponsiveOverlayContent className="sm:max-w-lg">
         <ResponsiveOverlayHeader>
-          <ResponsiveOverlayTitle>Create follow-up</ResponsiveOverlayTitle>
+          <ResponsiveOverlayTitle>Edit follow-up</ResponsiveOverlayTitle>
           <ResponsiveOverlayDescription>
-            Pick an inquiry or quote and set a follow-up reminder.
+            Update this follow-up&apos;s details. Only pending follow-ups can be edited.
           </ResponsiveOverlayDescription>
         </ResponsiveOverlayHeader>
         <form action={formAction}>
           <div className="px-4 pb-4 sm:px-6 sm:pb-6">
             <FieldGroup>
-              {records.length > 0 && (
-                <Field>
-                  <FieldLabel htmlFor="quick-create-record">Inquiry or quote</FieldLabel>
-                  <FieldContent>
-                    <Combobox
-                      id="quick-create-record"
-                      onValueChange={setSelectedRecord}
-                      options={recordOptions}
-                      placeholder="Search inquiries and quotes..."
-                      value={selectedRecord}
-                    />
-                  </FieldContent>
-                </Field>
-              )}
-
               <Field data-invalid={Boolean(state.fieldErrors?.title?.[0])}>
-                <FieldLabel htmlFor="quick-create-title">Title</FieldLabel>
+                <FieldLabel htmlFor="edit-follow-up-title">Title</FieldLabel>
                 <FieldContent>
                   <Input
                     aria-invalid={Boolean(state.fieldErrors?.title?.[0])}
-                    id="quick-create-title"
+                    id="edit-follow-up-title"
                     maxLength={160}
                     name="title"
                     onChange={(event) => setTitle(event.currentTarget.value)}
-                    placeholder="e.g. Check in on quote response"
                     required
                     value={title}
                   />
@@ -178,15 +141,14 @@ export function CreateFollowUpButton({
               </Field>
 
               <Field data-invalid={Boolean(state.fieldErrors?.reason?.[0])}>
-                <FieldLabel htmlFor="quick-create-reason">Reason</FieldLabel>
+                <FieldLabel htmlFor="edit-follow-up-reason">Reason</FieldLabel>
                 <FieldContent>
                   <Textarea
                     aria-invalid={Boolean(state.fieldErrors?.reason?.[0])}
-                    id="quick-create-reason"
+                    id="edit-follow-up-reason"
                     maxLength={500}
                     name="reason"
                     onChange={(event) => setReason(event.currentTarget.value)}
-                    placeholder="Why does this need a follow-up?"
                     required
                     rows={3}
                     value={reason}
@@ -196,12 +158,12 @@ export function CreateFollowUpButton({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field data-invalid={Boolean(state.fieldErrors?.channel?.[0])}>
-                  <FieldLabel htmlFor="quick-create-channel">Channel</FieldLabel>
+                  <FieldLabel htmlFor="edit-follow-up-channel">Channel</FieldLabel>
                   <FieldContent>
                     <input name="channel" type="hidden" value={channel} />
                     <Combobox
                       aria-invalid={Boolean(state.fieldErrors?.channel?.[0])}
-                      id="quick-create-channel"
+                      id="edit-follow-up-channel"
                       onValueChange={(value) => setChannel(value as FollowUpChannel)}
                       options={channelOptions}
                       placeholder="Choose channel"
@@ -211,11 +173,11 @@ export function CreateFollowUpButton({
                 </Field>
 
                 <Field data-invalid={Boolean(state.fieldErrors?.dueDate?.[0])}>
-                  <FieldLabel htmlFor="quick-create-due-date">Due date</FieldLabel>
+                  <FieldLabel htmlFor="edit-follow-up-due-date">Due date</FieldLabel>
                   <FieldContent>
                     <DatePicker
                       ariaInvalid={Boolean(state.fieldErrors?.dueDate?.[0])}
-                      id="quick-create-due-date"
+                      id="edit-follow-up-due-date"
                       name="dueDate"
                       onChange={setDueDate}
                       required
@@ -225,43 +187,14 @@ export function CreateFollowUpButton({
                 </Field>
               </div>
 
-              <Field>
-                <FieldLabel>Quick dates</FieldLabel>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => setDueDate(getQuickFollowUpDueDate("tomorrow"))}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Tomorrow
-                  </Button>
-                  <Button
-                    onClick={() => setDueDate(getQuickFollowUpDueDate("3d"))}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    In 3 days
-                  </Button>
-                  <Button
-                    onClick={() => setDueDate(getQuickFollowUpDueDate("7d"))}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    In 7 days
-                  </Button>
-                </div>
-              </Field>
-
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="quick-create-recurrence">Repeat</FieldLabel>
+                <Field data-invalid={Boolean(state.fieldErrors?.recurrence?.[0])}>
+                  <FieldLabel htmlFor="edit-follow-up-recurrence">Repeat</FieldLabel>
                   <FieldContent>
                     <input name="recurrence" type="hidden" value={recurrence} />
                     <Combobox
-                      id="quick-create-recurrence"
+                      aria-invalid={Boolean(state.fieldErrors?.recurrence?.[0])}
+                      id="edit-follow-up-recurrence"
                       onValueChange={(value) => setRecurrence(value as FollowUpRecurrence)}
                       options={recurrenceOptions}
                       placeholder="No repeat"
@@ -271,12 +204,15 @@ export function CreateFollowUpButton({
                 </Field>
 
                 {recurrence !== "none" && (
-                  <Field>
-                    <FieldLabel htmlFor="quick-create-recurrence-limit">Max repeats</FieldLabel>
+                  <Field data-invalid={Boolean(state.fieldErrors?.recurrenceLimit?.[0])}>
+                    <FieldLabel htmlFor="edit-follow-up-recurrence-limit">
+                      Max repeats
+                    </FieldLabel>
                     <FieldDescription>Leave blank for unlimited.</FieldDescription>
                     <FieldContent>
                       <Input
-                        id="quick-create-recurrence-limit"
+                        aria-invalid={Boolean(state.fieldErrors?.recurrenceLimit?.[0])}
+                        id="edit-follow-up-recurrence-limit"
                         max={100}
                         min={1}
                         name="recurrenceLimit"
@@ -300,10 +236,8 @@ export function CreateFollowUpButton({
             <Button disabled={isPending} type="submit">
               {isPending ? (
                 <Spinner data-icon="inline-start" aria-hidden="true" />
-              ) : (
-                <CalendarPlus data-icon="inline-start" />
-              )}
-              {isPending ? "Creating..." : "Create follow-up"}
+              ) : null}
+              {isPending ? "Saving..." : "Save changes"}
             </Button>
           </ResponsiveOverlayFooter>
         </form>

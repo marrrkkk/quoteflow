@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FollowUpItem } from "@/features/follow-ups/components/follow-up-item";
+import type { TeamMemberOption } from "@/features/follow-ups/components/follow-up-reassign-dialog";
 import { FollowUpListFilters } from "@/features/follow-ups/components/follow-up-list-filters";
 import type { FollowUpListFilters as FollowUpListFiltersValue, FollowUpView } from "@/features/follow-ups/types";
 import { getBusinessFollowUpsPath } from "@/features/businesses/routes";
@@ -30,11 +31,13 @@ export async function FollowUpListControlsSection({
 }
 
 type FollowUpListContentSectionProps = {
+  businessName?: string;
   businessSlug: string;
   clearFiltersPath: string;
   filters: FollowUpListFiltersValue;
   followUpsPromise: Promise<FollowUpView[]>;
   hasFilters: boolean;
+  members?: TeamMemberOption[];
   searchParams: SearchParamsRecord;
   totalItemsPromise: Promise<number>;
   totalPages: number;
@@ -42,11 +45,13 @@ type FollowUpListContentSectionProps = {
 };
 
 export async function FollowUpListContentSection({
+  businessName,
   businessSlug,
   clearFiltersPath,
   filters,
   followUpsPromise,
   hasFilters,
+  members = [],
   searchParams,
   totalItemsPromise,
   totalPages,
@@ -100,9 +105,11 @@ export async function FollowUpListContentSection({
       <div className="flex flex-col gap-3">
         {followUps.map((followUp) => (
           <FollowUpItem
+            businessName={businessName}
             businessSlug={businessSlug}
             followUp={followUp}
             key={followUp.id}
+            members={members}
           />
         ))}
       </div>

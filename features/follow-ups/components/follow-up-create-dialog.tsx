@@ -31,10 +31,12 @@ import { useProgressRouter } from "@/hooks/use-progress-router";
 import type {
   FollowUpChannel,
   FollowUpCreateActionState,
+  FollowUpRecurrence,
 } from "@/features/follow-ups/types";
-import { followUpChannels } from "@/features/follow-ups/types";
+import { followUpChannels, followUpRecurrences } from "@/features/follow-ups/types";
 import {
   followUpChannelLabels,
+  followUpRecurrenceLabels,
   getQuickFollowUpDueDate,
 } from "@/features/follow-ups/utils";
 
@@ -46,6 +48,11 @@ type FollowUpCreateAction = (
 const channelOptions = followUpChannels.map((channel) => ({
   label: followUpChannelLabels[channel],
   value: channel,
+}));
+
+const recurrenceOptions = followUpRecurrences.map((r) => ({
+  label: followUpRecurrenceLabels[r],
+  value: r,
 }));
 
 export function FollowUpCreateDialog({
@@ -73,6 +80,8 @@ export function FollowUpCreateDialog({
   const [reason, setReason] = useState(defaultReason);
   const [channel, setChannel] = useState<FollowUpChannel>(defaultChannel);
   const [dueDate, setDueDate] = useState(defaultDueDate);
+  const [recurrence, setRecurrence] = useState<FollowUpRecurrence>("none");
+  const [recurrenceLimit, setRecurrenceLimit] = useState("");
   const [state, formAction, isPending] = useActionStateWithSonner(
     async (prevState, formData) => {
       const nextState = await action(prevState, formData);
@@ -92,6 +101,8 @@ export function FollowUpCreateDialog({
     setReason(defaultReason);
     setChannel(defaultChannel);
     setDueDate(defaultDueDate);
+    setRecurrence("none");
+    setRecurrenceLimit("");
   }
 
   return (
@@ -213,6 +224,45 @@ export function FollowUpCreateDialog({
                   </Button>
                 </div>
               </Field>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field data-invalid={Boolean(state.fieldErrors?.recurrence?.[0])}>
+                  <FieldLabel htmlFor="follow-up-recurrence">Repeat</FieldLabel>
+                  <FieldContent>
+                    <input name="recurrence" type="hidden" value={recurrence} />
+                    <Combobox
+                      aria-invalid={Boolean(state.fieldErrors?.recurrence?.[0])}
+                      id="follow-up-recurrence"
+                      onValueChange={(value) => setRecurrence(value as FollowUpRecurrence)}
+                      options={recurrenceOptions}
+                      placeholder="No repeat"
+                      value={recurrence}
+                    />
+                  </FieldContent>
+                </Field>
+
+                {recurrence !== "none" && (
+                  <Field data-invalid={Boolean(state.fieldErrors?.recurrenceLimit?.[0])}>
+                    <FieldLabel htmlFor="follow-up-recurrence-limit">
+                      Max repeats
+                    </FieldLabel>
+                    <FieldDescription>Leave blank for unlimited.</FieldDescription>
+                    <FieldContent>
+                      <Input
+                        aria-invalid={Boolean(state.fieldErrors?.recurrenceLimit?.[0])}
+                        id="follow-up-recurrence-limit"
+                        max={100}
+                        min={1}
+                        name="recurrenceLimit"
+                        onChange={(event) => setRecurrenceLimit(event.currentTarget.value)}
+                        placeholder="Unlimited"
+                        type="number"
+                        value={recurrenceLimit}
+                      />
+                    </FieldContent>
+                  </Field>
+                )}
+              </div>
             </FieldGroup>
           </div>
           <ResponsiveOverlayFooter>
