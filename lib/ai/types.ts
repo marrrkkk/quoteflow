@@ -8,12 +8,11 @@ import type {
 export type { AiProviderName, AiQualityTier } from "@/lib/ai/model-options";
 
 // ---------------------------------------------------------------------------
-// AI Provider Abstraction — shared types
+// AI Types — shared type definitions for the AI layer
 //
-// Every provider (Groq, Cerebras, Gemini) normalizes its SDK-specific
-// inputs and outputs into these shapes. The router in `router.ts` works
-// exclusively with these types so adding a new provider later only requires
-// implementing the `AiProvider` interface.
+// These types are used by the router, pipeline, surface service, and
+// consuming features. The Vercel AI SDK handles provider communication;
+// these types normalize the interface for internal app logic.
 // ---------------------------------------------------------------------------
 
 /**
@@ -67,11 +66,9 @@ export type AiStreamResponse = {
 };
 
 /**
- * Provider interface — each provider implements this contract.
- *
- * `isConfigured()` gates whether the router will attempt the provider.
- * `generateCompletion()` returns the full response in one shot.
- * `generateStream()` returns an async iterable of text deltas.
+ * @deprecated Legacy provider interface — no longer used by the router.
+ * The Vercel AI SDK registry handles provider management directly.
+ * Retained for backward compatibility with test utilities.
  */
 export type AiProvider = {
   name: AiProviderName;

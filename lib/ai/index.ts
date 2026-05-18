@@ -1,5 +1,6 @@
 export { generateWithFallback, streamWithFallback } from "./router";
-export { isAiConfigured, getModelsForProvider } from "./config";
+export { isAiConfigured } from "./config";
+export { registry } from "./registry";
 export { AiProviderError, isRetryableError } from "./errors";
 export {
   TOKEN_COST_TABLE,
