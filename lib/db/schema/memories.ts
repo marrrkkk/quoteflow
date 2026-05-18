@@ -3,6 +3,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -26,6 +27,8 @@ export const businessMemories = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** Embedding vector stored as JSONB array for semantic search. Null if not yet generated. */
+    embedding: jsonb("embedding").$type<number[] | null>().default(null),
   },
   (table) => [
     index("business_memories_business_id_idx").on(table.businessId),
