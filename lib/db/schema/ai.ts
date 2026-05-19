@@ -161,6 +161,30 @@ export const aiTokenLogs = pgTable(
   ],
 );
 
+export const conversationSummaries = pgTable(
+  "conversation_summaries",
+  {
+    id: text("id").primaryKey(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .unique()
+      .references(() => aiConversations.id, { onDelete: "cascade" }),
+    summary: text("summary").notNull(),
+    messageCount: integer("message_count").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("conversation_summaries_conversation_id_idx").on(
+      table.conversationId,
+    ),
+  ],
+);
+
 export const aiDrafts = pgTable(
   "ai_drafts",
   {

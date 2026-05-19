@@ -64,6 +64,13 @@
       "when": 1779300000000,
       "tag": "0008_add_business_timezone",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779200973145,
+      "tag": "0009_real_harpoon",
+      "breakpoints": true
     }
   ]
 }
