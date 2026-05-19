@@ -1,22 +1,34 @@
 "use client";
 
 import {
+  memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
+  type FormEvent,
+  type KeyboardEvent,
 } from "react";
-import { ArrowUp, Bot, Loader2, RotateCcw, Send, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  AlertTriangle,
+  ArrowUp,
+  RotateCcw,
+  Send,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { Shimmer } from "@/components/ai-elements/shimmer";
+import Image from "next/image";
 import {
   getInquiryFormFieldInputName,
   inquiryContactMethodLabels,
   type InquiryContactMethod,
-  type InquiryFormConversationalAvatarStyle,
 } from "@/features/inquiries/form-config";
 import type { PublicInquiryBusiness } from "@/features/inquiries/types";
 import type {
@@ -30,13 +42,15 @@ import { cn } from "@/lib/utils";
 //
 // Chat-style public-facing component that replaces the static form when
 // conversational mode is enabled. Streams AI responses from the public
-// inquiry chat API and renders a chat bubble interface.
+// inquiry chat API and renders a polished chat bubble interface matching
+// the dashboard AI assistant style.
 // ---------------------------------------------------------------------------
 
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  isError?: boolean;
 };
 
 type ConversationPhase = "chatting" | "confirming" | "submitting" | "submitted";
@@ -55,10 +69,42 @@ function createMessageId() {
   return `msg_${messageIdCounter}_${Date.now()}`;
 }
 
+
+/* -------------------------------------------------------------------------- */
+/*  Markdown components (matching dashboard AI prose style)                    */
+/* -------------------------------------------------------------------------- */
+
+const markdownComponents: Components = {
+  a({ href, children, ...props }) {
+    const isExternal = href ? /^https?:\/\//i.test(href) : false;
+
+    return (
+      <a
+        {...props}
+        href={href}
+        rel={isExternal ? "noreferrer" : props.rel}
+        target={isExternal ? "_blank" : props.target}
+      >
+        {children}
+      </a>
+    );
+  },
+  table({ children, ...props }) {
+    return (
+      <div className="overflow-x-auto rounded-lg">
+        <table {...props}>{children}</table>
+      </div>
+    );
+  },
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
 /**
  * Build a map of all custom field input names from the form config, with
- * their labels and default empty values. Used to ensure the confirmation
- * panel and submission include every field the validation expects.
+ * their labels and default empty values.
  */
 function getCustomFieldMeta(business: PublicInquiryBusiness) {
   const fields: Array<{
@@ -90,9 +136,13 @@ function getChatbotConfig(business: PublicInquiryBusiness) {
 
   return {
     assistantName: conv?.assistantName || `${business.name} Assistant`,
-    avatarStyle: (conv?.avatarStyle ?? "brand") as InquiryFormConversationalAvatarStyle,
   };
 }
+
+
+/* -------------------------------------------------------------------------- */
+/*  Main component                                                             */
+/* -------------------------------------------------------------------------- */
 
 export function ConversationalInquiryForm({
   business,
@@ -109,7 +159,6 @@ export function ConversationalInquiryForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
@@ -166,6 +215,7 @@ export function ConversationalInquiryForm({
                   ...m,
                   content:
                     "I'm having trouble connecting right now. Please try again in a moment.",
+                  isError: true,
                 }
               : m,
           ),
@@ -205,7 +255,6 @@ export function ConversationalInquiryForm({
               );
               scrollToBottom();
             } else if (event.type === "done" && event.extracted) {
-              // Strip the extraction JSON block from the displayed message
               setMessages((prev) =>
                 prev.map((m) => {
                   if (m.id !== assistantMessageId) return m;
@@ -229,6 +278,7 @@ export function ConversationalInquiryForm({
                         content:
                           m.content ||
                           "I ran into an issue. Please try again.",
+                        isError: !m.content,
                       }
                     : m,
                 ),
@@ -249,6 +299,7 @@ export function ConversationalInquiryForm({
                 content:
                   m.content ||
                   "Something went wrong. Please try again.",
+                isError: !m.content,
               }
             : m,
         ),
@@ -278,13 +329,6 @@ export function ConversationalInquiryForm({
     void sendToApi(nextMessages);
   }
 
-  function handleKeyDown(event: React.KeyboardEvent) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSend();
-    }
-  }
-
   async function handleSubmit() {
     if (!editedFields) return;
 
@@ -309,7 +353,6 @@ export function ConversationalInquiryForm({
         formData.set("budgetText", editedFields.budgetText);
       }
 
-      // Custom fields — populate ALL fields from the form config.
       const extractedCustom = editedFields.customFields ?? {};
 
       for (const meta of customFieldMeta) {
@@ -378,51 +421,71 @@ export function ConversationalInquiryForm({
     });
   }
 
-  // Detect streaming with no content yet (for typing indicator)
+  // Detect streaming with no content yet (for thinking indicator)
   const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-  const showTypingIndicator =
+  const showThinkingIndicator =
     isStreaming && lastMsg?.role === "assistant" && !lastMsg?.content;
 
+  const hasMessages = messages.length > 0;
+
   return (
-    <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border/75 bg-card/96">
-      {/* Chat header */}
-      <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3 sm:px-6">
-        <ChatAvatar
-          assistantName={chatbot.assistantName}
-          avatarStyle={chatbot.avatarStyle}
-          size="sm"
-        />
-        <div className="flex flex-col gap-0">
-          <span className="text-sm font-semibold text-foreground leading-tight">
-            {chatbot.assistantName}
+    <div className="relative flex min-h-[70vh] w-full flex-col">
+      {/* Brand identity — top-left corner, always visible */}
+      <div className="flex items-center gap-2.5">
+        <BrandAvatar business={business} />
+        <div className="flex min-w-0 flex-col gap-0">
+          <span className="font-heading text-sm font-semibold tracking-tight text-foreground leading-tight">
+            {business.name}
           </span>
           <span className="text-xs text-muted-foreground">
-            {isStreaming ? "Typing…" : "Online"}
+            {business.inquiryPageConfig.brandTagline?.trim() ||
+              business.shortDescription?.trim() ||
+              chatbot.assistantName}
           </span>
         </div>
+        {messages.length > 2 && !isStreaming && phase === "chatting" && (
+          <Button
+            onClick={handleReset}
+            size="icon-sm"
+            variant="ghost"
+            className="ml-auto shrink-0 text-muted-foreground"
+            title="Start over"
+          >
+            <RotateCcw className="size-3.5" />
+            <span className="sr-only">Start over</span>
+          </Button>
+        )}
       </div>
 
-      <CardContent className="flex flex-col gap-0 p-0">
-        {/* Messages area */}
-        <div
-          ref={scrollContainerRef}
-          className="flex max-h-[28rem] min-h-[16rem] flex-col gap-3 overflow-y-auto px-4 py-5 sm:max-h-[32rem] sm:px-6"
-        >
-          {messages.map((msg) => (
-            <ChatBubble
-              key={msg.id}
-              assistantName={chatbot.assistantName}
-              avatarStyle={chatbot.avatarStyle}
-              message={msg}
-            />
-          ))}
+      {/* Centered chat area */}
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center">
+        {/* Greeting heading — only before conversation starts */}
+        {!hasMessages && (
+          <h2 className="pb-5 text-center font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            Where should we begin?
+          </h2>
+        )}
 
-          {showTypingIndicator ? <TypingIndicator /> : null}
+        {/* Messages area — once conversation starts */}
+        {hasMessages && (
+          <div
+            ref={scrollContainerRef}
+            className="mb-3 flex w-full max-h-[38rem] flex-1 flex-col gap-4 overflow-y-auto ai-chat-scrollbar"
+          >
+            {messages.map((msg) => (
+              <MessageRow
+                key={msg.id}
+                message={msg}
+              />
+            ))}
 
-          <div ref={messagesEndRef} />
-        </div>
+            {showThinkingIndicator ? <ThinkingIndicator /> : null}
 
-        {/* Confirmation panel */}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+
+        {/* Confirmation / submitting / composer */}
         {phase === "confirming" && editedFields ? (
           <ConfirmationPanel
             fields={editedFields}
@@ -435,153 +498,259 @@ export function ConversationalInquiryForm({
             onBack={() => setPhase("chatting")}
           />
         ) : phase === "submitting" ? (
-          <div className="flex items-center justify-center gap-2 border-t border-border/50 px-4 py-6">
+          <div className="flex items-center justify-center gap-2 py-6">
             <Spinner aria-hidden="true" />
             <span className="text-sm text-muted-foreground">
               Submitting your inquiry…
             </span>
           </div>
         ) : (
-          /* Input bar */
-          <div className="flex items-center gap-2 border-t border-border/50 px-3 py-3 sm:px-5">
-            <Input
-              ref={inputRef}
-              autoFocus
-              className="flex-1"
+          <div className="w-full">
+            <ChatComposer
               disabled={isStreaming || phase !== "chatting"}
-              maxLength={2000}
-              onKeyDown={handleKeyDown}
-              onChange={(e) => setInputValue(e.target.value)}
+              isGenerating={isStreaming}
               placeholder="Type your message…"
               value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSend}
             />
-            <Button
-              disabled={!inputValue.trim() || isStreaming}
-              onClick={handleSend}
-              size="icon"
-              variant="default"
-              className="shrink-0"
-            >
-              <ArrowUp className="size-4" />
-              <span className="sr-only">Send</span>
-            </Button>
-            {messages.length > 2 && !isStreaming && (
-              <Button
-                onClick={handleReset}
-                size="icon"
-                variant="ghost"
-                className="shrink-0 text-muted-foreground"
-                title="Start over"
-              >
-                <RotateCcw className="size-3.5" />
-                <span className="sr-only">Start over</span>
-              </Button>
-            )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 
-function ChatAvatar({
-  assistantName,
-  avatarStyle,
-  size = "default",
+/* -------------------------------------------------------------------------- */
+/*  Composer (matching dashboard AI ChatInput pattern)                         */
+/* -------------------------------------------------------------------------- */
+
+function ChatComposer({
+  disabled,
+  placeholder,
+  value,
+  onChange,
+  onSubmit,
+  isGenerating,
 }: {
-  assistantName: string;
-  avatarStyle: InquiryFormConversationalAvatarStyle;
-  size?: "sm" | "default";
+  disabled: boolean;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  isGenerating?: boolean;
 }) {
-  const initial = assistantName.charAt(0).toUpperCase();
-  const sizeClass = size === "sm" ? "size-8" : "size-8";
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  if (avatarStyle === "initials") {
-    return (
-      <div
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-semibold",
-          sizeClass,
-        )}
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+
+    if (!el) return;
+
+    el.style.height = "0px";
+    const nextHeight = Math.min(el.scrollHeight, 140);
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > 140 ? "auto" : "hidden";
+  }, [value]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSubmit();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      onSubmit();
+      return;
+    }
+
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      onSubmit();
+    }
+  }
+
+  return (
+    <form
+      className={cn(
+        "relative flex items-center rounded-2xl bg-muted/70 px-4 py-3 transition-shadow",
+        isGenerating && "ai-glow-border",
+      )}
+      onSubmit={handleSubmit}
+    >
+      <textarea
+        className="min-h-6 max-h-[8.75rem] flex-1 resize-none overflow-hidden border-none bg-transparent px-0 py-0 text-sm leading-6 text-foreground shadow-none outline-none placeholder:text-muted-foreground/70 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={disabled}
+        maxLength={2000}
+        onChange={(event) => onChange(event.currentTarget.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        ref={textareaRef}
+        rows={1}
+        value={value}
+      />
+
+      <Button
+        aria-label="Send message"
+        className="ml-2 size-8 shrink-0 rounded-lg"
+        disabled={disabled || !value.trim()}
+        size="icon-sm"
+        type="submit"
       >
-        {initial}
+        {disabled ? <Spinner aria-hidden="true" /> : <ArrowUp className="size-4" />}
+      </Button>
+    </form>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Thinking indicator (shimmer style from dashboard AI)                       */
+/* -------------------------------------------------------------------------- */
+
+const ThinkingIndicator = memo(function ThinkingIndicator() {
+  return (
+    <div className="flex w-full flex-col gap-1">
+      <div className="flex items-center py-1">
+        <Shimmer duration={1.5} className="text-sm font-medium">
+          Thinking
+        </Shimmer>
+      </div>
+    </div>
+  );
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Streaming cursor                                                           */
+/* -------------------------------------------------------------------------- */
+
+const StreamingCursor = memo(function StreamingCursor() {
+  return (
+    <span
+      aria-hidden="true"
+      className="ai-stream-cursor inline-block h-[1.1em] w-[2px] translate-y-[0.15em] rounded-full bg-primary/80 align-middle"
+    />
+  );
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Message row                                                                */
+/* -------------------------------------------------------------------------- */
+
+function MessageRow({
+  message,
+}: {
+  message: ChatMessage;
+}) {
+  if (message.role === "user") {
+    return <UserBubble message={message} />;
+  }
+
+  return (
+    <AssistantBubble
+      message={message}
+    />
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  User bubble (matching dashboard style)                                     */
+/* -------------------------------------------------------------------------- */
+
+const UserBubble = memo(function UserBubble({
+  message,
+}: {
+  message: ChatMessage;
+}) {
+  return (
+    <div className="flex w-full justify-end">
+      <div className="max-w-[85%] rounded-2xl bg-muted/60 px-4 py-2.5">
+        <p className="whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
+          {message.content}
+        </p>
+      </div>
+    </div>
+  );
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Assistant bubble (with markdown rendering like dashboard AI)               */
+/* -------------------------------------------------------------------------- */
+
+const AssistantBubble = memo(function AssistantBubble({
+  message,
+}: {
+  message: ChatMessage;
+}) {
+  const hasContent = message.content.trim().length > 0;
+  const isStreaming = !hasContent && !message.isError;
+
+  if (message.isError) {
+    return (
+      <div className="flex w-full flex-col gap-1">
+        <div className="flex items-center gap-2 rounded-lg bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
+          <span>{message.content || "Could not complete that request."}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground",
-        sizeClass,
-      )}
-    >
-      <Bot className="size-3.5" />
-    </div>
-  );
-}
-
-function ChatBubble({
-  assistantName,
-  avatarStyle,
-  message,
-}: {
-  assistantName: string;
-  avatarStyle: InquiryFormConversationalAvatarStyle;
-  message: ChatMessage;
-}) {
-  const isUser = message.role === "user";
-
-  return (
-    <div
-      className={cn(
-        "flex gap-2.5",
-        isUser ? "flex-row-reverse" : "flex-row",
-      )}
-    >
-      {isUser ? (
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <User className="size-3.5" />
+    <div className="flex w-full flex-col gap-1">
+      {hasContent ? (
+        <div className="ai-prose text-sm leading-7 text-foreground">
+          <ReactMarkdown
+            components={markdownComponents}
+            remarkPlugins={[remarkGfm]}
+          >
+            {message.content}
+          </ReactMarkdown>
+          {isStreaming ? <StreamingCursor /> : null}
         </div>
-      ) : (
-        <ChatAvatar
-          assistantName={assistantName}
-          avatarStyle={avatarStyle}
+      ) : null}
+    </div>
+  );
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Brand avatar (business logo for the AI header)                             */
+/* -------------------------------------------------------------------------- */
+
+function BrandAvatar({ business }: { business: PublicInquiryBusiness }) {
+  if (business.logoUrl) {
+    return (
+      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70 bg-background/92 shadow-sm sm:size-11">
+        <Image
+          src={business.logoUrl}
+          alt={`${business.name} logo`}
+          width={44}
+          height={44}
+          className="h-full w-full object-cover"
+          unoptimized
         />
-      )}
-      <div
-        className={cn(
-          "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-          isUser
-            ? "rounded-tr-md bg-primary text-primary-foreground"
-            : "rounded-tl-md bg-secondary text-secondary-foreground",
-        )}
-      >
-        {message.content || (
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <Loader2 className="size-3 animate-spin" />
-          </span>
-        )}
       </div>
+    );
+  }
+
+  const initials = business.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-primary/10 text-primary sm:size-11">
+      <span className="text-xs font-semibold tracking-wide">{initials}</span>
     </div>
   );
 }
 
-function TypingIndicator() {
-  return (
-    <div className="flex items-center gap-2 px-1">
-      <div className="flex items-center gap-1 rounded-2xl bg-secondary px-4 py-2.5">
-        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:0ms]" />
-        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:150ms]" />
-        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:300ms]" />
-      </div>
-    </div>
-  );
-}
+/* -------------------------------------------------------------------------- */
+/*  Confirmation panel                                                         */
+/* -------------------------------------------------------------------------- */
 
 type CustomFieldMetaItem = {
   inputName: string;
@@ -621,7 +790,7 @@ function ConfirmationPanel({
   return (
     <div className="flex flex-col gap-4 border-t border-border/50 px-4 py-5 sm:px-6">
       <div className="flex flex-col gap-1">
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="font-heading text-base font-semibold tracking-tight text-foreground">
           Review your inquiry
         </h3>
         <p className="text-sm text-muted-foreground">
@@ -710,6 +879,10 @@ function ConfirmationPanel({
     </div>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Confirmation field                                                         */
+/* -------------------------------------------------------------------------- */
 
 function ConfirmationField({
   label,

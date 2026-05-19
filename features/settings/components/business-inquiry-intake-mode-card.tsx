@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useEffect } from "react";
-import { Bot, FileText } from "lucide-react";
+import { Bot, CheckCircle2, FileText, Sparkles } from "lucide-react";
 
 import { useProgressRouter } from "@/hooks/use-progress-router";
 import { useActionStateWithSonner } from "@/hooks/use-action-state-with-sonner";
@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { hasFeatureAccess } from "@/lib/plans/entitlements";
 import type { BusinessPlan } from "@/lib/plans/plans";
@@ -66,7 +65,7 @@ export function BusinessInquiryIntakeModeCard({
 
     const formData = new FormData();
     formData.set("targetFormId", formId);
-    formData.set("enabled", wantChat ? "true" : "false");
+    formData.set("conversationalModeEnabled", wantChat ? "true" : "false");
     startTransition(() => formAction(formData));
   }
 
@@ -80,108 +79,126 @@ export function BusinessInquiryIntakeModeCard({
       </CardHeader>
       <CardContent className="pt-0">
         <div className="grid gap-3 sm:grid-cols-2">
-          {/* Form option */}
-          <button
-            className={cn(
-              "relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-colors",
-              "hover:border-primary/40 hover:bg-accent/50",
-              !conversationalModeEnabled
-                ? "border-primary bg-primary/[0.04]"
-                : "border-border/60 bg-transparent",
-              isPending && "pointer-events-none opacity-60",
-            )}
+          {/* Standard form option */}
+          <IntakeModeOption
+            active={!conversationalModeEnabled}
             disabled={isPending}
+            icon={<FileText className="size-4" />}
+            iconClassName="bg-secondary text-secondary-foreground"
+            label="Standard Form"
+            description="Structured fields that customers fill out directly. Works for every plan."
+            loading={!conversationalModeEnabled && isPending}
             onClick={() => handleSelect("form")}
-            type="button"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
-                <FileText className="size-4" />
-              </div>
-              <span className="text-sm font-semibold text-foreground">
-                Form
-              </span>
-              {!conversationalModeEnabled && isPending ? (
-                <Spinner className="ml-auto size-3.5" />
-              ) : null}
-            </div>
-            <p className="text-[0.8rem] leading-snug text-muted-foreground">
-              Static fields customers fill out directly. Works for every plan.
-            </p>
-            {!conversationalModeEnabled ? (
-              <Badge
-                className="absolute right-3 top-3"
-                variant="secondary"
-              >
-                Active
-              </Badge>
-            ) : null}
-          </button>
+          />
 
           {/* AI Chat option */}
           {hasAiAccess ? (
-            <button
-              className={cn(
-                "relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-colors",
-                "hover:border-primary/40 hover:bg-accent/50",
-                conversationalModeEnabled
-                  ? "border-primary bg-primary/[0.04]"
-                  : "border-border/60 bg-transparent",
-                isPending && "pointer-events-none opacity-60",
-              )}
+            <IntakeModeOption
+              active={conversationalModeEnabled}
               disabled={isPending}
+              icon={<Sparkles className="size-4" />}
+              iconClassName="bg-primary/10 text-primary"
+              label="AI Chat"
+              description="An AI assistant that guides customers through the inquiry in a natural conversation."
+              loading={conversationalModeEnabled && isPending}
               onClick={() => handleSelect("chat")}
-              type="button"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Bot className="size-4" />
-                </div>
-                <span className="text-sm font-semibold text-foreground">
-                  AI Chat
-                </span>
-                {conversationalModeEnabled && isPending ? (
-                  <Spinner className="ml-auto size-3.5" />
-                ) : null}
-              </div>
-              <p className="text-[0.8rem] leading-snug text-muted-foreground">
-                A conversational assistant that collects inquiry details naturally.
-              </p>
-              {conversationalModeEnabled ? (
-                <Badge
-                  className="absolute right-3 top-3"
-                  variant="secondary"
-                >
-                  Active
-                </Badge>
-              ) : null}
-            </button>
+            />
           ) : (
             <LockedAction feature="aiAssistant" plan={plan}>
-              <div
-                className={cn(
-                  "relative flex cursor-not-allowed flex-col gap-2 rounded-xl border-2 border-border/60 p-4 text-left opacity-60",
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Bot className="size-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    AI Chat
-                  </span>
-                  <Badge className="ml-auto" variant="outline">
-                    Pro
-                  </Badge>
-                </div>
-                <p className="text-[0.8rem] leading-snug text-muted-foreground">
-                  A conversational assistant that collects inquiry details naturally.
-                </p>
-              </div>
+              <IntakeModeOption
+                active={false}
+                disabled
+                icon={<Sparkles className="size-4" />}
+                iconClassName="bg-primary/10 text-primary"
+                label="AI Chat"
+                description="An AI assistant that guides customers through the inquiry in a natural conversation."
+                locked
+                onClick={() => {}}
+              />
             </LockedAction>
           )}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Intake mode option tile
+// ---------------------------------------------------------------------------
+
+function IntakeModeOption({
+  active,
+  disabled,
+  icon,
+  iconClassName,
+  label,
+  description,
+  loading,
+  locked,
+  onClick,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  icon: React.ReactNode;
+  iconClassName?: string;
+  label: string;
+  description: string;
+  loading?: boolean;
+  locked?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={cn(
+        "group relative flex flex-col gap-3 rounded-xl border-2 p-4 text-left transition-all",
+        active
+          ? "border-primary bg-primary/[0.03] shadow-sm shadow-primary/5"
+          : "border-border/60 bg-transparent hover:border-border hover:bg-accent/30",
+        disabled && "pointer-events-none opacity-60",
+        locked && "cursor-not-allowed opacity-55",
+      )}
+      disabled={disabled || locked}
+      onClick={onClick}
+      type="button"
+    >
+      {/* Top row: icon + label + status */}
+      <div className="flex items-center gap-2.5">
+        <div
+          className={cn(
+            "flex size-9 items-center justify-center rounded-lg transition-colors",
+            iconClassName,
+          )}
+        >
+          {icon}
+        </div>
+        <span className="text-sm font-semibold text-foreground">
+          {label}
+        </span>
+
+        {/* Status indicator */}
+        <span className="ml-auto flex items-center">
+          {loading ? (
+            <Spinner className="size-4" />
+          ) : active ? (
+            <CheckCircle2 className="size-4 text-primary" />
+          ) : locked ? (
+            <span className="rounded-md border border-border/80 bg-secondary/60 px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
+              Pro
+            </span>
+          ) : null}
+        </span>
+      </div>
+
+      {/* Description */}
+      <p className="text-[0.8rem] leading-snug text-muted-foreground">
+        {description}
+      </p>
+
+      {/* Active indicator dot */}
+      {active ? (
+        <span className="absolute -top-px -right-px size-2 rounded-full bg-primary" />
+      ) : null}
+    </button>
   );
 }
