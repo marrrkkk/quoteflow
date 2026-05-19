@@ -2,7 +2,7 @@ import "server-only";
 
 import { generateText, streamText } from "ai";
 
-import { registry, groq, cerebras, google, openrouter, mistral, cloudflare } from "@/lib/ai/registry";
+import { registry, groq, cerebras, google, openrouter, mistral, cloudflare, nvidia } from "@/lib/ai/registry";
 import {
   AiProviderError,
   getSanitizedErrorInfo,
@@ -46,6 +46,7 @@ const PROVIDER_TIMEOUTS: Record<AiProviderName, number> = {
   gemini: 20_000,
   mistral: 25_000,
   cloudflare: 25_000,
+  nvidia: 30_000,
   openrouter: 30_000,
 };
 
@@ -57,6 +58,7 @@ function getConfiguredProviderNames(): AiProviderName[] {
   if (google) names.push("gemini");
   if (mistral) names.push("mistral");
   if (cloudflare) names.push("cloudflare");
+  if (nvidia) names.push("nvidia");
   if (openrouter) names.push("openrouter");
   return names;
 }

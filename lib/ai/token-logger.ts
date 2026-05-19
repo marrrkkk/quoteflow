@@ -53,6 +53,10 @@ export const TOKEN_COST_TABLE: Record<
   "cloudflare:@cf/zai-org/glm-4.7-flash": { inputPerMillion: 0, outputPerMillion: 0 },
   "cloudflare:@cf/qwen/qwen3-30b-a3b-fp8": { inputPerMillion: 0, outputPerMillion: 0 },
   "cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast": { inputPerMillion: 0, outputPerMillion: 0 },
+  // NVIDIA NIM — free credits (consumed per token, not per-million pricing)
+  "nvidia:nvidia/llama-3.3-nemotron-super-49b-v1": { inputPerMillion: 0, outputPerMillion: 0 },
+  "nvidia:meta/llama-3.3-70b-instruct": { inputPerMillion: 0, outputPerMillion: 0 },
+  "nvidia:meta/llama-3.1-8b-instruct": { inputPerMillion: 0, outputPerMillion: 0 },
 };
 
 /** Parameters for logging an AI invocation. */

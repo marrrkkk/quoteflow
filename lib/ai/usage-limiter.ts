@@ -43,6 +43,7 @@ export const TASK_WEIGHTS: Record<AiTaskType, number> = {
   business_memory_summary: 1,
   quote_improvement: 2,
   quote_draft: 3,
+  intent_classification: 1,
 };
 
 // ---------------------------------------------------------------------------

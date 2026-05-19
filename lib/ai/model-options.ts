@@ -4,6 +4,7 @@ export const aiProviderNames = [
   "gemini",
   "mistral",
   "cloudflare",
+  "nvidia",
   "openrouter",
 ] as const;
 
@@ -162,6 +163,28 @@ export const aiProviderModels: Record<
       "@cf/qwen/qwen3-30b-a3b-fp8",
     ],
   },
+  // NVIDIA NIM: Free API credits (1000 on signup). OpenAI-compatible at integrate.api.nvidia.com.
+  // Tested: Nemotron Super 49B and Meta Llama 3.3/3.1 work for text + tool calling.
+  // Other models (GPT-OSS, Qwen, Mistral, 405B) are NOT available on the hosted API.
+  nvidia: {
+    balanced: [
+      "nvidia/llama-3.3-nemotron-super-49b-v1",    // 49B, 128K context, tools work
+      "meta/llama-3.3-70b-instruct",               // 70B, reliable, tools work
+      "meta/llama-3.1-8b-instruct",                // 8B, fast lightweight
+    ],
+    cheap: [
+      "meta/llama-3.1-8b-instruct",
+      "nvidia/llama-3.3-nemotron-super-49b-v1",
+    ],
+    best: [
+      "nvidia/llama-3.3-nemotron-super-49b-v1",
+      "meta/llama-3.3-70b-instruct",
+    ],
+    coding: [
+      "nvidia/llama-3.3-nemotron-super-49b-v1",
+      "meta/llama-3.3-70b-instruct",
+    ],
+  },
   // OpenRouter: Free models, last resort overflow. Each model has separate limits.
   // Ordered by tool-calling reliability and general quality.
   openrouter: {
@@ -274,6 +297,8 @@ export function formatAiProviderName(provider: AiProviderName) {
       return "Mistral";
     case "cloudflare":
       return "Cloudflare";
+    case "nvidia":
+      return "NVIDIA NIM";
     case "openrouter":
       return "OpenRouter";
   }

@@ -8,7 +8,7 @@ import { createMistral } from "@ai-sdk/mistral";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createProviderRegistry, customProvider } from "ai";
 
-import { env, isGroqConfigured, isCerebrasConfigured, isGeminiConfigured, isOpenRouterConfigured, isMistralConfigured, isCloudflareAiConfigured } from "@/lib/env";
+import { env, isGroqConfigured, isCerebrasConfigured, isGeminiConfigured, isOpenRouterConfigured, isMistralConfigured, isCloudflareAiConfigured, isNvidiaNimConfigured } from "@/lib/env";
 
 // ---------------------------------------------------------------------------
 // AI Provider Registry — Vercel AI SDK
@@ -53,6 +53,16 @@ const cloudflare = isCloudflareAiConfigured
     })
   : null;
 
+const nvidia = isNvidiaNimConfigured
+  ? createOpenAICompatible({
+      name: "nvidia",
+      baseURL: "https://integrate.api.nvidia.com/v1",
+      headers: {
+        Authorization: `Bearer ${env.NVIDIA_NIM_API_KEY}`,
+      },
+    })
+  : null;
+
 // ── Registry setup ────────────────────────────────────────────────────────
 
 /**
@@ -68,6 +78,7 @@ function buildRegistry() {
   if (openrouter) providers.openrouter = openrouter;
   if (mistral) providers.mistral = mistral;
   if (cloudflare) providers.cloudflare = cloudflare;
+  if (nvidia) providers.nvidia = nvidia;
 
   return createProviderRegistry(providers);
 }
@@ -76,9 +87,9 @@ export const registry = buildRegistry();
 
 // ── Provider availability checks ──────────────────────────────────────────
 
-export { groq, cerebras, google, openrouter, mistral, cloudflare };
+export { groq, cerebras, google, openrouter, mistral, cloudflare, nvidia };
 
 /** Returns true if at least one AI provider is configured. */
 export function isAiConfigured(): boolean {
-  return isGroqConfigured || isCerebrasConfigured || isGeminiConfigured || isOpenRouterConfigured || isMistralConfigured || isCloudflareAiConfigured;
+  return isGroqConfigured || isCerebrasConfigured || isGeminiConfigured || isOpenRouterConfigured || isMistralConfigured || isCloudflareAiConfigured || isNvidiaNimConfigured;
 }

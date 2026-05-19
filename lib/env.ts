@@ -48,6 +48,7 @@ const envSchema = z.object({
   MISTRAL_API_KEY: emptyToUndefined(z.string().min(1)),
   CLOUDFLARE_ACCOUNT_ID: emptyToUndefined(z.string().min(1)),
   CLOUDFLARE_API_TOKEN: emptyToUndefined(z.string().min(1)),
+  NVIDIA_NIM_API_KEY: emptyToUndefined(z.string().min(1)),
   DEMO_OWNER_NAME: emptyToUndefined(z.string().trim().min(1)),
   DEMO_OWNER_EMAIL: emptyToUndefined(z.email()),
   DEMO_OWNER_PASSWORD: emptyToUndefined(z.string().min(8)),
@@ -119,6 +120,7 @@ export const isMistralConfigured = Boolean(env.MISTRAL_API_KEY);
 export const isCloudflareAiConfigured = Boolean(
   env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_API_TOKEN,
 );
+export const isNvidiaNimConfigured = Boolean(env.NVIDIA_NIM_API_KEY);
 export const isPushConfigured = Boolean(
   env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY,
 );
