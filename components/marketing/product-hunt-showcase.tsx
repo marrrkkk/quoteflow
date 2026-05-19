@@ -13,11 +13,13 @@ import {
   Copy,
   Download,
   Eye,
+  FileText,
   Inbox,
   LayoutDashboard,
   Search,
   Send,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 
 import { BrandWordmark } from "@/components/shared/brand-wordmark";
@@ -51,22 +53,22 @@ function RequoLogo({ className }: { className?: string }) {
 const sidebarNav = [
   { icon: LayoutDashboard, label: "Dashboard", active: false },
   { icon: Inbox, label: "Inquiries", active: false },
-  { icon: Send, label: "Quotes", active: false },
+  { icon: FileText, label: "Quotes", active: false },
   { icon: BellRing, label: "Follow-ups", active: false },
   { icon: BarChart3, label: "Analytics", active: false },
 ];
 
 function AppShell({ children, activeNav }: { children: React.ReactNode; activeNav: string }) {
   return (
-    <div className="flex h-full w-full overflow-hidden rounded-xl border border-border/60 bg-background shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
+    <div className="flex h-full w-full overflow-hidden rounded-xl border border-border/60 bg-background shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)]">
       {/* Sidebar */}
-      <div className="flex w-[160px] shrink-0 flex-col border-r border-border/50 bg-[#f8faf8]">
+      <div className="flex w-[172px] shrink-0 flex-col border-r border-border/50 bg-[#f8faf8]">
         {/* Business */}
-        <div className="flex items-center gap-2 border-b border-border/40 px-3 py-3">
+        <div className="flex items-center gap-2.5 border-b border-border/40 px-3.5 py-3">
           <RequoLogo className="size-5" />
           <div className="min-w-0">
             <p className="truncate text-[11px] font-semibold text-foreground">BrightSide</p>
-            <p className="truncate text-[8px] text-muted-foreground">Print studio</p>
+            <p className="truncate text-[8px] text-muted-foreground">Print & Reno studio</p>
           </div>
         </div>
         {/* Nav */}
@@ -76,8 +78,8 @@ function AppShell({ children, activeNav }: { children: React.ReactNode; activeNa
             const isActive = item.label.toLowerCase() === activeNav;
             return (
               <div key={item.label} className={cn(
-                "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium",
-                isActive ? "bg-primary/10 text-primary" : "text-muted-foreground",
+                "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                isActive ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground",
               )}>
                 <Icon className="size-3.5" />
                 <span>{item.label}</span>
@@ -85,9 +87,16 @@ function AppShell({ children, activeNav }: { children: React.ReactNode; activeNa
             );
           })}
         </div>
+        {/* Bottom */}
+        <div className="mt-auto border-t border-border/30 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary/10 text-[8px] font-bold text-primary">JS</span>
+            <span className="text-[10px] text-muted-foreground">Jordan S.</span>
+          </div>
+        </div>
       </div>
       {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-w-0 flex-1 flex-col bg-background">{children}</div>
     </div>
   );
 }
@@ -100,38 +109,43 @@ function DashboardApp() {
   return (
     <AppShell activeNav="dashboard">
       <div className="border-b border-border/40 px-5 py-3">
-        <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground">BrightSide</p>
+        <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Overview</p>
         <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Dashboard</h3>
       </div>
       <div className="flex-1 overflow-hidden px-5 py-3.5">
+        {/* Stats row */}
         <div className="grid grid-cols-4 gap-2.5">
           {[
-            { label: "New inquiries", value: "4", delta: "+2" },
-            { label: "Quotes sent", value: "8", delta: "+3" },
-            { label: "Viewed", value: "75%", delta: "+6 pts" },
-            { label: "Won this week", value: "3", delta: "+1" },
+            { label: "New inquiries", value: "4", delta: "+2 today", up: true },
+            { label: "Quotes sent", value: "8", delta: "+3 this week", up: true },
+            { label: "View rate", value: "75%", delta: "+6 pts", up: true },
+            { label: "Won this week", value: "$12.4k", delta: "3 jobs", up: true },
           ].map((s, i) => (
             <div key={i} className="rounded-lg border border-border/40 bg-card px-2.5 py-2.5">
               <p className="text-[8px] font-medium uppercase tracking-wider text-muted-foreground">{s.label}</p>
-              <p className="mt-0.5 text-[15px] font-semibold text-foreground">{s.value}</p>
-              <p className="text-[9px] font-medium text-primary">▲ {s.delta}</p>
+              <p className="mt-0.5 text-[16px] font-bold text-foreground">{s.value}</p>
+              <p className="flex items-center gap-0.5 text-[9px] font-medium text-primary">
+                <TrendingUp className="size-2.5" /> {s.delta}
+              </p>
             </div>
           ))}
         </div>
-        <p className="mb-1.5 mt-3.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">Needs attention</p>
+        {/* Needs attention */}
+        <p className="mb-1.5 mt-4 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">Needs attention</p>
         {[
-          { text: "Q-1042 viewed, no reply in 2 days", tag: "Follow up", color: "text-destructive" },
-          { text: "New inquiry from Leo Park — tile repair", tag: "New", color: "text-primary" },
-          { text: "Follow-up due — Maya Fields, studio fit-out", tag: "Due today", color: "text-primary" },
+          { text: "Q-1042 viewed 2 days ago — no reply", tag: "Follow up", color: "bg-destructive/10 text-destructive" },
+          { text: "New inquiry from Leo Park — tile repair", tag: "New", color: "bg-primary/10 text-primary" },
+          { text: "Follow-up due today — Maya Fields", tag: "Due", color: "bg-primary/10 text-primary" },
         ].map((a, i) => (
-          <div key={i} className="mb-1.5 flex items-center justify-between rounded-md border border-border/30 bg-card px-3 py-2">
+          <div key={i} className="mb-1.5 flex items-center justify-between rounded-lg border border-border/30 bg-card px-3 py-2">
             <p className="text-[10px] text-foreground">{a.text}</p>
-            <span className={cn("text-[9px] font-semibold", a.color)}>{a.tag}</span>
+            <span className={cn("rounded-full px-2 py-0.5 text-[8px] font-semibold", a.color)}>{a.tag}</span>
           </div>
         ))}
-        <div className="mt-2.5 flex items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
+        {/* Live event */}
+        <div className="mt-2.5 flex items-center gap-2.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
           <span className="relative flex size-1.5"><span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60" /><span className="relative inline-flex size-1.5 rounded-full bg-primary" /></span>
-          <p className="text-[10px] font-medium text-primary">Sarah Jenkins just viewed Q-1042</p>
+          <p className="text-[10px] font-medium text-primary">Sarah Jenkins is viewing Q-1042 right now</p>
           <Eye className="ml-auto size-3 text-primary/60" />
         </div>
       </div>
@@ -152,23 +166,26 @@ function InquiriesApp() {
           <h3 className="text-[14px] font-semibold tracking-tight text-foreground">All inquiries</h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 rounded-md border border-border/50 bg-card px-2 py-1 text-[9px] text-muted-foreground"><Search className="size-3" />Search</span>
-          <span className="rounded-md bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground">+ Add inquiry</span>
+          <span className="flex items-center gap-1 rounded-lg border border-border/50 bg-card px-2.5 py-1 text-[9px] text-muted-foreground"><Search className="size-3" />Search...</span>
+          <span className="rounded-lg bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground">+ New inquiry</span>
         </div>
       </div>
       <div className="flex-1 overflow-hidden px-5 py-2">
         {/* Table header */}
-        <div className="grid grid-cols-[1.5fr_1fr_0.7fr_auto] gap-3 border-b border-border/40 py-2 text-[8px] font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-[1.5fr_1fr_0.8fr_auto] gap-3 border-b border-border/40 py-2 text-[8px] font-medium uppercase tracking-wider text-muted-foreground">
           <span>Customer</span><span>Service</span><span>Received</span><span>Status</span>
         </div>
         {[
           { name: "Sarah Jenkins", email: "sarah@jenkins.co", service: "Kitchen remodel", time: "10:24 AM", badge: "New", style: "bg-primary/10 text-primary" },
-          { name: "Leo Park", email: "leo@park.dev", service: "Tile repair", time: "Yesterday", badge: "Quoted", style: "bg-muted text-muted-foreground" },
+          { name: "Leo Park", email: "leo@parkdesign.co", service: "Tile repair", time: "Yesterday", badge: "Quoted", style: "bg-muted text-muted-foreground" },
           { name: "Maya Fields", email: "maya@fields.io", service: "Studio fit-out", time: "Mon", badge: "Viewed", style: "bg-accent text-accent-foreground" },
           { name: "James Chen", email: "james@chen.com", service: "Bathroom reno", time: "Mon", badge: "Won", style: "bg-primary/10 text-primary" },
-          { name: "Anna Kowalski", email: "anna@kowalski.pl", service: "Outdoor deck", time: "Last week", badge: "New", style: "bg-primary/10 text-primary" },
+          { name: "Anna Kowalski", email: "anna@kowalski.co", service: "Outdoor deck", time: "Last week", badge: "New", style: "bg-primary/10 text-primary" },
         ].map((r, i) => (
-          <div key={i} className="grid grid-cols-[1.5fr_1fr_0.7fr_auto] items-center gap-3 border-b border-border/20 py-2.5">
+          <div key={i} className={cn(
+            "grid grid-cols-[1.5fr_1fr_0.8fr_auto] items-center gap-3 border-b border-border/20 py-2.5",
+            i === 0 && "bg-primary/[0.02]",
+          )}>
             <div>
               <p className="text-[11px] font-medium text-foreground">{r.name}</p>
               <p className="text-[9px] text-muted-foreground">{r.email}</p>
@@ -196,15 +213,17 @@ function QuoteApp() {
           <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Q-1042 — Sarah Jenkins</h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-md border border-border/50 px-2.5 py-1 text-[10px] text-muted-foreground"><Copy className="size-3" />Copy link</span>
-          <span className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground"><Send className="size-3" />Send quote</span>
+          <span className="flex items-center gap-1.5 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] text-muted-foreground"><Copy className="size-3" />Copy link</span>
+          <span className="flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground"><Send className="size-3" />Send quote</span>
         </div>
       </div>
       <div className="flex-1 overflow-hidden px-5 py-3.5">
+        {/* Status bar */}
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary"><Eye className="size-3" />Viewed by customer</span>
+          <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[9px] font-medium text-primary"><Eye className="size-3" />Viewed by customer</span>
           <span className="text-[9px] text-muted-foreground">Kitchen remodel · Expires Jun 2</span>
         </div>
+        {/* Line items table */}
         <div className="mt-3 rounded-lg border border-border/40 bg-card">
           <div className="border-b border-border/30 px-4 py-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">Line items</div>
           {[
@@ -215,17 +234,18 @@ function QuoteApp() {
           ].map((l, i) => (
             <div key={i} className="flex justify-between border-b border-border/15 px-4 py-2 text-[11px] last:border-0">
               <span className="text-foreground">{l.item}</span>
-              <span className="font-medium text-foreground">{l.price}</span>
+              <span className="font-medium tabular-nums text-foreground">{l.price}</span>
             </div>
           ))}
-          <div className="flex justify-between border-t border-border/40 bg-muted/20 px-4 py-2.5">
+          <div className="flex justify-between border-t border-border/40 bg-muted/30 px-4 py-2.5">
             <span className="text-[12px] font-semibold text-foreground">Total</span>
-            <span className="text-[15px] font-bold text-primary">$4,700</span>
+            <span className="text-[16px] font-bold text-primary">$4,700</span>
           </div>
         </div>
-        <div className="mt-3 rounded-md border border-border/30 bg-card px-4 py-2.5">
+        {/* Note */}
+        <div className="mt-3 rounded-lg border border-border/30 bg-card px-4 py-2.5">
           <p className="text-[9px] font-medium text-muted-foreground">Note to customer</p>
-          <p className="mt-0.5 text-[10px] text-foreground">Includes materials and labor. Payment 50% upfront, 50% on completion. Happy to walk through any questions.</p>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-foreground">Includes materials and labor. Payment 50% upfront, 50% on completion. Happy to walk through any questions.</p>
         </div>
       </div>
     </AppShell>
@@ -244,7 +264,7 @@ function FollowUpsApp() {
           <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Follow-ups</p>
           <h3 className="text-[14px] font-semibold tracking-tight text-foreground">This week</h3>
         </div>
-        <span className="rounded-full border border-border/50 bg-card px-2.5 py-0.5 text-[9px] font-medium text-muted-foreground">4 pending</span>
+        <span className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[9px] font-semibold text-primary">4 pending</span>
       </div>
       <div className="flex-1 overflow-hidden px-5 py-3.5">
         {[
@@ -253,9 +273,9 @@ function FollowUpsApp() {
           { name: "Leo Park", quote: "Q-1035", note: "Tomorrow at 9:00 AM", tone: "upcoming" as const },
           { name: "James Chen", quote: "Q-1033", note: "Completed — accepted the quote", tone: "done" as const },
         ].map((t, i) => (
-          <div key={i} className="mb-2 flex items-center gap-3 rounded-lg border border-border/40 bg-card px-3.5 py-2.5">
+          <div key={i} className="mb-2 flex items-center gap-3 rounded-lg border border-border/40 bg-card px-3.5 py-2.5 transition-colors hover:bg-accent/30">
             <span className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-md",
+              "flex size-7 shrink-0 items-center justify-center rounded-lg",
               t.tone === "overdue" && "bg-destructive/10 text-destructive",
               t.tone === "due" && "bg-primary/10 text-primary",
               t.tone === "upcoming" && "bg-muted text-muted-foreground",
@@ -264,16 +284,20 @@ function FollowUpsApp() {
               {t.tone === "done" ? <CheckCircle2 className="size-3.5" /> : <BellRing className="size-3.5" />}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium text-foreground">{t.name} · {t.quote}</p>
+              <p className="text-[11px] font-medium text-foreground">{t.name} <span className="font-normal text-muted-foreground">· {t.quote}</span></p>
               <p className="text-[9px] text-muted-foreground">{t.note}</p>
             </div>
-            <ArrowRight className="size-3.5 shrink-0 text-muted-foreground/50" />
+            <ArrowRight className="size-3.5 shrink-0 text-muted-foreground/40" />
           </div>
         ))}
         {/* AI suggestion */}
-        <div className="mt-2 rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2.5">
+        <div className="mt-2.5 rounded-lg border border-primary/20 bg-primary/[0.04] px-3.5 py-2.5">
           <p className="flex items-center gap-1.5 text-[9px] font-semibold text-primary"><Sparkles className="size-3" />AI-suggested message for Sarah</p>
           <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">&ldquo;Hi Sarah — just checking in on the kitchen quote. Happy to answer any questions or adjust the scope.&rdquo;</p>
+          <div className="mt-2 flex gap-2">
+            <span className="rounded-md bg-primary px-2 py-0.5 text-[9px] font-medium text-primary-foreground">Send</span>
+            <span className="rounded-md border border-border/50 px-2 py-0.5 text-[9px] text-muted-foreground">Edit</span>
+          </div>
         </div>
       </div>
     </AppShell>
@@ -289,36 +313,39 @@ function AiApp() {
     <AppShell activeNav="dashboard">
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="size-4 text-primary" />
+          <span className="flex size-5 items-center justify-center rounded-md bg-primary/10">
+            <Sparkles className="size-3 text-primary" />
+          </span>
           <h3 className="text-[14px] font-semibold tracking-tight text-foreground">AI Assistant</h3>
         </div>
+        <span className="text-[9px] text-muted-foreground">Based on your pricing history</span>
       </div>
       <div className="flex-1 overflow-hidden px-5 py-3.5">
         {/* User message */}
         <div className="mb-3 flex gap-2.5">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold text-muted-foreground">JS</span>
-          <div className="rounded-lg rounded-tl-sm border border-border/40 bg-card px-3.5 py-2.5 text-[11px] text-foreground">
+          <div className="max-w-[80%] rounded-xl rounded-tl-sm border border-border/40 bg-card px-3.5 py-2.5 text-[11px] text-foreground">
             Draft a quote for Sarah&apos;s kitchen remodel — cabinets, countertop, backsplash, and a consultation.
           </div>
         </div>
         {/* AI response */}
         <div className="mb-3 flex gap-2.5">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10"><Sparkles className="size-3 text-primary" /></span>
-          <div className="rounded-lg rounded-tl-sm border border-primary/20 bg-primary/[0.03] px-3.5 py-2.5 text-[11px]">
-            <p className="mb-2 font-medium text-foreground">Here&apos;s a draft based on your recent jobs:</p>
-            <div className="rounded-md border border-border/30 bg-card px-3 py-2 text-[10px]">
-              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Design consultation</span><span className="font-medium text-foreground">$150</span></div>
-              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Cabinet install</span><span className="font-medium text-foreground">$2,400</span></div>
-              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Countertop + backsplash</span><span className="font-medium text-foreground">$1,800</span></div>
-              <div className="mt-1 flex justify-between border-t border-border/30 pt-1"><span className="font-semibold text-foreground">Total</span><span className="font-bold text-primary">$4,350</span></div>
+          <div className="max-w-[85%] rounded-xl rounded-tl-sm border border-primary/20 bg-primary/[0.03] px-3.5 py-2.5 text-[11px]">
+            <p className="mb-2 font-medium text-foreground">Here&apos;s a draft based on your last 3 kitchen jobs:</p>
+            <div className="rounded-lg border border-border/30 bg-card px-3 py-2 text-[10px]">
+              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Design consultation</span><span className="font-medium tabular-nums text-foreground">$150</span></div>
+              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Cabinet supply + install</span><span className="font-medium tabular-nums text-foreground">$2,400</span></div>
+              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Countertop + backsplash</span><span className="font-medium tabular-nums text-foreground">$1,800</span></div>
+              <div className="mt-1.5 flex justify-between border-t border-border/30 pt-1.5"><span className="font-semibold text-foreground">Total</span><span className="font-bold text-primary">$4,350</span></div>
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Pulled from your last 3 kitchen jobs. Want to add a coordination fee?</p>
+            <p className="mt-2 text-[10px] text-muted-foreground">Pulled from your pricing history. Want to add a coordination fee?</p>
           </div>
         </div>
         {/* User reply */}
         <div className="flex gap-2.5">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold text-muted-foreground">JS</span>
-          <div className="rounded-lg rounded-tl-sm border border-border/40 bg-card px-3.5 py-2.5 text-[11px] text-foreground">
+          <div className="max-w-[80%] rounded-xl rounded-tl-sm border border-border/40 bg-card px-3.5 py-2.5 text-[11px] text-foreground">
             Add $350 for coordination and send it to Sarah.
           </div>
         </div>
@@ -333,47 +360,47 @@ function AiApp() {
 
 function PublicQuoteApp() {
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-background shadow-[0_4px_24px_rgba(0,0,0,0.08)]">
-      {/* Browser bar */}
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-background shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)]">
+      {/* Browser chrome */}
       <div className="flex items-center gap-2.5 border-b border-border/50 bg-[#f5f5f5] px-3.5 py-2">
         <div className="flex gap-1.5">
-          <span className="size-[7px] rounded-full bg-[#ddd]" />
-          <span className="size-[7px] rounded-full bg-[#ddd]" />
-          <span className="size-[7px] rounded-full bg-[#ddd]" />
+          <span className="size-[8px] rounded-full bg-[#ff5f56]" />
+          <span className="size-[8px] rounded-full bg-[#ffbd2e]" />
+          <span className="size-[8px] rounded-full bg-[#27c93f]" />
         </div>
         <div className="flex-1 rounded-md border border-border/40 bg-white px-3 py-1 text-[9px] text-muted-foreground">
-          requo.com/q/brightside/Q-1042
+          <span className="text-primary/60">🔒</span> requo.com/q/brightside/Q-1042
         </div>
       </div>
       {/* Page content */}
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-6">
-        <RequoLogo className="mb-1.5 size-7" />
-        <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">BrightSide Renovations</p>
-        <h3 className="mt-2 text-[16px] font-semibold tracking-tight text-foreground">Kitchen Remodel</h3>
+      <div className="flex flex-1 flex-col items-center justify-center px-8 py-5">
+        <RequoLogo className="mb-1 size-7" />
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">BrightSide Renovations</p>
+        <h3 className="mt-2 text-[16px] font-bold tracking-tight text-foreground">Kitchen Remodel</h3>
         <p className="mt-0.5 text-[10px] text-muted-foreground">Prepared for Sarah Jenkins · Valid until Jun 2, 2025</p>
 
-        <div className="mt-4 w-full max-w-[300px] rounded-lg border border-border/40 bg-card p-4">
+        <div className="mt-4 w-full max-w-[280px] rounded-xl border border-border/40 bg-card p-4 shadow-sm">
           {[
             { item: "Design consultation", price: "$150" },
-            { item: "Cabinet install", price: "$2,400" },
+            { item: "Cabinet supply + install", price: "$2,400" },
             { item: "Countertop + backsplash", price: "$1,800" },
-            { item: "Coordination fee", price: "$350" },
+            { item: "Project coordination", price: "$350" },
           ].map((l, i) => (
             <div key={i} className="flex justify-between border-b border-border/15 py-1.5 text-[10px] last:border-0">
               <span className="text-muted-foreground">{l.item}</span>
-              <span className="font-medium text-foreground">{l.price}</span>
+              <span className="font-medium tabular-nums text-foreground">{l.price}</span>
             </div>
           ))}
           <div className="mt-2.5 flex justify-between border-t border-border/40 pt-2.5">
             <span className="text-[12px] font-semibold">Total</span>
-            <span className="text-[15px] font-bold text-primary">$4,700</span>
+            <span className="text-[16px] font-bold text-primary">$4,700</span>
           </div>
           <div className="mt-4 flex gap-2.5">
-            <button className="flex-1 rounded-lg bg-primary py-2 text-[11px] font-medium text-primary-foreground">Accept quote</button>
+            <button className="flex-1 rounded-lg bg-primary py-2 text-[11px] font-semibold text-primary-foreground shadow-sm">Accept quote</button>
             <button className="flex-1 rounded-lg border border-border/60 py-2 text-[11px] text-muted-foreground">Decline</button>
           </div>
         </div>
-        <p className="mt-3 text-[9px] text-muted-foreground">No account needed — open, review, decide.</p>
+        <p className="mt-3 text-[9px] text-muted-foreground">No account needed · Open, review, decide</p>
       </div>
     </div>
   );
@@ -465,24 +492,25 @@ function SlideView({ slide }: { slide: Slide }) {
   if (slide.layout === "hero") {
     return (
       <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-        <div className="mb-6 flex items-center gap-2.5">
-          <RequoLogo className="size-10 sm:size-12" />
-          <BrandWordmark className="text-[2.2rem] sm:text-[2.8rem]" />
+        <div className="mb-6 flex items-center gap-3">
+          <RequoLogo className="size-11 sm:size-14" />
+          <BrandWordmark className="text-[2.4rem] sm:text-[3.2rem]" />
         </div>
-        <h1 className="max-w-[600px] whitespace-pre-line font-heading text-[2rem] font-semibold leading-[1.08] tracking-tight text-foreground sm:text-[2.8rem]">
+        <h1 className="max-w-[620px] whitespace-pre-line font-heading text-[2.2rem] font-bold leading-[1.06] tracking-tight text-foreground sm:text-[3rem]">
           {slide.headline}
         </h1>
-        <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-muted-foreground sm:text-[18px]">
+        <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-muted-foreground sm:text-[18px]">
           {slide.sub}
         </p>
         <div className="mt-8 flex items-center gap-3">
-          <Button asChild size="lg" className="gap-2 text-[15px]">
+          <Button asChild size="lg" className="gap-2 rounded-xl px-6 text-[15px] shadow-sm">
             <Link href="/signup">Start free <ArrowRight className="size-4" /></Link>
           </Button>
-          <Button asChild variant="outline" size="lg" className="text-[15px]">
-            <Link href="/pricing">Pricing</Link>
+          <Button asChild variant="outline" size="lg" className="rounded-xl px-6 text-[15px]">
+            <Link href="/pricing">See pricing</Link>
           </Button>
         </div>
+        <p className="mt-5 text-[13px] text-muted-foreground">Free plan available · No credit card required</p>
       </div>
     );
   }
@@ -490,16 +518,18 @@ function SlideView({ slide }: { slide: Slide }) {
   if (slide.layout === "cta") {
     return (
       <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-        <RequoLogo className="mb-3 size-12" />
-        <BrandWordmark className="text-[2.4rem]" />
-        <h2 className="mt-5 whitespace-pre-line font-heading text-[2.2rem] font-semibold leading-[1.08] tracking-tight text-foreground sm:text-[2.8rem]">
+        <div className="mb-4 flex items-center gap-2.5">
+          <RequoLogo className="size-10" />
+          <BrandWordmark className="text-[2rem]" />
+        </div>
+        <h2 className="mt-3 whitespace-pre-line font-heading text-[2.2rem] font-bold leading-[1.06] tracking-tight text-foreground sm:text-[2.8rem]">
           {slide.headline}
         </h2>
         <p className="mt-3 max-w-md text-[16px] leading-relaxed text-muted-foreground">
           {slide.sub}
         </p>
         <div className="mt-8 flex items-center gap-3">
-          <Button asChild size="lg" className="gap-2 text-[15px]">
+          <Button asChild size="lg" className="gap-2 rounded-xl px-6 text-[15px] shadow-sm">
             <Link href="/signup">Get started <ArrowRight className="size-4" /></Link>
           </Button>
         </div>
@@ -515,11 +545,11 @@ function SlideView({ slide }: { slide: Slide }) {
   if (slide.layout === "app-center") {
     return (
       <div className="flex h-full w-full items-center justify-center px-6 sm:px-10">
-        <div className="flex w-full max-w-[900px] flex-col items-center gap-5 lg:flex-row lg:gap-8">
+        <div className="flex w-full max-w-[920px] flex-col items-center gap-6 lg:flex-row lg:gap-10">
           {/* Text */}
-          <div className="flex shrink-0 flex-col text-center lg:w-[300px] lg:text-left">
+          <div className="flex shrink-0 flex-col text-center lg:w-[280px] lg:text-left">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">{slide.eyebrow}</p>
-            <h2 className="mt-2 whitespace-pre-line font-heading text-[1.6rem] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[2rem]">
+            <h2 className="mt-2 whitespace-pre-line font-heading text-[1.6rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-[2rem]">
               {slide.headline}
             </h2>
             <p className="mt-2.5 text-[14px] leading-relaxed text-muted-foreground">{slide.sub}</p>
@@ -533,20 +563,20 @@ function SlideView({ slide }: { slide: Slide }) {
     );
   }
 
-  // app-full: text on top-left overlaid, full-width preview
+  // app-full
   return (
     <div className="flex h-full w-full items-center justify-center px-6 sm:px-10">
-      <div className="flex w-full max-w-[960px] flex-col items-center gap-5 lg:flex-row lg:gap-8">
+      <div className="flex w-full max-w-[980px] flex-col items-center gap-5 lg:flex-row lg:gap-10">
         {/* Text */}
-        <div className="flex shrink-0 flex-col text-center lg:w-[280px] lg:text-left">
+        <div className="flex shrink-0 flex-col text-center lg:w-[260px] lg:text-left">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">{slide.eyebrow}</p>
-          <h2 className="mt-2 whitespace-pre-line font-heading text-[1.6rem] font-semibold leading-[1.1] tracking-tight text-foreground sm:text-[2rem]">
+          <h2 className="mt-2 whitespace-pre-line font-heading text-[1.6rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-[2rem]">
             {slide.headline}
           </h2>
           <p className="mt-2.5 text-[14px] leading-relaxed text-muted-foreground">{slide.sub}</p>
         </div>
-        {/* Preview — full app chrome */}
-        <div className="h-[320px] w-full min-w-0 flex-1 sm:h-[360px]">
+        {/* Preview */}
+        <div className="h-[340px] w-full min-w-0 flex-1 sm:h-[380px]">
           {slide.preview?.()}
         </div>
       </div>
@@ -593,55 +623,70 @@ export function ProductHuntShowcase() {
   const slide = slides[current]!;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background outline-none" onKeyDown={onKey} tabIndex={0}>
-      {/* Slide */}
+    <div
+      className="flex h-screen flex-col overflow-hidden bg-[#f7f9f7] outline-none"
+      onKeyDown={onKey}
+      tabIndex={0}
+    >
+      {/* Slide area */}
       <div
         ref={slideRef}
         className="relative flex flex-1 items-center justify-center overflow-hidden"
       >
-        {/* Accent glow */}
-        <div className="pointer-events-none absolute -right-20 -top-20 size-[320px] rounded-full bg-primary/[0.04] blur-[80px]" />
-        <div className="pointer-events-none absolute -bottom-12 -left-12 size-[240px] rounded-full bg-primary/[0.03] blur-[60px]" />
+        {/* Branded background accents */}
+        <div className="pointer-events-none absolute -right-32 -top-32 size-[420px] rounded-full bg-primary/[0.04] blur-[100px]" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 size-[300px] rounded-full bg-primary/[0.03] blur-[80px]" />
+        <div className="pointer-events-none absolute right-1/4 top-1/3 size-[200px] rounded-full bg-primary/[0.02] blur-[60px]" />
+
+        {/* Subtle grid pattern */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(0,128,96,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,128,96,0.015)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
         {/* Content */}
         <SlideView slide={slide} />
 
-        {/* Brand — bottom left */}
-        <div className="absolute bottom-4 left-5 flex items-center gap-2 sm:bottom-5 sm:left-8">
+        {/* Brand watermark — bottom left */}
+        <div className="absolute bottom-4 left-5 flex items-center gap-2 opacity-60 sm:bottom-5 sm:left-8">
           <RequoLogo className="size-4" />
           <BrandWordmark className="text-[0.85rem]" />
         </div>
+
+        {/* Slide number — bottom right */}
+        <div className="absolute bottom-4 right-5 text-[11px] font-medium tabular-nums text-muted-foreground/60 sm:bottom-5 sm:right-8">
+          {current + 1} / {slides.length}
+        </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="flex shrink-0 items-center justify-between border-t border-border/50 bg-card/90 px-4 py-2 backdrop-blur-sm sm:px-6">
+      {/* Bottom control bar */}
+      <div className="flex shrink-0 items-center justify-between border-t border-border/40 bg-white/80 px-4 py-2.5 backdrop-blur-md sm:px-6">
+        {/* Navigation arrows */}
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="size-8 p-0">
+          <Button variant="ghost" size="sm" onClick={prev} disabled={current === 0} className="size-8 rounded-lg p-0">
             <ChevronLeft className="size-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={next} disabled={current === slides.length - 1} className="size-8 p-0">
+          <Button variant="ghost" size="sm" onClick={next} disabled={current === slides.length - 1} className="size-8 rounded-lg p-0">
             <ChevronRight className="size-4" />
           </Button>
+          <span className="ml-2 text-[11px] text-muted-foreground">← → to navigate</span>
         </div>
 
-        {/* Dots */}
-        <div className="flex items-center gap-1">
+        {/* Dot indicators */}
+        <div className="flex items-center gap-1.5">
           {slides.map((s, i) => (
             <button
               key={s.id}
               onClick={() => setCurrent(i)}
               className={cn(
-                "h-1.5 rounded-full transition-all",
-                i === current ? "w-4 bg-primary" : "w-1.5 bg-border hover:bg-muted-foreground/30",
+                "h-1.5 rounded-full transition-all duration-200",
+                i === current ? "w-5 bg-primary" : "w-1.5 bg-border hover:bg-muted-foreground/40",
               )}
-              aria-label={`Slide ${i + 1}`}
+              aria-label={`Slide ${i + 1}: ${s.id}`}
             />
           ))}
         </div>
 
         {/* Download */}
-        <Button size="sm" onClick={downloadPng} className="gap-1.5 text-xs">
-          <Download className="size-3.5" /> PNG
+        <Button size="sm" onClick={downloadPng} className="gap-1.5 rounded-lg text-xs">
+          <Download className="size-3.5" /> Export PNG
         </Button>
       </div>
     </div>
