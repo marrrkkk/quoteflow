@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { PricingPage } from "@/components/marketing/pricing-page";
 import { StructuredData } from "@/components/seo/structured-data";
 import { planPricing } from "@/lib/billing/plans";
-import type { BillingInterval, PaidPlan } from "@/lib/billing/types";
+import { detectDisplayCurrency } from "@/lib/billing/region";
+import type { BillingCurrency, BillingInterval, PaidPlan } from "@/lib/billing/types";
 import { businessPlans, planMeta, type BusinessPlan } from "@/lib/plans/plans";
 import { absoluteUrl, createPageMetadata } from "@/lib/seo/site";
 import {
@@ -20,7 +21,6 @@ export const metadata: Metadata = createPageMetadata({
   title: "Pricing",
 });
 
-const PRICING_CURRENCY = "USD";
 
 const INTERVAL_TO_INCREMENT: Record<BillingInterval, "month" | "year"> = {
   monthly: "month",
@@ -37,35 +37,40 @@ const INTERVAL_SUFFIX: Record<BillingInterval, string> = {
  * canonical plan catalog. Free plans get `price: 0`; paid plans convert the
  * cents amount in `planPricing` to a decimal currency value.
  */
-function buildPricingOffers() {
+function buildPricingOffers(currency: BillingCurrency) {
   const intervals: ReadonlyArray<BillingInterval> = ["monthly", "yearly"];
+  // Structured data always uses USD for consistency with schema.org.
+  const sdCurrency = "USD";
 
   return businessPlans.flatMap((plan) =>
     intervals.map((interval) => {
       const price =
         plan === "free"
           ? 0
-          : planPricing[interval][plan as PaidPlan][PRICING_CURRENCY] / 100;
+          : planPricing[interval][plan as PaidPlan][sdCurrency] / 100;
 
       return {
         billingIncrement: INTERVAL_TO_INCREMENT[interval],
         name: `${planMeta[plan as BusinessPlan].label} (${INTERVAL_SUFFIX[interval]})`,
         price,
-        priceCurrency: PRICING_CURRENCY,
+        priceCurrency: sdCurrency,
       };
     }),
   );
 }
 
 /**
- * Pricing is always shown in USD. Polar handles regional pricing per
- * product configuration at checkout, so Requo no longer detects a region.
+ * Detects the visitor's country via Vercel geo headers and shows PHP
+ * display pricing for Philippine visitors, USD for everyone else.
+ * Polar always bills in USD regardless of display currency.
  */
-export default function PricingRoute() {
+export default async function PricingRoute() {
+  const currency = await detectDisplayCurrency();
+
   const productStructuredData = getProductPricingStructuredData({
     description: "Quote software for owner-led service businesses.",
     name: "Requo",
-    offers: buildPricingOffers(),
+    offers: buildPricingOffers(currency),
     url: absoluteUrl("/pricing"),
   });
 
@@ -93,8 +98,8 @@ export default function PricingRoute() {
           id="breadcrumb-structured-data"
         />
       ) : null}
-      <Suspense fallback={<PricingPage currency="USD" />}>
-        <PricingPage currency="USD" />
+      <Suspense fallback={<PricingPage currency={currency} />}>
+        <PricingPage currency={currency} />
       </Suspense>
     </>
   );

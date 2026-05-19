@@ -118,7 +118,7 @@ export function PricingIntervalToggle({
             Free
           </p>
           <p className="mt-4 font-heading text-4xl font-semibold tracking-tight text-foreground">
-            $0
+            {currency === "PHP" ? "₱" : "$"}0
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             No card required

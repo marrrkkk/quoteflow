@@ -7,15 +7,15 @@
 
 import type { BillingCurrency, BillingInterval, PaidPlan, PlanPricing } from "@/lib/billing/types";
 
-/** Prices in smallest currency unit (USD cents). */
+/** Prices in smallest currency unit (USD cents / PHP centavos). */
 export const planPricing: Record<BillingInterval, Record<PaidPlan, PlanPricing>> = {
   monthly: {
-    pro: { USD: 599 },
-    business: { USD: 1299 },
+    pro: { USD: 699, PHP: 39900 },
+    business: { USD: 1699, PHP: 99900 },
   },
   yearly: {
-    pro: { USD: 5990 },
-    business: { USD: 12990 },
+    pro: { USD: 6990, PHP: 399000 },
+    business: { USD: 16990, PHP: 999000 },
   },
 };
 
