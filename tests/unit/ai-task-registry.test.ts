@@ -106,8 +106,8 @@ describe("validateInvocationPayload", () => {
 // ---------------------------------------------------------------------------
 
 describe("AI_TASK_REGISTRY", () => {
-  it("contains exactly 6 task types", () => {
-    expect(Object.keys(AI_TASK_REGISTRY)).toHaveLength(6);
+  it("contains exactly 7 task types", () => {
+    expect(Object.keys(AI_TASK_REGISTRY)).toHaveLength(7);
   });
 
   it("all entries pass Zod schema validation", () => {

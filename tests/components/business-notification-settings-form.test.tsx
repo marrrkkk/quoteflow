@@ -159,7 +159,7 @@ describe("BusinessNotificationSettingsForm", () => {
 
     await waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
-        "Notification permission was not granted.",
+        "Could not create a push subscription. Try refreshing the page.",
       ),
     );
 

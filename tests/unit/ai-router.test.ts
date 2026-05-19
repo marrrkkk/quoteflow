@@ -58,15 +58,15 @@ vi.mock("ai", () => ({
 }));
 
 // Mock capacity selector — return models matching the mocked registry providers
-const mockSelectModels = vi.fn(() => [
+const mockSelectModels = vi.fn((..._args: unknown[]) => [
   "groq:model-a" as `${string}:${string}`,
   "groq:model-b" as `${string}:${string}`,
   "cerebras:model-c" as `${string}:${string}`,
   "google:model-d" as `${string}:${string}`,
   "openrouter:model-e" as `${string}:${string}`,
 ]);
-const mockRecordModelUsage = vi.fn();
-const mockMarkModelExhausted = vi.fn();
+const mockRecordModelUsage = vi.fn((..._args: unknown[]) => {});
+const mockMarkModelExhausted = vi.fn((..._args: unknown[]) => {});
 
 vi.mock("@/lib/ai/capacity-selector", () => ({
   selectModels: (...args: unknown[]) => mockSelectModels(...args),
@@ -76,7 +76,6 @@ vi.mock("@/lib/ai/capacity-selector", () => ({
 
 // Import router after mocks
 import { generateWithFallback, streamWithFallback } from "@/lib/ai/router";
-import { getModelsForProvider } from "@/lib/ai/model-options";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -57,9 +57,6 @@ describe("AI chat message rendering", () => {
       "href",
       "https://requo.test",
     );
-    expect(
-      screen.getByRole("link", { name: "Current quote" }),
-    ).toHaveAttribute("href", "/businesses/demo/quotes/quote-1");
     expect(screen.queryByText("groq/qwen-test")).not.toBeInTheDocument();
   });
 

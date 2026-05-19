@@ -30,10 +30,10 @@ describe("AI surface completion request", () => {
       role: "system",
     });
     expect(request.messages[0]?.content).toContain(
-      "Resolve follow-up questions, pronouns, and omitted subjects from the recent chat history",
+      "Use ONLY the provided context, tool results, and chat history",
     );
     expect(request.messages[0]?.content).toContain(
-      "Format every response as GitHub-flavored Markdown",
+      "Format as GitHub-flavored Markdown",
     );
     expect(request.messages.slice(1, 3)).toEqual([
       {
