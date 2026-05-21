@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import {
   ArrowRight,
   BarChart3,
   Bell,
   BellRing,
-  ChevronRight,
   ChevronsUpDown,
   Clock3,
   Eye,
@@ -171,18 +169,18 @@ export function MarketingShowcase() {
     <div className="mx-auto w-full max-w-6xl" ref={containerRef}>
       <div
         aria-label="Preview of the Requo dashboard"
-        className="relative w-full overflow-hidden rounded-2xl border border-border/80 bg-background/95 shadow-[var(--surface-shadow-lg)]"
+        className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-background shadow-[0_8px_40px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)]"
         role="img"
       >
         {/* Browser chrome */}
-        <div className="flex h-10 shrink-0 items-center gap-3 border-b border-border/70 bg-muted/40 px-3 sm:h-11 sm:px-4">
+        <div className="flex h-9 shrink-0 items-center gap-3 border-b border-border/50 bg-muted/30 px-3 sm:h-10 sm:px-4">
           <div aria-hidden="true" className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-border" />
-            <span className="size-2.5 rounded-full bg-border" />
-            <span className="size-2.5 rounded-full bg-border" />
+            <span className="size-2 rounded-full bg-border/80" />
+            <span className="size-2 rounded-full bg-border/80" />
+            <span className="size-2 rounded-full bg-border/80" />
           </div>
-          <div className="mx-auto flex h-6 max-w-xs flex-1 items-center gap-1.5 rounded-md border border-border/70 bg-background/70 px-2.5 text-[10px] text-muted-foreground sm:text-[11px]">
-            <Lock className="size-3" />
+          <div className="mx-auto flex h-5.5 max-w-xs flex-1 items-center gap-1.5 rounded-md border border-border/50 bg-background/60 px-2.5 text-[10px] text-muted-foreground sm:text-[11px]">
+            <Lock className="size-2.5" />
             <span className="truncate font-mono">
               app.requo.com/brightside/dashboard
             </span>
@@ -194,16 +192,16 @@ export function MarketingShowcase() {
           {/* ─── Sidebar (mirrors DashboardShell sidebar) ─── */}
           <aside
             aria-hidden="true"
-            className="flex w-14 shrink-0 flex-col border-r border-border/70 bg-sidebar sm:w-[17.5rem]"
+            className="flex w-14 shrink-0 flex-col border-r border-border/50 bg-sidebar sm:w-[16rem]"
           >
             {/* Sidebar Header — BrandMark */}
-            <div className="flex h-[4.5rem] items-center px-2 sm:px-3">
-              <div className="flex items-center gap-2.5 px-2 py-1.5">
-                <span className="flex size-7 shrink-0 items-center justify-center text-primary sm:size-8">
+            <div className="flex h-[3.5rem] items-center px-2 sm:px-3">
+              <div className="flex items-center gap-2 px-2 py-1.5">
+                <span className="flex size-6 shrink-0 items-center justify-center text-primary sm:size-7">
                   <RequoLogoIcon className="size-full" />
                 </span>
                 <span className="hidden min-w-0 flex-col leading-none sm:flex">
-                  <span className="truncate font-heading text-[1.35rem] font-semibold tracking-[-0.025em] text-foreground">
+                  <span className="truncate font-heading text-lg font-semibold tracking-[-0.025em] text-foreground">
                     requo
                   </span>
                 </span>
@@ -211,36 +209,31 @@ export function MarketingShowcase() {
             </div>
 
             {/* Separator */}
-            <div className="mx-3 h-px bg-border/70" />
+            <div className="mx-2.5 h-px bg-border/40" />
 
             {/* Business Switcher */}
-            <div className="hidden px-3 py-3 sm:block">
-              <div className="w-full rounded-[1.1rem] border border-sidebar-border/90 bg-background/92 p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.42)] dark:border-white/8 dark:bg-card/90 dark:shadow-[0_1px_2px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <div className="flex items-start gap-3.5">
+            <div className="hidden px-3 py-2.5 sm:block">
+              <div className="w-full rounded-xl border border-sidebar-border/70 bg-background/80 p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-white/6 dark:bg-card/70">
+                <div className="flex items-center gap-3">
                   {/* Business Avatar */}
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-[0.9rem] border border-sidebar-border bg-muted/60 text-sm font-medium uppercase tracking-wider text-sidebar-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] dark:border-white/8">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border/70 bg-muted/50 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/80 dark:border-white/6">
                     BS
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[0.6rem] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/60">
-                        Business
-                      </p>
-                      <ChevronsUpDown className="size-4 text-muted-foreground" />
-                    </div>
-                    <p className="mt-2 truncate text-sm font-semibold text-sidebar-foreground">
+                    <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
                       BrightSide
                     </p>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
+                    <p className="truncate text-[11px] text-muted-foreground">
                       /brightside
                     </p>
                   </div>
+                  <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground/60" />
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge className="rounded-full border-primary/30 bg-primary/10 text-primary" variant="outline">
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  <Badge className="h-5 rounded-full border-primary/20 bg-primary/8 px-2 text-[10px] text-primary" variant="outline">
                     Pro
                   </Badge>
-                  <Badge className="border-sidebar-border bg-background text-sidebar-foreground" variant="outline">
+                  <Badge className="h-5 rounded-full border-sidebar-border/70 bg-transparent px-2 text-[10px] text-muted-foreground" variant="outline">
                     USD
                   </Badge>
                 </div>
@@ -248,24 +241,24 @@ export function MarketingShowcase() {
             </div>
 
             {/* Navigation Items */}
-            <div className="flex-1 overflow-hidden px-1 pb-3 sm:px-3">
-              <div className="flex flex-col gap-0.5 pt-3">
+            <div className="flex-1 overflow-hidden px-1 pb-3 sm:px-2.5">
+              <div className="flex flex-col gap-px pt-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <div
                       className={cn(
-                        "flex min-h-10 w-full items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-left text-sm font-medium",
+                        "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] font-medium",
                         item.active
-                          ? "border-primary/12 bg-primary/12 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                          ? "bg-primary/10 text-primary"
                           : "text-muted-foreground",
                       )}
                       key={item.key}
                     >
                       <Icon
                         className={cn(
-                          "mx-auto size-4 shrink-0 sm:mx-0",
-                          item.active ? "text-primary" : "text-muted-foreground",
+                          "mx-auto size-3.5 shrink-0 sm:mx-0",
+                          item.active ? "text-primary" : "text-muted-foreground/70",
                         )}
                       />
                       <span className="hidden truncate sm:block">{item.label}</span>
@@ -276,23 +269,22 @@ export function MarketingShowcase() {
             </div>
 
             {/* Separator */}
-            <div className="mx-3 h-px bg-border/70" />
+            <div className="mx-2.5 h-px bg-border/50" />
 
             {/* User Menu Footer */}
-            <div className="hidden p-3 pt-2 sm:block">
-              <div className="flex items-center gap-2.5 rounded-lg px-2 py-2">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/80 text-[0.6rem] font-medium text-foreground">
+            <div className="hidden p-2.5 pt-2 sm:block">
+              <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-[9px] font-semibold text-foreground/80">
                   JD
                 </div>
                 <div className="min-w-0 flex-1 leading-tight">
-                  <p className="truncate text-sm font-medium text-sidebar-foreground">
+                  <p className="truncate text-[12px] font-medium text-sidebar-foreground">
                     Jamie Davis
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="truncate text-[10px] text-muted-foreground">
                     jamie@brightside.co
                   </p>
                 </div>
-                <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
               </div>
             </div>
           </aside>
@@ -300,15 +292,15 @@ export function MarketingShowcase() {
           {/* ─── Main Content (mirrors SidebarInset) ─── */}
           <div className="flex min-w-0 flex-1 flex-col bg-background">
             {/* Top bar — mirrors dashboard-topbar */}
-            <div className="sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur">
-              <div className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 sm:px-6 sm:py-3.5 md:gap-3">
+            <div className="sticky top-0 z-30 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+              <div className="flex min-h-10 items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 md:gap-2.5">
                 {/* SidebarTrigger */}
                 <button
                   type="button"
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/70"
                   tabIndex={-1}
                 >
-                  <PanelLeft className="size-4" />
+                  <PanelLeft className="size-3.5" />
                 </button>
                 {/* Separator */}
                 <span
@@ -331,26 +323,28 @@ export function MarketingShowcase() {
                   </p>
                 </div>
                 {/* Command menu + notification bell */}
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <span
                     aria-hidden="true"
-                    className="hidden items-center gap-1.5 rounded-lg border border-border/60 bg-muted/20 px-3 py-1.5 text-[11px] text-muted-foreground md:inline-flex lg:w-80"
+                    className="hidden items-center gap-1.5 rounded-md border border-border/50 bg-muted/15 px-2.5 py-1.5 text-[11px] text-muted-foreground md:inline-flex lg:w-72"
                   >
-                    <Search className="size-3.5" />
+                    <Search className="size-3" />
                     <span>Search quotes, inquiries...</span>
-                    <kbd className="ml-auto rounded border border-border/70 bg-background/70 px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+                    <kbd className="ml-auto rounded border border-border/50 bg-background/60 px-1.5 py-0.5 font-mono text-[9px]">⌘K</kbd>
                   </span>
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "relative flex size-9 items-center justify-center rounded-lg border border-border/60 bg-background/70 transition-all duration-300",
-                      phase >= 4 && "ring-2 ring-primary/30 ring-offset-1",
+                      "relative flex size-8 items-center justify-center rounded-md transition-all duration-300",
+                      phase >= 4
+                        ? "bg-primary/8 text-primary"
+                        : "text-muted-foreground",
                     )}
                   >
-                    <Bell className="size-4 text-muted-foreground" />
+                    <Bell className="size-3.5" />
                     <span
                       className={cn(
-                        "absolute right-2 top-2 size-1.5 rounded-full bg-primary transition-transform duration-300",
+                        "absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary transition-transform duration-300",
                         phase >= 4 ? "scale-100" : "scale-0",
                       )}
                     />
