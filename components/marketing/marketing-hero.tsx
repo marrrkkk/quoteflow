@@ -139,13 +139,13 @@ const whyRequoStages = [
     stage: "Capture",
     icon: Inbox,
     pain: "A single request lives across email, DMs, calls, and your notes app. Context gets lost before you even start.",
-    fix: "One inquiry record holds the form answers, files, conversation, and AI-detected details — ready to quote.",
+    fix: "One inquiry record holds the form answers, files, conversation, and AI-detected details, ready to quote.",
   },
   {
     stage: "Quote",
     icon: FileText,
     pain: "Every quote starts from scratch. Ready buyers cool off while you rebuild the request and look up old pricing.",
-    fix: "AI drafts from your pricing library and past quotes. Review, adjust, and send — minutes, not hours.",
+    fix: "AI drafts from your pricing library and past quotes. Review, adjust, and send in minutes, not hours.",
   },
   {
     stage: "Win & Deliver",

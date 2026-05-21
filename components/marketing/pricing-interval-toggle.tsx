@@ -185,7 +185,7 @@ export function PricingIntervalToggle({
 
           <ul className="mt-7 flex flex-col gap-2.5 border-t border-border/50 pt-6">
             <Feature>Unlimited quotes & follow-ups</Feature>
-            <Feature>AI assistant — 100 generations / mo</Feature>
+            <Feature>AI assistant: 100 generations / mo</Feature>
             <Feature>Workflow analytics</Feature>
             <Feature>5 inquiry forms, 5 businesses</Feature>
             <Feature>Page customization & branding</Feature>
@@ -236,7 +236,7 @@ export function PricingIntervalToggle({
 
           <ul className="mt-7 flex flex-col gap-2.5 border-t border-border/50 pt-6">
             <Feature>Everything in Pro</Feature>
-            <Feature>Team members — up to 25</Feature>
+            <Feature>Team members: up to 25</Feature>
             <Feature>500 AI generations / mo</Feature>
             <Feature>500 Requo email sends / mo</Feature>
             <Feature>Unlimited businesses & forms</Feature>

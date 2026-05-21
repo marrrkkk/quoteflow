@@ -79,7 +79,7 @@ export const workflowSteps: readonly {
   },
   {
     title: "Deliver",
-    description: "Jobs, invoices, follow-up — connected.",
+    description: "Jobs, invoices, follow-up. All connected.",
     icon: Send,
   },
 ] as const;
@@ -111,7 +111,7 @@ export const landingFeatureItems: readonly {
     id: "quotes",
     title: "AI-drafted quotes from your pricing library.",
     description:
-      "Turn any inquiry into a professional quote in minutes. AI matches line items from your saved pricing, past quotes, and business knowledge — you review and send.",
+      "Turn any inquiry into a professional quote in minutes. AI matches line items from your saved pricing, past quotes, and business knowledge. You review and send.",
     previewTitle: "Quote #1042",
     previewDescription:
       "AI drafts, you review. Matched pricing shows confidence levels.",
@@ -120,7 +120,7 @@ export const landingFeatureItems: readonly {
     id: "jobs",
     title: "Track work after the customer says yes.",
     description:
-      "Accepted quotes become trackable jobs with work item checklists. Check off progress, mark complete, and generate an invoice — all connected to the original quote.",
+      "Accepted quotes become trackable jobs with work item checklists. Check off progress, mark complete, and generate an invoice, all connected to the original quote.",
     previewTitle: "Jobs & Invoices",
     previewDescription:
       "From accepted quote to paid invoice in one flow.",
@@ -149,7 +149,7 @@ export const faqItems = [
   {
     question: "What exactly does Requo do?",
     answer:
-      "Requo runs the full workflow from customer request to paid invoice. Capture inquiries, generate AI-drafted quotes, share a link, track who viewed and accepted, manage work items, and create invoices — all connected.",
+      "Requo runs the full workflow from customer request to paid invoice. Capture inquiries, generate AI-drafted quotes, share a link, track who viewed and accepted, manage work items, and create invoices. All connected.",
   },
   {
     question: "Do my customers need to sign up to open a quote?",
@@ -179,7 +179,7 @@ export const faqItems = [
   {
     question: "What happens after a customer accepts?",
     answer:
-      "The quote moves into post-acceptance. Track work items with a checklist, mark the job complete, and generate an invoice directly from the accepted quote — all connected without switching tools.",
+      "The quote moves into post-acceptance. Track work items with a checklist, mark the job complete, and generate an invoice directly from the accepted quote. All connected without switching tools.",
   },
   {
     question: "Can my team work inside the same business?",
