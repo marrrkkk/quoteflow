@@ -192,7 +192,7 @@ export function MarketingMobileNav({
             </Button>
             <Button asChild className="h-14 w-full rounded-full text-lg">
               <Link href="/signup" onClick={closeMenu}>
-                Start free
+                Send your first quote
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>

@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
-import { toPng } from "html-to-image";
+
 import {
   ArrowRight,
   BarChart3,
@@ -504,7 +504,7 @@ function SlideView({ slide }: { slide: Slide }) {
         </p>
         <div className="mt-8 flex items-center gap-3">
           <Button asChild size="lg" className="gap-2 rounded-xl px-6 text-[15px] shadow-sm">
-            <Link href="/signup">Start free <ArrowRight className="size-4" /></Link>
+            <Link href="/signup">Send your first quote <ArrowRight className="size-4" /></Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="rounded-xl px-6 text-[15px]">
             <Link href="/pricing">See pricing</Link>
@@ -530,7 +530,7 @@ function SlideView({ slide }: { slide: Slide }) {
         </p>
         <div className="mt-8 flex items-center gap-3">
           <Button asChild size="lg" className="gap-2 rounded-xl px-6 text-[15px] shadow-sm">
-            <Link href="/signup">Get started <ArrowRight className="size-4" /></Link>
+            <Link href="/signup">Capture your first inquiry <ArrowRight className="size-4" /></Link>
           </Button>
         </div>
         <div className="mt-6 flex items-center gap-5 text-[13px] text-muted-foreground">
@@ -598,6 +598,7 @@ export function ProductHuntShowcase() {
   const downloadPng = useCallback(async () => {
     if (!slideRef.current) return;
     try {
+      const { toPng } = await import("html-to-image");
       const node = slideRef.current;
       const url = await toPng(node, {
         pixelRatio: 2,

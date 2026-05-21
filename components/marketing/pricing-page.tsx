@@ -5,7 +5,6 @@ import { Fragment, Suspense } from "react";
 import { BrandMark } from "@/components/shared/brand-mark";
 import {
   PublicPageShell,
-  PublicHeroSurface,
 } from "@/components/shared/public-page-shell";
 import {
   getMarketingNavHref,
@@ -189,17 +188,15 @@ export function PricingPage({
       }
     >
       {/* Hero */}
-      <PublicHeroSurface className="overflow-hidden px-5 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 text-center">
-          <h1 className="max-w-2xl font-heading text-4xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-5xl xl:text-[3.5rem]">
-            Simple pricing. No surprises.
-          </h1>
-          <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-8">
-            Start free with unlimited inquiries. Upgrade when you need more
-            quotes, AI, and workflow tools.
-          </p>
-        </div>
-      </PublicHeroSurface>
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-5 py-6 text-center sm:px-6 sm:py-8 lg:px-8">
+        <h1 className="max-w-2xl font-heading text-4xl font-semibold leading-[0.94] tracking-tight text-balance sm:text-5xl xl:text-[3.5rem]">
+          Simple pricing. No surprises.
+        </h1>
+        <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-8">
+          Start free with unlimited inquiries. Upgrade when you need more
+          quotes, AI, and workflow tools.
+        </p>
+      </div>
 
       {/* Plan cards with toggle */}
       <PricingIntervalToggle currency={currency} />
@@ -330,7 +327,7 @@ export function PricingPage({
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Button asChild className="w-full sm:w-auto" size="lg">
               <Link href="/signup">
-                Start free
+                Send your first quote
                 <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>

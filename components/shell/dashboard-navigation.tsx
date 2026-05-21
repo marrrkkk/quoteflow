@@ -2,10 +2,12 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   BellRing,
+  ClipboardList,
   FormInput,
   FileText,
   Inbox,
   LayoutDashboard,
+  Receipt,
   Settings2,
   Users,
 } from "lucide-react";
@@ -27,6 +29,8 @@ import {
   getBusinessFollowUpsPath,
   getBusinessFormsPath,
   getBusinessInquiriesPath,
+  getBusinessInvoicesPath,
+  getBusinessJobsPath,
   getBusinessKnowledgeCompatibilityPath,
   getBusinessMembersPath,
   getBusinessNewInquiryPath,
@@ -75,6 +79,18 @@ export function getDashboardNavigation(
       label: "Follow-ups",
       description: "See who needs contact next and when.",
       icon: BellRing,
+    },
+    {
+      href: getBusinessJobsPath(slug),
+      label: "Jobs",
+      description: "Track accepted work from start to finish.",
+      icon: ClipboardList,
+    },
+    {
+      href: getBusinessInvoicesPath(slug),
+      label: "Invoices",
+      description: "Generate, send, and track payment for completed work.",
+      icon: Receipt,
     },
     {
       href: getBusinessAssistantPath(slug),

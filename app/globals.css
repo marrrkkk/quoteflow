@@ -224,6 +224,35 @@ html[data-reload-loading="true"] [data-reload-loading-overlay] {
   display: flex;
 }
 
+html[data-reload-loading="fade-out"] [data-reload-loading-overlay] {
+  display: flex;
+  animation: reload-overlay-fade-out 300ms ease-out forwards;
+}
+
+html[data-reload-loading="fade-out"] #app-root-content {
+  visibility: visible;
+  animation: reload-content-fade-in 300ms ease-out forwards;
+}
+
+@keyframes reload-overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@keyframes reload-content-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Force light mode inside checkout regardless of .dark on html */
 .dark .checkout-light-force {
   --background: #f7f9f7;
@@ -1086,7 +1115,7 @@ html[data-reload-loading="true"] [data-reload-loading-overlay] {
   }
 
   .public-page {
-    @apply mx-auto w-full max-w-[90rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10;
+    @apply mx-auto w-full max-w-[90rem] px-4 pb-6 pt-3 sm:px-6 sm:pb-8 sm:pt-4 lg:px-8 lg:pb-10 lg:pt-4;
   }
 
   .public-page-stack {
