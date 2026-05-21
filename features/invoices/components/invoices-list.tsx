@@ -90,7 +90,36 @@ export function InvoicesList({
         />
       ) : (
         <>
-          <DashboardTableContainer>
+          {/* Mobile card list */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {items.map((invoice) => (
+              <Link
+                key={invoice.id}
+                href={getBusinessInvoicePath(businessSlug, invoice.id)}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-background px-4 py-3.5 transition-colors active:bg-muted/50"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {invoice.title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {invoice.invoiceNumber} · {invoice.customerName}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-sm font-semibold text-foreground">
+                    {formatCurrency(invoice.totalInCents, invoice.currency)}
+                  </span>
+                  <Badge variant={statusVariants[invoice.status]} className="text-[0.65rem]">
+                    {statusLabels[invoice.status]}
+                  </Badge>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <DashboardTableContainer className="hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -98,7 +127,7 @@ export function InvoicesList({
                   <TableHead>Customer</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead className="hidden lg:table-cell">Created</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -128,7 +157,7 @@ export function InvoicesList({
                     <TableCell className="text-right text-sm font-medium">
                       {formatCurrency(invoice.totalInCents, invoice.currency)}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
                       {invoice.createdAt.toLocaleDateString()}
                     </TableCell>
                   </TableRow>

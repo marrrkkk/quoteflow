@@ -72,6 +72,57 @@ export function InvoiceDetail({ invoice, businessSlug, pdfExportHref }: InvoiceD
     <DashboardPage>
       {/* Two-column: invoice (left) + sidebar (right) on desktop; stacked on mobile */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_280px]">
+        {/* ─── Mobile: Actions float above invoice ─── */}
+        <div className="flex flex-col gap-3 xl:hidden print:hidden">
+          {showActions && (
+            <div className="flex flex-wrap gap-2">
+              {invoice.status === "draft" && invoice.customerEmail && (
+                <Button onClick={handleSendEmail} disabled={isPending} size="sm">
+                  <Send className="size-3.5" data-icon="inline-start" />
+                  Send invoice
+                </Button>
+              )}
+              {invoice.status === "draft" && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleStatusChange("sent")}
+                  disabled={isPending}
+                  size="sm"
+                >
+                  <Mail className="size-3.5" data-icon="inline-start" />
+                  Mark as sent
+                </Button>
+              )}
+              {(invoice.status === "sent" || invoice.status === "viewed" || invoice.status === "overdue") && (
+                <Button onClick={() => handleStatusChange("paid")} disabled={isPending} size="sm">
+                  <CheckCircle className="size-3.5" data-icon="inline-start" />
+                  Mark as paid
+                </Button>
+              )}
+              <Button variant="outline" size="sm" asChild>
+                <a href={pdfExportHref} download>
+                  <Download className="size-3.5" data-icon="inline-start" />
+                  PDF
+                </a>
+              </Button>
+              {isPending && <Spinner className="size-4 self-center" />}
+            </div>
+          )}
+          {!showActions && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <a href={pdfExportHref} download>
+                  <Download className="size-3.5" data-icon="inline-start" />
+                  Download PDF
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="size-3.5" data-icon="inline-start" />
+                Print
+              </Button>
+            </div>
+          )}
+        </div>
         {/* ─── Invoice document ─── */}
         <div className="min-w-0 rounded-2xl border bg-background shadow-sm print:border-0 print:rounded-none print:shadow-none">
           {/* Status */}
@@ -154,9 +205,32 @@ export function InvoiceDetail({ invoice, businessSlug, pdfExportHref }: InvoiceD
             </div>
           </div>
 
-          {/* Line items */}
-          <div className="border-t overflow-x-auto">
-            <table className="w-full min-w-[480px] text-sm">
+          {/* Line items — stacked cards on mobile, table on sm+ */}
+          <div className="border-t">
+            {/* Mobile: stacked items */}
+            <div className="divide-y divide-border/40 sm:hidden">
+              <div className="bg-muted/40 px-5 py-3">
+                <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                  Items
+                </p>
+              </div>
+              {invoice.items.map((item) => (
+                <div key={item.id} className="flex items-start justify-between gap-3 px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{item.description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {item.quantity} × {formatCurrency(item.unitPriceInCents, invoice.currency)}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-bold text-foreground">
+                    {formatCurrency(item.lineTotalInCents, invoice.currency)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <table className="hidden w-full text-sm sm:table">
               <thead>
                 <tr className="bg-muted/40">
                   <th className="px-5 py-3.5 text-left text-[0.6rem] font-black uppercase tracking-[0.2em] text-muted-foreground sm:px-8">
@@ -256,8 +330,8 @@ export function InvoiceDetail({ invoice, businessSlug, pdfExportHref }: InvoiceD
           )}
         </div>
 
-        {/* ─── Sidebar: Actions + Tools ─── */}
-        <div className="flex flex-col gap-4 print:hidden">
+        {/* ─── Sidebar: Actions + Tools (desktop only) ─── */}
+        <div className="hidden flex-col gap-4 xl:flex print:hidden">
           {/* Actions */}
           {showActions && (
             <div className="rounded-xl border bg-background p-5 shadow-sm">
