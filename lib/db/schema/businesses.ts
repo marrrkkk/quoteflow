@@ -100,6 +100,7 @@ export const businesses = pgTable(
     inquiryPageConfig: jsonb("inquiry_page_config").$type<InquiryPageConfig>(),
     defaultEmailSignature: text("default_email_signature"),
     defaultQuoteNotes: text("default_quote_notes"),
+    defaultQuoteTerms: text("default_quote_terms"),
     quoteEmailTemplate:
       jsonb("quote_email_template").$type<QuoteEmailTemplateConfig>(),
     defaultQuoteValidityDays: integer("default_quote_validity_days")

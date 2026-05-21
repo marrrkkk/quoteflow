@@ -71,6 +71,41 @@
       "when": 1779200973145,
       "tag": "0009_real_harpoon",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779400000000,
+      "tag": "0010_add_quote_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779500000000,
+      "tag": "0011_quote_revisions",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779600000000,
+      "tag": "0012_auto_follow_ups",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1779700000000,
+      "tag": "0013_quote_tax",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779800000000,
+      "tag": "0014_jobs_and_invoices",
+      "breakpoints": true
     }
   ]
 }
